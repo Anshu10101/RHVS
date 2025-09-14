@@ -81,7 +81,7 @@ export default function AdminDashboard() {
     {
       name: 'Create Event',
       description: 'Add new events and announcements',
-      href: '/admin/content/events',
+      href: '/admin/content/news-events',
       icon: CalendarIcon,
       color: 'bg-purple-500 hover:bg-purple-600',
       permission: 'edit_events',
@@ -227,7 +227,7 @@ export default function AdminDashboard() {
               </div>
             </a>
             <a
-              href="/admin/content/events"
+              href="/admin/content/news-events"
               className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
             >
               <CalendarIcon className="h-8 w-8 text-orange-600" />

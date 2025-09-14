@@ -1,5 +1,5 @@
-import { ContentManagement } from '@/components/Admin';
+import { GalleryPageEditor } from '@/components/Admin';
 
-export default function ContentPage() {
-  return <ContentManagement />;
+export default function ContentManagementPage() {
+  return <GalleryPageEditor />;
 }
