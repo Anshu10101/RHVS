@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { GalleryHeader, GalleryFilter, GalleryGrid, ImageModal } from '@/components/Gallery';
-import type { GalleryImage } from '@/components/Gallery/types';
+import { GalleryHeader, GalleryFilter, GalleryGrid, ImageModal } from '@/components/Home/gallery';
+import type { GalleryImage } from '@/components/Home/gallery/types';
 
 // Default gallery data for fallback
 const defaultGalleryImages = [

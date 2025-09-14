@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ProductHeader, ProductGrid, ProductModal } from '@/components/Product';
+import { ProductHeader, ProductGrid, ProductModal } from '@/components/Home/Product';
 import { useCart } from '@/contexts/CartContext';
-import type { Product } from '@/components/Product/types';
+import type { Product } from '@/components/Home/Product/types';
 
 // Sample product data (fallback)
 const defaultProducts: Product[] = [
