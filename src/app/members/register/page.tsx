@@ -14,7 +14,6 @@ import { Calendar, Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, 
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import jsPDF from 'jspdf';
 
 const memberSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -93,7 +92,7 @@ export default function MemberRegistrationPage() {
     try {
       // Show OTP field immediately for better UX
     setOtpSent(true);
-      const response = await fetch('/api/register', {
+      const response = await fetch('/api/register-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,7 +128,7 @@ export default function MemberRegistrationPage() {
     
     try {
       // First verify OTP
-      const otpResponse = await fetch('/api/register', {
+      const otpResponse = await fetch('/api/register-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,8 +158,8 @@ export default function MemberRegistrationPage() {
         profilePhotoPath = `uploads/${Date.now()}-${profilePhoto.name}`;
       }
 
-      // Register the member
-      const registerResponse = await fetch('/api/register', {
+      // Register the member (now generates token instead of direct registration)
+      const registerResponse = await fetch('/api/register-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +175,9 @@ export default function MemberRegistrationPage() {
             motherWifeName: data.motherWifeName,
             registrationDate: data.registrationDate.toISOString().split('T')[0],
             existingMemberRegNumber: data.existingMemberRegNumber,
-            profilePhotoPath
+            profilePhotoPath,
+            district: '', // Add district field
+            department: '' // Add department field
           }
         }),
       });
@@ -184,164 +185,8 @@ export default function MemberRegistrationPage() {
       const registerResult = await registerResponse.json();
       
       if (registerResult.success) {
-        // Generate Certificate of Membership PDF
-        try {
-          const doc = new jsPDF('p', 'mm', 'a4');
-          const org = 'राष्ट्रीय हिंदू वाहिनी संगठन';
-          const orgEnglish = 'Rashtriya Hindu Vahini Sangathan (RHVS)';
-
-          // Clean white background
-          doc.setFillColor(255, 255, 255);
-          doc.rect(0, 0, 210, 297, 'F');
-
-          // Add logo at the top
-          const addLogo = () => {
-            return new Promise((resolve) => {
-              const img = new Image();
-              img.onload = () => {
-                try {
-                  const logoWidth = 50;
-                  const logoHeight = 50;
-                  const logoX = (210 - logoWidth) / 2;
-                  const logoY = 20;
-                  
-                  doc.addImage(img, 'PNG', logoX, logoY, logoWidth, logoHeight);
-                  resolve(true);
-                } catch (e) {
-                  console.log('Logo not added:', e);
-                  resolve(false);
-                }
-              };
-              img.onerror = () => {
-                console.log('Logo not found');
-                resolve(false);
-              };
-              img.src = '/rhvs_logo.png';
-            });
-          };
-
-          // Organization name in Hindi (skip for now due to font issues)
-          // doc.setTextColor(234, 88, 12);
-          // doc.setFontSize(18);
-          // doc.setFont('helvetica', 'bold');
-          // doc.text(org, 105, 85, { align: 'center' });
-
-          // Organization name in English
-          doc.setFontSize(16);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(234, 88, 12);
-          doc.text(orgEnglish, 105, 85, { align: 'center' });
-
-          // Welcome message
-          doc.setFontSize(12);
-          doc.setTextColor(150, 150, 150);
-          doc.text('Welcome to our organization!', 105, 100, { align: 'center' });
-
-          // Certificate title
-          doc.setTextColor(34, 34, 34);
-          doc.setFontSize(20);
-          doc.setFont('helvetica', 'bold');
-          doc.text('MEMBERSHIP CERTIFICATE', 105, 120, { align: 'center' });
-
-          // Simple decorative line
-          doc.setDrawColor(234, 88, 12);
-          doc.setLineWidth(1);
-          doc.line(60, 130, 150, 130);
-
-          // Certificate body - clean and minimal
-          const bodyY = 160;
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(50, 50, 50);
-          doc.text('This certifies that', 105, bodyY, { align: 'center' });
-
-          // Member name
-          doc.setFontSize(18);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(234, 88, 12);
-          doc.text(data.name || 'N/A', 105, bodyY + 15, { align: 'center' });
-
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(50, 50, 50);
-          doc.text('is a registered member of', 105, bodyY + 30, { align: 'center' });
-          doc.setFont('helvetica', 'bold');
-          doc.text(orgEnglish, 105, bodyY + 45, { align: 'center' });
-
-          // Member details - clean table format
-          const startY = bodyY + 70;
-          const details = [
-            ['Membership Number', registerResult.memberRegNumber || 'N/A'],
-            ['Registration Date', format(new Date(data.registrationDate), 'MMM dd, yyyy')],
-            ['Verified By', `Member #${data.existingMemberRegNumber || 'N/A'}`],
-            ['Email', data.email || 'N/A'],
-            ['Phone', data.phone || 'N/A'],
-          ];
-
-          let y = startY;
-          details.forEach(([label, value]) => {
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text(`${label}:`, 30, y);
-            
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            const text = String(value);
-            if (text.length > 40) {
-              const lines = doc.splitTextToSize(text, 100);
-              doc.text(lines, 80, y);
-              y += (lines.length - 1) * 5;
-            } else {
-              doc.text(text, 80, y);
-            }
-            y += 8;
-          });
-
-          // Address (if long, wrap it)
-          if (data.address) {
-            doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(100, 100, 100);
-            doc.text('Address:', 30, y);
-            
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50, 50, 50);
-            const addressLines = doc.splitTextToSize(data.address, 100);
-            doc.text(addressLines, 80, y);
-            y += addressLines.length * 5;
-          }
-
-          // Signature section - clean and minimal
-          const sigY = y + 20;
-          doc.setDrawColor(200, 200, 200);
-          doc.setLineWidth(0.5);
-          doc.line(40, sigY, 100, sigY);
-          doc.line(110, sigY, 170, sigY);
-          
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(100, 100, 100);
-          doc.text('Secretary', 70, sigY + 8, { align: 'center' });
-          doc.text('President', 140, sigY + 8, { align: 'center' });
-
-          // Footer - minimal
-          doc.setFontSize(8);
-          doc.setTextColor(150, 150, 150);
-          doc.text(`Certificate #RHVS-${registerResult.memberRegNumber}`, 20, 280);
-          doc.text(`Generated: ${format(new Date(), 'MMM dd, yyyy')}`, 20, 285);
-          doc.text('Official Membership Certificate', 105, 285, { align: 'center' });
-
-          // Add logo
-          await addLogo();
-
-          doc.save(`RHVS_Membership_${registerResult.memberRegNumber}.pdf`);
-        } catch (e) {
-          console.error('Failed generating PDF:', e);
-        }
-
-        // Success message
-        alert(`Registration successful! Certificate downloaded. Member #: ${registerResult.memberRegNumber}`);
+        // Success message for token-based registration
+        alert(`Registration token generated successfully! Please check your email for the verification token. Bring this token to the RHVS admin office for final verification and membership approval. Token: ${registerResult.token}`);
         
         // Reset form
         form.reset();

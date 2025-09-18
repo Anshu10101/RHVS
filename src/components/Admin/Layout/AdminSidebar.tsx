@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/contexts/AdminContext';
 import { cn } from '@/lib/utils';
 import {
   Users,
   Settings,
-  Image,
+  Image as ImageIcon,
   ShoppingBag,
   Calendar,
   Building2,
@@ -63,6 +64,11 @@ const navigationItems = [
         name: 'Add Member',
         href: '/admin/members/add',
         icon: UserPlus,
+      },
+      {
+        name: 'Token Verification',
+        href: '/admin/members/tokens',
+        icon: Shield,
       },
       {
         name: 'Pending Verification',
@@ -174,6 +180,10 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const { currentUser, hasPermission, logout } = useAdmin();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
+  if (!currentUser) {
+    return null;
+  }
+
   const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const toggleExpanded = (itemName: string) => {
@@ -229,9 +239,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           {/* Header */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 bg-orange-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">RHVS</span>
-              </div>
+              <Image src="/favicon.ico" alt="RHVS" width={32} height={32} className="rounded-lg" priority />
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
                 <p className="text-xs text-gray-500">Dashboard</p>

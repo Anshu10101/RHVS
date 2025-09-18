@@ -75,125 +75,91 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     error: null,
   });
 
-  // Mock data for development
+  // Load current session from server
   useEffect(() => {
-    const mockUser: User = {
-      id: '1',
-      name: 'Admin User',
-      email: 'admin@rhvs.com',
-      role: 'superadmin',
-      permissions: [
-        'all',
-        'edit_about',
-        'edit_gallery',
-        'edit_store',
-        'edit_news_events',
-        'edit_departments',
-        'edit_offices',
-        'edit_karya_samiti',
-        'edit_contact',
-        'edit_navigation',
-        'edit_seo',
-        'manage_members',
-        'view_analytics',
-        'view_logs',
-        'manage_permissions',
-        'manage_settings'
-      ],
-      createdAt: new Date(),
+    const load = async () => {
+      try {
+        setState(prev => ({ ...prev, loading: true }));
+        const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+        if (!res.ok) {
+          setState(prev => ({ ...prev, currentUser: null, loading: false }));
+          return;
+        }
+        const data = await res.json();
+        if (data?.authenticated && data.user) {
+          const u: User = {
+            id: String(data.user.id),
+            name: data.user.email,
+            email: data.user.email,
+            role: (data.user.role === 'superadmin' ? 'superadmin' : 'superadmin'),
+            permissions: ['all'],
+            createdAt: new Date(data.user.created_at || Date.now()),
+          };
+          setState(prev => ({ ...prev, currentUser: u, loading: false }));
+        } else {
+          setState(prev => ({ ...prev, currentUser: null, loading: false }));
+        }
+      } catch {
+        setState(prev => ({ ...prev, currentUser: null, loading: false }));
+      }
     };
-
-    const mockMembers: Member[] = [
-      {
-        id: '1',
-        registrationNumber: 'RHVS001',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '+1234567890',
-        district: 'Delhi',
-        department: 'IT',
-        addedBy: '1',
-        addedByName: 'Admin User',
-        createdAt: new Date(),
-        status: 'verified',
-      },
-      {
-        id: '2',
-        registrationNumber: 'RHVS002',
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        phone: '+1234567891',
-        district: 'Mumbai',
-        department: 'Finance',
-        addedBy: '1',
-        addedByName: 'Admin User',
-        createdAt: new Date(),
-        status: 'pending',
-      },
-    ];
-
-    const mockLogs: ActivityLog[] = [
-      {
-        id: '1',
-        userId: '1',
-        userName: 'Admin User',
-        action: 'member_added',
-        details: 'Added new member John Doe (RHVS001)',
-        timestamp: new Date(),
-      },
-      {
-        id: '2',
-        userId: '1',
-        userName: 'Admin User',
-        action: 'permission_granted',
-        details: 'Granted temporary gallery edit permission to Admin Z for 7 days',
-        timestamp: new Date(),
-      },
-    ];
-
-    setState(prev => ({
-      ...prev,
-      currentUser: mockUser,
-      members: mockMembers,
-      activityLogs: mockLogs,
-    }));
+    load();
   }, []);
 
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
-    
     try {
-      // Mock login - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: 'Admin User',
-        email: email,
-        role: 'superadmin',
-        permissions: ['all'],
-        createdAt: new Date(),
-      };
-      
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
+      // Optimistically set current user, then confirm via /me
       setState(prev => ({
         ...prev,
-        currentUser: mockUser,
-        loading: false,
+        currentUser: {
+          id: 'self',
+          name: email,
+          email,
+          role: 'superadmin',
+          permissions: ['all'],
+          createdAt: new Date(),
+        },
       }));
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: 'Login failed',
-        loading: false,
-      }));
+      // Refresh session
+      const me = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+      if (me.ok) {
+        const m = await me.json();
+        if (m?.authenticated && m.user) {
+          const u: User = {
+            id: String(m.user.id),
+            name: m.user.email,
+            email: m.user.email,
+            role: 'superadmin',
+            permissions: ['all'],
+            createdAt: new Date(m.user.created_at || Date.now()),
+          };
+          setState(prev => ({ ...prev, currentUser: u, loading: false }));
+          return;
+        }
+      }
+      setState(prev => ({ ...prev, loading: false }));
+    } catch (error: any) {
+      setState(prev => ({ ...prev, error: error.message || 'Login failed', loading: false }));
     }
   };
 
-  const logout = () => {
-    setState(prev => ({
-      ...prev,
-      currentUser: null,
-    }));
+  const logout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } finally {
+      setState(prev => ({ ...prev, currentUser: null }));
+      if (typeof window !== 'undefined') {
+        window.location.href = '/admin/login';
+      }
+    }
   };
 
   const addMember = async (memberData: Omit<Member, 'id' | 'createdAt' | 'status'>) => {

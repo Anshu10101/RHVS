@@ -35,16 +35,31 @@ CREATE TABLE IF NOT EXISTS otp_verifications (
   INDEX idx_expires_at (expires_at)
 );
 
--- Create admin users table (optional)
-CREATE TABLE IF NOT EXISTS admin_users (
+-- Create superadmin table (single or few accounts with full access)
+CREATE TABLE IF NOT EXISTS superadmin (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(100) UNIQUE NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
-  role ENUM('super_admin', 'admin', 'moderator') DEFAULT 'admin',
+  role ENUM('superadmin') DEFAULT 'superadmin',
+  last_login TIMESTAMP NULL,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Admin password reset tokens (OTP + JWT token)
+CREATE TABLE IF NOT EXISTS admin_password_resets (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  superadmin_id INT NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  otp VARCHAR(6) NOT NULL,
+  token VARCHAR(512) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_email (email),
+  INDEX idx_token (token),
+  INDEX idx_expires_at (expires_at)
 );
 
 -- Create events table (for future use)
@@ -90,10 +105,10 @@ CREATE TABLE IF NOT EXISTS content_versions (
   INDEX idx_created_at (created_at)
 );
 
--- Insert sample admin user (password: admin123)
-INSERT INTO admin_users (username, email, password_hash, role) 
-VALUES ('admin', 'admin@rhvs.org', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin')
-ON DUPLICATE KEY UPDATE username = username;
+-- Optional sample superadmin (password: admin123)
+INSERT INTO superadmin (email, password_hash, role, is_active)
+VALUES ('admin@rhvs.org', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'superadmin', 1)
+ON DUPLICATE KEY UPDATE email = email;
 
 -- Create indexes for better performance
 CREATE INDEX idx_members_created_at ON members(created_at);

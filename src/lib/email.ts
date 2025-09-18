@@ -146,8 +146,83 @@ export async function sendAdminOTPEmail(to: string, otp: string, adminName: stri
 
 export default transporter;
 
-// Send welcome email to new member
-export async function sendWelcomeEmail(to: string, memberName: string, memberRegNumber: string) {
+// Send token email for registration verification
+export async function sendTokenEmail(to: string, token: string, memberName: string, type: 'otp' | 'registration' = 'otp') {
+  try {
+    const isRegistration = type === 'registration';
+    const subject = isRegistration 
+      ? 'RHVS Registration Token - Bring to Admin for Verification'
+      : 'RHVS Member Registration - OTP Verification';
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 10px;">
+        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #ea580c; font-size: 28px; margin: 0;">राष्ट्रीय हिंदू वाहिनी संगठन</h1>
+            <p style="color: #666; margin: 10px 0 0 0;">${isRegistration ? 'Registration Token' : 'Member Registration Verification'}</p>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
+            <h2 style="color: #92400e; margin: 0 0 10px 0;">${isRegistration ? 'Registration Token Generated' : 'OTP Verification Required'}</h2>
+            <p style="color: #92400e; margin: 0;">Hello ${memberName},</p>
+            <p style="color: #92400e; margin: 10px 0 0 0;">
+              ${isRegistration 
+                ? 'Your registration token has been generated. Please bring this token to the RHVS admin office for verification and final membership approval.'
+                : 'A new member registration requires your verification. Please use the OTP below to verify this registration:'
+              }
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background: #ea580c; color: white; font-size: ${isRegistration ? '24px' : '32px'}; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: ${isRegistration ? '2px' : '5px'}; display: inline-block; font-family: monospace; word-break: break-all;">
+              ${token}
+            </div>
+            <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">
+              ${isRegistration ? 'This token will expire in 7 days' : 'This OTP will expire in 10 minutes'}
+            </p>
+          </div>
+          
+          ${isRegistration ? `
+          <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #3b82f6;">
+            <p style="color: #1e40af; margin: 0; font-size: 14px;">
+              <strong>Next Steps:</strong> Visit your nearest RHVS office with this token and a valid ID proof. The admin will verify your details and complete your membership registration.
+            </p>
+          </div>
+          ` : ''}
+          
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
+            <p style="color: #374151; margin: 0; font-size: 14px;">
+              <strong>Important:</strong> If you did not request this ${isRegistration ? 'registration' : 'verification'}, please ignore this email. 
+              Do not share this ${isRegistration ? 'token' : 'OTP'} with anyone.
+            </p>
+          </div>
+          
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0;">
+              © 2024 राष्ट्रीय हिंदू वाहिनी संगठन. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const result = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to,
+      subject,
+      html,
+    });
+    
+    console.log(`✅ ${isRegistration ? 'Token' : 'OTP'} email sent successfully:`, result.messageId);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error(`❌ Failed to send ${isRegistration ? 'token' : 'OTP'} email:`, error);
+    return { success: false, error: error };
+  }
+}
+
+// Send welcome email to new member with certificate
+export async function sendWelcomeEmail(to: string, memberName: string, memberRegNumber: string, certificatePath?: string) {
   try {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto; padding:24px; background:#fff7ed;">
@@ -157,25 +232,48 @@ export async function sendWelcomeEmail(to: string, memberName: string, memberReg
         </div>
         <div style="background:#ffffff; border:1px solid #fed7aa; border-top:none; padding:24px; border-radius:0 0 12px 12px;">
           <p style="font-size:16px; color:#7c2d12;">Dear ${memberName},</p>
-          <p style="color:#7c2d12; line-height:1.6;">Your membership has been registered successfully.</p>
+          <p style="color:#7c2d12; line-height:1.6;">Congratulations! Your membership has been verified and registered successfully.</p>
           <div style="background:#fff1e6; padding:16px; border-radius:10px; border:1px solid #fecba1; margin:16px 0;">
             <p style="margin:0; color:#9a3412;">
               <strong>Member Registration Number:</strong>
               <span style="font-family:monospace; font-size:18px; margin-left:8px;">${memberRegNumber}</span>
             </p>
           </div>
-          <p style="color:#7c2d12;">Keep this number safe for future reference.</p>
+          ${certificatePath ? `
+          <div style="background:#dcfce7; padding:16px; border-radius:10px; border:1px solid #86efac; margin:16px 0;">
+            <p style="margin:0; color:#166534;">
+              <strong>🎉 Your membership certificate has been generated!</strong><br>
+              <span style="font-size:14px;">The certificate is attached to this email and can also be downloaded from the admin dashboard.</span>
+            </p>
+          </div>
+          ` : ''}
+          <p style="color:#7c2d12;">Keep your registration number safe for future reference.</p>
           <p style="margin-top:24px; color:#9a3412; font-size:12px;">This is an automated message from RHVS.</p>
         </div>
       </div>
     `;
 
-    const info = await transporter.sendMail({
+    const mailOptions: any = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to,
       subject: `Welcome to RHVS - ${memberRegNumber}`,
       html,
-    });
+    };
+
+    // Attach certificate if provided
+    if (certificatePath) {
+      const fs = require('fs');
+      const path = require('path');
+      const fullPath = path.join(process.cwd(), 'public', certificatePath);
+      if (fs.existsSync(fullPath)) {
+        mailOptions.attachments = [{
+          filename: `RHVS_Membership_Certificate_${memberRegNumber}.pdf`,
+          path: fullPath
+        }];
+      }
+    }
+
+    const info = await transporter.sendMail(mailOptions);
     console.log('✅ Welcome email sent:', info.messageId);
     return { success: true };
   } catch (error) {
