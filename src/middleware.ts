@@ -10,24 +10,50 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Allow the login and verify pages under /admin/login and /admin/verify to be accessed without a session
-  if (pathname === '/admin/login' || pathname.startsWith('/admin/verify')) {
+  // Allow the login pages to be accessed without a session
+  if (pathname === '/admin/login' || pathname === '/admin/superadmin/login' || pathname.startsWith('/admin/verify')) {
     return NextResponse.next();
   }
 
   const token = req.cookies.get('admin_session')?.value;
   if (!token) {
     const url = req.nextUrl.clone();
-    url.pathname = '/admin/login';
-    url.searchParams.set('next', pathname);
+    url.pathname = '/admin';
     return NextResponse.redirect(url);
   }
 
   const claims = await verifyAdminJwt(token);
-  if (!claims || claims.role !== 'superadmin') {
+  if (!claims) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/admin';
+    return NextResponse.redirect(url);
+  }
+
+  // Check if user has access to the requested path
+  const isSuperAdmin = claims.type === 'superadmin';
+  const isDistrictAdmin = claims.type === 'district_admin';
+
+  // Superadmin-only routes
+  const superAdminOnlyRoutes = [
+    '/admin/members/admins',
+    '/admin/members/tokens',
+    '/admin/members/pending',
+    '/admin/departments',
+    '/admin/logs',
+    '/admin/settings',
+    '/admin/permissions'
+  ];
+
+  // Check if trying to access superadmin-only route
+  if (superAdminOnlyRoutes.some(route => pathname.startsWith(route)) && !isSuperAdmin) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin/unauthorized';
     return NextResponse.redirect(url);
+  }
+
+  // District admins: let page/API enforce fine-grained permissions (no hard block here)
+  if (isDistrictAdmin) {
+    return NextResponse.next();
   }
 
   return NextResponse.next();

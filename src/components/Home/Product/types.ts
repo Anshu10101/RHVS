@@ -11,12 +11,21 @@ export interface Product {
   images: string[];
   features: string[];
   tags: string[];
+  state?: string;
+  district?: string;
   inStock: boolean;
-  rating: number;
-  reviews: number;
+  rating?: number; // removed from UI, keep optional for compatibility
+  reviews?: number; // removed from UI, keep optional for compatibility
   discount?: number;
   isNew?: boolean;
   isFeatured?: boolean;
+  // Seller information
+  seller_name?: string;
+  seller_phone?: string;
+  seller_whatsapp?: string;
+  seller_email?: string;
+  seller_business_name?: string;
+  seller_delivery_info?: string;
 }
 
 export interface ProductCardProps {

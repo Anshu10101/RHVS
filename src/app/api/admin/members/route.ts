@@ -1,171 +1,171 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { getAdminScope } from '@/lib/admin-scope';
 
-// GET - Fetch all members with pagination and filtering
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authentication
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
+    
+    // Extract query parameters
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
+    const regNumber = searchParams.get('regNumber') || '';
     const status = searchParams.get('status') || '';
+    const state = searchParams.get('state') || '';
     const district = searchParams.get('district') || '';
+    const department = searchParams.get('department') || '';
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'DESC';
 
-    const offset = (page - 1) * limit;
+    console.log('Members API called with params:', {
+      page, limit, search, regNumber, status, state, district, department, sortBy, sortOrder
+    });
+    console.log('Admin scope:', {
+      isSuperAdmin: scope.isSuperAdmin,
+      isDistrictAdmin: scope.isDistrictAdmin,
+      districtName: scope.districtName
+    });
 
     // Build WHERE clause
     let whereConditions = [];
     let queryParams = [];
 
-    if (search) {
-      whereConditions.push(`(name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_reg_number LIKE ?)`);
-      const searchTerm = `%${search}%`;
+    // Apply district admin scope filter
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      whereConditions.push('(m.district = ? OR m.district LIKE ?)');
+      queryParams.push(scope.districtName, `${scope.districtName}%`);
+    }
+
+    // Search filter
+    if (search.trim()) {
+      whereConditions.push(`(
+        m.name LIKE ? OR 
+        m.email LIKE ? OR 
+        m.phone LIKE ? OR 
+        m.aadhar_card_number LIKE ?
+      )`);
+      const searchTerm = `%${search.trim()}%`;
       queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
     }
 
+    // Registration number filter
+    if (regNumber.trim()) {
+      whereConditions.push('m.member_reg_number LIKE ?');
+      queryParams.push(`%${regNumber.trim()}%`);
+    }
+
+    // Status filter
     if (status) {
-      whereConditions.push('status = ?');
+      whereConditions.push('m.status = ?');
       queryParams.push(status);
     }
 
-    if (district) {
-      whereConditions.push('district = ?');
-      queryParams.push(district);
+    // State filter - convert ID to name
+    if (state && state !== 'all') {
+      console.log('Filtering by state ID:', state);
+      const stateNameQuery = 'SELECT state_name_english FROM states WHERE id = ?';
+      const stateNameResult: any = await executeQuery(stateNameQuery, [state]);
+      if (stateNameResult.length > 0) {
+        console.log('State name found:', stateNameResult[0].state_name_english);
+        whereConditions.push('m.state = ?');
+        queryParams.push(stateNameResult[0].state_name_english);
+      } else {
+        console.log('No state found for ID:', state);
+      }
+    }
+
+    // District filter - convert ID to name
+    if (district && district !== 'all') {
+      console.log('Filtering by district ID:', district);
+      const districtNameQuery = 'SELECT district_name_english FROM districts WHERE district_code = ?';
+      const districtNameResult: any = await executeQuery(districtNameQuery, [district]);
+      if (districtNameResult.length > 0) {
+        console.log('District name found:', districtNameResult[0].district_name_english);
+        whereConditions.push('m.district = ?');
+        queryParams.push(districtNameResult[0].district_name_english);
+      } else {
+        console.log('No district found for ID:', district);
+      }
+    }
+
+    // Department filter
+    if (department) {
+      whereConditions.push('m.department = ?');
+      queryParams.push(department);
     }
 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+    
+    console.log('Final WHERE clause:', whereClause);
+    console.log('Query parameters:', queryParams);
 
-    // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM members ${whereClause}`;
-    const countResult: any = await executeQuery(countQuery, queryParams);
-    const total = countResult[0].total;
-
-    // Get members with pagination
+    // Build the main query
+    const offset = (page - 1) * limit;
     const membersQuery = `
       SELECT 
-        id, name, email, phone, address, father_husband_name, mother_wife_name,
-        registration_date, existing_member_reg_number, profile_photo_path,
-        member_reg_number, created_at, updated_at, status, district, department,
-        verified_by_member_id
-      FROM members 
+        m.id, m.name, m.email, m.phone, m.address, 
+        m.father_husband_name, m.mother_wife_name,
+        m.registration_date, m.existing_member_reg_number, 
+        m.profile_photo_path, m.member_reg_number, 
+        m.created_at, m.updated_at, m.status, 
+        m.state, m.district, m.department,
+        m.verified_by_member_id,
+        verifier.name as verified_by_name
+      FROM members m
+      LEFT JOIN members verifier ON m.verified_by_member_id = verifier.id
       ${whereClause}
-      ORDER BY ${sortBy} ${sortOrder}
+      ORDER BY m.${sortBy} ${sortOrder}
       LIMIT ? OFFSET ?
     `;
 
-    const members: any = await executeQuery(membersQuery, [...queryParams, limit, offset]);
+    queryParams.push(limit, offset);
 
-    // Get verifier names for verified members
-    const memberIds = members.map((m: any) => m.verified_by_member_id).filter(Boolean);
-    let verifiers = {};
-    if (memberIds.length > 0) {
-      const verifierQuery = `SELECT id, name FROM members WHERE id IN (${memberIds.map(() => '?').join(',')})`;
-      const verifierResult: any = await executeQuery(verifierQuery, memberIds);
-      verifiers = verifierResult.reduce((acc: any, v: any) => {
-        acc[v.id] = v.name;
-        return acc;
-      }, {});
-    }
+    // Execute the query
+    const members = await executeQuery(membersQuery, queryParams);
 
-    // Add verifier names to members
-    const membersWithVerifiers = members.map((member: any) => ({
-      ...member,
-      verified_by_name: member.verified_by_member_id ? verifiers[member.verified_by_member_id] : null,
-      created_at: new Date(member.created_at),
-      updated_at: new Date(member.updated_at),
-      registration_date: new Date(member.registration_date)
-    }));
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM members m
+      ${whereClause}
+    `;
+    const countParams = queryParams.slice(0, -2); // Remove limit and offset
+    const countResult: any = await executeQuery(countQuery, countParams);
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
 
+    console.log('Members fetched:', members.length, 'Total:', total);
+    
     return NextResponse.json({
       success: true,
       data: {
-        members: membersWithVerifiers,
+        members,
         pagination: {
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit)
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
         }
       }
     });
+
   } catch (error) {
     console.error('Error fetching members:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch members' },
-      { status: 500 }
-    );
-  }
-}
-
-// POST - Add new member
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const {
-      name, email, phone, address, father_husband_name, mother_wife_name,
-      registration_date, existing_member_reg_number, profile_photo_path,
-      district, department, verified_by_member_id
-    } = body;
-
-    // Validate required fields
-    if (!name || !email || !phone || !address || !father_husband_name || !mother_wife_name) {
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Check if email already exists
-    const existingEmailQuery = 'SELECT id FROM members WHERE email = ?';
-    const existingEmail: any = await executeQuery(existingEmailQuery, [email]);
-    if (existingEmail.length > 0) {
-      return NextResponse.json(
-        { success: false, error: 'Email already exists' },
-        { status: 400 }
-      );
-    }
-
-    // Generate member registration number
-    const countQuery = 'SELECT COUNT(*) as count FROM members';
-    const countResult: any = await executeQuery(countQuery, []);
-    const memberCount = countResult[0].count;
-    const memberRegNumber = `RHVS${String(memberCount + 1).padStart(6, '0')}`;
-
-    // Insert new member
-    const insertQuery = `
-      INSERT INTO members (
-        name, email, phone, address, father_husband_name, mother_wife_name,
-        registration_date, existing_member_reg_number, profile_photo_path,
-        member_reg_number, district, department, verified_by_member_id, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    const result: any = await executeQuery(insertQuery, [
-      name, email, phone, address, father_husband_name, mother_wife_name,
-      registration_date || new Date().toISOString().split('T')[0],
-      existing_member_reg_number || null,
-      profile_photo_path || null,
-      memberRegNumber,
-      district || null,
-      department || null,
-      verified_by_member_id || null,
-      'verified' // Auto-verify admin-added members
-    ]);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Member added successfully',
-      data: {
-        id: result.insertId,
-        member_reg_number: memberRegNumber
-      }
-    });
-  } catch (error) {
-    console.error('Error adding member:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to add member' },
       { status: 500 }
     );
   }

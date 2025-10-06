@@ -97,6 +97,9 @@ export async function POST(request: NextRequest) {
         email, 
         phone, 
         address, 
+        stateId,
+        districtId,
+        aadharCardNumber,
         fatherHusbandName, 
         motherWifeName, 
         registrationDate,
@@ -105,6 +108,14 @@ export async function POST(request: NextRequest) {
         district,
         department
       } = data;
+
+      // Validate profile photo is required
+      if (!profilePhotoPath || profilePhotoPath.trim() === '') {
+        return NextResponse.json(
+          { success: false, message: 'Profile photo is required for registration' },
+          { status: 400 }
+        );
+      }
 
       // Check if email already exists in members table
       const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
@@ -128,6 +139,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Get state and district names from IDs
+      const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
+      const stateResult: any = await executeQuery(stateQuery, [stateId]);
+      const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
+
+      const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
+      const districtResult: any = await executeQuery(districtQuery, [districtId]);
+      const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
+
       // Generate registration token
       const token = generateRegistrationToken();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -135,10 +155,10 @@ export async function POST(request: NextRequest) {
       // Insert registration token
       const insertTokenQuery = `
         INSERT INTO registration_tokens (
-          token, name, email, phone, address, father_husband_name, mother_wife_name,
-          registration_date, existing_member_reg_number, profile_photo_path,
-          district, department, expires_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          token, name, email, phone, address, state, district, aadhar_card_number,
+          father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
+          profile_photo_path, department, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const result: any = await executeQuery(insertTokenQuery, [
@@ -147,12 +167,14 @@ export async function POST(request: NextRequest) {
         email,
         phone,
         address,
+        stateName,
+        districtName || district || null,
+        aadharCardNumber || null,
         fatherHusbandName,
         motherWifeName,
         registrationDate || new Date().toISOString().split('T')[0],
         existingMemberRegNumber,
         profilePhotoPath || null,
-        district || null,
         department || null,
         expiresAt
       ]);

@@ -2,26 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { sendWelcomeEmail } from '@/lib/email';
 import { generateCertificate } from '@/lib/certificate';
+import { generateMemberRegistrationNumber } from '@/lib/member-registration';
+import { getAdminScope } from '@/lib/admin-scope';
 
 // GET - Fetch pending registration tokens or search by token
 export async function GET(request: NextRequest) {
   try {
+    // Check admin authentication and scope
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const token = searchParams.get('token');
     
     // If token parameter is provided, search for specific token
     if (token) {
-      const tokenQuery = `
+      let tokenQuery = `
         SELECT 
-          id, token, name, email, phone, address, father_husband_name, mother_wife_name,
-          registration_date, existing_member_reg_number, profile_photo_path,
-          district, department, status, expires_at, created_at, updated_at,
+          id, token, name, email, phone, address, state, district, aadhar_card_number,
+          father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
+          profile_photo_path, department, status, expires_at, created_at, updated_at,
           verified_by_admin_id, verified_at
         FROM registration_tokens 
         WHERE token = ?
       `;
       
-      const tokens: any = await executeQuery(tokenQuery, [token]);
+      let queryParams = [token];
+      
+      // Apply district admin scope filter
+      if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+        tokenQuery += ` AND (district = ? OR district LIKE ?)`;
+        queryParams.push(scope.districtName, `${scope.districtName}%`);
+      }
+      
+      const tokens: any = await executeQuery(tokenQuery, queryParams);
       
       if (tokens.length === 0) {
         return NextResponse.json(
@@ -65,6 +85,12 @@ export async function GET(request: NextRequest) {
     let whereConditions = ['status = ?'];
     let queryParams = [status];
 
+    // Apply district admin scope filter
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      whereConditions.push('(district = ? OR district LIKE ?)');
+      queryParams.push(scope.districtName, `${scope.districtName}%`);
+    }
+
     if (search) {
       whereConditions.push('(name LIKE ? OR email LIKE ? OR token LIKE ?)');
       const searchTerm = `%${search}%`;
@@ -81,9 +107,9 @@ export async function GET(request: NextRequest) {
     // Get tokens with pagination
     const tokensQuery = `
       SELECT 
-        id, token, name, email, phone, address, father_husband_name, mother_wife_name,
-        registration_date, existing_member_reg_number, profile_photo_path,
-        district, department, status, expires_at, created_at, updated_at,
+        id, token, name, email, phone, address, state, district, aadhar_card_number,
+        father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
+        profile_photo_path, department, status, expires_at, created_at, updated_at,
         verified_by_admin_id, verified_at
       FROM registration_tokens 
       ${whereClause}
@@ -124,14 +150,32 @@ export async function GET(request: NextRequest) {
 // POST - Verify token and create member
 export async function POST(request: NextRequest) {
   try {
+    // Check admin authentication and scope
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
     const { token, adminId, action } = await request.json();
 
     if (action === 'verify') {
       console.log('🔍 Verifying token:', token);
       
       // First, let's check if the token exists at all
-      const tokenExistsQuery = `SELECT * FROM registration_tokens WHERE token = ?`;
-      const allTokens: any = await executeQuery(tokenExistsQuery, [token]);
+      let tokenExistsQuery = `SELECT * FROM registration_tokens WHERE token = ?`;
+      let tokenExistsParams = [token];
+      
+      // Apply district admin scope filter
+      if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+        tokenExistsQuery += ` AND (district = ? OR district LIKE ?)`;
+        tokenExistsParams.push(scope.districtName, `${scope.districtName}%`);
+      }
+      
+      const allTokens: any = await executeQuery(tokenExistsQuery, tokenExistsParams);
       
       console.log('📊 Token query result:', allTokens.length, 'tokens found');
       
@@ -193,6 +237,17 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Check if this token has already been processed (member already created)
+      const existingMemberByTokenQuery = 'SELECT id FROM members WHERE registration_token_id = ?';
+      const existingMemberByToken: any = await executeQuery(existingMemberByTokenQuery, [tokenData.id]);
+      
+      if (existingMemberByToken.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'This token has already been processed and member created' },
+          { status: 400 }
+        );
+      }
+
       // Check if email already exists in members table
       const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
       const existingMembers: any = await executeQuery(existingMemberQuery, [tokenData.email]);
@@ -204,20 +259,69 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate member registration number
-      const countQuery = 'SELECT COUNT(*) as count FROM members';
-      const countResult: any = await executeQuery(countQuery, []);
-      const memberCount = countResult[0].count;
-      const memberRegNumber = `RHVS${String(memberCount + 1).padStart(6, '0')}`;
+      // Check if Aadhar card number already exists in members table
+      const existingAadharQuery = 'SELECT id, name, email FROM members WHERE aadhar_card_number = ?';
+      const existingAadhar: any = await executeQuery(existingAadharQuery, [tokenData.aadhar_card_number]);
+      
+      if (existingAadhar.length > 0) {
+        const existingMember = existingAadhar[0];
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: `Aadhar card number ${tokenData.aadhar_card_number} is already registered with another member (${existingMember.name} - ${existingMember.email}). Since Aadhar is unique to each person, this registration cannot be verified. Please ask the applicant to verify their Aadhar number or contact the existing member.`,
+            errorCode: 'DUPLICATE_AADHAR',
+            existingMember: {
+              name: existingMember.name,
+              email: existingMember.email
+            }
+          },
+          { status: 400 }
+        );
+      }
+
+      // Generate member registration number - maintain sequential flow
+      let memberRegNumber = await generateMemberRegistrationNumber();
+
+      // Double-check that the generated registration number doesn't already exist
+      const checkRegNumberQuery = 'SELECT id FROM members WHERE member_reg_number = ?';
+      const existingRegNumber: any = await executeQuery(checkRegNumberQuery, [memberRegNumber]);
+      
+      if (existingRegNumber.length > 0) {
+        // If it exists, find the next available number
+        let nextNumber = maxNumber + 1;
+        let newRegNumber = `RHVS${String(nextNumber).padStart(6, '0')}`;
+        
+        while (true) {
+          const checkNextQuery = 'SELECT id FROM members WHERE member_reg_number = ?';
+          const checkNextResult: any = await executeQuery(checkNextQuery, [newRegNumber]);
+          
+          if (checkNextResult.length === 0) {
+            break; // Found available number
+          }
+          
+          nextNumber++;
+          newRegNumber = `RHVS${String(nextNumber).padStart(6, '0')}`;
+        }
+        
+        memberRegNumber = newRegNumber;
+      }
+
+      // Validate profile photo is required
+      if (!tokenData.profile_photo_path || tokenData.profile_photo_path.trim() === '') {
+        return NextResponse.json(
+          { success: false, message: 'Profile photo is required for member verification' },
+          { status: 400 }
+        );
+      }
 
       // Insert new member
       const insertMemberQuery = `
         INSERT INTO members (
-          name, email, phone, address, father_husband_name, mother_wife_name,
-          registration_date, existing_member_reg_number, profile_photo_path,
-          member_reg_number, district, department, status, verified_by_admin_id,
+          name, email, phone, address, state, district, aadhar_card_number,
+          father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
+          profile_photo_path, member_reg_number, department, status, verified_by_admin_id,
           verification_date, registration_token_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?, NOW(), ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?, NOW(), ?)
       `;
       
       const memberResult: any = await executeQuery(insertMemberQuery, [
@@ -225,13 +329,15 @@ export async function POST(request: NextRequest) {
         tokenData.email,
         tokenData.phone,
         tokenData.address,
+        tokenData.state,
+        tokenData.district,
+        tokenData.aadhar_card_number,
         tokenData.father_husband_name,
         tokenData.mother_wife_name,
         tokenData.registration_date,
         tokenData.existing_member_reg_number,
         tokenData.profile_photo_path,
         memberRegNumber,
-        tokenData.district,
         tokenData.department,
         adminId,
         tokenData.id
@@ -304,8 +410,23 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying token:', error);
+    
+    // Handle specific database errors
+    if (error?.code === 'ER_DUP_ENTRY') {
+      if (error.sqlMessage?.includes('aadhar_card_number')) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            message: 'Aadhar card number already exists in the system. Since Aadhar is unique to each person, this registration cannot be verified. Please ask the applicant to verify their Aadhar number.',
+            errorCode: 'DUPLICATE_AADHAR'
+          },
+          { status: 400 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Failed to verify token' },
       { status: 500 }

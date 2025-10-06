@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { ShoppingCart, ArrowLeft, Heart } from 'lucide-react';
+import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import CartItem from '@/components/Home/cart/CartItem';
-import CartSummary from '@/components/Home/cart/CartSummary';
 import Link from 'next/link';
 import { Noto_Serif_Devanagari } from 'next/font/google';
 
@@ -15,16 +14,7 @@ const devanagari = Noto_Serif_Devanagari({
 });
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, clearCart, getTotalItems, getTotalPrice } = useCart();
-  const [favorites, setFavorites] = useState<number[]>([]);
-
-  const handleToggleFavorite = (productId: number) => {
-    setFavorites(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
-    );
-  };
+  const { cartItems, updateQuantity, removeFromCart, getTotalItems } = useCart();
 
   if (cartItems.length === 0) {
     return (
@@ -35,7 +25,7 @@ export default function CartPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Link href="/products">
-                  <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700">
+                  <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700 cursor-pointer">
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Continue Shopping
                   </Button>
@@ -63,7 +53,7 @@ export default function CartPage() {
               Explore our collection of spiritual items and find something meaningful.
             </p>
             <Link href="/products">
-              <Button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold">
+              <Button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold cursor-pointer">
                 Start Shopping
               </Button>
             </Link>
@@ -81,7 +71,7 @@ export default function CartPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/products">
-                <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700">
+                <Button variant="ghost" size="sm" className="text-orange-600 hover:text-orange-700 cursor-pointer">
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Continue Shopping
                 </Button>
@@ -91,49 +81,34 @@ export default function CartPage() {
                 Shopping Cart ({getTotalItems()})
               </h1>
             </div>
-            <div className="flex items-center gap-2">
-              <Heart className="w-5 h-5 text-orange-600" />
-              <span className="text-sm text-gray-600">Wishlist</span>
-            </div>
           </div>
         </div>
       </div>
 
 {/* Cart Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-2">
-            <div className="space-y-4">
-              {cartItems.map((item, index) => (
-                <div
-                  key={item.product.id}
-                  style={{
-                    animationDelay: `${index * 100}ms`,
-                    animation: 'fadeInUp 0.6s ease-out forwards',
-                    opacity: 0,
-                    transform: 'translateY(30px)'
-                  }}
-                >
-                  <CartItem
-                    item={item}
-                    onUpdateQuantity={updateQuantity}
-                    onRemove={removeFromCart}
-                    onToggleFavorite={handleToggleFavorite}
-                    isFavorite={favorites.includes(item.product.id)}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Cart Summary */}
-          <div className="lg:col-span-1">
-            <CartSummary
-              totalItems={getTotalItems()}
-              totalPrice={getTotalPrice()}
-              onClearCart={clearCart}
-            />
+        <div className="max-w-4xl mx-auto">
+          <div className="space-y-4">
+            {cartItems.map((item, index) => (
+              <div
+                key={item.product.id}
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  animationName: 'fadeInUp',
+                  animationDuration: '0.6s',
+                  animationTimingFunction: 'ease-out',
+                  animationFillMode: 'forwards',
+                  opacity: 0,
+                  transform: 'translateY(30px)'
+                }}
+              >
+                <CartItem
+                  item={item}
+                  onUpdateQuantity={updateQuantity}
+                  onRemove={removeFromCart}
+                />
+              </div>
+            ))}
           </div>
         </div>
       </div>

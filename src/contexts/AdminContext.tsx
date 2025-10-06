@@ -3,13 +3,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 export type UserRole = 'superadmin' | 'admin' | 'verified_member';
+export type UserType = 'superadmin' | 'district_admin' | 'member';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  type?: UserType;
   district?: string;
+  state?: string;
   permissions: string[];
   temporaryPermissions?: {
     permission: string;
@@ -62,6 +65,7 @@ interface AdminContextType extends AdminState {
   hasPermission: (permission: string) => boolean;
   canManageDistrict: (district: string) => boolean;
   refreshData: () => Promise<void>;
+  checkPermissionExpiry: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -80,19 +84,26 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         setState(prev => ({ ...prev, loading: true }));
+        console.log('AdminContext: Fetching /api/admin/me');
         const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+        console.log('AdminContext: /api/admin/me response:', res.status, res.ok);
         if (!res.ok) {
+          console.log('AdminContext: /api/admin/me failed, setting currentUser to null');
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
           return;
         }
         const data = await res.json();
+        console.log('AdminContext: /api/admin/me data:', data);
         if (data?.authenticated && data.user) {
           const u: User = {
             id: String(data.user.id),
-            name: data.user.email,
+            name: data.user.name || data.user.email,
             email: data.user.email,
-            role: (data.user.role === 'superadmin' ? 'superadmin' : 'superadmin'),
-            permissions: ['all'],
+            role: data.user.role,
+            type: data.user.type,
+            district: data.user.district,
+            state: data.user.state,
+            permissions: data.user.permissions || [],
             createdAt: new Date(data.user.created_at || Date.now()),
           };
           setState(prev => ({ ...prev, currentUser: u, loading: false }));
@@ -116,29 +127,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
-      // Optimistically set current user, then confirm via /me
-      setState(prev => ({
-        ...prev,
-        currentUser: {
-          id: 'self',
-          name: email,
-          email,
-          role: 'superadmin',
-          permissions: ['all'],
-          createdAt: new Date(),
-        },
-      }));
-      // Refresh session
+      
+      // Login successful, now fetch the user data
       const me = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
       if (me.ok) {
         const m = await me.json();
         if (m?.authenticated && m.user) {
+          // Create user object based on API response
           const u: User = {
             id: String(m.user.id),
-            name: m.user.email,
+            name: m.user.name || m.user.email,
             email: m.user.email,
-            role: 'superadmin',
-            permissions: ['all'],
+            role: m.user.role,
+            type: m.user.type,
+            district: m.user.district,
+            permissions: m.user.permissions || [],
             createdAt: new Date(m.user.created_at || Date.now()),
           };
           setState(prev => ({ ...prev, currentUser: u, loading: false }));
@@ -246,8 +249,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const hasPermission = (permission: string): boolean => {
     if (!state.currentUser) return false;
     
-    if (state.currentUser.role === 'superadmin') return true;
+    // Superadmins have all permissions
+    if (state.currentUser.type === 'superadmin' || state.currentUser.role === 'superadmin') return true;
+    
+    // Check if user has 'all' permission
     if (state.currentUser.permissions.includes('all')) return true;
+    
+    // Check if user has specific permission
     if (state.currentUser.permissions.includes(permission)) return true;
     
     // Check temporary permissions
@@ -261,9 +269,48 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  // Check if permissions are expired and refresh if needed
+  const checkPermissionExpiry = async () => {
+    if (!state.currentUser || state.currentUser.type !== 'district_admin') return;
+    
+    try {
+      const response = await fetch('/api/admin/permissions/check-expiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          district_admin_id: state.currentUser.id
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.expired_permissions && data.expired_permissions.length > 0) {
+          // Update current user permissions by removing expired ones
+          setState(prev => ({
+            ...prev,
+            currentUser: prev.currentUser ? {
+              ...prev.currentUser,
+              permissions: prev.currentUser.permissions.filter(
+                perm => !data.expired_permissions.includes(perm)
+              )
+            } : null
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error checking permission expiry:', error);
+    }
+  };
+
   const canManageDistrict = (district: string): boolean => {
     if (!state.currentUser) return false;
-    if (state.currentUser.role === 'superadmin') return true;
+    
+    // Superadmins can manage all districts
+    if (state.currentUser.type === 'superadmin' || state.currentUser.role === 'superadmin') return true;
+    
+    // District admins can only manage their assigned district
     return state.currentUser.district === district;
   };
 
@@ -273,6 +320,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     await new Promise(resolve => setTimeout(resolve, 500));
     setState(prev => ({ ...prev, loading: false }));
   };
+
+  // Check permission expiry every 5 minutes for district admins
+  useEffect(() => {
+    if (state.currentUser?.type === 'district_admin') {
+      const interval = setInterval(checkPermissionExpiry, 5 * 60 * 1000); // 5 minutes
+      return () => clearInterval(interval);
+    }
+  }, [state.currentUser]);
 
   const value: AdminContextType = {
     ...state,
@@ -286,6 +341,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     hasPermission,
     canManageDistrict,
     refreshData,
+    checkPermissionExpiry,
   };
 
   return (

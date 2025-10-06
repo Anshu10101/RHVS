@@ -12,6 +12,9 @@ export interface AdminJwtClaims extends JWTPayload {
   sub: string;
   email: string;
   role: string;
+  type?: 'superadmin' | 'district_admin';
+  district?: string;
+  permissions?: string[];
 }
 
 export async function signAdminJwt(claims: Omit<AdminJwtClaims, 'iss' | 'aud' | 'iat' | 'exp'>, ttlSeconds: number = 60 * 60 * 8): Promise<string> {

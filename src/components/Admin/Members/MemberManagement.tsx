@@ -37,6 +37,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface Member {
   id: number;
@@ -53,6 +54,7 @@ interface Member {
   created_at: string;
   updated_at: string;
   status: 'pending' | 'verified' | 'rejected';
+  state?: string;
   district?: string;
   department?: string;
   verified_by_member_id?: number;
@@ -66,7 +68,9 @@ interface MemberStats {
     pending: number;
     rejected: number;
   };
+  states: Array<{ state: string; count: number }>;
   districts: Array<{ district: string; count: number }>;
+  departments: Array<{ department: string; count: number }>;
   recent: number;
   monthly: number;
   verification: {
@@ -82,14 +86,60 @@ export function MemberManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [regNumberSearch, setRegNumberSearch] = useState('');
+  const [selectedState, setSelectedState] = useState('all');
   const [selectedDistrict, setSelectedDistrict] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
+  const [states, setStates] = useState<Array<{id: number, name: string}>>([]);
+  const [districts, setDistricts] = useState<Array<{id: string, name: string}>>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchTerm('');
+    setRegNumberSearch('');
+    setSelectedState('all');
+    setSelectedDistrict('all');
+    setSelectedDepartment('all');
+    setSelectedStatus('all');
+    setCurrentPage(1);
+  };
+
+  // Helper function to validate and normalize image URL
+  const getValidImageUrl = (url: string | undefined | null): string | null => {
+    if (!url || url.trim() === '') return null;
+    
+    const trimmedUrl = url.trim();
+    
+    // If it's already a valid absolute URL, return as is
+    if (trimmedUrl.startsWith('http')) {
+      return trimmedUrl;
+    }
+    
+    // If it starts with /, it's already a valid path
+    if (trimmedUrl.startsWith('/')) {
+      return trimmedUrl;
+    }
+    
+    // If it's a relative path with file extension, add leading slash
+    if (trimmedUrl.includes('.') && (trimmedUrl.includes('/') || trimmedUrl.includes('\\'))) {
+      return `/${trimmedUrl}`;
+    }
+    
+    return null;
+  };
+
+  // Helper function to check if image URL is valid
+  const isValidImageUrl = (url: string | undefined | null): boolean => {
+    return getValidImageUrl(url) !== null;
+  };
 
   // Fetch members data
   const fetchMembers = async () => {
@@ -99,14 +149,20 @@ export function MemberManagement() {
         page: currentPage.toString(),
         limit: '10',
         search: searchTerm,
+        regNumber: regNumberSearch,
         status: selectedStatus === 'all' ? '' : selectedStatus,
+        state: selectedState === 'all' ? '' : selectedState,
         district: selectedDistrict === 'all' ? '' : selectedDistrict,
+        department: selectedDepartment === 'all' ? '' : selectedDepartment,
         sortBy: 'created_at',
         sortOrder: 'DESC'
       });
 
+      console.log('MemberManagement: Fetching members with params:', params.toString());
       const response = await fetch(`/api/admin/members?${params}`);
+      console.log('MemberManagement: Response status:', response.status, response.ok);
       const data = await response.json();
+      console.log('MemberManagement: Response data:', data);
 
       if (data.success) {
         setMembers(data.data.members);
@@ -135,14 +191,78 @@ export function MemberManagement() {
     }
   };
 
+  // Fetch states
+  const fetchStates = async () => {
+    try {
+      const response = await fetch('/api/states');
+      const data = await response.json();
+      if (data.success) {
+        setStates(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch states:', err);
+    }
+  };
+
+  // Fetch departments
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch('/api/admin/members/departments');
+      const data = await response.json();
+      if (data.success) {
+        setDepartments(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch departments:', err);
+    }
+  };
+
+  // Fetch districts based on selected state
+  const fetchDistricts = async (stateId: string) => {
+    if (!stateId || stateId === 'all') {
+      setDistricts([]);
+      return;
+    }
+
+    try {
+      setLoadingDistricts(true);
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.data.map((district: any) => ({
+          id: district.id,
+          name: district.name
+        })));
+      } else {
+        setDistricts([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch districts:', err);
+      setDistricts([]);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
   // Load data on component mount and when filters change
   useEffect(() => {
     fetchMembers();
-  }, [currentPage, searchTerm, selectedStatus, selectedDistrict]);
+  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment]);
 
   useEffect(() => {
     fetchStats();
+    fetchStates();
+    fetchDepartments();
   }, []);
+
+  // Fetch districts when state changes
+  useEffect(() => {
+    fetchDistricts(selectedState);
+    // Reset district selection when state changes
+    if (selectedState !== 'all') {
+      setSelectedDistrict('all');
+    }
+  }, [selectedState]);
 
   // Handle search with debounce
   useEffect(() => {
@@ -155,44 +275,8 @@ export function MemberManagement() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, regNumberSearch]);
 
-  const handleAddMember = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const memberData = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string,
-      phone: formData.get('phone') as string,
-      address: formData.get('address') as string,
-      father_husband_name: formData.get('father_husband_name') as string,
-      mother_wife_name: formData.get('mother_wife_name') as string,
-      district: formData.get('district') as string,
-      department: formData.get('department') as string,
-      registration_date: formData.get('registration_date') as string,
-    };
-
-    try {
-      const response = await fetch('/api/admin/members', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(memberData),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setShowAddModal(false);
-        fetchMembers();
-        fetchStats();
-        setError(null);
-      } else {
-        setError(data.error || 'Failed to add member');
-      }
-    } catch (err) {
-      setError('Failed to add member');
-    }
-  };
 
   const handleUpdateMember = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -288,7 +372,6 @@ export function MemberManagement() {
     }
   };
 
-  const districts = Array.from(new Set(members.map(m => m.district).filter(Boolean)));
 
   if (loading && members.length === 0) {
     return (
@@ -317,22 +400,24 @@ export function MemberManagement() {
           <h1 className="text-2xl font-bold text-orange-900">Member Management</h1>
           <p className="text-orange-700/80">Manage and track all RHVS members</p>
         </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
+        <div className="flex gap-3 mt-4 sm:mt-0">
           <Button
             variant="outline"
             onClick={fetchMembers}
             disabled={loading}
+            className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="bg-orange-600 hover:bg-orange-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
+          <Link href="/admin/members/add" className="cursor-pointer">
+            <Button
+              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-6 py-2.5 font-medium cursor-pointer"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Member
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -397,43 +482,116 @@ export function MemberManagement() {
         </div>
       )}
 
-      {/* Filters */}
+      {/* Search Section */}
       <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-orange-900 flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Search Members
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700">Search by Name, Email, Phone, or Aadhar</Label>
+              <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
-                  placeholder="Search members..."
+                  placeholder="Enter name, email, phone, or Aadhar number..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-10"
                 />
               </div>
             </div>
             
             <div>
-              <Label htmlFor="district">District</Label>
-              <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Districts" />
+              <Label htmlFor="regNumber" className="text-sm font-medium text-gray-700">Search by Registration Number</Label>
+              <div className="relative mt-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="regNumber"
+                  placeholder="Enter registration number (e.g., RHVS000001)..."
+                  value={regNumberSearch}
+                  onChange={(e) => setRegNumberSearch(e.target.value)}
+                  className="pl-10 h-10"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Filters Section */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold text-orange-900 flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filter Members
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="state" className="text-sm font-medium text-gray-700">State</Label>
+              <Select value={selectedState} onValueChange={setSelectedState}>
+                <SelectTrigger className="mt-1 h-10">
+                  <SelectValue placeholder="All States" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Districts</SelectItem>
-                  {districts.map(district => (
-                    <SelectItem key={district} value={district}>{district}</SelectItem>
+                  <SelectItem value="all">All States</SelectItem>
+                  {states.map(state => (
+                    <SelectItem key={state.id} value={state.id.toString()}>{state.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="district" className="text-sm font-medium text-gray-700">District</Label>
+              <Select 
+                value={selectedDistrict} 
+                onValueChange={setSelectedDistrict}
+                disabled={!selectedState || selectedState === 'all' || loadingDistricts}
+              >
+                <SelectTrigger className="mt-1 h-10">
+                  <SelectValue placeholder={
+                    !selectedState || selectedState === 'all' 
+                      ? "Select state first" 
+                      : loadingDistricts 
+                        ? "Loading districts..." 
+                        : "All Districts"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districts.map(district => (
+                    <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="department" className="text-sm font-medium text-gray-700">Department</Label>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger className="mt-1 h-10">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map(dept => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger>
+                <SelectTrigger className="mt-1 h-10">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -444,13 +602,25 @@ export function MemberManagement() {
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full" onClick={fetchMembers}>
-                <Filter className="h-4 w-4 mr-2" />
-                Apply Filters
-              </Button>
-            </div>
+          </div>
+          
+          <div className="flex justify-end gap-3 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              className="px-6 h-10 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Clear Filters
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={fetchMembers}
+              className="px-6 h-10 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 cursor-pointer"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Apply Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -494,19 +664,28 @@ export function MemberManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
-                          {member.profile_photo_path ? (
+                          {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
-                              src={member.profile_photo_path}
+                              src={getValidImageUrl(member.profile_photo_path)!}
                               alt={member.name}
                               width={40}
                               height={40}
                               className="rounded-full object-cover"
+                              onError={(e) => {
+                                // Hide image and show fallback on error
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'block';
+                              }}
                             />
-                          ) : (
-                            <span className="text-orange-600 font-semibold text-sm">
-                              {member.name.charAt(0).toUpperCase()}
-                            </span>
-                          )}
+                          ) : null}
+                          <span 
+                            className="text-orange-600 font-semibold text-sm"
+                            style={{ display: !isValidImageUrl(member.profile_photo_path) ? 'block' : 'none' }}
+                          >
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">
@@ -523,7 +702,8 @@ export function MemberManagement() {
                       <div className="text-sm text-gray-500">{member.phone}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.district || 'N/A'}</div>
+                      <div className="text-sm text-gray-900">{member.state || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{member.district || 'N/A'}</div>
                       <div className="text-sm text-gray-500">{member.department || 'N/A'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -543,6 +723,7 @@ export function MemberManagement() {
                           size="sm"
                           variant="outline"
                           onClick={() => setSelectedMember(member)}
+                          className="cursor-pointer"
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -553,6 +734,7 @@ export function MemberManagement() {
                             setEditingMember(member);
                             setShowEditModal(true);
                           }}
+                          className="cursor-pointer"
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -562,7 +744,7 @@ export function MemberManagement() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleStatusChange(member.id, 'verified')}
-                              className="text-green-600 hover:text-green-700"
+                              className="text-green-600 hover:text-green-700 cursor-pointer"
                             >
                               <UserCheck className="h-4 w-4" />
                             </Button>
@@ -570,7 +752,7 @@ export function MemberManagement() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleStatusChange(member.id, 'rejected')}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 cursor-pointer"
                             >
                               <UserX className="h-4 w-4" />
                             </Button>
@@ -580,7 +762,7 @@ export function MemberManagement() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteMember(member.id)}
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 cursor-pointer"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -604,6 +786,7 @@ export function MemberManagement() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1 || loading}
+                  className="cursor-pointer disabled:cursor-not-allowed"
                 >
                   Previous
                 </Button>
@@ -612,6 +795,7 @@ export function MemberManagement() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages || loading}
+                  className="cursor-pointer disabled:cursor-not-allowed"
                 >
                   Next
                 </Button>
@@ -621,113 +805,6 @@ export function MemberManagement() {
         </CardContent>
       </Card>
 
-      {/* Add Member Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add New Member</DialogTitle>
-            <DialogDescription>
-              Add a new member to the RHVS organization
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleAddMember} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  required
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone *</Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  required
-                  placeholder="Enter phone number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="registration_date">Registration Date</Label>
-                <Input
-                  id="registration_date"
-                  name="registration_date"
-                  type="date"
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-              <div>
-                <Label htmlFor="father_husband_name">Father/Husband Name *</Label>
-                <Input
-                  id="father_husband_name"
-                  name="father_husband_name"
-                  required
-                  placeholder="Enter father/husband name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="mother_wife_name">Mother/Wife Name *</Label>
-                <Input
-                  id="mother_wife_name"
-                  name="mother_wife_name"
-                  required
-                  placeholder="Enter mother/wife name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="district">District</Label>
-                <Input
-                  id="district"
-                  name="district"
-                  placeholder="Enter district"
-                />
-              </div>
-              <div>
-                <Label htmlFor="department">Department</Label>
-                <Input
-                  id="department"
-                  name="department"
-                  placeholder="Enter department"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="address">Address *</Label>
-              <Input
-                id="address"
-                name="address"
-                required
-                placeholder="Enter complete address"
-              />
-            </div>
-            <div className="flex justify-end space-x-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAddModal(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-orange-600 hover:bg-orange-700">
-                Add Member
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Member Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
@@ -834,10 +911,11 @@ export function MemberManagement() {
                     setShowEditModal(false);
                     setEditingMember(null);
                   }}
+                  className="cursor-pointer"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-orange-600 hover:bg-orange-700">
+                <Button type="submit" className="bg-orange-600 hover:bg-orange-700 cursor-pointer">
                   Update Member
                 </Button>
               </div>
@@ -859,19 +937,28 @@ export function MemberManagement() {
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
                 <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center">
-                  {selectedMember.profile_photo_path ? (
+                  {isValidImageUrl(selectedMember.profile_photo_path) ? (
                     <Image
-                      src={selectedMember.profile_photo_path}
+                      src={getValidImageUrl(selectedMember.profile_photo_path)!}
                       alt={selectedMember.name}
                       width={64}
                       height={64}
                       className="rounded-full object-cover"
+                      onError={(e) => {
+                        // Hide image and show fallback on error
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const fallback = target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'block';
+                      }}
                     />
-                  ) : (
-                    <span className="text-orange-600 font-semibold text-xl">
-                      {selectedMember.name.charAt(0).toUpperCase()}
-                    </span>
-                  )}
+                  ) : null}
+                  <span 
+                    className="text-orange-600 font-semibold text-xl"
+                    style={{ display: !isValidImageUrl(selectedMember.profile_photo_path) ? 'block' : 'none' }}
+                  >
+                    {selectedMember.name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900">{selectedMember.name}</h3>
@@ -889,6 +976,10 @@ export function MemberManagement() {
                   <div className="flex items-center space-x-2">
                     <Phone className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-900">{selectedMember.phone}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-900">{selectedMember.state || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-400" />

@@ -6,12 +6,14 @@ CREATE TABLE IF NOT EXISTS registration_tokens (
   email VARCHAR(255) NOT NULL,
   phone VARCHAR(20) NOT NULL,
   address TEXT NOT NULL,
+  state VARCHAR(100),
+  district VARCHAR(100),
+  aadhar_card_number VARCHAR(12),
   father_husband_name VARCHAR(255) NOT NULL,
   mother_wife_name VARCHAR(255) NOT NULL,
   registration_date DATE NOT NULL,
   existing_member_reg_number VARCHAR(50) NOT NULL,
   profile_photo_path VARCHAR(500),
-  district VARCHAR(100),
   department VARCHAR(100),
   status ENUM('pending', 'verified', 'expired', 'rejected') DEFAULT 'pending',
   expires_at TIMESTAMP NOT NULL,
@@ -23,7 +25,9 @@ CREATE TABLE IF NOT EXISTS registration_tokens (
   INDEX idx_email (email),
   INDEX idx_status (status),
   INDEX idx_expires_at (expires_at),
-  INDEX idx_created_at (created_at)
+  INDEX idx_created_at (created_at),
+  INDEX idx_state (state),
+  INDEX idx_aadhar_card_number (aadhar_card_number)
 );
 
 -- Member Certificates Table

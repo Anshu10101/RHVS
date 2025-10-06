@@ -2,10 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ProductHeader, ProductGrid, ProductModal } from '@/components/Home/Product';
+import { ProductHeader, ProductModal } from '@/components/Home/Product';
+import ProductCard from '@/components/Home/Product/ProductCard';
+import FeaturedProductsMarquee from '@/components/Home/Product/FeaturedProductsMarquee';
 import { useCart } from '@/contexts/CartContext';
 import type { Product } from '@/components/Home/Product/types';
+import { Slider } from '@/components/ui/slider';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ShoppingCart, Search, SlidersHorizontal, X, FilterX, ChevronDown } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetClose,
+  SheetFooter
+} from '@/components/ui/sheet';
 
 // Sample product data (fallback)
 const defaultProducts: Product[] = [
@@ -239,10 +260,26 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [products, setProducts] = useState<Product[]>(defaultProducts);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>(defaultProducts);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<string[]>([]);
+  type StateOption = { id: string; name: string };
+  type DistrictOption = { id: string; name: string };
+  const [stateOptions, setStateOptions] = useState<StateOption[]>([]);
+  const [districtOptions, setDistrictOptions] = useState<DistrictOption[]>([]);
+  const [selectedStateId, setSelectedStateId] = useState<string>('');
+  const [selectedStateName, setSelectedStateName] = useState<string>('All');
+  const [selectedDistrictName, setSelectedDistrictName] = useState<string>('All');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortOption, setSortOption] = useState('featured'); // 'featured', 'price-asc', 'price-desc', 'new'
   const { addToCart, getTotalItems } = useCart();
+  const router = useRouter();
 
   // Transform DB product to UI Product type
-  const transformDbProduct = (p: any, index: number): Product => {
+  const transformDbProduct = (p: any, index: number): Product & { detailId?: string } => {
     const numericId = Number(String(p.id).replace(/\D/g, "")) || index + 1;
     return {
       id: numericId,
@@ -251,41 +288,144 @@ export default function ProductsPage() {
       description: p.description ?? '',
       price: Number(p.price ?? 0),
       originalPrice: p.originalPrice != null ? Number(p.originalPrice) : undefined,
-      category: p.category ?? 'General',
+      category: (p.category && categoryMap[String(p.category)]) || p.category || 'General',
       image: p.imageUrl ?? '/product/p1.jpg',
       images: p.images ? (Array.isArray(p.images) ? p.images : []) : (p.imageUrl ? [p.imageUrl] : []),
       features: p.features ? (Array.isArray(p.features) ? p.features : []) : [],
       tags: p.tags ? (Array.isArray(p.tags) ? p.tags : []) : [],
+      state: (p.state as string) || (p.state_id as string) || undefined,
+      district: (p.district as string) || (p.district_id as string) || undefined,
       inStock: typeof p.stock === 'number' ? p.stock > 0 : true,
       rating: typeof p.rating === 'number' ? p.rating : 0,
       reviews: typeof p.reviews === 'number' ? p.reviews : 0,
       discount: typeof p.discount === 'number' ? p.discount : undefined,
       isNew: !!p.isNew,
       isFeatured: !!p.isFeatured,
-    };
+    } as Product & { detailId?: string };
   };
 
   useEffect(() => {
     const load = async () => {
       try {
+        // load categories first
+        const catRes = await fetch('/api/content/store/categories', { cache: 'no-store' });
+        const catData = await catRes.json();
+        if (catData?.success && Array.isArray(catData.categories)) {
+          const map: Record<string, string> = {};
+          for (const c of catData.categories as Array<{id: string | number, name: string}>) {
+            map[String(c.id)] = c.name;
+          }
+          setCategoryMap(map);
+        }
+
+        // load states for filters
+        const statesRes = await fetch('/api/states', { cache: 'no-store' });
+        const statesData = await statesRes.json();
+        if (statesData?.success && Array.isArray(statesData.data)) {
+          const opts: StateOption[] = statesData.data.map((s: any) => ({ id: String(s.id), name: String(s.name) }));
+          setStateOptions(opts);
+        }
+
+        // then load products
         const res = await fetch('/api/content/store', { cache: 'no-store' });
         const data = await res.json();
         if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
-          const mapped = data.products.map((p: any, i: number) => transformDbProduct(p, i));
-          setProducts(mapped);
-        } else {
-          // keep defaults
+          const mapped = data.products.map((p: any, i: number) => {
+            const base = transformDbProduct(p as any, i);
+            const categoryName = (catData?.categories ? (catData.categories.reduce((acc: Record<string, string>, c: {id: string | number, name: string}) => { acc[String(c.id)] = c.name; return acc; }, {} as Record<string,string>))[String((p as any).category)] : undefined) || base.category;
+            return { ...base, category: categoryName, detailId: String((p as any).id) };
+          });
+          // Remove duplicates based on product ID
+          const uniqueProducts = mapped.filter((product: Product, index: number, self: Product[]) => 
+            index === self.findIndex((p: Product) => p.id === product.id)
+          );
+          setProducts(uniqueProducts);
+          setFilteredProducts(uniqueProducts);
+          
+          // Extract unique categories
+          const uniqueCategories = Array.from(new Set(uniqueProducts.map((p: Product) => p.category))) as string[];
+          setCategories(uniqueCategories);
+          // Note: districts are populated dynamically via API when a state is picked
+          
+          // Set price range based on products
+          const prices = uniqueProducts.map((p: Product) => p.price);
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          setPriceRange([minPrice, maxPrice]);
         }
       } catch (_) {
         // keep defaults on error
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
+  // Apply filters when filter criteria change
+  useEffect(() => {
+    let result = [...products];
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter((p: Product) => 
+        p.name.toLowerCase().includes(query) || 
+        p.nameHindi.toLowerCase().includes(query) ||
+        p.description.toLowerCase().includes(query) ||
+        p.tags.some(tag => tag.toLowerCase().includes(query))
+      );
+    }
+    
+    // Filter by categories
+    if (selectedCategories.length > 0) {
+      result = result.filter((p: Product) => selectedCategories.includes(p.category));
+    }
+    
+    // Filter by state/district
+    if (selectedStateName !== 'All') {
+      result = result.filter((p: Product) => (p.state || '').toLowerCase() === selectedStateName.toLowerCase());
+    }
+    if (selectedDistrictName !== 'All') {
+      result = result.filter((p: Product) => (p.district || '').toLowerCase() === selectedDistrictName.toLowerCase());
+    }
+
+    // Filter by price range
+    result = result.filter((p: Product) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    
+    // Apply sorting (base sort by selected option)
+    switch(sortOption) {
+      case 'price-asc':
+        result.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        result.sort((a, b) => b.price - a.price);
+        break;
+      case 'new':
+        result.sort((a, b) => (a.isNew === b.isNew) ? 0 : a.isNew ? -1 : 1);
+        break;
+      case 'featured':
+      default:
+        result.sort((a, b) => (a.isFeatured === b.isFeatured) ? 0 : a.isFeatured ? -1 : 1);
+        break;
+    }
+    
+    // If location filters are set, prioritize by location (district > state)
+    if (selectedStateName !== 'All' || selectedDistrictName !== 'All') {
+      const score = (p: Product) => {
+        let s = 0;
+        if (selectedStateName !== 'All' && (p.state || '').toLowerCase() === selectedStateName.toLowerCase()) s += 1;
+        if (selectedDistrictName !== 'All' && (p.district || '').toLowerCase() === selectedDistrictName.toLowerCase()) s += 2;
+        return s;
+      };
+      result.sort((a, b) => score(b) - score(a));
+    }
+    
+    setFilteredProducts(result);
+  }, [products, searchQuery, selectedCategories, priceRange, sortOption, selectedStateName, selectedDistrictName]);
 
   const handleProductClick = (product: Product) => {
-    setSelectedProduct(product);
-    document.body.style.overflow = 'hidden';
+    const rawId = (product as any).detailId || product.id;
+    router.push(`/products/${rawId}`);
   };
 
   const handleCloseModal = () => {
@@ -308,42 +448,487 @@ export default function ProductsPage() {
     );
   };
 
+  const toggleCategory = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const resetFilters = () => {
+    setSelectedCategories([]);
+    setSearchQuery('');
+    setPriceRange([0, Math.max(...products.map((p: Product) => p.price))]);
+    setSortOption('featured');
+    setSelectedStateId('');
+    setSelectedStateName('All');
+    setSelectedDistrictName('All');
+    setDistrictOptions([]);
+  };
+
+  const handlePriceChange = (value: number[]) => {
+    setPriceRange([value[0], value[1]]);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
-      <ProductHeader 
-        title="Sacred Products"
-        titleHindi="पवित्र उत्पाद"
-        description="Discover our collection of authentic spiritual products, blessed by our gurus and crafted with devotion"
-        totalProducts={products.length}
-      />
-      {/* Sticky Cart Button */}
-      <div className="fixed top-6 right-6 z-50">
+      {/* Modern Header with Search */}
+      <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Sacred Products</h1>
+            
+            <div className="flex items-center gap-3">
+              {/* Search Bar */}
+              <div className="relative hidden md:block w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input 
+                  type="text" 
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500"
+                />
+              </div>
+              
+              {/* Mobile Filter Button */}
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="md:hidden cursor-pointer">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filters
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[350px]">
+                  <SheetHeader>
+                    <SheetTitle>Filter Products</SheetTitle>
+                    <SheetDescription>
+                      Refine your product search with these filters
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="py-4">
+                    <div className="space-y-6">
+                      {/* Mobile Search */}
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">Search</h3>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Input 
+                            type="text" 
+                            placeholder="Search products..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10 pr-4 py-2 w-full"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Mobile Categories */}
+                      <div>
+                        <h3 className="text-sm font-medium mb-2">Categories</h3>
+                        <div className="space-y-2">
+                          {categories.map((category) => (
+                            <div key={category} className="flex items-center">
+                              <Checkbox 
+                                id={`mobile-category-${category}`}
+                                checked={selectedCategories.includes(category)}
+                                onCheckedChange={() => toggleCategory(category)}
+                              />
+                              <label 
+                                htmlFor={`mobile-category-${category}`}
+                                className="ml-2 text-sm text-gray-700 cursor-pointer"
+                              >
+                                {category}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      
+                    {/* Mobile State/District */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Location</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">State</label>
+                          <Select
+                            value={selectedStateId || 'all'}
+                            onValueChange={async (id) => {
+                              const actualId = id === 'all' ? '' : id;
+                              setSelectedStateId(actualId);
+                              const opt = stateOptions.find(s => s.id === actualId);
+                              const name = opt?.name || 'All';
+                              setSelectedStateName(name);
+                              if (actualId) {
+                                const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
+                                const data = await res.json();
+                                if (data?.success && Array.isArray(data.data)) {
+                                  const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+                                  setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
+                                  setSelectedDistrictName('All');
+                                } else {
+                                  setDistrictOptions([{ id: 'all', name: 'All' }]);
+                                  setSelectedDistrictName('All');
+                                }
+                              } else {
+                                setDistrictOptions([{ id: 'all', name: 'All' }]);
+                                setSelectedDistrictName('All');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All States" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All States</SelectItem>
+                              {stateOptions.map((s) => (
+                                <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-500 mb-1">District</label>
+                          <Select
+                            value={selectedDistrictName || 'All'}
+                            onValueChange={(value) => setSelectedDistrictName(value)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="All Districts" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {districtOptions.length === 0 ? (
+                                <SelectItem value="All">All Districts</SelectItem>
+                              ) : (
+                                districtOptions.map((d) => (
+                                  <SelectItem key={d.id || d.name} value={d.name}>{d.name}</SelectItem>
+                                ))
+                              )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mobile Price Range */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-sm font-medium text-gray-700">Price Range</h3>
+                        </div>
+                        <div className="bg-orange-50/50 rounded-lg p-4 mb-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs text-gray-500">Min</span>
+                            <span className="text-xs text-gray-500">Max</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-lg font-bold text-orange-600">₹{priceRange[0].toLocaleString()}</span>
+                            <span className="text-gray-400">—</span>
+                            <span className="text-lg font-bold text-orange-600">₹{priceRange[1].toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <Slider
+                          defaultValue={[priceRange[0], priceRange[1]]}
+                          max={Math.max(...products.map((p: Product) => p.price))}
+                          step={100}
+                          value={[priceRange[0], priceRange[1]]}
+                          onValueChange={handlePriceChange}
+                          className="py-4"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <SheetFooter>
+                    <Button variant="outline" onClick={resetFilters} className="w-full">
+                      <FilterX className="h-4 w-4 mr-2" />
+                      Reset Filters
+                    </Button>
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
+              
+              {/* Desktop Sort Dropdown */}
+              <div className="relative inline-block">
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20 hidden group-focus:block">
+                  <div className="py-1">
+                    <button 
+                      onClick={() => setSortOption('featured')} 
+                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'featured' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      Featured
+                    </button>
+                    <button 
+                      onClick={() => setSortOption('price-asc')} 
+                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'price-asc' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      Price: Low to High
+                    </button>
+                    <button 
+                      onClick={() => setSortOption('price-desc')} 
+                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'price-desc' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      Price: High to Low
+                    </button>
+                    <button 
+                      onClick={() => setSortOption('new')} 
+                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'new' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
+                    >
+                      Newest First
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Cart Button */}
         <Link href="/cart">
           <Button 
             size="sm"
-            className="h-10 px-4 gap-2 bg-white/95 backdrop-blur-md border border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 shadow-xl rounded-full transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5"/>
-              <circle cx="9" cy="20" r="1"/>
-              <circle cx="20" cy="20" r="1"/>
-            </svg>
-            <span className="font-medium">Cart</span>
+                  className="h-10 px-4 gap-2 bg-orange-600 text-white hover:bg-orange-700 rounded-full transition-all duration-200 cursor-pointer"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="font-medium hidden sm:inline">Cart</span>
             {getTotalItems() > 0 && (
-              <span className="bg-orange-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                    <span className="bg-white text-orange-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
                 {getTotalItems()}
               </span>
             )}
           </Button>
         </Link>
+            </div>
+          </div>
+        </div>
       </div>
       
-      <ProductGrid 
-        products={products}
-        favorites={favorites}
+      {/* Featured Products Marquee */}
+      <FeaturedProductsMarquee products={products} onProductClick={handleProductClick} />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Desktop Sidebar Filters */}
+          <div className="hidden md:block w-64 flex-shrink-0">
+            <Card className="sticky top-24">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Filters</h2>
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="h-8 text-xs cursor-pointer">
+                    Reset All
+                  </Button>
+                </div>
+                
+                <div className="space-y-6">
+                  {/* Categories */}
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Categories</h3>
+                    <div className="space-y-2">
+                      {categories.map((category) => (
+                        <div key={category} className="flex items-center">
+                          <Checkbox 
+                            id={`category-${category}`}
+                            checked={selectedCategories.includes(category)}
+                            onCheckedChange={() => toggleCategory(category)}
+                          />
+                          <label 
+                            htmlFor={`category-${category}`}
+                            className="ml-2 text-sm text-gray-700 cursor-pointer"
+                          >
+                            {category}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* State/District */}
+                  <div>
+                    <h3 className="text-sm font-medium mb-3">Location</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">State</label>
+                        <Select
+                          value={selectedStateId || 'all'}
+                          onValueChange={async (id) => {
+                            const actualId = id === 'all' ? '' : id;
+                            setSelectedStateId(actualId);
+                            const opt = stateOptions.find(s => s.id === actualId);
+                            const name = opt?.name || 'All';
+                            setSelectedStateName(name);
+                            if (actualId) {
+                              const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
+                              const data = await res.json();
+                              if (data?.success && Array.isArray(data.data)) {
+                                const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+                                setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
+                                setSelectedDistrictName('All');
+                              } else {
+                                setDistrictOptions([{ id: 'all', name: 'All' }]);
+                                setSelectedDistrictName('All');
+                              }
+                            } else {
+                              setDistrictOptions([{ id: 'all', name: 'All' }]);
+                              setSelectedDistrictName('All');
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="All States" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All States</SelectItem>
+                            {stateOptions.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">District</label>
+                        <Select
+                          value={selectedDistrictName || 'All'}
+                          onValueChange={(value) => setSelectedDistrictName(value)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="All Districts" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {districtOptions.length === 0 ? (
+                              <SelectItem value="All">All Districts</SelectItem>
+                            ) : (
+                              districtOptions.map((d) => (
+                                <SelectItem key={d.id || d.name} value={d.name}>{d.name}</SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  {/* Price Range */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-medium text-gray-700">Price Range</h3>
+                    </div>
+                    <div className="bg-orange-50/50 rounded-lg p-4 mb-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs text-gray-500">Min</span>
+                        <span className="text-xs text-gray-500">Max</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-lg font-bold text-orange-600">₹{priceRange[0].toLocaleString()}</span>
+                        <span className="text-gray-400">—</span>
+                        <span className="text-lg font-bold text-orange-600">₹{priceRange[1].toLocaleString()}</span>
+                      </div>
+                    </div>
+                    <Slider
+                      defaultValue={[priceRange[0], priceRange[1]]}
+                      max={Math.max(...products.map((p: Product) => p.price))}
+                      step={100}
+                      value={[priceRange[0], priceRange[1]]}
+                      onValueChange={handlePriceChange}
+                      className="py-4"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Product Grid */}
+          <div className="flex-1">
+            {/* Active Filters */}
+            {(selectedCategories.length > 0 || searchQuery) && (
+              <div className="mb-6">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm text-gray-500">Active Filters:</span>
+                  {selectedCategories.map(category => (
+                    <Badge 
+                      key={category} 
+                      variant="secondary"
+                      className="px-3 py-1 flex items-center gap-1"
+                    >
+                      {category}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => toggleCategory(category)}
+                      />
+                    </Badge>
+                  ))}
+                  {searchQuery && (
+                    <Badge 
+                      variant="secondary"
+                      className="px-3 py-1 flex items-center gap-1"
+                    >
+                      Search: {searchQuery}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSearchQuery('')}
+                      />
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Results Count */}
+            <div className="mb-6 flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-medium">{filteredProducts.length}</span> of <span className="font-medium">{products.length}</span> products
+              </p>
+              <div className="md:hidden">
+                <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="cursor-pointer">
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
+                  Filters
+                </Button>
+              </div>
+            </div>
+            
+            {/* Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+              {filteredProducts.map((product, index) => (
+                <div
+                  key={product.id}
+                  style={{
+                    animationDelay: `${index * 50}ms`,
+                    animationName: 'fadeInUp',
+                    animationDuration: '0.5s',
+                    animationTimingFunction: 'ease-out',
+                    animationFillMode: 'forwards',
+                    opacity: 0,
+                    transform: 'translateY(20px)'
+                  }}
+                >
+                  <ProductCard
+                    product={product}
         onProductClick={handleProductClick}
         onToggleFavorite={handleToggleFavorite}
-      />
+                    isFavorite={favorites.includes(product.id)}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            {/* Empty State */}
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-16">
+                <div className="mb-4 text-gray-400">
+                  <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 14h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-1">No products found</h3>
+                <p className="text-gray-500 mb-4">Try adjusting your filters or search query</p>
+                <Button onClick={resetFilters} variant="outline" className="cursor-pointer">
+                  Reset Filters
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       
       <ProductModal 
         product={selectedProduct}

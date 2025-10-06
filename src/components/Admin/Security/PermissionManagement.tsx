@@ -51,7 +51,7 @@ export function PermissionManagement() {
 
   const permissions = [
     { id: 'edit_about', name: 'Edit About Page', description: 'Can modify the about page content' },
-    { id: 'edit_gallery', name: 'Edit Gallery', description: 'Can manage gallery images and albums' },
+    { id: 'manage_gallery', name: 'Manage Photos', description: 'Can manage photo events, galleries, and uploads' },
     { id: 'edit_store', name: 'Edit Product Store', description: 'Can manage products and store content' },
     { id: 'edit_events', name: 'Edit Events', description: 'Can create and manage events' },
     { id: 'manage_members', name: 'Manage Members', description: 'Can add, edit, and delete members' },
@@ -64,7 +64,7 @@ export function PermissionManagement() {
       id: '1',
       userId: '2',
       userName: 'Admin User 2',
-      permission: 'edit_gallery',
+      permission: 'manage_gallery',
       grantedBy: '1',
       grantedByName: 'Admin User',
       grantedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago

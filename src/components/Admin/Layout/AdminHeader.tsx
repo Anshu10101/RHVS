@@ -53,13 +53,6 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left side */}
         <div className="flex items-center space-x-4">
-          <div className="hidden sm:flex items-center space-x-2">
-            <img src="/favicon.ico" alt="Logo" className="h-8 w-8 rounded" />
-            <div>
-              <div className="text-lg font-semibold text-gray-900 leading-5">Admin Panel</div>
-              <div className="text-xs text-gray-500 -mt-0.5">Dashboard</div>
-            </div>
-          </div>
           <button
             onClick={onMenuClick}
             className="lg:hidden p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"

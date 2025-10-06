@@ -151,7 +151,7 @@ const defaultGalleryImages = [
   }
 ];
 
-const categories = ['All', 'Community', 'Spiritual', 'Culture', 'Education', 'Youth', 'Heritage'];
+const categories: string[] = [];
 const sortOptions = [
   { value: 'newest', label: 'Newest First' },
   { value: 'oldest', label: 'Oldest First' },
@@ -166,34 +166,55 @@ export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [galleryImages, setGalleryImages] = useState(defaultGalleryImages);
   const [filteredImages, setFilteredImages] = useState(defaultGalleryImages);
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedState, setSelectedState] = useState('All');
+  const [selectedDistrict, setSelectedDistrict] = useState('All');
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
+  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState('All');
+  const [availableEvents, setAvailableEvents] = useState<string[]>([]);
 
   // Load gallery data from API
   useEffect(() => {
     const loadGalleryData = async () => {
       try {
-        const response = await fetch('/api/content/gallery');
+        // Load filter options first
+        const filtersResponse = await fetch('/api/public/photos/filters');
+        const filtersData = await filtersResponse.json();
+        
+        if (filtersData.success) {
+          setAvailableStates(['All', ...filtersData.states]);
+          setAvailableDistricts(['All', ...filtersData.districts]);
+          setAvailableTags(filtersData.tags || []);
+          setAvailableEvents(['All', ...(filtersData.events || [])]);
+        }
+
+        // Load photos with current filters
+        const params = new URLSearchParams();
+        if (selectedState !== 'All') params.append('state', selectedState);
+        if (selectedDistrict !== 'All') params.append('district', selectedDistrict);
+        if (selectedEvent !== 'All') params.append('event', selectedEvent);
+        if (selectedTags.length > 0) params.append('tags', selectedTags.join(','));
+        
+        const response = await fetch(`/api/public/photos?${params}`);
         const data = await response.json();
         
         if (data.success && data.images && data.images.length > 0) {
-          // Transform database images to gallery format
-          const transformedImages = data.images.map((img: any, index: number) => ({
-            id: parseInt(img.id.replace(/\D/g, '')) || index + 1,
-            src: img.imageUrl || `/gallery/p${(index % 13) + 1}.jpg`,
-            alt: img.title || 'Gallery Image',
-            title: img.title || 'Untitled',
-            description: img.description || '',
-            category: img.tags && img.tags.length > 0 ? img.tags[0].charAt(0).toUpperCase() + img.tags[0].slice(1) : 'Community',
-            aspectRatio: ['wide', 'tall', 'square'][index % 3] as 'wide' | 'tall' | 'square',
-            date: new Date(img.createdAt).toISOString().split('T')[0],
-            tags: img.tags || []
-          }));
+          console.log('New API Images received:', data.images.length, 'images');
+          console.log('Sample image:', data.images[0]);
           
-          setGalleryImages(transformedImages);
-          setFilteredImages(transformedImages);
+          // API already returns data in GalleryImage format, no conversion needed
+          setGalleryImages(data.images);
+          setFilteredImages(data.images);
+        } else {
+          console.log('No images from new API, using default images');
+          setGalleryImages(defaultGalleryImages);
+          setFilteredImages(defaultGalleryImages);
         }
       } catch (error) {
         console.error('Error loading gallery data:', error);
@@ -206,16 +227,13 @@ export default function GalleryPage() {
     };
 
     loadGalleryData();
-  }, []);
+  }, [selectedState, selectedDistrict, selectedEvent, selectedTags]);
 
   // Filter and sort images
   useEffect(() => {
     let filtered = galleryImages;
     
-    // Filter by category
-    if (activeCategory !== 'All') {
-      filtered = filtered.filter(img => img.category === activeCategory);
-    }
+    // No category filtering - using dynamic filters only
     
     // Sort images
     filtered = [...filtered].sort((a, b) => {
@@ -244,7 +262,7 @@ export default function GalleryPage() {
     });
     
     setFilteredImages(filtered);
-  }, [activeCategory, sortBy, favorites]);
+  }, [sortBy, favorites]);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => 
@@ -286,6 +304,18 @@ export default function GalleryPage() {
         sortOptions={sortOptions}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        states={availableStates}
+        districts={availableDistricts}
+        selectedState={selectedState}
+        selectedDistrict={selectedDistrict}
+        onStateChange={setSelectedState}
+        onDistrictChange={setSelectedDistrict}
+        tags={availableTags}
+        selectedTags={selectedTags}
+        onTagsChange={setSelectedTags}
+        events={availableEvents}
+        selectedEvent={selectedEvent}
+        onEventChange={setSelectedEvent}
       />
       
       <GalleryGrid 

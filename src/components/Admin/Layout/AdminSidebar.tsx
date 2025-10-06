@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -53,27 +53,63 @@ const navigationItems = [
     name: 'Members',
     href: '/admin/members',
     icon: Users,
-    roles: ['superadmin', 'admin', 'verified_member'],
+    roles: ['superadmin', 'admin', 'verified_member', 'district_admin'],
     children: [
       {
         name: 'All Members',
         href: '/admin/members',
         icon: Users,
+        permission: 'view_members',
       },
       {
         name: 'Add Member',
         href: '/admin/members/add',
         icon: UserPlus,
+        permission: 'add_members',
+      },
+      {
+        name: 'District Admins',
+        href: '/admin/members/admins',
+        icon: Shield,
+        roles: ['superadmin'],
       },
       {
         name: 'Token Verification',
         href: '/admin/members/tokens',
         icon: Shield,
+        permission: 'verify_tokens', // District admins can verify tokens for their district
       },
       {
         name: 'Pending Verification',
         href: '/admin/members/pending',
         icon: UserCheck,
+        permission: 'verify_members', // District admins can verify members for their district
+      },
+    ],
+  },
+  {
+    name: 'Permission Management',
+    href: '/admin/permissions',
+    icon: Shield,
+    roles: ['superadmin'],
+    children: [
+      {
+        name: 'Assign Permissions',
+        href: '/admin/permissions/assign',
+        icon: UserCheck,
+        roles: ['superadmin'],
+      },
+      {
+        name: 'Permission Templates',
+        href: '/admin/permissions/templates',
+        icon: FileText,
+        roles: ['superadmin'],
+      },
+      {
+        name: 'Permission History',
+        href: '/admin/permissions/history',
+        icon: Activity,
+        roles: ['superadmin'],
       },
     ],
   },
@@ -81,7 +117,7 @@ const navigationItems = [
     name: 'Content Management',
     href: '/admin/content',
     icon: FileText,
-    roles: ['superadmin', 'admin'],
+    roles: ['superadmin', 'admin', 'district_admin'],
     children: [
       {
         name: 'About Page',
@@ -90,28 +126,22 @@ const navigationItems = [
         permission: 'edit_about',
       },
       {
-        name: 'Gallery',
-        href: '/admin/content/gallery',
+        name: 'Photo Management',
+        href: '/admin/photos',
         icon: Camera,
-        permission: 'edit_gallery',
+        permission: 'manage_gallery', // This matches the database permission name
       },
       {
         name: 'Product Store',
         href: '/admin/content/store',
         icon: Store,
-        permission: 'edit_store',
+        permission: 'add_products',
       },
       {
         name: 'News & Events',
         href: '/admin/content/news-events',
         icon: CalendarIcon,
         permission: 'edit_news_events',
-      },
-      {
-        name: 'Departments',
-        href: '/admin/content/departments',
-        icon: Building2,
-        permission: 'edit_departments',
       },
       {
         name: 'Offices',
@@ -123,25 +153,25 @@ const navigationItems = [
         name: 'Karya Samiti',
         href: '/admin/content/karya-samiti',
         icon: Users,
-        permission: 'edit_karya_samiti',
+        roles: ['superadmin'],
       },
       {
         name: 'Contact Info',
         href: '/admin/content/contact',
         icon: Phone,
-        permission: 'edit_contact',
+        roles: ['superadmin'],
       },
       {
         name: 'Navigation',
         href: '/admin/content/navigation',
         icon: Menu,
-        permission: 'edit_navigation',
+        roles: ['superadmin'],
       },
       {
         name: 'SEO & Meta',
         href: '/admin/content/seo',
         icon: Search,
-        permission: 'edit_seo',
+        roles: ['superadmin'],
       },
     ],
   },
@@ -149,21 +179,20 @@ const navigationItems = [
     name: 'Departments',
     href: '/admin/departments',
     icon: Building2,
-    roles: ['superadmin', 'admin'],
-    permission: 'manage_departments',
+    roles: ['superadmin'],
   },
   {
     name: 'Analytics',
     href: '/admin/analytics',
     icon: BarChart3,
-    roles: ['superadmin', 'admin'],
+    roles: ['superadmin', 'admin', 'district_admin'],
     permission: 'view_analytics',
   },
   {
     name: 'Activity Logs',
     href: '/admin/logs',
     icon: Activity,
-    roles: ['superadmin', 'admin'],
+    roles: ['superadmin'],
     permission: 'view_logs',
   },
   {
@@ -184,6 +213,13 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     return null;
   }
 
+  // Auto-expand Members section for district admins
+  useEffect(() => {
+    if (currentUser?.type === 'district_admin' && !expandedItems.includes('Members')) {
+      setExpandedItems(prev => [...prev, 'Members']);
+    }
+  }, [currentUser]); // Removed expandedItems from dependency array to prevent infinite loop
+
   const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const toggleExpanded = (itemName: string) => {
@@ -194,28 +230,58 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     );
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'verified_member':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+  const getRoleBadgeColor = (user: any) => {
+    if (user.type === 'superadmin') {
+      return 'bg-red-100 text-red-800 border-red-200';
+    } else if (user.type === 'district_admin') {
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    } else if (user.role === 'verified_member') {
+      return 'bg-green-100 text-green-800 border-green-200';
     }
+    return 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   const filteredItems = navigationItems.filter(item => {
     if (!currentUser) return false;
-    if (!item.roles.includes(currentUser.role)) return false;
-    if (item.permission && !hasPermission(item.permission)) return false;
     
-    // Hide superadmin-only items for regular admins
-    if (item.roles.includes('superadmin') && !isSuperAdmin) return false;
+    // Superadmins can see everything
+    if (currentUser.type === 'superadmin') {
+      return true;
+    }
     
-    return true;
+    // For district admins, check permissions and show member management
+    if (currentUser.type === 'district_admin') {
+      // Always show Members section for district admins
+      if (item.name === 'Members') {
+        return true;
+      }
+      
+      // Check if user has any of the required permissions for this item
+      const hasRequiredPermission = () => {
+        if (item.permission) {
+          return hasPermission(item.permission);
+        }
+        
+        // For parent items, check if user has permission for any child
+        if (item.children) {
+          return item.children.some(child => {
+            // For other sections, exclude superadmin-only children
+            if (child.roles && child.roles.includes('superadmin')) return false;
+            if (child.permission) {
+              return hasPermission(child.permission);
+            }
+            return false;
+          });
+        }
+        
+        return false;
+      };
+      
+      return hasRequiredPermission();
+    }
+    
+    // For other user types, use role-based filtering
+    return item.roles.includes(currentUser.role);
   });
 
   return (
@@ -269,13 +335,18 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                   <p className="text-xs text-gray-500 truncate">
                     {currentUser.email}
                   </p>
+                  {currentUser.district && (
+                    <p className="text-xs text-blue-600 truncate">
+                      District: {currentUser.district}
+                    </p>
+                  )}
                   <span
                     className={cn(
                       'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
-                      getRoleBadgeColor(currentUser.role)
+                      getRoleBadgeColor(currentUser)
                     )}
                   >
-                    {currentUser.role.replace('_', ' ').toUpperCase()}
+                    {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.role.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -320,7 +391,35 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     <div className="ml-6 mt-1 space-y-1">
                       {item.children!.map((child) => {
                         const isChildActive = pathname === child.href;
-                        const canAccess = !child.permission || hasPermission(child.permission);
+                        let canAccess = false;
+
+                        // For superadmin, check roles
+                        if (currentUser?.type === 'superadmin') {
+                          canAccess = !child.roles || child.roles.includes('superadmin');
+                        }
+                        // For district admin, check permissions and show relevant items
+                        else if (currentUser?.type === 'district_admin') {
+                          // Superadmin-only items
+                          if (child.roles && child.roles.includes('superadmin')) {
+                            canAccess = false;
+                          }
+                          // For Members section children, show them for district admins
+                          else if (item.name === 'Members') {
+                            canAccess = true; // Always show member management options for district admins
+                          }
+                          // Items with permissions
+                          else if (child.permission) {
+                            canAccess = hasPermission(child.permission);
+                          }
+                          // Default permission check
+                          else {
+                            canAccess = true;
+                          }
+                        }
+                        // For other user types
+                        else {
+                          canAccess = !child.permission || hasPermission(child.permission);
+                        }
 
                         if (!canAccess) return null;
 

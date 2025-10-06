@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
+import { getAdminScope } from '@/lib/admin-scope';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const products = await ContentService.getProducts();
+    // For the public store API, always show all products regardless of admin status
+    // District filtering only applies to admin dashboard, not public store
+    const filter = { unrestricted: true };
+
+    const products = await ContentService.getProducts(filter);
     const categories = await ContentService.getProductCategories();
 
     return NextResponse.json({ 

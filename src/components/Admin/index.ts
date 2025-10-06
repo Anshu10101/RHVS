@@ -7,8 +7,8 @@ export { AboutPageEditor } from './Content/AboutPageEditor';
 export { ContactPageEditor } from './Content/ContactPageEditor';
 export { ContentManagement } from './Content/ContentManagement';
 
-// Gallery
-export { GalleryPageEditor } from './Gallery/GalleryPageEditor';
+// Photos
+export { EventPhotoManager } from './Photos/EventPhotoManager';
 
 // Events & News
 export { EventsManagement } from './Events/EventsManagement';

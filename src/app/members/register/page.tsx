@@ -10,9 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Calendar, Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles } from 'lucide-react';
+import { Calendar, Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SearchableSelect } from '@/components/ui/searchable-select';
+import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
 
 const memberSchema = z.object({
@@ -20,6 +22,9 @@ const memberSchema = z.object({
   email: z.string().email('Invalid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   address: z.string().min(10, 'Address must be at least 10 characters'),
+  stateId: z.string().min(1, 'State is required'),
+  districtId: z.string().min(1, 'District is required'),
+  aadharCardNumber: z.string().min(12, 'Aadhar card number must be 12 digits').max(12, 'Aadhar card number must be 12 digits').regex(/^\d{12}$/, 'Aadhar card number must contain only digits'),
   fatherHusbandName: z.string().min(2, 'Father/Husband name is required'),
   motherWifeName: z.string().min(2, 'Mother/Wife name is required'),
   registrationDate: z.date().refine((date) => date !== null, {
@@ -32,18 +37,95 @@ const memberSchema = z.object({
 
 type MemberFormData = z.infer<typeof memberSchema>;
 
+interface State {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface District {
+  id: number;
+  name: string;
+}
+
 export default function MemberRegistrationPage() {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [states, setStates] = useState<State[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
 
-  // Simulate initial loading
+  // Fetch states on component mount
   useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const response = await fetch('/api/states');
+        const data = await response.json();
+        if (data.success) {
+          setStates(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching states:', error);
+      }
+    };
+    
+    fetchStates();
+    
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch districts function for async searchable select
+  const fetchDistrictsAsync = async (searchTerm: string) => {
+    const stateId = form.getValues('stateId');
+    if (!stateId) {
+      return [];
+    }
+    
+    try {
+      const url = searchTerm.trim() 
+        ? `/api/districts?stateId=${stateId}&search=${encodeURIComponent(searchTerm)}`
+        : `/api/districts?stateId=${stateId}`;
+        
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data.map((district: any) => ({
+          value: district.id.toString(),
+          label: district.name
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+      return [];
+    }
+  };
+
+  // Fetch districts when state changes (for backward compatibility)
+  const fetchDistricts = async (stateId: string) => {
+    if (!stateId) {
+      setDistricts([]);
+      return;
+    }
+    
+    setLoadingDistricts(true);
+    try {
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
 
   const form = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
@@ -52,6 +134,9 @@ export default function MemberRegistrationPage() {
       email: '',
       phone: '',
       address: '',
+      stateId: '',
+      districtId: '',
+      aadharCardNumber: '',
       fatherHusbandName: '',
       motherWifeName: '',
       registrationDate: new Date(),
@@ -65,9 +150,9 @@ export default function MemberRegistrationPage() {
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('File size must be less than 5MB');
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
         return;
       }
       
@@ -92,16 +177,16 @@ export default function MemberRegistrationPage() {
     try {
       // Show OTP field immediately for better UX
     setOtpSent(true);
-      const response = await fetch('/api/register-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'send-otp',
-          data: { existingMemberRegNumber }
-        }),
-      });
+       const response = await fetch('/api/register-token', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           action: 'send-otp',
+           data: { existingMemberRegNumber }
+         }),
+       });
 
       const result = await response.json();
       
@@ -127,20 +212,26 @@ export default function MemberRegistrationPage() {
     setIsSubmitting(true);
     
     try {
-      // First verify OTP
-      const otpResponse = await fetch('/api/register-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'verify-otp',
-          data: {
-            existingMemberRegNumber: data.existingMemberRegNumber,
-            otp: data.otp
-          }
-        }),
-      });
+      // Validate profile photo is required
+      if (!profilePhoto) {
+        form.setError('root', { message: 'Profile photo is required for registration' });
+        setIsSubmitting(false);
+        return;
+      }
+       // First verify OTP
+       const otpResponse = await fetch('/api/register-token', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           action: 'verify-otp',
+           data: {
+             existingMemberRegNumber: data.existingMemberRegNumber,
+             otp: data.otp
+           }
+         }),
+       });
 
       const otpResult = await otpResponse.json();
       
@@ -150,43 +241,64 @@ export default function MemberRegistrationPage() {
         return;
       }
 
-      // Upload profile photo (you'll need to implement this)
+      // Upload profile photo
       let profilePhotoPath = null;
       if (profilePhoto) {
-        // For now, we'll just store the file name
-        // In production, you'd upload to a cloud storage service
-        profilePhotoPath = `uploads/${Date.now()}-${profilePhoto.name}`;
+        try {
+          const formData = new FormData();
+          formData.append('file', profilePhoto);
+          
+          const uploadResponse = await fetch('/api/upload/profile', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          const uploadResult = await uploadResponse.json();
+          
+          if (uploadResult.success) {
+            profilePhotoPath = uploadResult.url;
+          } else {
+            form.setError('root', { message: 'Failed to upload profile photo: ' + uploadResult.error });
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (error) {
+          form.setError('root', { message: 'Failed to upload profile photo' });
+          setIsSubmitting(false);
+          return;
+        }
       }
 
-      // Register the member (now generates token instead of direct registration)
-      const registerResponse = await fetch('/api/register-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'register-member',
-          data: {
-            name: data.name,
-            email: data.email,
-            phone: data.phone,
-            address: data.address,
-            fatherHusbandName: data.fatherHusbandName,
-            motherWifeName: data.motherWifeName,
-            registrationDate: data.registrationDate.toISOString().split('T')[0],
-            existingMemberRegNumber: data.existingMemberRegNumber,
-            profilePhotoPath,
-            district: '', // Add district field
-            department: '' // Add department field
-          }
-        }),
-      });
+       // Register the member (generates token for admin verification)
+       const registerResponse = await fetch('/api/register-token', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           action: 'register-member',
+           data: {
+             name: data.name,
+             email: data.email,
+             phone: data.phone,
+             address: data.address,
+             stateId: data.stateId,
+             districtId: data.districtId,
+             aadharCardNumber: data.aadharCardNumber,
+             fatherHusbandName: data.fatherHusbandName,
+             motherWifeName: data.motherWifeName,
+             registrationDate: data.registrationDate.toISOString().split('T')[0],
+             existingMemberRegNumber: data.existingMemberRegNumber,
+             profilePhotoPath
+           }
+         }),
+       });
 
       const registerResult = await registerResponse.json();
       
       if (registerResult.success) {
         // Success message for token-based registration
-        alert(`Registration token generated successfully! Please check your email for the verification token. Bring this token to the RHVS admin office for final verification and membership approval. Token: ${registerResult.token}`);
+        alert(`Registration token generated successfully! Please check your email for the verification token: ${registerResult.token}. Bring this token to the RHVS admin office for final verification and membership approval.`);
         
         // Reset form
         form.reset();
@@ -415,7 +527,7 @@ export default function MemberRegistrationPage() {
                         </Label>
                         <p className="text-sm text-orange-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
                           <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 5MB • High resolution recommended
+                          JPG, PNG up to 2MB • High resolution recommended • Required
                           <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
                         </p>
                       </div>
@@ -560,6 +672,99 @@ export default function MemberRegistrationPage() {
                             <Textarea
                               placeholder="Enter complete address"
                               className="min-h-[140px] pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg resize-none font-medium p-4"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* State and District */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-1000">
+                    <FormField
+                      control={form.control}
+                      name="stateId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            State *
+                          </FormLabel>
+                          <FormControl>
+                            <SearchableSelect
+                              options={states.map(state => ({
+                                value: state.id.toString(),
+                                label: state.name
+                              }))}
+                              value={field.value}
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('districtId', ''); // Reset district when state changes
+                                if (value) {
+                                  fetchDistricts(value);
+                                } else {
+                                  setDistricts([]);
+                                }
+                              }}
+                              placeholder="Search or select state..."
+                              searchPlaceholder="Type state name..."
+                              emptyText="No states found."
+                              className="w-full"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="districtId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            District *
+                          </FormLabel>
+                          <FormControl>
+                            <AsyncSearchableSelect
+                              fetchOptions={fetchDistrictsAsync}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder={!form.watch('stateId') ? "Select state first" : "Search or select district..."}
+                              searchPlaceholder="Type district name..."
+                              emptyText="No districts found."
+                              disabled={!form.watch('stateId')}
+                              className="w-full"
+                              maxHeight={250}
+                              debounceMs={300}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Aadhar Card Number */}
+                  <FormField
+                    control={form.control}
+                    name="aadharCardNumber"
+                    render={({ field }) => (
+                      <FormItem className="animate-in slide-in-from-bottom-4 duration-500 delay-1100">
+                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Aadhar Card Number *
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative group">
+                            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
+                            <Input
+                              placeholder="Enter 12-digit Aadhar card number"
+                              maxLength={12}
+                              className="pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium p-4"
                               {...field}
                             />
                           </div>

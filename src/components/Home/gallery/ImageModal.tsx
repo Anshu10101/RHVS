@@ -46,65 +46,76 @@ export default function ImageModal({ image, isOpen, onClose, favorites, onToggle
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-      <div className="relative max-w-4xl max-h-[90vh] mx-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm">
+      <div className="relative w-full h-full">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute -top-12 right-0 p-2 text-white hover:text-orange-400 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-white hover:text-orange-400 transition-colors z-20 bg-black/50 rounded-full"
         >
           <X size={24} />
         </button>
 
-        {/* Image container */}
-        <div className="relative rounded-2xl overflow-hidden bg-white shadow-2xl">
-          <div className="relative h-[70vh] w-full">
+        {/* Image container - full screen */}
+        <div className="w-full h-full flex items-center justify-center p-4">
+          <div className="relative max-w-full max-h-full">
             <Image
               src={image.src}
               alt={image.alt}
-              fill
-              sizes="(max-width: 1024px) 90vw, 80vw"
-              className="object-contain"
+              width={0}
+              height={0}
+              sizes="100vw"
+              className="w-auto h-auto max-w-full max-h-full object-contain"
               priority
             />
           </div>
+        </div>
 
-          {/* Image info */}
-          <div className="p-6 bg-white">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className={`${devanagari.className} text-2xl font-bold text-orange-900 mb-2`}>
+        {/* Image info overlay - positioned over image */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 text-white">
+                <h3 className={`${devanagari.className} text-2xl font-bold mb-2`}>
                   {image.title}
                 </h3>
-                <p className="text-gray-600 mb-2">{image.description}</p>
-                <span className="inline-block bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm">
-                  {image.category}
-                </span>
+                {image.description && (
+                  <p className="text-gray-200 text-base mb-3 leading-relaxed">{image.description}</p>
+                )}
+                {image.tags && image.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {image.tags.map((tag, index) => (
+                      <span key={index} className="inline-block bg-orange-600/90 text-white px-3 py-1 rounded-full text-sm font-medium">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 ml-6">
                 <button
                   onClick={() => onToggleFavorite(image.id)}
-                  className="p-2 rounded-full hover:bg-orange-100 transition-colors"
+                  className="p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"
                 >
                   <Heart 
                     size={20} 
                     className={`transition-colors ${
-                      favorites.includes(image.id) ? 'text-red-500 fill-red-500' : 'text-gray-600'
+                      favorites.includes(image.id) ? 'text-red-400 fill-red-400' : 'text-white'
                     }`}
                   />
                 </button>
                 <button
                   onClick={() => handleDownload(image.src, image.title)}
-                  className="p-2 rounded-full hover:bg-orange-100 transition-colors"
+                  className="p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"
                 >
-                  <Download size={20} className="text-gray-600" />
+                  <Download size={20} className="text-white" />
                 </button>
                 <button
                   onClick={() => handleShare(image)}
-                  className="p-2 rounded-full hover:bg-orange-100 transition-colors"
+                  className="p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"
                 >
-                  <Share2 size={20} className="text-gray-600" />
+                  <Share2 size={20} className="text-white" />
                 </button>
               </div>
             </div>

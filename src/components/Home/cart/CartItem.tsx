@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Minus, Plus, Trash2, Heart } from 'lucide-react';
+import { Minus, Plus, Trash2, Phone, Mail, MessageCircle, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Noto_Serif_Devanagari } from 'next/font/google';
 import type { CartItem as CartItemType } from '@/contexts/CartContext';
@@ -13,16 +13,12 @@ interface CartItemProps {
   item: CartItemType;
   onUpdateQuantity: (productId: number, quantity: number) => void;
   onRemove: (productId: number) => void;
-  onToggleFavorite: (productId: number) => void;
-  isFavorite: boolean;
 }
 
 export default function CartItem({ 
   item, 
   onUpdateQuantity, 
-  onRemove, 
-  onToggleFavorite, 
-  isFavorite 
+  onRemove
 }: CartItemProps) {
   const { product, quantity } = item;
   const totalPrice = product.price * quantity;
@@ -49,7 +45,7 @@ export default function CartItem({
                 {product.nameHindi}
               </h3>
               <p className="text-sm text-gray-600 mb-2">{product.name}</p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
                   {product.category}
                 </span>
@@ -58,21 +54,17 @@ export default function CartItem({
                 ) : (
                   <span className="text-xs text-red-600">Out of Stock</span>
                 )}
+                {product.seller_name && (
+                  <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full flex items-center gap-1">
+                    <User size={10} />
+                    {product.seller_name}
+                  </span>
+                )}
               </div>
             </div>
             
             {/* Action Buttons */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onToggleFavorite(product.id)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isFavorite
-                    ? 'bg-red-100 text-red-600'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                <Heart size={16} className={isFavorite ? 'fill-current' : ''} />
-              </button>
               <button
                 onClick={() => onRemove(product.id)}
                 className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
@@ -81,6 +73,65 @@ export default function CartItem({
               </button>
             </div>
           </div>
+
+          {/* Seller Information */}
+          {product.seller_name && (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <User size={14} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Seller: {product.seller_name}</span>
+                {product.seller_business_name && (
+                  <span className="text-xs text-gray-500">({product.seller_business_name})</span>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-gray-600">
+                {product.seller_phone && (
+                  <button
+                    onClick={() => window.open(`tel:${product.seller_phone}`, '_self')}
+                    className="flex items-center gap-1 hover:text-green-600 transition-colors cursor-pointer"
+                    title="Call seller"
+                  >
+                    <Phone size={12} />
+                    <span>{product.seller_phone}</span>
+                  </button>
+                )}
+                {product.seller_whatsapp && (
+                  <button
+                    onClick={() => {
+                      const message = `Hello! I'm interested in the product: ${product.name}. Price: ₹${product.price}`;
+                      const whatsappUrl = `https://wa.me/${product.seller_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    className="flex items-center gap-1 hover:text-green-600 transition-colors cursor-pointer"
+                    title="WhatsApp seller"
+                  >
+                    <MessageCircle size={12} />
+                    <span>{product.seller_whatsapp}</span>
+                  </button>
+                )}
+                {product.seller_email && (
+                  <button
+                    onClick={() => {
+                      const subject = `Inquiry about: ${product.name}`;
+                      const body = `Hello,\n\nI'm interested in the product: ${product.name}\nPrice: ₹${product.price}\n\nPlease provide more details.\n\nThank you!`;
+                      const mailtoUrl = `mailto:${product.seller_email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      window.open(mailtoUrl, '_self');
+                    }}
+                    className="flex items-center gap-1 hover:text-blue-600 transition-colors cursor-pointer"
+                    title="Email seller"
+                  >
+                    <Mail size={12} />
+                    <span>{product.seller_email}</span>
+                  </button>
+                )}
+              </div>
+              {product.seller_delivery_info && (
+                <div className="mt-2 text-xs text-gray-600">
+                  <strong>Delivery:</strong> {product.seller_delivery_info}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Price and Quantity */}
           <div className="flex justify-between items-center">

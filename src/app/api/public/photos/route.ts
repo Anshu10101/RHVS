@@ -1,0 +1,74 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { ContentService } from '@/lib/content';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const eventType = searchParams.get('eventType');
+    const state = searchParams.get('state');
+    const district = searchParams.get('district');
+    const event = searchParams.get('event');
+    const tags = searchParams.get('tags');
+    const limit = searchParams.get('limit');
+    const featured = searchParams.get('featured');
+
+    // Get all public photos with event information
+    const scope = { unrestricted: true }; // Public access
+    
+    const filters = {
+      isVisible: true,
+      isApproved: true,
+      isFeatured: featured === 'true' ? true : undefined,
+      state: state || undefined,
+      district: district || undefined,
+      event: event || undefined,
+      tags: tags ? tags.split(',') : undefined
+    };
+
+    // If specific event type requested, filter by it
+    if (eventType && eventType !== 'all') {
+      // This would need to be implemented in ContentService.getPhotos to support eventType filtering
+    }
+
+    const photos = await ContentService.getPhotos(scope, filters);
+    
+    // Transform photos for public gallery format
+    const galleryImages = photos
+      .filter(photo => photo.filePath) // Only photos with valid file paths
+      .slice(0, limit ? parseInt(limit) : undefined) // Apply limit if specified
+      .map((photo, index) => ({
+        id: index + 1,
+        src: photo.filePath,
+        alt: photo.caption || photo.filename || 'Gallery Image',
+        title: photo.caption || photo.filename || 'Untitled',
+        description: photo.description || photo.caption || '',
+        category: photo.eventType ? 
+          photo.eventType.charAt(0).toUpperCase() + photo.eventType.slice(1) : 
+          'Community',
+        aspectRatio: ['wide', 'tall', 'square'][index % 3] as 'wide' | 'tall' | 'square',
+        date: photo.createdAt ? new Date(photo.createdAt).toISOString().split('T')[0] : 
+          new Date().toISOString().split('T')[0],
+        tags: photo.tags || [],
+        eventName: photo.eventName || '',
+        eventDate: photo.eventDate || null,
+        photographer: photo.photographer || '',
+        isFeatured: photo.isFeatured || false,
+        district: photo.district || '',
+        state: photo.state || ''
+      }));
+
+    return NextResponse.json({
+      success: true,
+      images: galleryImages,
+      total: photos.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching public photos:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to fetch photos',
+      images: []
+    }, { status: 500 });
+  }
+}

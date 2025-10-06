@@ -132,3 +132,20 @@ html[data-lang="en"] body {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* Event name marquee animation */
+@keyframes event-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: event-marquee 10s linear infinite;
+  animation-delay: 2s;
+  padding-right: 2rem;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}

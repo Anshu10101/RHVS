@@ -1,244 +1,171 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Shield, Users, ArrowRight, LogOut } from 'lucide-react';
+import Link from 'next/link';
 import { useAdmin } from '@/contexts/AdminContext';
-import { Card } from '@/components/ui/card';
-import {
-  Users,
-  UserPlus,
-  Calendar,
-  ShoppingBag,
-  TrendingUp,
-  Activity,
-  Building2,
-  Image,
-  FileText,
-  Globe,
-  Store,
-  Camera,
-  Calendar as CalendarIcon,
-  BarChart3,
-} from 'lucide-react';
+import { AdminProvider } from '@/contexts/AdminContext';
 
-export default function AdminDashboard() {
-  const { currentUser, members, activityLogs, hasPermission } = useAdmin();
+function AdminLandingContent() {
+  const { currentUser, logout } = useAdmin();
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-  const stats = [
-    {
-      name: 'Total Members',
-      value: members.length,
-      change: '+12%',
-      changeType: 'positive',
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-    },
-    {
-      name: 'Pending Verification',
-      value: members.filter(m => m.status === 'pending').length,
-      change: '+3',
-      changeType: 'neutral',
-      icon: UserPlus,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-    },
-    {
-      name: 'Active Districts',
-      value: new Set(members.map(m => m.district)).size,
-      change: '+1',
-      changeType: 'positive',
-      icon: Building2,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-    },
-    {
-      name: 'Recent Activities',
-      value: activityLogs.length,
-      change: '+8',
-      changeType: 'positive',
-      icon: Activity,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-    },
-  ];
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/me', { 
+          cache: 'no-store', 
+          credentials: 'include' 
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            // User is already logged in, redirect to dashboard
+            router.push('/admin/dashboard');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const quickActions = [
-    {
-      name: 'Add New Member',
-      description: 'Register a new member with OTP verification',
-      href: '/admin/members/add',
-      icon: UserPlus,
-      color: 'bg-blue-500 hover:bg-blue-600',
-      permission: 'add_member',
-    },
-    {
-      name: 'Manage Gallery',
-      description: 'Upload and organize gallery images',
-      href: '/admin/content/gallery',
-      icon: Camera,
-      color: 'bg-green-500 hover:bg-green-600',
-      permission: 'edit_gallery',
-    },
-    {
-      name: 'Create Event',
-      description: 'Add new events and announcements',
-      href: '/admin/content/news-events',
-      icon: CalendarIcon,
-      color: 'bg-purple-500 hover:bg-purple-600',
-      permission: 'edit_events',
-    },
-    {
-      name: 'View Analytics',
-      description: 'Check detailed analytics and reports',
-      href: '/admin/analytics',
-      icon: BarChart3,
-      color: 'bg-orange-500 hover:bg-orange-600',
-      permission: 'view_analytics',
-    },
-  ];
+    checkAuth();
+  }, [router]);
 
-  const recentActivities = activityLogs.slice(0, 5);
+  const handleLogout = async () => {
+    await logout();
+    setLoading(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+      </div>
+    );
+  }
+
+  if (currentUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-2xl w-full space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Welcome, {currentUser.name}</h1>
+            <p className="mt-2 text-gray-600">
+              {currentUser.type === 'superadmin' ? 'Superadmin Dashboard' : 'District Admin Dashboard'}
+            </p>
+          </div>
+          
+          <div className="flex justify-center space-x-4">
+            <Button onClick={() => router.push('/admin/dashboard')} className="bg-orange-600 hover:bg-orange-700">
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Go to Dashboard
+            </Button>
+            <Button onClick={handleLogout} variant="outline">
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-lg p-4 text-white">
-        <h1 className="text-2xl font-bold mb-2">
-          Welcome back, {currentUser?.name}!
-        </h1>
-        <p className="text-orange-100">
-          Here's what's happening with your RHVS community today.
-        </p>
-      </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl w-full space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Admin Portal</h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Choose your login type to access the administrative panel
+          </p>
+        </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.name} className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className={`text-sm ${
-                  stat.changeType === 'positive' ? 'text-green-600' : 
-                  stat.changeType === 'negative' ? 'text-red-600' : 'text-gray-600'
-                }`}>
-                  {stat.change} from last month
-                </p>
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Superadmin Login */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="text-center">
+              <div className="mx-auto h-16 w-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <Shield className="h-8 w-8 text-red-600" />
               </div>
-              <div className={`p-3 rounded-full ${stat.bgColor}`}>
-                <stat.icon className={`h-6 w-6 ${stat.color}`} />
-              </div>
-            </div>
+              <CardTitle className="text-2xl text-red-600">Superadmin</CardTitle>
+              <CardDescription className="text-lg">
+                Full administrative access to all features and settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li>• Manage all districts and members</li>
+                <li>• Appoint district admins</li>
+                <li>• Access all system settings</li>
+                <li>• View activity logs and analytics</li>
+                <li>• Full content management control</li>
+              </ul>
+              <Link href="/admin/superadmin/login" className="block">
+                <Button className="w-full bg-red-600 hover:bg-red-700">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Superadmin Login
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
           </Card>
-        ))}
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Quick Actions */}
-        <div className="lg:col-span-2">
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {quickActions
-                .filter(action => !action.permission || hasPermission(action.permission))
-                .map((action) => (
-                  <a
-                    key={action.name}
-                    href={action.href}
-                    className="block p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${action.color} text-white`}>
-                        <action.icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{action.name}</h3>
-                        <p className="text-sm text-gray-600">{action.description}</p>
-                      </div>
-                    </div>
-                  </a>
-                ))}
-            </div>
+          {/* District Admin Login */}
+          <Card className="hover:shadow-lg transition-shadow duration-200">
+            <CardHeader className="text-center">
+              <div className="mx-auto h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Users className="h-8 w-8 text-blue-600" />
+              </div>
+              <CardTitle className="text-2xl text-blue-600">District Admin</CardTitle>
+              <CardDescription className="text-lg">
+                Manage your assigned district with limited permissions
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li>• View and manage district members</li>
+                <li>• Edit district-specific content</li>
+                <li>• Manage gallery and news</li>
+                <li>• View district analytics</li>
+                <li>• Permission-based access control</li>
+              </ul>
+              <Link href="/admin/login" className="block">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  <Users className="mr-2 h-4 w-4" />
+                  District Admin Login
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
           </Card>
         </div>
 
-        {/* Recent Activities */}
-        <div>
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h2>
-            <div className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
-                  <div className="h-2 w-2 bg-orange-500 rounded-full mt-2" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.details}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {activity.timestamp.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <a
-                href="/admin/logs"
-                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
-              >
-                View all activities →
-              </a>
-            </div>
-          </Card>
+        <div className="text-center">
+          <Link 
+            href="/" 
+            className="text-orange-600 hover:text-orange-700 font-medium"
+          >
+            ← Back to Home
+          </Link>
         </div>
       </div>
-
-      {/* Content Management Overview */}
-      {hasPermission('edit_content') && (
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Content Management</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <a
-              href="/admin/content/about"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-            >
-              <Globe className="h-8 w-8 text-blue-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">About Page</h3>
-                <p className="text-sm text-gray-600">Edit organization info</p>
-              </div>
-            </a>
-            <a
-              href="/admin/content/gallery"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-            >
-              <Camera className="h-8 w-8 text-green-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">Gallery</h3>
-                <p className="text-sm text-gray-600">Manage images</p>
-              </div>
-            </a>
-            <a
-              href="/admin/content/store"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-            >
-              <Store className="h-8 w-8 text-purple-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">Product Store</h3>
-                <p className="text-sm text-gray-600">Manage products</p>
-              </div>
-            </a>
-            <a
-              href="/admin/content/news-events"
-              className="flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-            >
-              <CalendarIcon className="h-8 w-8 text-orange-600" />
-              <div>
-                <h3 className="font-medium text-gray-900">Events</h3>
-                <p className="text-sm text-gray-600">Manage events</p>
-              </div>
-            </a>
-          </div>
-        </Card>
-      )}
     </div>
+  );
+}
+
+export default function AdminLandingPage() {
+  return (
+    <AdminProvider>
+      <AdminLandingContent />
+    </AdminProvider>
   );
 }

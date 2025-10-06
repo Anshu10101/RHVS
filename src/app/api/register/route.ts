@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { generateOTP, sendOTPEmail, sendWelcomeEmail } from '@/lib/email';
+import { generateMemberRegistrationNumber } from '@/lib/member-registration';
 
 // In-memory OTP store (resets on server restart/redeploy)
 const otpStore: Map<string, { otp: string; email: string; expiresAt: number; used: boolean }> = new Map();
@@ -80,6 +81,9 @@ export async function POST(request: NextRequest) {
         email, 
         phone, 
         address, 
+        stateId,
+        districtId,
+        aadharCardNumber,
         fatherHusbandName, 
         motherWifeName, 
         registrationDate,
@@ -98,18 +102,25 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate new member registration number
-      const memberCountQuery = 'SELECT COUNT(*) as count FROM members';
-      const countResult: any = await executeQuery(memberCountQuery);
-      const memberCount = countResult[0].count as number;
-      const newMemberRegNumber = `RHVS${String(memberCount + 1).padStart(6, '0')}`;
+      // Get state and district names from IDs
+      const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
+      const stateResult: any = await executeQuery(stateQuery, [stateId]);
+      const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
+
+      const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
+      const districtResult: any = await executeQuery(districtQuery, [districtId]);
+      const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
+
+      // Generate new member registration number - maintain sequential flow
+      const newMemberRegNumber = await generateMemberRegistrationNumber();
 
       // Insert new member
       const insertQuery = `
         INSERT INTO members (
-          member_reg_number, name, email, phone, address, father_husband_name, mother_wife_name, 
-          registration_date, existing_member_reg_number, profile_photo_path, verified_by_member_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          member_reg_number, name, email, phone, address, state, district, aadhar_card_number, 
+          father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
+          profile_photo_path, verified_by_member_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       try {
@@ -124,6 +135,9 @@ export async function POST(request: NextRequest) {
           email,
           phone,
           address,
+          stateName,
+          districtName,
+          aadharCardNumber,
           fatherHusbandName,
           motherWifeName,
           registrationDate,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
+import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 
 // GET - Fetch about page sections
 export async function GET() {
@@ -18,6 +19,13 @@ export async function GET() {
 // POST - Save about page sections
 export async function POST(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_about', 'manage_about'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { sections, updatedBy } = body;
 

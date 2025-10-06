@@ -88,11 +88,11 @@ export default function NewsEventsEditor() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // News form state
   const [newsForm, setNewsForm] = useState({
     title: '',
-    title_hindi: '',
     content: '',
     excerpt: '',
     image_path: '',
@@ -106,7 +106,6 @@ export default function NewsEventsEditor() {
   // Event form state
   const [eventForm, setEventForm] = useState({
     title: '',
-    title_hindi: '',
     description: '',
     event_date: '',
     event_time: '',
@@ -155,6 +154,37 @@ export default function NewsEventsEditor() {
   const handleSave = async () => {
     if (!currentUser) return;
 
+    // Validate content limits for news
+    if (activeTab === 'news') {
+      if (newsForm.title.length > 255) {
+        alert('Title cannot exceed 255 characters');
+        return;
+      }
+      if (newsForm.excerpt.length > 500) {
+        alert('Excerpt cannot exceed 500 characters');
+        return;
+      }
+      if (newsForm.content.length > 5000) {
+        alert('Content cannot exceed 5000 characters');
+        return;
+      }
+      if (!newsForm.title.trim() || !newsForm.content.trim()) {
+        alert('Title and content are required');
+        return;
+      }
+    }
+    // Validate content limits for events
+    if (activeTab === 'events') {
+      if (!eventForm.title.trim() || !eventForm.description.trim() || !eventForm.event_date.trim()) {
+        alert('Title, description and event date are required');
+        return;
+      }
+      if (eventForm.description.length > 5000) {
+        alert('Description cannot exceed 5000 characters');
+        return;
+      }
+    }
+
     try {
       const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
       const data = activeTab === 'news' 
@@ -198,12 +228,44 @@ export default function NewsEventsEditor() {
     }
   };
 
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', activeTab);
+
+      const response = await fetch('/api/upload/content', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (activeTab === 'news') {
+          setNewsForm({ ...newsForm, image_path: result.url });
+        } else {
+          setEventForm({ ...eventForm, image_path: result.url });
+        }
+      } else {
+        alert('Failed to upload image: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const resetForm = () => {
     setEditingItem(null);
     setIsCreating(false);
     setNewsForm({
       title: '',
-      title_hindi: '',
       content: '',
       excerpt: '',
       image_path: '',
@@ -215,7 +277,6 @@ export default function NewsEventsEditor() {
     });
     setEventForm({
       title: '',
-      title_hindi: '',
       description: '',
       event_date: '',
       event_time: '',
@@ -241,7 +302,6 @@ export default function NewsEventsEditor() {
       const newsItem = item as News;
       setNewsForm({
         title: newsItem.title,
-        title_hindi: newsItem.title_hindi || '',
         content: newsItem.content,
         excerpt: newsItem.excerpt || '',
         image_path: newsItem.image_path || '',
@@ -255,7 +315,6 @@ export default function NewsEventsEditor() {
       const eventItem = item as Event;
       setEventForm({
         title: eventItem.title,
-        title_hindi: eventItem.title_hindi || '',
         description: eventItem.description,
         event_date: eventItem.event_date,
         event_time: eventItem.event_time || '',
@@ -429,23 +488,13 @@ export default function NewsEventsEditor() {
                       }
                     }}
                     placeholder="Enter title"
+                    maxLength={255}
                   />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {(activeTab === 'news' ? newsForm.title : eventForm.title).length}/255 characters
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="title_hindi">Title (Hindi)</Label>
-                  <Input
-                    id="title_hindi"
-                    value={activeTab === 'news' ? newsForm.title_hindi : eventForm.title_hindi}
-                    onChange={(e) => {
-                      if (activeTab === 'news') {
-                        setNewsForm({ ...newsForm, title_hindi: e.target.value });
-                      } else {
-                        setEventForm({ ...eventForm, title_hindi: e.target.value });
-                      }
-                    }}
-                    placeholder="Enter Hindi title"
-                  />
-                </div>
+                {/* Removed Hindi title field to keep a single title input */}
               </div>
 
               {/* News-specific fields */}
@@ -500,7 +549,11 @@ export default function NewsEventsEditor() {
                       onChange={(e) => setNewsForm({ ...newsForm, excerpt: e.target.value })}
                       placeholder="Brief description"
                       rows={3}
+                      maxLength={500}
                     />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {newsForm.excerpt.length}/500 characters
+                    </div>
                   </div>
 
                   <div>
@@ -511,7 +564,11 @@ export default function NewsEventsEditor() {
                       onChange={(e) => setNewsForm({ ...newsForm, content: e.target.value })}
                       placeholder="Full article content"
                       rows={8}
+                      maxLength={5000}
                     />
+                    <div className="text-xs text-gray-500 mt-1">
+                      {newsForm.content.length}/5000 characters
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-6">
@@ -545,8 +602,12 @@ export default function NewsEventsEditor() {
                       value={eventForm.description}
                       onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
                       placeholder="Event description"
-                      rows={4}
+                    rows={4}
+                    maxLength={5000}
                     />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {eventForm.description.length}/5000 characters
+                  </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -685,20 +746,73 @@ export default function NewsEventsEditor() {
               )}
 
               {/* Image Upload */}
-              <div>
-                <Label htmlFor="image_path">Image URL</Label>
-                <Input
-                  id="image_path"
-                  value={activeTab === 'news' ? newsForm.image_path : eventForm.image_path}
-                  onChange={(e) => {
-                    if (activeTab === 'news') {
-                      setNewsForm({ ...newsForm, image_path: e.target.value });
-                    } else {
-                      setEventForm({ ...eventForm, image_path: e.target.value });
-                    }
-                  }}
-                  placeholder="Image URL or path"
-                />
+              <div className="space-y-3">
+                <Label htmlFor="image_path">Image</Label>
+                
+                {/* File Upload */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                  <input
+                    type="file"
+                    id="image_file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleImageUpload(file);
+                      }
+                    }}
+                    className="hidden"
+                    disabled={uploadingImage}
+                  />
+                  <label
+                    htmlFor="image_file"
+                    className="flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 p-4 rounded-lg transition-colors"
+                  >
+                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                    <span className="text-sm text-gray-600">
+                      {uploadingImage ? 'Uploading...' : 'Click to upload image'}
+                    </span>
+                    <span className="text-xs text-gray-500 mt-1">
+                      PNG, JPG, GIF up to 5MB
+                    </span>
+                  </label>
+                </div>
+
+                {/* URL Input */}
+                <div className="relative">
+                  <Input
+                    id="image_path"
+                    value={activeTab === 'news' ? newsForm.image_path : eventForm.image_path}
+                    onChange={(e) => {
+                      if (activeTab === 'news') {
+                        setNewsForm({ ...newsForm, image_path: e.target.value });
+                      } else {
+                        setEventForm({ ...eventForm, image_path: e.target.value });
+                      }
+                    }}
+                    placeholder="Or enter image URL"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-xs text-gray-500">URL</span>
+                  </div>
+                </div>
+
+                {/* Image Preview */}
+                {((activeTab === 'news' && newsForm.image_path) || (activeTab === 'events' && eventForm.image_path)) && (
+                  <div className="mt-3">
+                    <Label className="text-sm text-gray-600">Preview:</Label>
+                    <div className="mt-1 w-full max-w-48 h-32 border rounded-lg overflow-hidden">
+                      <img
+                        src={activeTab === 'news' ? newsForm.image_path : eventForm.image_path}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}

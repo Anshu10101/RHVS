@@ -354,10 +354,10 @@ export function ContentManagement() {
       permission: 'edit_events',
     },
     {
-      id: 'gallery',
-      name: 'Gallery',
+      id: 'photos',
+      name: 'Photo Management',
       icon: Camera,
-      permission: 'edit_gallery',
+      permission: 'manage_gallery',
     },
     {
       id: 'store',
@@ -542,7 +542,7 @@ export function ContentManagement() {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Images
                   </Button>
-                  <Button disabled={!canEdit('edit_gallery')}>
+                  <Button disabled={!canEdit('manage_gallery')}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Album
                   </Button>

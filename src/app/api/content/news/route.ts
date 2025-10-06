@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
+import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 
 // GET - Fetch news
 export async function GET(request: NextRequest) {
@@ -13,12 +14,19 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get('offset');
 
     let query = `
-      SELECT * FROM news 
+      SELECT n.*, 
+             COALESCE(n.district, 'All Districts') as district,
+             COALESCE(n.state, 'All States') as state
+      FROM news n
       WHERE 1=1
     `;
     const params: any[] = [];
 
-    if (type && type !== 'all') {
+    const id = searchParams.get('id');
+    if (id) {
+      query += ` AND n.id = ?`;
+      params.push(id);
+    } else if (type && type !== 'all') {
       query += ` AND news_type = ?`;
       params.push(type);
     }
@@ -62,6 +70,13 @@ export async function GET(request: NextRequest) {
 // POST - Add new news
 export async function POST(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { 
       title, title_hindi, content, excerpt, image_path, news_type, priority,
@@ -73,11 +88,22 @@ export async function POST(request: NextRequest) {
     // Convert undefined values to null for MySQL
     const safeValue = (val: any) => val === undefined ? null : val;
     
+    // Get district and state information based on admin scope
+    let district = null;
+    let state = null;
+    let owner_admin_id = null;
+    
+    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
+      district = scope.districtName;
+      state = scope.stateName;
+      owner_admin_id = scope.adminId;
+    }
+    
     await pool.execute(
       `INSERT INTO news 
        (id, title, title_hindi, content, excerpt, image_path, news_type, priority,
-        is_featured, is_published, \`order\`, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        is_featured, is_published, \`order\`, district, state, owner_admin_id, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, 
         safeValue(title), 
@@ -90,6 +116,9 @@ export async function POST(request: NextRequest) {
         safeValue(is_featured), 
         safeValue(is_published), 
         safeValue(order), 
+        safeValue(district),
+        safeValue(state),
+        safeValue(owner_admin_id),
         safeValue(created_by)
       ]
     );
@@ -111,6 +140,13 @@ export async function POST(request: NextRequest) {
 // PUT - Update news
 export async function PUT(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { 
       id, title, title_hindi, content, excerpt, image_path, news_type, priority,
@@ -157,6 +193,13 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete news
 export async function DELETE(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

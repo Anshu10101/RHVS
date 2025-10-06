@@ -16,7 +16,7 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   // Unprotected admin routes (login/reset/etc.) should not use the protected scaffold
-  const isPublicAdminRoute = pathname === '/admin/login' || pathname?.startsWith('/admin/reset') || pathname?.startsWith('/admin/verify');
+  const isPublicAdminRoute = pathname === '/admin/login' || pathname === '/admin/superadmin/login' || pathname === '/admin/unauthorized' || pathname?.startsWith('/admin/reset') || pathname?.startsWith('/admin/verify');
 
   if (isPublicAdminRoute) {
     return children as any;
