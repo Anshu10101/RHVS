@@ -88,6 +88,14 @@ export default function ProductDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
+  const [similarProducts, setSimilarProducts] = useState<Array<{ id: string; name: string; imageUrl: string; price: number; originalPrice?: number; description?: string }>>([]);
+  const similarRef = useRef<HTMLDivElement | null>(null);
+  const scrollSimilar = (dir: 'left' | 'right') => {
+    const el = similarRef.current;
+    if (!el) return;
+    const amount = Math.round(el.clientWidth * 0.9);
+    el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     // load categories for mapping id -> name
@@ -127,6 +135,30 @@ export default function ProductDetailPage() {
     }
   }, [params.id]);
 
+  // Load similar products from the same category, excluding current item
+  useEffect(() => {
+    if (!product || !product.category) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/content/store', { cache: 'no-store' });
+        const data = await res.json();
+        const all = Array.isArray(data?.products) ? data.products : [];
+        const sameCategory = all.filter((p: any) => String(p.category) === String(product.category) && String(p.id) !== String(product.id));
+        const mapped = sameCategory.slice(0, 12).map((p: any) => ({
+          id: String(p.id),
+          name: p.name || 'Product',
+          imageUrl: p.imageUrl || p.image_url || p.image_path || '/product/p1.jpg',
+          price: Number(p.price ?? 0),
+          originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
+          description: p.description || ''
+        }));
+        setSimilarProducts(mapped);
+      } catch (err) {
+        // ignore
+      }
+    })();
+  }, [product]);
+
   // Lightbox keyboard controls
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -152,7 +184,7 @@ export default function ProductDetailPage() {
         description: product.description ?? '',
         price: Number(product.price ?? 0),
         originalPrice: product.originalPrice != null ? Number(product.originalPrice) : undefined,
-        category: (product.category as unknown as string) || 'General',
+        category: categoryLabel || (product.category as unknown as string) || 'General',
         image: product.imageUrl,
         images: Array.isArray(product.images) ? product.images : (product.imageUrl ? [product.imageUrl] : []),
         features: Array.isArray(product.features) ? product.features : [],
@@ -198,6 +230,10 @@ export default function ProductDetailPage() {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
     }
+  };
+
+  const cleanDigits = (value: string | undefined | null) => {
+    return String(value || '').replace(/\D/g, '');
   };
 
   if (loading) {
@@ -499,7 +535,9 @@ export default function ProductDetailPage() {
                       <div className="flex items-center gap-3">
                         <Phone className="h-4 w-4 text-gray-600" />
                         <div>
-                          <p className="font-medium">Contact: {product.seller_phone}</p>
+                          <p className="font-medium">
+                            Contact: <a className="text-blue-600 hover:underline" href={`tel:${cleanDigits(product.seller_phone)}`}>{product.seller_phone}</a>
+                          </p>
                           <p className="text-gray-600 text-sm">Call for inquiries and orders</p>
                         </div>
                       </div>
@@ -509,7 +547,9 @@ export default function ProductDetailPage() {
                       <div className="flex items-center gap-3">
                         <MessageCircle className="h-4 w-4 text-green-600" />
                         <div>
-                          <p className="font-medium">WhatsApp: {product.seller_whatsapp}</p>
+                          <p className="font-medium">
+                            WhatsApp: <a className="text-green-700 hover:underline" target="_blank" rel="noopener noreferrer" href={`https://wa.me/${cleanDigits(product.seller_whatsapp)}`}>{product.seller_whatsapp}</a>
+                          </p>
                           <p className="text-gray-600 text-sm">Quick messaging available</p>
                         </div>
                       </div>
@@ -519,7 +559,9 @@ export default function ProductDetailPage() {
                       <div className="flex items-center gap-3">
                         <Mail className="h-4 w-4 text-gray-600" />
                         <div>
-                          <p className="font-medium">Email: {product.seller_email}</p>
+                          <p className="font-medium">
+                            Email: <a className="text-blue-600 hover:underline" href={`mailto:${product.seller_email}`}>{product.seller_email}</a>
+                          </p>
                           <p className="text-gray-600 text-sm">Email for detailed inquiries</p>
                         </div>
                       </div>
@@ -588,6 +630,61 @@ export default function ProductDetailPage() {
           </button>
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 text-sm">
             {selectedImage + 1} / {images.length}
+          </div>
+        </div>
+      )}
+
+      {/* Similar products */}
+      {similarProducts.length > 0 && (
+        <div className="container mx-auto px-4 pb-12">
+          <div className="mt-10 relative">
+            <h2 className="text-xl font-semibold mb-4">Similar Products</h2>
+            {/* Arrows (show on overflow) */}
+            <button
+              aria-label="Scroll left"
+              onClick={() => scrollSimilar('left')}
+              className="hidden md:flex items-center justify-center absolute -left-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white border shadow hover:bg-gray-50"
+            >
+              ‹
+            </button>
+            <button
+              aria-label="Scroll right"
+              onClick={() => scrollSimilar('right')}
+              className="hidden md:flex items-center justify-center absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white border shadow hover:bg-gray-50"
+            >
+              ›
+            </button>
+            <div ref={similarRef} className="no-scrollbar overflow-x-auto overflow-y-hidden">
+              <div className="grid grid-flow-col auto-cols-[70%] sm:auto-cols-[45%] md:auto-cols-[32%] lg:auto-cols-[24%] gap-6 pr-3">
+                {similarProducts.map((sp) => {
+                  const discount = sp.originalPrice && sp.originalPrice > sp.price
+                    ? Math.round(((sp.originalPrice - sp.price) / sp.originalPrice) * 100)
+                    : 0;
+                  return (
+                    <Link key={sp.id} href={`/products/${encodeURIComponent(sp.id)}`} className="group block bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <div className="relative aspect-square bg-white overflow-hidden">
+                        {!!discount && (
+                          <span className="absolute left-2 top-2 bg-red-600 text-white text-[11px] font-semibold px-2 py-0.5 rounded">{discount}% OFF</span>
+                        )}
+                        <img src={sp.imageUrl} alt={sp.name} className="w-full h-full object-contain" />
+                      </div>
+                      <div className="p-3 space-y-1.5">
+                        <div className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-gray-700">{sp.name}</div>
+                        {sp.description && (
+                          <div className="text-[12px] text-gray-600 line-clamp-2">{sp.description}</div>
+                        )}
+                        <div className="flex items-center gap-2 pt-1">
+                          <div className="text-orange-600 font-semibold">₹{sp.price.toLocaleString()}</div>
+                          {sp.originalPrice && sp.originalPrice > sp.price && (
+                            <div className="text-xs text-gray-500 line-through">₹{sp.originalPrice.toLocaleString()}</div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -75,12 +75,12 @@ export default function CartItem({
           </div>
 
           {/* Seller Information */}
-          {product.seller_name && (
+          {(product.seller_name || product.seller_phone || product.seller_whatsapp || product.seller_email || product.seller_delivery_info) && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <User size={14} className="text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Seller: {product.seller_name}</span>
-                {product.seller_business_name && (
+                <span className="text-sm font-medium text-gray-700">{product.seller_name ? `Seller: ${product.seller_name}` : 'Seller Information'}</span>
+                {product.seller_business_name && product.seller_name && (
                   <span className="text-xs text-gray-500">({product.seller_business_name})</span>
                 )}
               </div>

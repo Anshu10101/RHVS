@@ -435,7 +435,35 @@ export default function ProductsPage() {
 
   const handleAddToCart = (productId: number) => {
     const product = products.find(p => p.id === productId);
-    if (product) {
+    if (!product) return;
+    // Ensure seller fields are attached by fetching detail when missing
+    const hasSeller = !!(product as any).seller_name || !!(product as any).seller_phone || !!(product as any).seller_whatsapp || !!(product as any).seller_email;
+    if ((product as any).detailId && !hasSeller) {
+      const idForDetail = (product as any).detailId as string;
+      // Fire and forget enrich; add after enrichment for consistency
+      (async () => {
+        try {
+          const res = await fetch(`/api/products/${encodeURIComponent(idForDetail)}`, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            const dp = data?.product || {};
+            const enriched = {
+              ...product,
+              seller_name: dp.seller_name,
+              seller_phone: dp.seller_phone,
+              seller_whatsapp: dp.seller_whatsapp,
+              seller_email: dp.seller_email,
+              seller_business_name: dp.seller_business_name,
+              seller_delivery_info: dp.seller_delivery_info,
+            } as typeof product;
+            addToCart(enriched);
+            return;
+          }
+        } catch (_) {}
+        // Fallback
+        addToCart(product);
+      })();
+    } else {
       addToCart(product);
     }
   };

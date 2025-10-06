@@ -617,34 +617,8 @@ export default function ProductStoreEditor() {
   };
 
   const startEditingProduct = (productId: string) => {
-    const product = products.find(p => p.id === productId);
-    if (product) {
-      setEditingProductData({ ...product });
-      setEditingProductTagsInput(product.tags.join(', '));
-      setEditingProductImageFile(null);
-      setEditingProductImageUrl(product.imageUrl || '');
-      setEditingProductImageType('url');
-      setEditingProduct(productId);
-
-      // Load existing gallery images for this product
-      (async () => {
-        try {
-          const res = await fetch(`/api/products/${productId}`, { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data?.success && Array.isArray(data.product?.images)) {
-              const imgs: string[] = data.product.images.slice(0, 4);
-              setEditingProductImages(imgs);
-              if (imgs.length > 0) {
-                setEditingProductData(prev => prev ? { ...prev, imageUrl: imgs[0] } : prev);
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Failed to load product gallery', e);
-        }
-      })();
-    }
+    // Navigate to the dedicated edit page (reuse creation page in edit mode)
+    router.push(`/admin/content/store/product-creation?id=${encodeURIComponent(productId)}`);
   };
 
   const startEditingCategory = (categoryId: string) => {

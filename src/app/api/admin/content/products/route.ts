@@ -54,7 +54,9 @@ export async function GET(req: NextRequest) {
     console.log('District admin filtering products for:', {
       districtName: scope.districtName,
       stateName: scope.stateName,
-      adminId: scope.adminId
+      adminId: scope.adminId,
+      isSuperAdmin: scope.isSuperAdmin,
+      isDistrictAdmin: scope.isDistrictAdmin
     });
 
     const rows = await executeQuery(`
@@ -71,17 +73,47 @@ export async function GET(req: NextRequest) {
       LEFT JOIN members m ON m.id = da.member_id
       LEFT JOIN sellers s ON s.id = p.seller_id
       WHERE (
-        (p.district_id = ? AND p.state_id = ? AND p.owner_admin_id = ? AND p.district_id IS NOT NULL AND p.state_id IS NOT NULL AND p.owner_admin_id IS NOT NULL) OR 
-        (co.district_id = ? AND co.state_id = ? AND co.added_by_admin_id = ? AND co.district_id IS NOT NULL AND co.state_id IS NOT NULL AND co.added_by_admin_id IS NOT NULL)
+        (
+          p.owner_admin_id = ?
+          AND p.owner_admin_id IS NOT NULL
+          AND LOWER(TRIM(p.district_id)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(p.state_id)) = LOWER(TRIM(?))
+        )
+        OR (
+          p.added_by = ?
+          AND p.added_by IS NOT NULL
+          AND LOWER(TRIM(p.district_id)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(p.state_id)) = LOWER(TRIM(?))
+        )
+        OR (
+          co.added_by_admin_id = ?
+          AND co.added_by_admin_id IS NOT NULL
+          AND LOWER(TRIM(co.district_id)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(co.state_id)) = LOWER(TRIM(?))
+        )
       )
       ORDER BY p.created_at DESC
-    `, [scope.districtName, scope.stateName, scope.adminId, scope.districtName, scope.stateName, scope.adminId]);
+    `, [
+      scope.adminId, scope.districtName, scope.stateName,
+      scope.adminId, scope.districtName, scope.stateName,
+      scope.adminId, scope.districtName, scope.stateName
+    ]);
     
     console.log(`Found ${rows.length} products for district admin:`, {
       districtName: scope.districtName,
       stateName: scope.stateName,
       adminId: scope.adminId,
-      productIds: rows.map((r: any) => ({ id: r.id, name: r.name, district_id: r.district_id, state_id: r.state_id, owner_admin_id: r.owner_admin_id }))
+      productIds: rows.map((r: any) => ({ 
+        id: r.id, 
+        name: r.name, 
+        district_id: r.district_id, 
+        state_id: r.state_id, 
+        owner_admin_id: r.owner_admin_id,
+        added_by: r.added_by,
+        origin_district_id: r.origin_district_id,
+        origin_state_id: r.origin_state_id,
+        added_by_admin_id: r.added_by_admin_id
+      }))
     });
     
     return NextResponse.json({ success: true, data: rows });
@@ -120,8 +152,39 @@ export async function POST(req: NextRequest) {
     const idExtra = String(idCol?.[0]?.Extra || '').toLowerCase();
 
     let createdId: string | number | null = null;
-    try {
-      // Try simple insert assuming auto-increment numeric id
+    // Prefer explicit ID when table isn't auto-incrementing
+    const needsStringId = !idType.includes('int') || idExtra.indexOf('auto_increment') === -1;
+    if (needsStringId) {
+      const ts = Date.now();
+      const rnd = Math.floor(Math.random() * 1000);
+      const genId = `p${ts}${rnd}`;
+      await executeQuery(`
+        INSERT INTO products 
+          (id, name, description, price, original_price, category, seller_id, image_path, isVisible, is_featured, stock, tags, features, specifications, district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), ?)
+      `, [
+        genId,
+        name,
+        (description ?? ''),
+        price,
+        original_price ?? null,
+        category ?? 'default',
+        seller_id || null,
+        image_url || null,
+        is_featured ? 1 : 0,
+        stock ?? 0,
+        tags ? JSON.stringify(tags) : null,
+        features ? JSON.stringify(features) : null,
+        specifications ? JSON.stringify(specifications) : null,
+        scope.districtName || null,
+        scope.stateName || null,
+        scope.adminId || null,
+        scope.adminId || null,
+        scope.adminId ? scope.adminId.toString() : 'admin'
+      ]);
+      createdId = genId;
+    } else {
+      // Auto-increment path
       const insert = await executeQuery(`
         INSERT INTO products 
           (name, description, price, original_price, category, seller_id, image_path, isVisible, is_featured, stock, tags, features, specifications, district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
@@ -146,41 +209,6 @@ export async function POST(req: NextRequest) {
         scope.adminId ? scope.adminId.toString() : 'admin'
       ]);
       createdId = (insert as any).insertId ?? null;
-    } catch (err: any) {
-      // If id is a VARCHAR primary key with default '' (no auto inc), generate our own id and insert with explicit id
-      if (String(err?.code) === 'ER_DUP_ENTRY' || String(err?.sqlMessage || '').includes("for key 'PRIMARY'")) {
-        // Generate a compact id (timestamp-based) to stay within varchar and allow INT content_origin if small
-        const ts = Date.now();
-        const rnd = Math.floor(Math.random() * 1000);
-        const genId = `p${ts}${rnd}`; // string id
-        await executeQuery(`
-          INSERT INTO products 
-            (id, name, description, price, original_price, category, seller_id, image_path, isVisible, is_featured, stock, tags, features, specifications, district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), ?)
-        `, [
-          genId,
-          name,
-          (description ?? ''),
-          price,
-          original_price ?? null,
-          category ?? 'default',
-          seller_id || null,
-          image_url || null,
-          is_featured ? 1 : 0,
-          stock ?? 0,
-          tags ? JSON.stringify(tags) : null,
-          features ? JSON.stringify(features) : null,
-          specifications ? JSON.stringify(specifications) : null,
-          scope.districtName || null,
-          scope.stateName || null,
-          scope.adminId || null,
-          scope.adminId || null,
-          scope.adminId ? scope.adminId.toString() : 'admin'
-        ]);
-        createdId = genId;
-      } else {
-        throw err;
-      }
     }
 
     // Track origin if district admin
@@ -236,7 +264,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
-    const { id, name, price, image_url, description, category, original_price, stock, is_featured, tags, isVisible, images, seller_id } = await req.json();
+    const { id, name, price, image_url, description, category, original_price, stock, is_featured, tags, isVisible, images, seller_id, features, specifications } = await req.json();
     
     if (!id) {
       return NextResponse.json({ success: false, message: 'Product ID is required' }, { status: 400 });
@@ -271,7 +299,7 @@ export async function PUT(req: NextRequest) {
     await executeQuery(`
       UPDATE products SET 
         name = ?, description = ?, price = ?, original_price = ?, category = ?, seller_id = ?,
-        image_path = ?, isVisible = ?, is_featured = ?, stock = ?, tags = ?,
+        image_path = ?, isVisible = ?, is_featured = ?, stock = ?, tags = ?, features = ?, specifications = ?,
         updated_at = NOW(), updated_by = ?
       WHERE id = ?
     `, [
@@ -286,6 +314,8 @@ export async function PUT(req: NextRequest) {
       is_featured ? 1 : 0,
       stock ?? 0,
       tags ? JSON.stringify(tags) : null,
+      features ? JSON.stringify(features) : null,
+      specifications ? JSON.stringify(specifications) : null,
       scope.adminId ? scope.adminId.toString() : 'admin',
       id
     ]);

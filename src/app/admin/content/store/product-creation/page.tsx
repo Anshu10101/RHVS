@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function ProductCreationPage() {
 	const router = useRouter();
+  // detect edit mode via URL ?id=
+  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const editId = search?.get('id') || '';
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [price, setPrice] = useState<number>(0);
@@ -41,7 +44,7 @@ export default function ProductCreationPage() {
 		return data.url as string;
 	};
 
-	useEffect(() => {
+  useEffect(() => {
 		(async () => {
 			try {
 				// Load categories
@@ -64,11 +67,48 @@ export default function ProductCreationPage() {
 						state: s.state
 					})));
 				}
-			} catch (e) {
+      } catch (e) {
 				console.error('Failed to load data', e);
 			}
 		})();
-	}, []);
+  }, []);
+
+  // Load existing product in edit mode
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(editId)}`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data?.success && data.product) {
+          const p = data.product as any;
+          setName(p.name || '');
+          setDescription(p.description || '');
+          setPrice(Number(p.price || 0));
+          setOriginalPrice(p.originalPrice != null ? Number(p.originalPrice) : 0);
+          setCategory(p.category || '');
+          setSellerId(p.seller_id || '');
+          setStock(typeof p.stock === 'number' ? p.stock : 0);
+          setIsVisible(Boolean(p.isVisible ?? true));
+          setIsFeatured(Boolean(p.isFeatured ?? false));
+          setTagsInput(Array.isArray(p.tags) ? p.tags.join(', ') : '');
+          setFeatures(Array.isArray(p.features) ? p.features : ['']);
+          setSpecs(p.specifications || {});
+          // images
+          const imgs: string[] = Array.isArray(p.images) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+          const main = imgs[0] || '';
+          if (main) {
+            setThumbType('url');
+            setThumbUrl(main);
+          }
+          setSupportingPreviews(imgs.slice(1));
+        }
+      } catch (e) {
+        console.error('Failed to load product for edit', e);
+      }
+    })();
+  }, [editId]);
 
 	const onPickSupporting = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(e.target.files || []);
@@ -77,7 +117,7 @@ export default function ProductCreationPage() {
 		setSupportingPreviews(limited.map(f => URL.createObjectURL(f)));
 	};
 
-	const create = async () => {
+  const create = async () => {
 		if (!name || !price) return;
 		setSaving('saving');
 		try {
@@ -96,26 +136,27 @@ export default function ProductCreationPage() {
 			}
 			// Ensure main first
 			const images = image_url ? [image_url, ...gallery] : gallery;
-			const resp = await fetch('/api/admin/content/products', {
-				method: 'POST',
+      const body = {
+        name,
+        description,
+        price,
+        original_price: originalPrice || price,
+        category: category || 'default',
+        seller_id: sellerId === 'none' ? null : sellerId || null,
+        image_url,
+        images,
+        stock,
+        is_featured: isFeatured,
+        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
+        features: features.filter(f => f.trim() !== ''),
+        specifications: specs,
+        isVisible
+      };
+      const resp = await fetch('/api/admin/content/products', {
+        method: editId ? 'PUT' : 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
-				body: JSON.stringify({
-					name,
-					description,
-					price,
-					original_price: originalPrice || price,
-					category: category || 'default',
-					seller_id: sellerId === 'none' ? null : sellerId || null,
-					image_url,
-					images,
-					stock,
-					is_featured: isFeatured,
-					tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
-					features: features.filter(f => f.trim() !== ''),
-					specifications: specs,
-					isVisible
-				})
+        body: JSON.stringify(editId ? { id: editId, ...body } : body)
 			});
 			if (!resp.ok) throw new Error('create failed');
 			setSaving('saved');
@@ -130,7 +171,7 @@ export default function ProductCreationPage() {
 	return (
 		<div className="p-6 max-w-4xl mx-auto">
 			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold">Create Product</h1>
+				<h1 className="text-2xl font-bold">{editId ? 'Edit Product' : 'Create Product'}</h1>
 				<div className="flex gap-2">
 					<Button variant="outline" onClick={() => router.push('/admin/content/store/sellers')}>
 						Manage Sellers
@@ -241,6 +282,18 @@ export default function ProductCreationPage() {
 				<Input value={tagsInput} onChange={e=>setTagsInput(e.target.value)} placeholder="tag1, tag2" />
 			</div>
 
+			{/* Visibility & Featured toggles */}
+			<div className="mt-4 grid grid-cols-2 gap-4">
+				<label className="flex items-center gap-2 text-sm">
+					<input type="checkbox" checked={isVisible} onChange={e=>setIsVisible(e.target.checked)} />
+					<span>Visible</span>
+				</label>
+				<label className="flex items-center gap-2 text-sm">
+					<input type="checkbox" checked={isFeatured} onChange={e=>setIsFeatured(e.target.checked)} />
+					<span>Featured</span>
+				</label>
+			</div>
+
 			<div className="mt-6">
 				<label className="block text-sm font-medium mb-2">Key Features</label>
 				<div className="space-y-2">
@@ -272,8 +325,14 @@ export default function ProductCreationPage() {
 
 			<div className="flex justify-end gap-2 mt-8 border-t pt-4">
 				<Button variant="outline" onClick={()=> router.push('/admin/content/store')}>Cancel</Button>
-				<Button onClick={create} disabled={saving==='saving' || !name || !price} className="min-w-[130px]">
-					{saving==='saving' ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/>Creating...</>) : saving==='saved' ? (<><CheckCircle className="mr-2 h-4 w-4"/>Created!</>) : saving==='error' ? 'Retry' : 'Create Product'}
+				<Button onClick={create} disabled={saving==='saving' || !name || !price} className="min-w-[150px]">
+					{saving==='saving' 
+						? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{editId ? 'Saving...' : 'Creating...'}</>) 
+						: saving==='saved' 
+							? (<><CheckCircle className="mr-2 h-4 w-4"/>{editId ? 'Saved!' : 'Created!'}</>) 
+							: saving==='error' 
+								? 'Retry' 
+								: (editId ? 'Save Changes' : 'Create Product')}
 				</Button>
 			</div>
 		</div>

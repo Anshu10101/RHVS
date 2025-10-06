@@ -99,8 +99,32 @@ export default function ProductCard({
         {/* Add to Cart Button */}
         <div className="mt-auto">
           <Button
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
+              const hasSeller = !!(product as any).seller_name || !!(product as any).seller_phone || !!(product as any).seller_whatsapp || !!(product as any).seller_email;
+              const detailId = (product as any).detailId as string | undefined;
+              if (detailId && !hasSeller) {
+                try {
+                  const res = await fetch(`/api/products/${encodeURIComponent(detailId)}`, { cache: 'no-store' });
+                  if (res.ok) {
+                    const data = await res.json();
+                    const dp = data?.product || {};
+                    const enriched = {
+                      ...product,
+                      seller_name: dp.seller_name,
+                      seller_phone: dp.seller_phone,
+                      seller_whatsapp: dp.seller_whatsapp,
+                      seller_email: dp.seller_email,
+                      seller_business_name: dp.seller_business_name,
+                      seller_delivery_info: dp.seller_delivery_info,
+                    } as typeof product;
+                    addToCart(enriched);
+                    return;
+                  }
+                } catch (_) {
+                  // fall through to default
+                }
+              }
               addToCart(product);
             }}
             disabled={!product.inStock}

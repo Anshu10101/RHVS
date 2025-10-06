@@ -1,6 +1,8 @@
 // Product types and interfaces
 export interface Product {
   id: number;
+  // Backend product id for deep link/details
+  detailId?: string;
   name: string;
   nameHindi: string;
   description: string;

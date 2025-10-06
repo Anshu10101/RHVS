@@ -1,5 +1,8 @@
 import Navbar from '@/components/Home/Navbar';
 import HeroSection from '@/components/Home/HeroSection';
+import LatestPhotosSection from '@/components/Home/LatestPhotosSection';
+import LatestNewsEventsSection from '@/components/Home/LatestNewsEventsSection';
+import FeaturedProductsSection from '@/components/Home/FeaturedProductsSection';
 import CoreValuesSection from '@/components/Home/CoreValuesSection';
 import ActivitiesSection from '@/components/Home/ActivitiesSection';
 import Footer from '@/components/Home/Footer';
@@ -10,6 +13,9 @@ export default function Home() {
       <Navbar />
       <main className="flex-grow">
         <HeroSection />
+        <LatestPhotosSection />
+        <LatestNewsEventsSection />
+        <FeaturedProductsSection />
         <CoreValuesSection />
         <ActivitiesSection />
       </main>
