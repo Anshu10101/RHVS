@@ -90,9 +90,9 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
               className="marquee-card group"
             >
               {/* Featured Badge */}
-              <div className="absolute top-2 left-2 z-10 bg-orange-500/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded flex items-center gap-1">
+              <div className="absolute top-2 left-2 z-10 bg-orange-600/90 backdrop-blur-[1px] text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
                 <Star className="h-2.5 w-2.5 fill-white" />
-                FEATURED
+                Featured
               </div>
 
               {/* Discount Badge */}
@@ -104,12 +104,12 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
               )}
 
               {/* Product Image */}
-              <div className="relative w-full h-64 overflow-hidden rounded-t-xl bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className="relative w-full h-64 overflow-hidden rounded-t-xl bg-white">
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
-                  className="object-contain group-hover:scale-105 transition-transform duration-500 p-2"
+                  className="object-contain group-hover:scale-105 transition-transform duration-500 p-3 bg-white"
                   sizes="320px"
                 />
               </div>

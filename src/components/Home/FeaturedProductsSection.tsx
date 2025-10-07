@@ -35,6 +35,7 @@ export default function FeaturedProductsSection() {
           // Normalize to FullProduct type and filter featured
           const normalized: FullProduct[] = (data.products as any[]).map((p, i) => ({
             id: Number(String(p.id).replace(/\D/g, '')) || i + 1,
+            detailId: String(p.id),
             name: p.name ?? 'Product',
             nameHindi: p.nameHindi ?? p.name ?? 'उत्पाद',
             description: p.description ?? '',
