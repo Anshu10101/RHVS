@@ -13,6 +13,7 @@ export interface User {
   type?: UserType;
   district?: string;
   state?: string;
+  profilePhoto?: string | null;
   permissions: string[];
   temporaryPermissions?: {
     permission: string;
@@ -103,6 +104,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
             type: data.user.type,
             district: data.user.district,
             state: data.user.state,
+            profilePhoto: data.user.profile_photo || data.user.profilePhoto || null,
             permissions: data.user.permissions || [],
             createdAt: new Date(data.user.created_at || Date.now()),
           };

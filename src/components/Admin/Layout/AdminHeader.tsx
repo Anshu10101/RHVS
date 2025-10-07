@@ -97,9 +97,18 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
               onClick={() => setShowUserMenu(!showUserMenu)}
             >
-              <div className="h-8 w-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold">
-                {currentUser.email?.[0]?.toUpperCase() || 'A'}
-              </div>
+              {currentUser.profilePhoto ? (
+                <img
+                  src={currentUser.profilePhoto}
+                  alt="Profile"
+                  className="h-8 w-8 rounded-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="h-8 w-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold">
+                  {currentUser.email?.[0]?.toUpperCase() || 'A'}
+                </div>
+              )}
               <div className="hidden md:block text-left">
                 <div className="text-sm font-medium text-gray-900">{currentUser.email}</div>
                 <div className="text-xs text-gray-500">{currentUser.role?.toUpperCase()}</div>

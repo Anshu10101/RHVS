@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { ShoppingCart, Tag, Heart } from 'lucide-react';
+import { ShoppingCart, Tag } from 'lucide-react';
 import { Noto_Serif_Devanagari } from 'next/font/google';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
@@ -50,20 +50,7 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Wishlist button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(product.id);
-          }}
-          className="absolute top-2 right-2 p-1.5 rounded-full bg-white/80 hover:bg-white shadow-sm transition-colors"
-          aria-label="Add to wishlist"
-        >
-          <Heart 
-            size={16} 
-            className={`transition-colors ${isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}`}
-          />
-        </button>
+        {/* Wishlist button removed on /products page */}
       </div>
 
       {/* Product Info - Minimal and clean */}

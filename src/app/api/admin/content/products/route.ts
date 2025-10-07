@@ -58,6 +58,9 @@ export async function GET(req: NextRequest) {
       isSuperAdmin: scope.isSuperAdmin,
       isDistrictAdmin: scope.isDistrictAdmin
     });
+    
+    // CRITICAL: For district admins, we ONLY show products where owner_admin_id matches exactly
+    // This prevents cross-district leakage that was happening with other matching approaches
 
     const rows = await executeQuery(`
       SELECT DISTINCT
@@ -72,32 +75,9 @@ export async function GET(req: NextRequest) {
       LEFT JOIN district_admins da ON da.id = co.added_by_admin_id
       LEFT JOIN members m ON m.id = da.member_id
       LEFT JOIN sellers s ON s.id = p.seller_id
-      WHERE (
-        (
-          p.owner_admin_id = ?
-          AND p.owner_admin_id IS NOT NULL
-          AND LOWER(TRIM(p.district_id)) = LOWER(TRIM(?))
-          AND LOWER(TRIM(p.state_id)) = LOWER(TRIM(?))
-        )
-        OR (
-          p.added_by = ?
-          AND p.added_by IS NOT NULL
-          AND LOWER(TRIM(p.district_id)) = LOWER(TRIM(?))
-          AND LOWER(TRIM(p.state_id)) = LOWER(TRIM(?))
-        )
-        OR (
-          co.added_by_admin_id = ?
-          AND co.added_by_admin_id IS NOT NULL
-          AND LOWER(TRIM(co.district_id)) = LOWER(TRIM(?))
-          AND LOWER(TRIM(co.state_id)) = LOWER(TRIM(?))
-        )
-      )
+      WHERE p.owner_admin_id = ?
       ORDER BY p.created_at DESC
-    `, [
-      scope.adminId, scope.districtName, scope.stateName,
-      scope.adminId, scope.districtName, scope.stateName,
-      scope.adminId, scope.districtName, scope.stateName
-    ]);
+    `, [scope.adminId]);
     
     console.log(`Found ${rows.length} products for district admin:`, {
       districtName: scope.districtName,
@@ -251,10 +231,10 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('products POST error', e);
     console.error('Error details:', {
-      message: e.message,
-      code: e.code,
-      sqlState: e.sqlState,
-      sqlMessage: e.sqlMessage
+      message: (e as any).message,
+      code: (e as any).code,
+      sqlState: (e as any).sqlState,
+      sqlMessage: (e as any).sqlMessage
     });
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }

@@ -62,16 +62,23 @@ export default function AdminsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
   const [districtAdmins, setDistrictAdmins] = useState<DistrictAdmin[]>([]);
-  const [districts, setDistricts] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<Array<{id: string, name: string}>>([]);
+  const [states, setStates] = useState<Array<{id: number, name: string}>>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   
   // Dialog states
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   
   // Form states
-  const [selectedMember, setSelectedMember] = useState<number>(0);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedState, setSelectedState] = useState<string>("");
   const [selectedDistrict, setSelectedDistrict] = useState<string>("");
   const [tempPassword, setTempPassword] = useState<string>("");
+  
+  // Filter states
+  const [filterState, setFilterState] = useState<string>("all");
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
 
   // Safe date parsing/formatting for MySQL timestamps like 'YYYY-MM-DD HH:mm:ss'
   const parseDate = (value?: string | null) => {
@@ -89,6 +96,46 @@ export default function AdminsManagementPage() {
   // Check if user is superadmin
   const isSuperAdmin = currentUser?.role === 'superadmin';
   
+  // Fetch states from database
+  const fetchStates = async () => {
+    try {
+      const response = await fetch('/api/states');
+      const data = await response.json();
+      if (data.success) {
+        setStates(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch states:', err);
+    }
+  };
+
+  // Fetch districts based on selected state
+  const fetchDistricts = async (stateId: string) => {
+    if (!stateId || stateId === 'all') {
+      setDistricts([]);
+      return;
+    }
+
+    try {
+      setLoadingDistricts(true);
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.data.map((district: any) => ({
+          id: district.id,
+          name: district.name
+        })));
+      } else {
+        setDistricts([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch districts:', err);
+      setDistricts([]);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
   // Load data
   const fetchData = async () => {
       setLoading(true);
@@ -99,10 +146,7 @@ export default function AdminsManagementPage() {
           const data = await membersRes.json();
           const membersList = data.data?.members || data.members || [];
           setMembers(membersList);
-          
-          // Extract unique districts from members
-          const uniqueDistricts = [...new Set(membersList.map((m: any) => m.district).filter(Boolean))];
-          setDistricts(uniqueDistricts);
+          setFilteredMembers(membersList);
         }
         
         // Fetch district admins
@@ -125,7 +169,17 @@ export default function AdminsManagementPage() {
   useEffect(() => {
     if (!isSuperAdmin) return;
     fetchData();
+    fetchStates();
   }, [isSuperAdmin]);
+
+  // Fetch districts when state filter changes
+  useEffect(() => {
+    if (filterState && filterState !== 'all') {
+      fetchDistricts(filterState);
+    } else {
+      setDistricts([]);
+    }
+  }, [filterState]);
   
   const handleAddAdmin = async () => {
     if (!selectedMember || !selectedState || !selectedDistrict || !tempPassword) {
@@ -140,7 +194,7 @@ export default function AdminsManagementPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          memberId: selectedMember,
+          memberId: selectedMember.id,
           state: selectedState,
           district: selectedDistrict,
           password: tempPassword,
@@ -189,21 +243,46 @@ export default function AdminsManagementPage() {
   
   
   const resetForm = () => {
-    setSelectedMember(0);
+    setSelectedMember(null);
     setSelectedState("");
     setSelectedDistrict("");
     setTempPassword("");
+    setFilterState("all");
+    setFilterDistrict("all");
+    setDistricts([]);
   };
 
-  const handleMemberSelect = (memberId: string) => {
-    const memberIdNum = Number(memberId);
-    setSelectedMember(memberIdNum);
+  // Filter members based on state and district
+  useEffect(() => {
+    let filtered = [...members];
     
-    // Find the selected member and auto-populate state and district
-    const selectedMemberData = members.find(member => member.id === memberIdNum);
-    if (selectedMemberData) {
-      setSelectedState(selectedMemberData.state);
-      setSelectedDistrict(selectedMemberData.district);
+    if (filterState && filterState !== "all") {
+      const selectedStateName = states.find(s => s.id.toString() === filterState)?.name;
+      if (selectedStateName) {
+        filtered = filtered.filter(member => member.state === selectedStateName);
+      }
+    }
+    
+    if (filterDistrict && filterDistrict !== "all") {
+      const selectedDistrictName = districts.find(d => d.id === filterDistrict)?.name;
+      if (selectedDistrictName) {
+        filtered = filtered.filter(member => member.district === selectedDistrictName);
+      }
+    }
+    
+    setFilteredMembers(filtered);
+  }, [members, filterState, filterDistrict, states, districts]);
+
+  const handleMemberSelect = (memberId: string) => {
+    const member = filteredMembers.find(m => m.id.toString() === memberId);
+    setSelectedMember(member || null);
+    
+    if (member) {
+      setSelectedState(member.state || "");
+      setSelectedDistrict(member.district || "");
+    } else {
+      setSelectedState("");
+      setSelectedDistrict("");
     }
   };
   
@@ -334,70 +413,154 @@ export default function AdminsManagementPage() {
       
       {/* Add Admin Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Appoint District Admin</DialogTitle>
             <DialogDescription>
               Select a member to appoint as district admin. They will have access to manage their district.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="member">Select Member</Label>
+          <div className="space-y-6 py-4">
+            {/* Filter Section */}
+            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Filter Members</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFilterState("all");
+                    setFilterDistrict("all");
+                    setDistricts([]);
+                  }}
+                  className="h-8 text-xs"
+                >
+                  Clear Filters
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="filter-state" className="text-sm font-medium text-gray-700">State</Label>
+                  <Select value={filterState} onValueChange={setFilterState}>
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder="All States" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All States</SelectItem>
+                      {states.map(state => (
+                        <SelectItem key={state.id} value={state.id.toString()}>{state.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <Label htmlFor="filter-district" className="text-sm font-medium text-gray-700">District</Label>
+                  <Select 
+                    value={filterDistrict} 
+                    onValueChange={setFilterDistrict}
+                    disabled={!filterState || filterState === 'all' || loadingDistricts}
+                  >
+                    <SelectTrigger className="mt-1 h-10">
+                      <SelectValue placeholder={loadingDistricts ? "Loading..." : "All Districts"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Districts</SelectItem>
+                      {districts.map(district => (
+                        <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="text-sm text-gray-600">
+                Showing {filteredMembers.length} of {members.length} members
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="member" className="text-sm font-medium text-gray-700">Select Member</Label>
               <Select 
                 onValueChange={handleMemberSelect}
-                value={selectedMember.toString()}
+                value={selectedMember ? selectedMember.id.toString() : ""}
               >
-                <SelectTrigger id="member">
-                  <SelectValue placeholder="Select member" />
+                <SelectTrigger id="member" className="h-10">
+                  <SelectValue placeholder="Choose a member from the filtered list" />
                 </SelectTrigger>
-                <SelectContent>
-                  {members.map(member => (
-                    <SelectItem key={member.id} value={member.id.toString()}>
-                      {member.name} - {member.email}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-60">
+                  {filteredMembers.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      No members available. Try adjusting your filters.
+                    </div>
+                  ) : (
+                    filteredMembers.map(member => (
+                      <SelectItem key={member.id} value={member.id.toString()}>
+                        {member.name} - {member.email}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Selected Member Confirmation */}
+            {selectedMember && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm font-semibold text-green-800">Selected Member</span>
+                </div>
+                <div className="space-y-1 text-sm text-green-700">
+                  <p><span className="font-medium">Name:</span> {selectedMember.name}</p>
+                  <p><span className="font-medium">Email:</span> {selectedMember.email}</p>
+                  <p><span className="font-medium">Location:</span> {selectedMember.district}, {selectedMember.state}</p>
+                </div>
+              </div>
+            )}
             
-            <div className="grid gap-2">
-              <Label htmlFor="state">State</Label>
+            <div className="space-y-2">
+              <Label htmlFor="state" className="text-sm font-medium text-gray-700">State</Label>
               <Input
                 id="state"
                 value={selectedState}
                 readOnly
-                className="bg-gray-50"
+                className="bg-gray-50 h-10"
                 placeholder="Will be auto-populated from member data"
               />
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="district">District</Label>
+            <div className="space-y-2">
+              <Label htmlFor="district" className="text-sm font-medium text-gray-700">District</Label>
               <Input
                 id="district"
                 value={selectedDistrict}
                 readOnly
-                className="bg-gray-50"
+                className="bg-gray-50 h-10"
                 placeholder="Will be auto-populated from member data"
               />
             </div>
             
-            <div className="grid gap-2">
-              <Label htmlFor="temp-password">Temporary Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="temp-password" className="text-sm font-medium text-gray-700">Temporary Password</Label>
               <Input
                 id="temp-password"
                 type="password"
                 value={tempPassword}
                 onChange={(e) => setTempPassword(e.target.value)}
                 placeholder="Set a temporary password"
+                className="h-10"
               />
             </div>
             
             
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setAddDialogOpen(false);
+              resetForm();
+            }}>
               Cancel
             </Button>
             <Button onClick={handleAddAdmin}>

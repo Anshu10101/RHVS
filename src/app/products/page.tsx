@@ -275,6 +275,8 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState('featured'); // 'featured', 'price-asc', 'price-desc', 'new'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(16); // 4 rows × 4 columns
   const { addToCart, getTotalItems } = useCart();
   const router = useRouter();
 
@@ -421,6 +423,7 @@ export default function ProductsPage() {
     }
     
     setFilteredProducts(result);
+    setCurrentPage(1); // Reset to first page when filters change
   }, [products, searchQuery, selectedCategories, priceRange, sortOption, selectedStateName, selectedDistrictName]);
 
   const handleProductClick = (product: Product) => {
@@ -493,7 +496,14 @@ export default function ProductsPage() {
     setSelectedStateName('All');
     setSelectedDistrictName('All');
     setDistrictOptions([]);
+    setCurrentPage(1);
   };
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const startIndex = (currentPage - 1) * productsPerPage;
+  const endIndex = startIndex + productsPerPage;
+  const currentProducts = filteredProducts.slice(startIndex, endIndex);
 
   const handlePriceChange = (value: number[]) => {
     setPriceRange([value[0], value[1]]);
@@ -904,7 +914,10 @@ export default function ProductsPage() {
             {/* Results Count */}
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                Showing <span className="font-medium">{filteredProducts.length}</span> of <span className="font-medium">{products.length}</span> products
+                Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, filteredProducts.length)}</span> of <span className="font-medium">{filteredProducts.length}</span> products
+                {totalPages > 1 && (
+                  <span className="ml-2 text-gray-400">(Page {currentPage} of {totalPages})</span>
+                )}
               </p>
               <div className="md:hidden">
                 <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="cursor-pointer">
@@ -916,7 +929,7 @@ export default function ProductsPage() {
             
             {/* Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-              {filteredProducts.map((product, index) => (
+              {currentProducts.map((product, index) => (
                 <div
                   key={product.id}
                   style={{
@@ -938,6 +951,60 @@ export default function ProductsPage() {
                 </div>
               ))}
             </div>
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-12 flex items-center justify-center">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    className="cursor-pointer"
+                  >
+                    Previous
+                  </Button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`cursor-pointer ${currentPage === pageNum ? 'bg-orange-600 hover:bg-orange-700' : ''}`}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    className="cursor-pointer"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
             
             {/* Empty State */}
             {filteredProducts.length === 0 && (

@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
         da.email, 
         da.district, 
         m.state,
+        m.profile_photo_path AS profile_photo,
         da.role, 
         da.is_active, 
         da.created_at, 

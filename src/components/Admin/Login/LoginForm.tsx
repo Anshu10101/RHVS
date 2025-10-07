@@ -7,8 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff, Shield, Users } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Shield, Users, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import Image from 'next/image';
+import Link from 'next/link';
 
 interface LoginFormProps {
   loginType: 'superadmin' | 'district_admin';
@@ -22,6 +24,7 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+  const currentYear = new Date().getFullYear();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,49 +38,94 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
   const isSuperAdmin = loginType === 'superadmin';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen h-dvh bg-gradient-to-br from-orange-50 via-white to-orange-50 flex items-start md:items-center justify-center px-4 sm:px-6 lg:px-8 py-6 md:py-0 relative overflow-y-auto md:overflow-hidden">
+      {/* Background Pattern removed to avoid 404 */}
+      
+      {/* Back to Home Link - fixed top left */}
+      <div className="fixed z-20 left-3 top-3 md:left-4 md:top-4" style={{ paddingLeft: 'env(safe-area-inset-left)', paddingTop: 'env(safe-area-inset-top)' }}>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 text-xs md:text-sm font-medium transition-colors bg-white/80 px-3 py-2 rounded-lg shadow-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+      </div>
+      
+      <div className="max-w-md w-full space-y-6 relative z-10 pb-8 md:pb-0 pt-12 md:pt-0">
+
+        {/* Organization Logo and Header */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center">
-            {isSuperAdmin ? (
-              <Shield className="h-6 w-6 text-orange-600" />
-            ) : (
-              <Users className="h-6 w-6 text-blue-600" />
-            )}
+          {/* Logo + Name on the same line */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 mb-6">
+            <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-full overflow-hidden ring-4 ring-orange-200 shadow-lg flex-shrink-0">
+              <Image
+                src="/rhvs_logo.png"
+                alt="Organization Logo"
+                width={64}
+                height={64}
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div className="text-left leading-tight">
+              <h1 className="text-xl sm:text-2xl font-bold text-orange-900 mb-1">
+                राष्ट्रीय हिंदू वाहिनी संगठन
+              </h1>
+              <p className="text-xs sm:text-sm text-orange-700/80">Rashtriya Hindu Vahini Sangathan</p>
+            </div>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            {isSuperAdmin ? 'Superadmin Login' : 'District Admin Login'}
+          
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <span className="h-px w-8 bg-orange-200" />
+            <span className="text-orange-500 text-2xl">🕉️</span>
+            <span className="h-px w-8 bg-orange-200" />
+          </div>
+          
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {isSuperAdmin ? 'Superadmin Portal' : 'District Admin Portal'}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="text-sm text-gray-600">
             {isSuperAdmin 
-              ? 'Access the full administrative panel'
-              : 'Access your district management panel'
+              ? 'Complete administrative access to all features'
+              : 'Manage your district and community'
             }
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">
+        {/* Login Card */}
+        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+              {isSuperAdmin ? (
+                <Shield className="h-6 w-6 text-orange-600" />
+              ) : (
+                <Users className="h-6 w-6 text-orange-600" />
+              )}
+            </div>
+            <CardTitle className="text-lg font-semibold text-gray-900">
               {isSuperAdmin ? 'Superadmin Access' : 'District Admin Access'}
             </CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription className="text-sm text-gray-600">
               {isSuperAdmin 
-                ? 'Enter your superadmin credentials to access all features'
-                : 'Enter your district admin credentials to manage your district'
+                ? 'Enter your credentials to access the administrative panel'
+                : 'Enter your credentials to manage your district'
               }
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+          
+          <CardContent className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert variant="destructive" className="border-red-200 bg-red-50">
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
 
-              <div>
-                <Label htmlFor="email">Email Address</Label>
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                  Email Address
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -86,14 +134,16 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1"
+                  className="h-11 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
                   placeholder="Enter your email address"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <div className="relative mt-1">
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <div className="relative">
                   <Input
                     id="password"
                     name="password"
@@ -103,10 +153,11 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
+                    className="h-11 pr-10 border-gray-300 focus:border-orange-500 focus:ring-orange-500"
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-orange-600 transition-colors cursor-pointer"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -120,7 +171,7 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
 
               <Button
                 type="submit"
-                className="w-full cursor-pointer disabled:cursor-not-allowed"
+                className="w-full h-11 bg-orange-600 hover:bg-orange-700 text-white font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
                 disabled={loading}
               >
                 {loading ? (
@@ -135,20 +186,20 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
                     ) : (
                       <Users className="mr-2 h-4 w-4" />
                     )}
-                    Sign In
+                    {isSuperAdmin ? 'Sign in as Superadmin' : 'Sign in as District Admin'}
                   </>
                 )}
               </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="text-center">
               <p className="text-sm text-gray-600">
                 {isSuperAdmin ? (
                   <>
                     Need district admin access?{' '}
                     <button
                       onClick={() => router.push('/admin/login')}
-                      className="font-medium text-blue-600 hover:text-blue-500"
+                      className="font-medium text-orange-600 hover:text-orange-500 transition-colors cursor-pointer"
                     >
                       District Admin Login
                     </button>
@@ -158,7 +209,7 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
                     Need superadmin access?{' '}
                     <button
                       onClick={() => router.push('/admin/superadmin/login')}
-                      className="font-medium text-orange-600 hover:text-orange-500"
+                      className="font-medium text-orange-600 hover:text-orange-500 transition-colors cursor-pointer"
                     >
                       Superadmin Login
                     </button>
@@ -168,6 +219,11 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
             </div>
           </CardContent>
         </Card>
+
+        {/* Footer */}
+        <div className="text-center text-xs text-gray-500">
+          <p>© {currentYear} Rashtriya Hindu Vahini Sangathan. All rights reserved.</p>
+        </div>
       </div>
     </div>
   );
