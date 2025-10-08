@@ -5,11 +5,11 @@ import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 // GET all categories (admin)
 export async function GET() {
   try {
-    const rows: any[] = await executeQuery(
+    const rows = await executeQuery(
       `SELECT id, name, description, isVisible, created_at, updated_at
        FROM product_categories
        ORDER BY name ASC`
-    );
+    ) as Array<{ id: number; name: string; description: string; isVisible: boolean; created_at: string; updated_at: string }>;
     return NextResponse.json({ success: true, categories: rows });
   } catch (e) {
     console.error('categories GET error', e);

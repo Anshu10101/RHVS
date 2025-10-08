@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+// import { useState } from 'react';
 import { ShoppingCart, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
@@ -49,7 +49,7 @@ export default function CartPage() {
               Your cart is empty
             </h2>
             <p className="text-gray-600 mb-8">
-              Looks like you haven't added any sacred products to your cart yet. 
+              Looks like you haven&apos;t added any sacred products to your cart yet. 
               Explore our collection of spiritual items and find something meaningful.
             </p>
             <Link href="/products">

@@ -14,17 +14,17 @@ import {
   Trash2, 
   Save, 
   ArrowLeft, 
-  Eye, 
-  EyeOff,
+  // Eye, 
+  // EyeOff,
   Phone,
   Mail,
   MessageCircle,
   MapPin,
   Store,
   Loader2,
-  CheckCircle,
+  // CheckCircle,
   Search,
-  Filter,
+  // Filter,
   Users
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

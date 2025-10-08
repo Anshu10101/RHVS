@@ -4,10 +4,10 @@ import { executeQuery } from '@/lib/database';
 // GET - Fetch single member by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const memberId = params.id;
+    const { id: memberId } = await params;
 
     const memberQuery = `
       SELECT 
@@ -19,7 +19,7 @@ export async function GET(
       WHERE id = ?
     `;
 
-    const members: any = await executeQuery(memberQuery, [memberId]);
+    const members = await executeQuery(memberQuery, [memberId]) as Array<Record<string, unknown>>;
 
     if (members.length === 0) {
       return NextResponse.json(
@@ -34,7 +34,7 @@ export async function GET(
     let verifierName = null;
     if (member.verified_by_member_id) {
       const verifierQuery = 'SELECT name FROM members WHERE id = ?';
-      const verifierResult: any = await executeQuery(verifierQuery, [member.verified_by_member_id]);
+      const verifierResult = await executeQuery(verifierQuery, [member.verified_by_member_id]) as Array<{ name: string }>;
       if (verifierResult.length > 0) {
         verifierName = verifierResult[0].name;
       }
@@ -43,9 +43,9 @@ export async function GET(
     const memberWithVerifier = {
       ...member,
       verified_by_name: verifierName,
-      created_at: new Date(member.created_at),
-      updated_at: new Date(member.updated_at),
-      registration_date: new Date(member.registration_date)
+      created_at: new Date(member.created_at as string),
+      updated_at: new Date(member.updated_at as string),
+      registration_date: new Date(member.registration_date as string)
     };
 
     return NextResponse.json({
@@ -64,10 +64,10 @@ export async function GET(
 // PUT - Update member
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const memberId = params.id;
+    const { id: memberId } = await params;
     const body = await request.json();
     const {
       name, email, phone, address, father_husband_name, mother_wife_name,
@@ -77,7 +77,7 @@ export async function PUT(
 
     // Check if member exists
     const existingMemberQuery = 'SELECT id FROM members WHERE id = ?';
-    const existingMember: any = await executeQuery(existingMemberQuery, [memberId]);
+    const existingMember = await executeQuery(existingMemberQuery, [memberId]) as Array<{ id: number }>;
     if (existingMember.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Member not found' },
@@ -88,7 +88,7 @@ export async function PUT(
     // Check if email already exists for another member
     if (email) {
       const emailCheckQuery = 'SELECT id FROM members WHERE email = ? AND id != ?';
-      const emailCheck: any = await executeQuery(emailCheckQuery, [email, memberId]);
+      const emailCheck = await executeQuery(emailCheckQuery, [email, memberId]) as Array<{ id: number }>;
       if (emailCheck.length > 0) {
         return NextResponse.json(
           { success: false, error: 'Email already exists' },
@@ -179,14 +179,14 @@ export async function PUT(
 // DELETE - Delete member
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const memberId = params.id;
+    const { id: memberId } = await params;
 
     // Check if member exists
     const existingMemberQuery = 'SELECT id, name FROM members WHERE id = ?';
-    const existingMember: any = await executeQuery(existingMemberQuery, [memberId]);
+    const existingMember = await executeQuery(existingMemberQuery, [memberId]) as Array<{ id: number; name: string }>;
     if (existingMember.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Member not found' },

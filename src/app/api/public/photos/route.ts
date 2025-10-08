@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
+import { executeQuery } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,6 +8,7 @@ export async function GET(request: NextRequest) {
     const eventType = searchParams.get('eventType');
     const state = searchParams.get('state');
     const district = searchParams.get('district');
+    const districtId = searchParams.get('districtId');
     const event = searchParams.get('event');
     const tags = searchParams.get('tags');
     const limit = searchParams.get('limit');
@@ -15,12 +17,26 @@ export async function GET(request: NextRequest) {
     // Get all public photos with event information
     const scope = { unrestricted: true }; // Public access
     
+    // If districtId is provided, we need to get the district name from the district ID
+    let districtName = district;
+    if (districtId && !districtName) {
+      try {
+        const districtQuery = 'SELECT district_name_english as name FROM districts WHERE district_code = ?';
+        const districtResult = await executeQuery(districtQuery, [districtId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+        if (districtResult.length > 0) {
+          districtName = districtResult[0].name;
+        }
+      } catch (error) {
+        console.error('Error fetching district name:', error);
+      }
+    }
+    
     const filters = {
       isVisible: true,
       isApproved: true,
       isFeatured: featured === 'true' ? true : undefined,
       state: state || undefined,
-      district: district || undefined,
+      district: districtName || undefined,
       event: event || undefined,
       tags: tags ? tags.split(',') : undefined
     };

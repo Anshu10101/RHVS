@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
     if (userType === 'district_admin') {
       district = claims.district;
       // Get district admin details
-      const adminRows: any[] = await executeQuery(
+      const adminRows = await executeQuery(
         'SELECT da.district, da.state, m.name FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ?',
         [claims.sub]
-      );
+      ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       if (adminRows.length > 0) {
         createdBy = adminRows[0].name || claims.email;
         state = adminRows[0].state;
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process tags - add district tag automatically
-    let processedTags = [];
+    let processedTags: string[] = [];
     if (tags) {
       try {
         processedTags = JSON.parse(tags);
@@ -125,18 +125,18 @@ export async function POST(request: NextRequest) {
     }
     
     // Add district tag automatically if not already present
-    if (district && !processedTags.some(tag => tag.toLowerCase().includes(district.toLowerCase()))) {
+    if (district && !processedTags.some((tag: string) => tag.toLowerCase().includes(district.toLowerCase()))) {
       processedTags.push(district);
     }
     
     // Add state tag automatically if not already present
-    if (state && !processedTags.some(tag => tag.toLowerCase().includes(state.toLowerCase()))) {
+    if (state && !processedTags.some((tag: string) => tag.toLowerCase().includes(state.toLowerCase()))) {
       processedTags.push(state);
     }
     
     const photoData = {
-      galleryId: galleryId || null,
-      eventId: eventId || null,
+      galleryId: galleryId || undefined,
+      eventId: eventId || undefined,
       filename,
       originalName: file.name,
       filePath: publicUrl,
@@ -148,13 +148,13 @@ export async function POST(request: NextRequest) {
       description: description || '',
       photographer: photographer || createdBy,
       uploadSource: 'admin' as const,
-      uploadSessionId: uploadSessionId || null,
+      uploadSessionId: uploadSessionId || undefined,
       isFeatured: false,
       isApproved: true,
       isVisible: true,
       sortOrder: 0,
-      district,
-      state,
+      district: district || undefined,
+      state: state || undefined,
       ownerAdminId: parseInt(claims.sub),
       createdBy
     };

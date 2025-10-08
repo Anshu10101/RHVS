@@ -31,7 +31,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // Generate PDF certificate
     const doc = new jsPDF('p', 'mm', 'a4');
-    const org = 'राष्ट्रीय हिंदू वाहिनी संगठन';
+    // const org = 'राष्ट्रीय हिंदू वाहिनी संगठन';
     const orgEnglish = 'Rashtriya Hindu Vahini Sangathan (RHVS)';
 
     // Clean white background
@@ -42,8 +42,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const addLogo = () => {
       return new Promise((resolve) => {
         try {
-          const fs = require('fs');
-          const path = require('path');
+          // Using already imported fs and path modules
           
           // Try multiple logo paths
           const logoPaths = [

@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       AND is_active = true
       AND expires_at IS NOT NULL
       AND expires_at < NOW()
-    `, [district_admin_id]);
+    `, [district_admin_id]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (expiredPermissions.length > 0) {
       // Deactivate expired permissions

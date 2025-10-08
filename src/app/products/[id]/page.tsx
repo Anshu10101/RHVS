@@ -143,8 +143,8 @@ export default function ProductDetailPage() {
         const res = await fetch('/api/content/store', { cache: 'no-store' });
         const data = await res.json();
         const all = Array.isArray(data?.products) ? data.products : [];
-        const sameCategory = all.filter((p: any) => String(p.category) === String(product.category) && String(p.id) !== String(product.id));
-        const mapped = sameCategory.slice(0, 12).map((p: any) => ({
+        const sameCategory = all.filter((p: Record<string, unknown>) => String(p.category) === String(product.category) && String(p.id) !== String(product.id));
+        const mapped = sameCategory.slice(0, 12).map((p: Record<string, unknown>) => ({
           id: String(p.id),
           name: p.name || 'Product',
           imageUrl: p.imageUrl || p.image_url || p.image_path || '/product/p1.jpg',

@@ -209,18 +209,18 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const { currentUser, hasPermission, logout } = useAdmin();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  if (!currentUser) {
-    return null;
-  }
-
   // Auto-expand Members section for district admins
   useEffect(() => {
     if (currentUser?.type === 'district_admin' && !expandedItems.includes('Members')) {
       setExpandedItems(prev => [...prev, 'Members']);
     }
-  }, [currentUser]); // Removed expandedItems from dependency array to prevent infinite loop
+  }, [currentUser, expandedItems]); // Include expandedItems in dependency array
 
-  const isSuperAdmin = currentUser?.role === 'superadmin';
+  if (!currentUser) {
+    return null;
+  }
+
+  // const isSuperAdmin = currentUser?.role === 'superadmin';
 
   const toggleExpanded = (itemName: string) => {
     setExpandedItems(prev =>
@@ -230,7 +230,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     );
   };
 
-  const getRoleBadgeColor = (user: any) => {
+  const getRoleBadgeColor = (user: { type?: string; role?: string }) => {
     if (user.type === 'superadmin') {
       return 'bg-red-100 text-red-800 border-red-200';
     } else if (user.type === 'district_admin') {

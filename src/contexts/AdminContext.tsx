@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
 export type UserRole = 'superadmin' | 'admin' | 'verified_member';
 export type UserType = 'superadmin' | 'district_admin' | 'member';
@@ -151,8 +151,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         }
       }
       setState(prev => ({ ...prev, loading: false }));
-    } catch (error: any) {
-      setState(prev => ({ ...prev, error: error.message || 'Login failed', loading: false }));
+    } catch (error: unknown) {
+      setState(prev => ({ ...prev, error: (error as Error).message || 'Login failed', loading: false }));
     }
   };
 
@@ -272,7 +272,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   // Check if permissions are expired and refresh if needed
-  const checkPermissionExpiry = async () => {
+  const checkPermissionExpiry = useCallback(async () => {
     if (!state.currentUser || state.currentUser.type !== 'district_admin') return;
     
     try {
@@ -304,7 +304,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error checking permission expiry:', error);
     }
-  };
+  }, [state.currentUser]);
 
   const canManageDistrict = (district: string): boolean => {
     if (!state.currentUser) return false;
@@ -329,7 +329,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const interval = setInterval(checkPermissionExpiry, 5 * 60 * 1000); // 5 minutes
       return () => clearInterval(interval);
     }
-  }, [state.currentUser]);
+  }, [state.currentUser, checkPermissionExpiry]);
 
   const value: AdminContextType = {
     ...state,

@@ -77,13 +77,13 @@ export async function GET(req: NextRequest) {
       LEFT JOIN sellers s ON s.id = p.seller_id
       WHERE p.owner_admin_id = ?
       ORDER BY p.created_at DESC
-    `, [scope.adminId]);
+    `, [scope.adminId]) as Array<Record<string, unknown>>;
     
     console.log(`Found ${rows.length} products for district admin:`, {
       districtName: scope.districtName,
       stateName: scope.stateName,
       adminId: scope.adminId,
-      productIds: rows.map((r: any) => ({ 
+      productIds: rows.map((r: Record<string, unknown>) => ({ 
         id: r.id, 
         name: r.name, 
         district_id: r.district_id, 
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Detect products.id definition to decide inserting strategy
-    const idCol: any[] = await executeQuery(`SHOW COLUMNS FROM products LIKE 'id'`);
+    const idCol = await executeQuery(`SHOW COLUMNS FROM products LIKE 'id'`) as Array<{ Type: string; Extra: string }>;
     const idType = String(idCol?.[0]?.Type || '').toLowerCase();
     const idExtra = String(idCol?.[0]?.Extra || '').toLowerCase();
 
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         scope.adminId ? scope.adminId.toString() : 'admin'
       ]);
-      createdId = (insert as any).insertId ?? null;
+      createdId = (insert as { insertId: number }).insertId ?? null;
     }
 
     // Track origin if district admin
@@ -197,8 +197,8 @@ export async function POST(req: NextRequest) {
         await executeQuery(`
           INSERT INTO content_origin (content_type, content_id, district_id, state_id, added_by_admin_id)
           VALUES ('product', ?, ?, ?, ?)
-        `, [createdId as any, scope.districtName, scope.stateName, scope.adminId]);
-      } catch (e) {
+        `, [createdId as number, scope.districtName, scope.stateName, scope.adminId]);
+      } catch (_e) {
         // If schema mismatch (e.g., INT vs VARCHAR), skip tracking rather than failing the creation
         console.warn('content_origin tracking skipped for product id', createdId);
       }
@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
             INSERT INTO product_images (product_id, image_url, is_primary, sort_order)
             VALUES (?, ?, ?, ?)
           `, [
-            createdId as any,
+            createdId as number,
             images[i],
             i === 0 ? 1 : 0, // First image is primary
             i
@@ -231,10 +231,10 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('products POST error', e);
     console.error('Error details:', {
-      message: (e as any).message,
-      code: (e as any).code,
-      sqlState: (e as any).sqlState,
-      sqlMessage: (e as any).sqlMessage
+      message: (e as Error).message,
+      code: (e as { code?: string }).code,
+      sqlState: (e as { sqlState?: string }).sqlState,
+      sqlMessage: (e as { sqlMessage?: string }).sqlMessage
     });
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
@@ -265,7 +265,7 @@ export async function PUT(req: NextRequest) {
          )
          LIMIT 1`,
         [id, scope.districtName, scope.stateName, scope.adminId, scope.districtName, scope.stateName, scope.adminId]
-      );
+      ) as Array<Record<string, unknown>>;
       
       if (!ownershipCheck.length) {
         return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
@@ -355,7 +355,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Ensure ownership - check both direct product fields and content_origin
-    const rows: any[] = await executeQuery(
+    const rows = await executeQuery(
       `SELECT p.id FROM products p
        LEFT JOIN content_origin co ON co.content_type = 'product' AND co.content_id = p.id
        WHERE p.id = ? AND (
@@ -364,7 +364,7 @@ export async function DELETE(req: NextRequest) {
        )
        LIMIT 1`,
       [id, scope.districtName, scope.stateName, scope.adminId, scope.districtName, scope.stateName, scope.adminId]
-    );
+    ) as Array<{ id: number }>;
     if (!rows.length) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
 
     await executeQuery('DELETE FROM products WHERE id = ?', [id]);

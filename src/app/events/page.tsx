@@ -93,7 +93,7 @@ export default function NewsAndEventsPage() {
         const statesRes = await fetch('/api/states', { cache: 'no-store' });
         const statesData = await statesRes.json();
         if (statesData?.success && Array.isArray(statesData.data)) {
-          const opts: StateOption[] = statesData.data.map((s: any) => ({ id: String(s.id), name: String(s.name) }));
+          const opts: StateOption[] = statesData.data.map((s: { id: string | number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
           setStateOptions(opts);
         }
 
@@ -454,7 +454,7 @@ export default function NewsAndEventsPage() {
                       const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
                       const data = await res.json();
                       if (data?.success && Array.isArray(data.data)) {
-                        const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+                        const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
                         setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
                         setSelectedDistrictName('All');
                       } else {

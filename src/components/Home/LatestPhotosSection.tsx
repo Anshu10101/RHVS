@@ -63,11 +63,11 @@ export default function LatestPhotosSection() {
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {(loading ? Array.from({ length: 8 }) : images).map((img, i) => (
-            <div key={img ? img.id : i} className="group relative overflow-hidden rounded-2xl bg-orange-100/60 shadow-sm ring-1 ring-orange-100">
+          {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 8 }).map(() => undefined) : images).map((img, i) => (
+            <div key={img?.id || i} className="group relative overflow-hidden rounded-2xl bg-orange-100/60 shadow-sm ring-1 ring-orange-100">
               {loading ? (
                 <div className="aspect-[4/3] animate-pulse bg-orange-100" />
-              ) : (
+              ) : img ? (
                 <>
                   <div className="relative aspect-[4/3]">
                     <Image
@@ -85,7 +85,7 @@ export default function LatestPhotosSection() {
                     <p className="text-white/80 text-xs line-clamp-1">{img.category}</p>
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           ))}
         </div>

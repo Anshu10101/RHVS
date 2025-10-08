@@ -14,10 +14,10 @@ export async function GET(req: NextRequest) {
   
   if (userType === 'superadmin') {
     // Fetch superadmin details
-    const rows: any[] = await executeQuery(
+    const rows = await executeQuery(
       'SELECT id, email, role, is_active, created_at, updated_at FROM superadmin WHERE id = ? LIMIT 1', 
       [claims.sub]
-    );
+    ) as Array<{ id: number; email: string; role: string; is_active: boolean; created_at: string; updated_at: string }>;
     
     if (rows.length === 0) return NextResponse.json({ authenticated: false }, { status: 401 });
     
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   } 
   else if (userType === 'district_admin') {
     // Fetch district admin details
-    const rows: any[] = await executeQuery(
+    const rows = await executeQuery(
       `SELECT 
         da.id, 
         da.member_id, 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
        JOIN members m ON da.member_id = m.id
        WHERE da.id = ? LIMIT 1`, 
       [claims.sub]
-    );
+    ) as Array<{ id: number; member_id: number; name: string; email: string; district: string; state: string; profile_photo: string; role: string; is_active: boolean; created_at: string; updated_at: string }>;
     
     if (rows.length === 0) return NextResponse.json({ authenticated: false }, { status: 401 });
     
@@ -60,17 +60,17 @@ export async function GET(req: NextRequest) {
     }
     
     // Fetch admin permissions
-    const permissionsRows: any[] = await executeQuery(
+    const permissionsRows = await executeQuery(
       `SELECT permission
        FROM district_admin_permissions
        WHERE district_admin_id = ? 
          AND is_active = 1
          AND (expires_at IS NULL OR expires_at > NOW())`,
       [claims.sub]
-    );
+    ) as Array<{ permission: string }>;
     
     // Fetch temporary permissions (permissions with expiry dates)
-    const temporaryPermissionsRows: any[] = await executeQuery(
+    const temporaryPermissionsRows = await executeQuery(
       `SELECT permission, expires_at
        FROM district_admin_permissions
        WHERE district_admin_id = ? 
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
          AND expires_at IS NOT NULL
          AND expires_at > NOW()`,
       [claims.sub]
-    );
+    ) as Array<{ permission: string; expires_at: string }>;
     
     const user = {
       ...rows[0],

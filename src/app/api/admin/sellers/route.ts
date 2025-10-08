@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
     // Generate unique seller ID
     const sellerId = `seller_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-    const insertResult = await executeQuery(`
+    await executeQuery(`
       INSERT INTO sellers (
         id, name, business_name, contact_phone, whatsapp_number,
         email, address, district, state, delivery_info, added_by_admin_id

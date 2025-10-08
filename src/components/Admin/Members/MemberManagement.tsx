@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -142,7 +142,7 @@ export function MemberManagement() {
   };
 
   // Fetch members data
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -175,7 +175,7 @@ export function MemberManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment]);
 
   // Fetch statistics
   const fetchStats = async () => {
@@ -229,7 +229,7 @@ export function MemberManagement() {
       const response = await fetch(`/api/districts?stateId=${stateId}`);
       const data = await response.json();
       if (data.success) {
-        setDistricts(data.data.map((district: any) => ({
+        setDistricts(data.data.map((district: { id: string | number; name: string }) => ({
           id: district.id,
           name: district.name
         })));
@@ -247,7 +247,7 @@ export function MemberManagement() {
   // Load data on component mount and when filters change
   useEffect(() => {
     fetchMembers();
-  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment]);
+  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment, fetchMembers]);
 
   useEffect(() => {
     fetchStats();
@@ -275,7 +275,7 @@ export function MemberManagement() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, regNumberSearch]);
+  }, [searchTerm, regNumberSearch, currentPage, fetchMembers]);
 
 
   const handleUpdateMember = async (e: React.FormEvent<HTMLFormElement>) => {

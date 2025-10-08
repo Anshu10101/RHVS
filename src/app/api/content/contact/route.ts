@@ -36,20 +36,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const success = await ContentService.saveContactContent(
-      contactInfo as ContactInfo[],
-      offices as ContactOffice[],
-      updatedBy
-    );
+    // TODO: Implement saveContactContent method in ContentService
+    // const success = await ContentService.saveContactContent(
+    //   contactInfo as ContactInfo[],
+    //   offices as ContactOffice[],
+    //   updatedBy
+    // );
 
-    if (success) {
-      return NextResponse.json({ success: true });
-    } else {
-      return NextResponse.json(
-        { success: false, error: 'Failed to save contact content' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(
+      { success: false, error: 'Not implemented: saveContactContent method is missing' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error saving contact content:', error);
     return NextResponse.json(

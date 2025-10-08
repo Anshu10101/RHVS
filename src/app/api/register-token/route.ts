@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `;
       
-      const members: any = await executeQuery(memberQuery, [existingMemberRegNumber, existingMemberRegNumber]);
+      const members = await executeQuery(memberQuery, [existingMemberRegNumber, existingMemberRegNumber]) as Array<{ id: number; name: string; email: string; member_reg_number: string }>;
       
       if (members.length === 0) {
         return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         ORDER BY created_at DESC LIMIT 1
       `;
       
-      const otpRecords: any = await executeQuery(otpQuery, [existingMemberRegNumber, otp]);
+      const otpRecords = await executeQuery(otpQuery, [existingMemberRegNumber, otp]) as Array<{ id: number }>;
       
       if (otpRecords.length === 0) {
         return NextResponse.json(
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
       // Check if email already exists in members table
       const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
-      const existingMembers: any = await executeQuery(existingMemberQuery, [email]);
+      const existingMembers = await executeQuery(existingMemberQuery, [email]) as Array<{ id: number }>;
       
       if (existingMembers.length > 0) {
         return NextResponse.json(
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
 
       // Check if email already has a pending token
       const existingTokenQuery = 'SELECT id FROM registration_tokens WHERE email = ? AND status = "pending"';
-      const existingTokens: any = await executeQuery(existingTokenQuery, [email]);
+      const existingTokens = await executeQuery(existingTokenQuery, [email]) as Array<{ id: number }>;
       
       if (existingTokens.length > 0) {
         return NextResponse.json(
@@ -141,11 +141,11 @@ export async function POST(request: NextRequest) {
 
       // Get state and district names from IDs
       const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-      const stateResult: any = await executeQuery(stateQuery, [stateId]);
+      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
       const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
 
       const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
-      const districtResult: any = await executeQuery(districtQuery, [districtId]);
+      const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
       const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
 
       // Generate registration token
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
-      const result: any = await executeQuery(insertTokenQuery, [
+      const result = await executeQuery(insertTokenQuery, [
         token,
         name,
         email,
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         profilePhotoPath || null,
         department || null,
         expiresAt
-      ]);
+      ]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
       // Send token email
       try {

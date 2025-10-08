@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Fix members table - add leading slash to paths that don't have it
     const updateMembersQuery = `
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         AND NOT profile_photo_path LIKE '/%'
     `;
     
-    const membersResult = await executeQuery(updateMembersQuery, []);
+    const membersResult = await executeQuery(updateMembersQuery, []) as { affectedRows: number };
     
     // Fix registration_tokens table - add leading slash to paths that don't have it
     const updateTokensQuery = `
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
         AND NOT profile_photo_path LIKE '/%'
     `;
     
-    const tokensResult = await executeQuery(updateTokensQuery, []);
+    const tokensResult = await executeQuery(updateTokensQuery, []) as { affectedRows: number };
     
     // Get updated paths to verify
     const membersCheck = await executeQuery(

@@ -55,14 +55,14 @@ export function useConfirmation() {
       state.onConfirm()
     }
     setState(prev => ({ ...prev, isOpen: false, onConfirm: null, onCancel: null }))
-  }, [state.onConfirm])
+  }, [state])
 
   const handleCancel = useCallback(() => {
     if (state.onCancel) {
       state.onCancel()
     }
     setState(prev => ({ ...prev, isOpen: false, onConfirm: null, onCancel: null }))
-  }, [state.onCancel])
+  }, [state])
 
   return {
     ...state,

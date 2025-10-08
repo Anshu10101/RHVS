@@ -36,8 +36,8 @@ function SuperadminLoginContent() {
       } else {
         setError('Login failed. Please check your credentials.');
       }
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.');
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

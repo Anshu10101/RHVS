@@ -33,17 +33,17 @@ export default function FeaturedProductsSection() {
         if (!mounted) return;
         if (data?.success && Array.isArray(data.products)) {
           // Normalize to FullProduct type and filter featured
-          const normalized: FullProduct[] = (data.products as any[]).map((p, i) => ({
+          const normalized: FullProduct[] = (data.products as Array<Record<string, unknown>>).map((p, i) => ({
             id: Number(String(p.id).replace(/\D/g, '')) || i + 1,
             detailId: String(p.id),
-            name: p.name ?? 'Product',
-            nameHindi: p.nameHindi ?? p.name ?? 'उत्पाद',
-            description: p.description ?? '',
+            name: (typeof p.name === 'string' && p.name) ? p.name : 'Product',
+            nameHindi: (typeof p.nameHindi === 'string' && p.nameHindi) ? p.nameHindi : ((typeof p.name === 'string' && p.name) ? p.name : 'उत्पाद'),
+            description: (typeof p.description === 'string' && p.description) ? p.description : '',
             price: Number(p.price ?? 0),
             originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
-            category: typeof p.category === 'string' ? p.category : (p.category?.name ?? 'General'),
-            image: p.image_url || p.imageUrl || p.image_path || '/product/p1.jpg',
-            images: p.images && Array.isArray(p.images) ? p.images : [p.image_url || p.imageUrl || p.image_path || '/product/p1.jpg'],
+            category: (typeof p.category === 'string' && p.category) ? p.category : ((p.category as any)?.name ?? 'General'), // eslint-disable-line @typescript-eslint/no-explicit-any
+            image: (typeof p.image_url === 'string' && p.image_url) || (typeof p.imageUrl === 'string' && p.imageUrl) || (typeof p.image_path === 'string' && p.image_path) || '/product/p1.jpg',
+            images: p.images && Array.isArray(p.images) ? p.images : [(typeof p.image_url === 'string' && p.image_url) || (typeof p.imageUrl === 'string' && p.imageUrl) || (typeof p.image_path === 'string' && p.image_path) || '/product/p1.jpg'],
             features: Array.isArray(p.features) ? p.features : [],
             tags: Array.isArray(p.tags) ? p.tags : [],
             inStock: typeof p.stock === 'number' ? p.stock > 0 : true,
@@ -89,7 +89,7 @@ export default function FeaturedProductsSection() {
       {!loading && (
         <FeaturedProductsMarquee
           products={products}
-          onProductClick={(p) => router.push(`/products/${encodeURIComponent(String((p as any).detailId || p.id))}`)}
+          onProductClick={(p) => router.push(`/products/${encodeURIComponent(String((p as FullProduct & { detailId?: string }).detailId || p.id))}`)}
         />
       )}
     </section>

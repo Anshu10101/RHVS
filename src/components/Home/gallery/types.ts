@@ -14,7 +14,7 @@ export interface GalleryImage {
 }
 
 // Helper function to convert Photo to GalleryImage
-export function photoToGalleryImage(photo: Photo): GalleryImage {
+export function photoToGalleryImage(photo: Photo): GalleryImage | null {
   // Ensure we have a valid src path
   const src = photo.filePath || photo.thumbnailPath || '';
   
@@ -41,6 +41,16 @@ export interface SortOption {
   label: string;
 }
 
+export interface StateOption {
+  id: string;
+  name: string;
+}
+
+export interface DistrictOption {
+  id: string;
+  name: string;
+}
+
 export interface GalleryFilterProps {
   categories: string[];
   activeCategory: string;
@@ -48,15 +58,14 @@ export interface GalleryFilterProps {
   sortOptions: SortOption[];
   sortBy: string;
   onSortChange: (sort: string) => void;
-  states?: string[];
-  districts?: string[];
-  selectedState?: string;
-  selectedDistrict?: string;
-  onStateChange?: (state: string) => void;
-  onDistrictChange?: (district: string) => void;
-  tags?: string[];
-  selectedTags?: string[];
-  onTagsChange?: (tags: string[]) => void;
+  stateOptions?: StateOption[];
+  districtOptions?: DistrictOption[];
+  selectedStateId?: string;
+  selectedStateName?: string;
+  selectedDistrictId?: string;
+  selectedDistrictName?: string;
+  onStateChange?: (stateId: string, stateName: string) => void;
+  onDistrictChange?: (districtId: string, districtName: string) => void;
   events?: string[];
   selectedEvent?: string;
   onEventChange?: (event: string) => void;
@@ -67,6 +76,7 @@ export interface GalleryGridProps {
   favorites: number[];
   onImageClick: (image: GalleryImage) => void;
   onToggleFavorite: (id: number) => void;
+  onResetFilters?: () => void;
 }
 
 export interface ImageModalProps {

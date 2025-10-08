@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowLeft, Search, RefreshCw } from 'lucide-react';
+import { Home, ArrowLeft, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export default function NotFound() {
@@ -47,8 +47,8 @@ export default function NotFound() {
             पृष्ठ नहीं मिला
           </h2>
           <p className="text-base text-orange-600 mb-6 max-w-md mx-auto animate-fadeInUp-delayed-2">
-            The page you're looking for seems to have vanished into the spiritual realm. 
-            Let's guide you back to the right path.
+            The page you&apos;re looking for seems to have vanished into the spiritual realm. 
+            Let&apos;s guide you back to the right path.
           </p>
 
           {/* Action Buttons */}
@@ -104,7 +104,7 @@ export default function NotFound() {
           {/* Spiritual Quote */}
           <div className="p-4 bg-gradient-to-r from-orange-100 to-orange-200 rounded-xl shadow-lg border border-orange-200 animate-fadeInUp-delayed-5">
             <blockquote className="text-sm italic text-orange-800 mb-1">
-              "सभी मार्ग ईश्वर की ओर ले जाते हैं, भले ही वे अलग-अलग दिखाई दें।"
+              &quot;सभी मार्ग ईश्वर की ओर ले जाते हैं, भले ही वे अलग-अलग दिखाई दें।&quot;
             </blockquote>
             <cite className="text-xs text-orange-600">
               - भगवद्गीता

@@ -30,7 +30,7 @@ export default function FixStockPage() {
       
       const data = await response.json();
       setResult(data);
-    } catch (error) {
+    } catch (_error) {
       setResult({
         success: false,
         message: 'Failed to connect to server'
@@ -95,7 +95,7 @@ export default function FixStockPage() {
           <div className="text-xs text-gray-500">
             <p>After running this fix:</p>
             <ul className="list-disc list-inside mt-1 space-y-1">
-              <li>All products will show as "In Stock" on the frontend</li>
+              <li>All products will show as &quot;In Stock&quot; on the frontend</li>
               <li>You can then manually adjust stock values in the Product Store Editor</li>
               <li>New products will use the correct stock values from the form</li>
             </ul>

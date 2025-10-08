@@ -33,15 +33,15 @@ export async function GET(request: NextRequest) {
         WHERE token = ?
       `;
       
-      let queryParams = [token];
+      const queryParams = [token];
       
       // Apply district admin scope filter
-      if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
         tokenQuery += ` AND (district = ? OR district LIKE ?)`;
         queryParams.push(scope.districtName, `${scope.districtName}%`);
       }
       
-      const tokens: any = await executeQuery(tokenQuery, queryParams);
+      const tokens = await executeQuery(tokenQuery, queryParams) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       
       if (tokens.length === 0) {
         return NextResponse.json(
@@ -82,11 +82,11 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause
-    let whereConditions = ['status = ?'];
-    let queryParams = [status];
+    const whereConditions = ['status = ?'];
+    const queryParams = [status];
 
     // Apply district admin scope filter
-    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
       whereConditions.push('(district = ? OR district LIKE ?)');
       queryParams.push(scope.districtName, `${scope.districtName}%`);
     }
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
 
     // Get total count
     const countQuery = `SELECT COUNT(*) as total FROM registration_tokens ${whereClause}`;
-    const countResult: any = await executeQuery(countQuery, queryParams);
+    const countResult = await executeQuery(countQuery, queryParams) as Array<{ total: number }>;
     const total = countResult[0].total;
 
     // Get tokens with pagination
@@ -117,12 +117,12 @@ export async function GET(request: NextRequest) {
       LIMIT ? OFFSET ?
     `;
 
-    const tokens: any = await executeQuery(tokensQuery, [...queryParams, limit, offset]);
+    const tokens = await executeQuery(tokensQuery, [...queryParams, limit, offset]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     return NextResponse.json({
       success: true,
       data: {
-        tokens: tokens.map((token: any) => ({
+        tokens: tokens.map((token: any) => ({ // eslint-disable-line @typescript-eslint/no-explicit-any
           ...token,
           created_at: new Date(token.created_at),
           updated_at: new Date(token.updated_at),
@@ -167,15 +167,15 @@ export async function POST(request: NextRequest) {
       
       // First, let's check if the token exists at all
       let tokenExistsQuery = `SELECT * FROM registration_tokens WHERE token = ?`;
-      let tokenExistsParams = [token];
+      const tokenExistsParams = [token];
       
       // Apply district admin scope filter
-      if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
         tokenExistsQuery += ` AND (district = ? OR district LIKE ?)`;
         tokenExistsParams.push(scope.districtName, `${scope.districtName}%`);
       }
       
-      const allTokens: any = await executeQuery(tokenExistsQuery, tokenExistsParams);
+      const allTokens = await executeQuery(tokenExistsQuery, tokenExistsParams) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       
       console.log('📊 Token query result:', allTokens.length, 'tokens found');
       
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
 
       // Check if this token has already been processed (member already created)
       const existingMemberByTokenQuery = 'SELECT id FROM members WHERE registration_token_id = ?';
-      const existingMemberByToken: any = await executeQuery(existingMemberByTokenQuery, [tokenData.id]);
+      const existingMemberByToken = await executeQuery(existingMemberByTokenQuery, [tokenData.id]) as Array<{ id: number }>;
       
       if (existingMemberByToken.length > 0) {
         return NextResponse.json(
@@ -250,7 +250,7 @@ export async function POST(request: NextRequest) {
 
       // Check if email already exists in members table
       const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
-      const existingMembers: any = await executeQuery(existingMemberQuery, [tokenData.email]);
+      const existingMembers = await executeQuery(existingMemberQuery, [tokenData.email]) as Array<{ id: number }>;
       
       if (existingMembers.length > 0) {
         return NextResponse.json(
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
 
       // Check if Aadhar card number already exists in members table
       const existingAadharQuery = 'SELECT id, name, email FROM members WHERE aadhar_card_number = ?';
-      const existingAadhar: any = await executeQuery(existingAadharQuery, [tokenData.aadhar_card_number]);
+      const existingAadhar = await executeQuery(existingAadharQuery, [tokenData.aadhar_card_number]) as Array<{ id: number; name: string; email: string }>;
       
       if (existingAadhar.length > 0) {
         const existingMember = existingAadhar[0];
@@ -280,31 +280,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Generate member registration number - maintain sequential flow
-      let memberRegNumber = await generateMemberRegistrationNumber();
-
-      // Double-check that the generated registration number doesn't already exist
-      const checkRegNumberQuery = 'SELECT id FROM members WHERE member_reg_number = ?';
-      const existingRegNumber: any = await executeQuery(checkRegNumberQuery, [memberRegNumber]);
-      
-      if (existingRegNumber.length > 0) {
-        // If it exists, find the next available number
-        let nextNumber = maxNumber + 1;
-        let newRegNumber = `RHVS${String(nextNumber).padStart(6, '0')}`;
-        
-        while (true) {
-          const checkNextQuery = 'SELECT id FROM members WHERE member_reg_number = ?';
-          const checkNextResult: any = await executeQuery(checkNextQuery, [newRegNumber]);
-          
-          if (checkNextResult.length === 0) {
-            break; // Found available number
-          }
-          
-          nextNumber++;
-          newRegNumber = `RHVS${String(nextNumber).padStart(6, '0')}`;
-        }
-        
-        memberRegNumber = newRegNumber;
-      }
+      const memberRegNumber = await generateMemberRegistrationNumber();
 
       // Validate profile photo is required
       if (!tokenData.profile_photo_path || tokenData.profile_photo_path.trim() === '') {
@@ -324,7 +300,7 @@ export async function POST(request: NextRequest) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', ?, NOW(), ?)
       `;
       
-      const memberResult: any = await executeQuery(insertMemberQuery, [
+      const memberResult = await executeQuery(insertMemberQuery, [
         tokenData.name,
         tokenData.email,
         tokenData.phone,
@@ -341,7 +317,7 @@ export async function POST(request: NextRequest) {
         tokenData.department,
         adminId,
         tokenData.id
-      ]);
+      ]) as { insertId: number };
 
       // Update token status
       await executeQuery(
@@ -410,12 +386,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error verifying token:', error);
     
     // Handle specific database errors
-    if (error?.code === 'ER_DUP_ENTRY') {
-      if (error.sqlMessage?.includes('aadhar_card_number')) {
+    if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+      if ((error as { sqlMessage?: string }).sqlMessage?.includes('aadhar_card_number')) {
         return NextResponse.json(
           { 
             success: false, 

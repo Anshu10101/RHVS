@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
-import { getAdminScope } from '@/lib/admin-scope';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // For the public store API, always show all products regardless of admin status
     // District filtering only applies to admin dashboard, not public store
@@ -36,19 +35,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const success = await ContentService.saveStoreContent(products, categories, updatedBy || 'admin');
+    // TODO: Implement saveStoreContent method in ContentService
+    // const success = await ContentService.saveStoreContent(products, categories, updatedBy || 'admin');
 
-    if (success) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Store content saved successfully' 
-      });
-    } else {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Failed to save store content' 
-      }, { status: 500 });
-    }
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Not implemented: saveStoreContent method is missing' 
+    }, { status: 501 });
   } catch (error) {
     console.error('Error saving store content:', error);
     return NextResponse.json({ 

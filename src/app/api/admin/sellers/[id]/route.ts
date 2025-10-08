@@ -5,11 +5,11 @@ import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 // GET: get specific seller details
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const scope = await getAdminScope(req);
-    const sellerId = params.id;
+    const { id: sellerId } = await params;
 
     let query = `
       SELECT 
@@ -23,7 +23,7 @@ export async function GET(
       WHERE s.id = ?
     `;
 
-    let params_array = [sellerId];
+    const params_array = [sellerId];
 
     // District admin can only see their own sellers
     if (!scope.isSuperAdmin) {
@@ -36,10 +36,11 @@ export async function GET(
       }
 
       query += ` AND s.district = ? AND s.state = ? AND s.added_by_admin_id = ?`;
-      params_array.push(scope.districtName, scope.stateName, scope.adminId);
+      params_array.push(scope.districtName, scope.stateName, String(scope.adminId));
     }
 
-    const rows = await executeQuery(query, params_array);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = await executeQuery(query, params_array) as any[];
 
     if (rows.length === 0) {
       return NextResponse.json({ success: false, message: 'Seller not found' }, { status: 404 });
@@ -48,7 +49,7 @@ export async function GET(
     // Get seller's products count
     const productCount = await executeQuery(`
       SELECT COUNT(*) as count FROM products WHERE seller_id = ?
-    `, [sellerId]);
+    `, [sellerId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     return NextResponse.json({ 
       success: true, 
@@ -67,11 +68,11 @@ export async function GET(
 // PUT: update seller
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const scope = await getAdminScope(req);
-    const sellerId = params.id;
+    const { id: sellerId } = await params;
 
     if (!scope.isSuperAdmin && !ensurePermission(scope, ['manage_sellers', 'edit_sellers'])) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
@@ -97,10 +98,17 @@ export async function PUT(
     }
 
     // Check if seller exists and belongs to this admin
-    const existingSeller = await executeQuery(`
-      SELECT id FROM sellers 
-      WHERE id = ? AND district = ? AND state = ? AND added_by_admin_id = ?
-    `, [sellerId, scope.districtName, scope.stateName, scope.adminId]);
+    let sellerQuery = `SELECT id FROM sellers WHERE id = ?`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sellerParams: any[] = [sellerId];
+    
+    if (!scope.isSuperAdmin) {
+      sellerQuery += ` AND district = ? AND state = ? AND added_by_admin_id = ?`;
+      sellerParams.push(scope.districtName, scope.stateName, String(scope.adminId));
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existingSeller = await executeQuery(sellerQuery, sellerParams) as any[];
 
     if (existingSeller.length === 0) {
       return NextResponse.json({ success: false, message: 'Seller not found' }, { status: 404 });
@@ -138,11 +146,11 @@ export async function PUT(
 // DELETE: delete seller
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const scope = await getAdminScope(req);
-    const sellerId = params.id;
+    const { id: sellerId } = await params;
 
     if (!scope.isSuperAdmin && !ensurePermission(scope, ['manage_sellers', 'delete_sellers'])) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
@@ -158,7 +166,7 @@ export async function DELETE(
     // Check if seller has products
     const products = await executeQuery(`
       SELECT COUNT(*) as count FROM products WHERE seller_id = ?
-    `, [sellerId]);
+    `, [sellerId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (products[0]?.count > 0) {
       return NextResponse.json({ 
@@ -168,10 +176,17 @@ export async function DELETE(
     }
 
     // Check if seller exists and belongs to this admin
-    const existingSeller = await executeQuery(`
-      SELECT id FROM sellers 
-      WHERE id = ? AND district = ? AND state = ? AND added_by_admin_id = ?
-    `, [sellerId, scope.districtName, scope.stateName, scope.adminId]);
+    let sellerQuery = `SELECT id FROM sellers WHERE id = ?`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sellerParams: any[] = [sellerId];
+    
+    if (!scope.isSuperAdmin) {
+      sellerQuery += ` AND district = ? AND state = ? AND added_by_admin_id = ?`;
+      sellerParams.push(scope.districtName, scope.stateName, String(scope.adminId));
+    }
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existingSeller = await executeQuery(sellerQuery, sellerParams) as any[];
 
     if (existingSeller.length === 0) {
       return NextResponse.json({ success: false, message: 'Seller not found' }, { status: 404 });

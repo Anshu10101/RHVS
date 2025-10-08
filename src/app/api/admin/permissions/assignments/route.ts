@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     const adminExists = await executeQuery(
       'SELECT id FROM district_admins WHERE id = ? AND is_active = true',
       [district_admin_id]
-    );
+    ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (adminExists.length === 0) {
       return NextResponse.json(
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     // Get superadmin ID (assuming it's the first superadmin for now)
     const superadmin = await executeQuery(
       'SELECT id FROM district_admins WHERE role = "superadmin" LIMIT 1'
-    );
+    ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     const grantedBy = superadmin[0]?.id || 1;
 
     // Insert permission assignments

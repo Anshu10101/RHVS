@@ -4,10 +4,10 @@ import { executeQuery } from '@/lib/database';
 // GET - Get certificate details for a member
 export async function GET(
   request: NextRequest,
-  { params }: { params: { memberId: string } }
+  { params }: { params: Promise<{ memberId: string }> }
 ) {
   try {
-    const memberId = params.memberId;
+    const { memberId } = await params;
     
     const query = `
       SELECT 
@@ -24,7 +24,14 @@ export async function GET(
       LIMIT 1
     `;
     
-    const certificates: any = await executeQuery(query, [memberId]);
+    const certificates = await executeQuery(query, [memberId]) as Array<{ 
+      id: number; 
+      certificate_number: string; 
+      certificate_path: string; 
+      generated_at: string; 
+      member_reg_number: string; 
+      member_name: string;
+    }>;
     
     if (certificates.length === 0) {
       return NextResponse.json(

@@ -94,7 +94,7 @@ export default function MemberRegistrationPage() {
       const data = await response.json();
       
       if (data.success) {
-        return data.data.map((district: any) => ({
+        return data.data.map((district: { id: string | number; name: string }) => ({
           value: district.id.toString(),
           label: district.name
         }));
@@ -461,7 +461,7 @@ export default function MemberRegistrationPage() {
                   <div className="p-1 bg-green-500 rounded-full">
                     <CheckCircle className="h-4 w-4 text-white" />
                   </div>
-                  <span className="text-green-700 font-medium">OTP sent to existing member's registered email</span>
+                  <span className="text-green-700 font-medium">OTP sent to existing member&apos;s registered email</span>
                 </div>
               )}
             </CardContent>

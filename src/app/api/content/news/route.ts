@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       FROM news n
       WHERE 1=1
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     const id = searchParams.get('id');
     if (id) {
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const id = `news_${Date.now()}`;
     
     // Convert undefined values to null for MySQL
-    const safeValue = (val: any) => val === undefined ? null : val;
+    const safeValue = (val: unknown) => val === undefined ? null : val;
     
     // Get district and state information based on admin scope
     let district = null;
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
     } = body;
 
     // Convert undefined values to null for MySQL
-    const safeValue = (val: any) => val === undefined ? null : val;
+    const safeValue = (val: unknown) => val === undefined ? null : val;
     
     await pool.execute(
       `UPDATE news SET 

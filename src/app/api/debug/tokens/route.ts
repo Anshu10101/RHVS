@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 
 // GET - Debug endpoint to list all tokens
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const query = `
       SELECT 
@@ -19,11 +19,11 @@ export async function GET(request: NextRequest) {
       LIMIT 20
     `;
     
-    const tokens: any = await executeQuery(query, []);
+    const tokens = await executeQuery(query, []) as Array<{ id: number; token: string; name: string; email: string; status: string; expires_at: string; created_at: string; status_display: string }>;
     
     return NextResponse.json({
       success: true,
-      data: tokens.map((token: any) => ({
+      data: tokens.map((token) => ({
         ...token,
         expires_at: new Date(token.expires_at).toISOString(),
         created_at: new Date(token.created_at).toISOString(),

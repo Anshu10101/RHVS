@@ -22,17 +22,17 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
 
   if (isDistrictAdmin && adminId) {
     // Prefer DB for current district/state to avoid stale JWT
-    const rows: any[] = await executeQuery(
+    const rows = await executeQuery(
       'SELECT district, state FROM district_admins WHERE id = ? LIMIT 1',
       [adminId]
-    );
+    ) as Array<{ district: string; state: string }>;
     // Load active permissions from DB for district admin
     try {
-      const permRows: any[] = await executeQuery(
+      const permRows = await executeQuery(
         `SELECT permission FROM district_admin_permissions WHERE district_admin_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY permission`,
         [adminId]
-      );
-      const dbPerms = Array.isArray(permRows) ? permRows.map((r: any) => String(r.permission)) : [];
+      ) as Array<{ permission: string }>;
+      const dbPerms = Array.isArray(permRows) ? permRows.map((r: { permission: string }) => String(r.permission)) : [];
       if (dbPerms.length > 0) permissions = dbPerms;
     } catch (_) {
       // fall back to JWT permissions if DB lookup fails

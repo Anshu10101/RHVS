@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
       ORDER BY permission
     `;
     
-    const result = await executeQuery(query, [claims.sub]);
-    const permissions = result.map((row: any) => row.permission);
+    const result = await executeQuery(query, [claims.sub]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const permissions = result.map((row: { permission: string }) => row.permission);
 
     return NextResponse.json({ 
       success: true, 

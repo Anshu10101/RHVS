@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       expiredAssignments,
       totalAdmins,
       totalPermissions
-    ] = await Promise.all([
+    ] = (await Promise.all([
       // Total assignments
       executeQuery(`
         SELECT COUNT(*) as count 
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
         SELECT COUNT(*) as count 
         FROM available_permissions
       `)
-    ]);
+    ])) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const stats = {
       total_assignments: totalAssignments[0]?.count || 0,

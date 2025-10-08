@@ -43,7 +43,7 @@ export function AsyncSearchableSelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const optionRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const debounceTimeoutRef = useRef<NodeJS.Timeout>();
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Get selected option label
   const selectedOption = options.find(option => option.value === value);
@@ -225,7 +225,8 @@ export function AsyncSearchableSelect({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  handleClear(e as any);
+                  onValueChange('');
+                  setSearchTerm('');
                 }
               }}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400/50"
@@ -276,7 +277,7 @@ export function AsyncSearchableSelect({
               options.map((option, index) => (
                 <div
                   key={option.value}
-                  ref={(el) => (optionRefs.current[index] = el)}
+                  ref={(el) => { optionRefs.current[index] = el; }}
                   onClick={() => handleOptionClick(option.value)}
                   className={cn(
                     "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors hover:bg-orange-50",

@@ -14,11 +14,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Shield, 
   UserCheck, 
-  Clock, 
-  Calendar,
-  Users,
+  // Clock, 
+  // Calendar,
+  // Users,
   Save,
-  X,
+  // X,
   AlertCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -55,7 +55,7 @@ export default function AssignPermissionsPage() {
   const [districtAdmins, setDistrictAdmins] = useState<DistrictAdmin[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<AvailablePermission[]>([]);
   // Removed quick-select templates per requirement
-  const [templates, setTemplates] = useState<PermissionTemplate[]>([]);
+  // const [templates, setTemplates] = useState<PermissionTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Form state
@@ -142,7 +142,7 @@ export default function AssignPermissionsPage() {
         const err = await res.json();
         toast.error(err.error || 'Failed to revoke');
       }
-    } catch (e) {
+    } catch (_e) {
       toast.error('Failed to revoke');
     }
   };
@@ -157,7 +157,7 @@ export default function AssignPermissionsPage() {
         const err = await res.json();
         toast.error(err.error || 'Failed to revoke all');
       }
-    } catch (e) {
+    } catch (_e) {
       toast.error('Failed to revoke all');
     }
   };
@@ -195,7 +195,7 @@ export default function AssignPermissionsPage() {
         setAvailablePermissions([]);
       }
 
-      setTemplates([]);
+      // setTemplates([]);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load data');
@@ -205,7 +205,7 @@ export default function AssignPermissionsPage() {
   };
 
   // Templates removed
-  const handleTemplateSelect = (_: string) => {};
+  // const handleTemplateSelect = (_: string) => {};
 
   const handlePermissionToggle = (permissionKey: string) => {
     setSelectedPermissions(prev => 
@@ -544,7 +544,7 @@ export default function AssignPermissionsPage() {
                                       const err = await res.json();
                                       toast.error(err.error || 'Failed to revoke');
                                     }
-                                  } catch (e) {
+                                  } catch (_e) {
                                     toast.error('Failed to revoke');
                                   }
                                 }}
@@ -576,7 +576,7 @@ export default function AssignPermissionsPage() {
                   </Badge>
                 </div>
                 
-                <Alert variant="info" className="bg-blue-50 border-blue-200">
+                <Alert variant="default" className="bg-blue-50 border-blue-200">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="text-xs">
                     Member management permissions are permanent and will not expire. Content management permissions can be set to expire.
@@ -636,7 +636,7 @@ export default function AssignPermissionsPage() {
                           const err = await res.json();
                           toast.error(err.error || 'Failed to revoke');
                         }
-                      } catch (e) {
+                      } catch (_e) {
                         toast.error('Failed to revoke');
                       }
                     }}

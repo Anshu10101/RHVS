@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { district_admin_id, permissions, expires_at, notes } = body || {};
+    const { district_admin_id, permissions, expires_at } = body || {};
     if (!district_admin_id || !Array.isArray(permissions) || permissions.length === 0) {
       return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400 });
     }

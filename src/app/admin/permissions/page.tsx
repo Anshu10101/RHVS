@@ -11,9 +11,9 @@ import {
   UserCheck, 
   Clock, 
   AlertTriangle, 
-  CheckCircle,
+  // CheckCircle,
   Users,
-  Calendar,
+  // Calendar,
   Settings
 } from 'lucide-react';
 import Link from 'next/link';
@@ -52,7 +52,7 @@ interface PermissionStats {
 }
 
 export default function PermissionManagementPage() {
-  const { currentUser, hasPermission } = useAdmin();
+  const { currentUser } = useAdmin();
   const [assignments, setAssignments] = useState<PermissionAssignment[]>([]);
   const [templates, setTemplates] = useState<PermissionTemplate[]>([]);
   const [stats, setStats] = useState<PermissionStats | null>(null);

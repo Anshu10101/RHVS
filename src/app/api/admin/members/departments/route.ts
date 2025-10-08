@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 
 // GET - Fetch all unique departments
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get unique departments from members table
     const membersQuery = `
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
       WHERE department IS NOT NULL AND department != ''
       ORDER BY department
     `;
-    const membersResult: any = await executeQuery(membersQuery, []);
+    const membersResult = await executeQuery(membersQuery, []) as Array<{ department: string }>;
 
     // Get unique departments from registration_tokens table
     const tokensQuery = `
@@ -20,12 +20,12 @@ export async function GET(request: NextRequest) {
       WHERE department IS NOT NULL AND department != ''
       ORDER BY department
     `;
-    const tokensResult: any = await executeQuery(tokensQuery, []);
+    const tokensResult = await executeQuery(tokensQuery, []) as Array<{ department: string }>;
 
     // Combine and deduplicate departments
     const allDepartments = new Set([
-      ...membersResult.map((row: any) => row.department),
-      ...tokensResult.map((row: any) => row.department)
+      ...membersResult.map((row: { department: string }) => row.department),
+      ...tokensResult.map((row: { department: string }) => row.department)
     ]);
 
     const departments = Array.from(allDepartments).sort();

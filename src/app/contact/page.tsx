@@ -120,7 +120,7 @@ export default async function ContactPage() {
                             विशिष्ट केंद्रीय कार्यालय
                           </h3>
                           <p className="text-orange-700/80 leading-relaxed">
-                            राष्ट्रीय हिन्दू वाहिनी संगठन "उत्तरायण"<br/>
+                            राष्ट्रीय हिन्दू वाहिनी संगठन &quot;उत्तरायण&quot;<br/>
                             गुरुकुल पब्लिक स्कूल के पास<br/>
                             दतिया (म. प्र.) 475661
                           </p>
@@ -137,7 +137,7 @@ export default async function ContactPage() {
                             केंद्रीय कार्यालय
                           </h3>
                           <p className="text-orange-700/80 leading-relaxed">
-                            D–305, "कान्हा कुंज"<br/>
+                            D–305, &quot;कान्हा कुंज&quot;<br/>
                             इंदिरा पार्क, नजफगढ़<br/>
                             नई दिल्ली – 110043
                           </p>

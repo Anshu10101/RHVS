@@ -119,7 +119,7 @@ export default async function AboutPage() {
                 <div className="container mx-auto px-4">
                   <figure className={`border-l-4 border-orange-300 pl-4 italic ${getTextColorClass(section.styling?.color)} bg-orange-50/50 py-3 rounded-r-md`}>
                     <blockquote className={`${getFontSizeClass(section.styling?.fontSize)} ${getFontWeightClass(section.styling?.fontWeight)}`}>
-                      "{section.content}"
+                      &quot;{section.content}&quot;
                     </blockquote>
                     {section.title && (
                       <figcaption className="mt-2 text-sm text-orange-700">

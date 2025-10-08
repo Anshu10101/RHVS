@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
       FROM permission_templates
       WHERE is_active = true
       ORDER BY created_at DESC
-    `);
+    `) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // Parse JSON permissions
     const parsedTemplates = templates.map(template => ({
@@ -68,14 +68,14 @@ export async function POST(req: NextRequest) {
     // Get superadmin ID
     const superadmin = await executeQuery(
       'SELECT id FROM district_admins WHERE role = "superadmin" LIMIT 1'
-    );
+    ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     const createdBy = superadmin[0]?.id || 1;
 
     const result = await executeQuery(`
       INSERT INTO permission_templates 
       (name, description, permissions, created_by, is_active)
       VALUES (?, ?, ?, ?, true)
-    `, [name, description, JSON.stringify(permissions), createdBy]);
+    `, [name, description, JSON.stringify(permissions), createdBy]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     return NextResponse.json({ 
       message: 'Template created successfully',

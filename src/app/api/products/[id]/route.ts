@@ -17,7 +17,7 @@ export async function GET(
     }
 
     // Get product details with images and seller information
-    const productRows: any[] = await executeQuery(`
+    const productRows = await executeQuery(`
       SELECT DISTINCT
         p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
         p.image_path AS image_url, p.isVisible, p.is_featured, p.stock, p.tags,
@@ -35,12 +35,12 @@ export async function GET(
       LEFT JOIN members m ON m.id = da.member_id
       LEFT JOIN sellers s ON s.id = p.seller_id
       WHERE p.id = ? AND p.isVisible = 1
-    `, [productId]);
+    `, [productId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (!productRows || productRows.length === 0) {
       console.log('No product found with ID:', productId);
       // Let's check what products exist
-      const [allProducts] = await executeQuery('SELECT id, name FROM products LIMIT 5');
+      const allProducts = await executeQuery('SELECT id, name FROM products LIMIT 5') as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       console.log('Available products:', allProducts);
       return NextResponse.json({ 
         success: false, 
@@ -51,12 +51,12 @@ export async function GET(
     const product = productRows[0];
 
     // Get product images
-    const imageRows: any[] = await executeQuery(`
+    const imageRows = await executeQuery(`
       SELECT image_url, is_primary, sort_order
       FROM product_images 
       WHERE product_id = ? 
       ORDER BY is_primary DESC, sort_order ASC
-    `, [productId]);
+    `, [productId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // Transform product data
     const transformedProduct = {
@@ -69,7 +69,7 @@ export async function GET(
       seller_id: product.seller_id,
       imageUrl: product.image_url,
       images: imageRows.length > 0 
-        ? imageRows.map((img: any) => img.image_url)
+        ? imageRows.map((img: { image_url: string }) => img.image_url)
         : [product.image_url],
       isVisible: Boolean(product.isVisible),
       isFeatured: Boolean(product.is_featured),

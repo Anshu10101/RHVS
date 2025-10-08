@@ -207,7 +207,7 @@ export async function sendTokenEmail(to: string, token: string, memberName: stri
     `;
 
     const result = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
       to,
       subject,
       html,
@@ -216,7 +216,7 @@ export async function sendTokenEmail(to: string, token: string, memberName: stri
     console.log(`✅ ${isRegistration ? 'Token' : 'OTP'} email sent successfully:`, result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error(`❌ Failed to send ${isRegistration ? 'token' : 'OTP'} email:`, error);
+    console.error(`❌ Failed to send email:`, error);
     return { success: false, error: error };
   }
 }
@@ -253,8 +253,8 @@ export async function sendWelcomeEmail(to: string, memberName: string, memberReg
       </div>
     `;
 
-    const mailOptions: any = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+    const mailOptions: { from: string; to: string; subject: string; html: string; attachments?: Array<{ filename: string; path: string }> } = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
       to,
       subject: `Welcome to RHVS - ${memberRegNumber}`,
       html,
@@ -262,8 +262,8 @@ export async function sendWelcomeEmail(to: string, memberName: string, memberReg
 
     // Attach certificate if provided
     if (certificatePath) {
-      const fs = require('fs');
-      const path = require('path');
+      const fs = await import('fs');
+      const path = await import('path');
       const fullPath = path.join(process.cwd(), 'public', certificatePath);
       if (fs.existsSync(fullPath)) {
         mailOptions.attachments = [{

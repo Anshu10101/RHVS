@@ -83,8 +83,8 @@ export default function LatestNewsEventsSection() {
               <Link href="/events" className="text-sm text-orange-700 hover:text-orange-800 font-medium">View all</Link>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {(loading ? Array.from({ length: 3 }) : news.slice(0, 3)).map((item, i) => (
-                <article key={item ? item.id : i} className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-orange-100/50">
+              {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 3 }).map(() => undefined) : news.slice(0, 3)).map((item, i) => (
+                <article key={item?.id || i} className="bg-white/80 backdrop-blur-sm rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow border border-orange-100/50">
                   {item && item.image_path ? (
                     <Link href={`/news/${item.id}`} className="aspect-video overflow-hidden block bg-gray-50">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -150,8 +150,8 @@ export default function LatestNewsEventsSection() {
               <Link href="/events" className="text-sm text-orange-700 hover:text-orange-800 font-medium">View all</Link>
             </div>
             <div className="grid grid-cols-1 gap-4">
-              {(loading ? Array.from({ length: 3 }) : events.slice(0, 3)).map((item, i) => (
-                <article key={item ? item.id : i} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow border border-orange-100/50">
+              {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 3 }).map(() => undefined) : events.slice(0, 3)).map((item, i) => (
+                <article key={item?.id || i} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow border border-orange-100/50">
                   {item && item.image_path ? (
                     <Link href={`/events/${item.id}`} className="block bg-gray-50">
                       <div className="w-full h-56 flex items-center justify-center overflow-hidden">

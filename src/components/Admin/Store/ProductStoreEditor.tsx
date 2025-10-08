@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,88 +136,8 @@ export default function ProductStoreEditor() {
   const [selectedStateName, setSelectedStateName] = useState<string>('All');
   const [selectedDistrictName, setSelectedDistrictName] = useState<string>('All');
 
-  // Load initial data
-  useEffect(() => {
-    loadProducts();
-    loadCategories();
-    loadSellers();
-    
-    // Load states for superadmin location filters
-    if (currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') {
-      loadStates();
-    }
-  }, [currentUser]);
-
-  const loadProducts = async () => {
-    try {
-      // use admin-scoped API so district admins only see their own, superadmin sees all
-      const response = await fetch('/api/admin/content/products', { cache: 'no-store', credentials: 'include' });
-      const data = await response.json();
-      if (data.success) {
-        const items = (data.data || []).map((row: any) => ({
-          id: String(row.id),
-          name: row.name || row.title || `Product ${row.id}`,
-          description: row.description || '',
-          price: Number(row.price ?? 0),
-          originalPrice: Number(row.original_price ?? row.price ?? 0),
-          category: String(row.category || 'default'),
-          imageUrl: row.image_url || row.imageUrl || '',
-          isVisible: Boolean(row.is_visible ?? true),
-          isFeatured: Boolean(row.is_featured ?? false),
-          stock: Number(row.stock ?? 0),
-          tags: Array.isArray(row.tags) ? row.tags : [],
-          createdAt: new Date(row.created_at || Date.now()),
-          updatedAt: new Date(row.updated_at || row.created_at || Date.now()),
-          updatedBy: row.updated_by || 'admin',
-          district_id: row.district_id ?? null,
-          state_id: row.state_id ?? null,
-          added_by_name: row.added_by_name ?? null,
-        })) as Product[];
-        // Remove duplicates based on product ID
-        const uniqueProducts = items.filter((product, index, self) => 
-          index === self.findIndex(p => p.id === product.id)
-        );
-        setProducts(uniqueProducts);
-      }
-    } catch (error) {
-      console.error('Error loading products:', error);
-    }
-  };
-
-  const loadCategories = async () => {
-    try {
-      const response = await fetch('/api/content/store/categories');
-      const data = await response.json();
-      if (data.success) {
-        const categoriesData = data.categories || [];
-        setCategories(categoriesData);
-      } else {
-        console.error('Failed to load categories:', data.error);
-        // Set default categories as fallback
-        setDefaultCategories();
-      }
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      // Set default categories as fallback
-      setDefaultCategories();
-    }
-  };
-
-  const loadSellers = async () => {
-    try {
-      const response = await fetch('/api/admin/sellers');
-      const data = await response.json();
-      if (data.success) {
-        setSellers(data.data || []);
-      } else {
-        console.error('Failed to load sellers:', data.message);
-      }
-    } catch (error) {
-      console.error('Error loading sellers:', error);
-    }
-  };
-
-  const setDefaultCategories = () => {
+  // Define setDefaultCategories before it's used
+  const setDefaultCategories = useCallback(() => {
     const defaultCategories: ProductCategory[] = [
       {
         id: 'cat_default_1',
@@ -245,27 +165,113 @@ export default function ProductStoreEditor() {
       }
     ];
     setCategories(defaultCategories);
-  };
+  }, []);
 
-  const loadStates = async () => {
+  // Define loadStates before it's used
+  const loadStates = useCallback(async () => {
     try {
       const response = await fetch('/api/states', { cache: 'no-store' });
       const data = await response.json();
       if (data?.success && Array.isArray(data.data)) {
-        const opts: StateOption[] = data.data.map((s: any) => ({ id: String(s.id), name: String(s.name) }));
+        const opts: StateOption[] = data.data.map((s: { id: string | number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
         setStateOptions(opts);
       }
     } catch (error) {
       console.error('Error loading states:', error);
     }
+  }, []);
+
+  // Define loadCategories before it's used
+  const loadCategories = useCallback(async () => {
+    try {
+      const response = await fetch('/api/content/store/categories');
+      const data = await response.json();
+      if (data.success) {
+        const categoriesData = data.categories || [];
+        setCategories(categoriesData);
+      } else {
+        console.error('Failed to load categories:', data.error);
+        // Set default categories as fallback
+        setDefaultCategories();
+      }
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      // Set default categories as fallback
+      setDefaultCategories();
+    }
+  }, [setDefaultCategories]);
+
+  // Load initial data
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+    loadSellers();
+    
+    // Load states for superadmin location filters
+    if (currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') {
+      loadStates();
+    }
+  }, [currentUser, loadCategories, loadStates]);
+
+  const loadProducts = async () => {
+    try {
+      // use admin-scoped API so district admins only see their own, superadmin sees all
+      const response = await fetch('/api/admin/content/products', { cache: 'no-store', credentials: 'include' });
+      const data = await response.json();
+      if (data.success) {
+        const items = (data.data || []).map((row: Record<string, unknown>) => ({
+          id: String(row.id),
+          name: row.name || row.title || `Product ${row.id}`,
+          description: row.description || '',
+          price: Number(row.price ?? 0),
+          originalPrice: Number(row.original_price ?? row.price ?? 0),
+          category: String(row.category || 'default'),
+          imageUrl: row.image_url || row.imageUrl || '',
+          isVisible: Boolean(row.is_visible ?? true),
+          isFeatured: Boolean(row.is_featured ?? false),
+          stock: Number(row.stock ?? 0),
+          tags: Array.isArray(row.tags) ? row.tags : [],
+          createdAt: (row.created_at && typeof row.created_at === 'string') ? new Date(row.created_at) : new Date(),
+          updatedAt: (row.updated_at && typeof row.updated_at === 'string') ? new Date(row.updated_at) : ((row.created_at && typeof row.created_at === 'string') ? new Date(row.created_at) : new Date()),
+          updatedBy: row.updated_by || 'admin',
+          district_id: row.district_id ?? null,
+          state_id: row.state_id ?? null,
+          added_by_name: row.added_by_name ?? null,
+        })) as Product[];
+        // Remove duplicates based on product ID
+        const uniqueProducts = items.filter((product, index, self) => 
+          index === self.findIndex(p => p.id === product.id)
+        );
+        setProducts(uniqueProducts);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
   };
+
+
+  const loadSellers = async () => {
+    try {
+      const response = await fetch('/api/admin/sellers');
+      const data = await response.json();
+      if (data.success) {
+        setSellers(data.data || []);
+      } else {
+        console.error('Failed to load sellers:', data.message);
+      }
+    } catch (error) {
+      console.error('Error loading sellers:', error);
+    }
+  };
+
+
 
   const loadDistricts = async (stateId: string) => {
     try {
       const response = await fetch(`/api/districts?stateId=${encodeURIComponent(stateId)}`, { cache: 'no-store' });
       const data = await response.json();
       if (data?.success && Array.isArray(data.data)) {
-        const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+        const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
         setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
       } else {
         setDistrictOptions([{ id: 'all', name: 'All' }]);

@@ -20,7 +20,7 @@ export default function UnauthorizedPage() {
             Access Denied
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            You don't have permission to access this resource
+            You don&apos;t have permission to access this resource
           </p>
         </div>
 
@@ -30,7 +30,7 @@ export default function UnauthorizedPage() {
               Unauthorized Access
             </CardTitle>
             <CardDescription className="text-center">
-              Your account doesn't have the required permissions to view this page
+              Your account doesn&apos;t have the required permissions to view this page
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

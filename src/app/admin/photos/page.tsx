@@ -34,7 +34,7 @@ export default function PhotosPage() {
           <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
           <p className="text-gray-600">
-            You don't have permission to manage photos. Contact your administrator for access.
+            You don&apos;t have permission to manage photos. Contact your administrator for access.
           </p>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function PhotosPage() {
           <h1 className="text-3xl font-bold text-gray-900">Photo Management</h1>
         </div>
         <p className="text-gray-600 max-w-3xl">
-          Manage your organization's photos with our event-based system. Create events, organize photos into galleries, 
+          Manage your organization&apos;s photos with our event-based system. Create events, organize photos into galleries, 
           and track who uploaded what and when. Perfect for keeping your photo collection organized and searchable.
         </p>
       </div>

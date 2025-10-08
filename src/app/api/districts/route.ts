@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     
     // First get the state code from state ID
     const stateQuery = 'SELECT state_code FROM states WHERE id = ?';
-    const stateResult: any = await executeQuery(stateQuery, [stateId]);
+    const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_code: string }>;
     
     if (stateResult.length === 0) {
       return NextResponse.json(
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
       FROM districts 
       WHERE state_code = ?
     `;
-    const params: any[] = [stateCode];
+    const params: string[] = [stateCode];
     
     // Add search filter if provided
     if (search && search.trim()) {
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     
     query += ` ORDER BY district_name_english LIMIT 100`;
     
-    const districts = await executeQuery(query, params);
+    const districts = await executeQuery(query, params) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     
     return NextResponse.json({
       success: true,

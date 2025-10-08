@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists
     const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
-    const existingMembers: any = await executeQuery(existingMemberQuery, [email]);
+    const existingMembers = await executeQuery(existingMemberQuery, [email]) as Array<{ id: number }>;
     
     if (existingMembers.length > 0) {
       return NextResponse.json(
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         WHERE da.id = ?
         LIMIT 1
       `;
-      const adminResult: any = await executeQuery(adminQuery, [scope.adminId]);
+      const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ member_id: number; member_reg_number: string }>;
       
       if (adminResult.length > 0 && adminResult[0].member_id) {
         existingMemberRegNumberFinal = adminResult[0].member_reg_number;
@@ -97,11 +97,11 @@ export async function POST(request: NextRequest) {
 
     // Get state and district names from IDs
     const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-    const stateResult: any = await executeQuery(stateQuery, [stateId]);
+    const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
     const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
 
     const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
-    const districtResult: any = await executeQuery(districtQuery, [districtId]);
+    const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
     const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
 
     // SECURITY CHECK: District admins can only add members to their own district
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'verified', ?, ?, ?, NOW(), NOW())
     `;
 
-    const memberResult: any = await executeQuery(insertMemberQuery, [
+    const memberResult = await executeQuery(insertMemberQuery, [
       name,
       email,
       phone,
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       districtName,
       'General', // Default department
       verifierId // Use automatically determined verifier ID
-    ]);
+    ]) as { insertId: number };
 
     const memberId = memberResult.insertId;
 

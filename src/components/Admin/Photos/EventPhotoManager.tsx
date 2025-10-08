@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Camera, Upload, Plus, Search, Filter, Grid, List, Settings, Eye, EyeOff, Trash2, Edit3 } from 'lucide-react';
 import { PhotoEvent, PhotoGallery, Photo } from '@/lib/content';
 import { notifications } from '@/lib/notifications';
@@ -136,84 +136,8 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     });
   };
 
-  // Load events and filters on component mount
-  useEffect(() => {
-    loadEvents();
-    loadFilters();
-  }, []);
-
-  // Load districts when state changes
-  useEffect(() => {
-    if (filterState) {
-      loadDistricts(filterState);
-    } else {
-      setAvailableDistricts([]);
-    }
-  }, [filterState]);
-
-  // Reload events when filters change
-  useEffect(() => {
-    if (availableStates.length > 0 || availableDistricts.length > 0) {
-      loadEvents();
-    }
-  }, [filterState, filterDistrict]);
-
-  // Load galleries when event is selected
-  useEffect(() => {
-    if (selectedEvent) {
-      loadGalleries(selectedEvent);
-    }
-  }, [selectedEvent]);
-
-  // Load photos when gallery is selected
-  useEffect(() => {
-    if (selectedGallery) {
-      loadPhotos({ galleryId: selectedGallery });
-    } else if (selectedEvent) {
-      loadPhotos({ eventId: selectedEvent });
-    }
-  }, [selectedEvent, selectedGallery]);
-
-  const loadFilters = async () => {
-    try {
-      console.log('Loading states...');
-      // Fetch states using the standard API
-      const statesResponse = await fetch('/api/states');
-      const statesData = await statesResponse.json();
-      console.log('States response:', statesData);
-      if (statesData.success) {
-        setAvailableStates(statesData.data || []);
-        console.log('States loaded:', statesData.data);
-      }
-    } catch (error) {
-      console.error('Error loading filters:', error);
-    }
-  };
-
-  const loadDistricts = async (stateId: string) => {
-    if (!stateId) {
-      setAvailableDistricts([]);
-      return;
-    }
-
-    try {
-      console.log('Loading districts for state:', stateId);
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
-      const data = await response.json();
-      console.log('Districts response:', data);
-      if (data.success) {
-        setAvailableDistricts(data.data || []);
-        console.log('Districts loaded:', data.data);
-      } else {
-        setAvailableDistricts([]);
-      }
-    } catch (error) {
-      console.error('Error loading districts:', error);
-      setAvailableDistricts([]);
-    }
-  };
-
-  const loadEvents = async () => {
+  // Define loadEvents before it's used
+  const loadEvents = useCallback(async () => {
     try {
       // Construct URL with filters for superadmins
       let url = '/api/photos/events';
@@ -257,9 +181,72 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     } finally {
       setLoading(false);
     }
+  }, [filterState, filterDistrict, availableStates, availableDistricts]);
+
+  // Define loadFilters before it's used
+  const loadFilters = async () => {
+    try {
+      console.log('Loading states...');
+      // Fetch states using the standard API
+      const statesResponse = await fetch('/api/states');
+      const statesData = await statesResponse.json();
+      console.log('States response:', statesData);
+      if (statesData.success) {
+        setAvailableStates(statesData.data || []);
+        console.log('States loaded:', statesData.data);
+      }
+    } catch (error) {
+      console.error('Error loading filters:', error);
+    }
   };
 
-  const loadGalleries = async (eventId: string) => {
+  // Load events and filters on component mount
+  useEffect(() => {
+    loadEvents();
+    loadFilters();
+  }, [loadEvents]);
+
+  // Define loadDistricts before it's used
+  const loadDistricts = useCallback(async (stateId: string) => {
+    if (!stateId) {
+      setAvailableDistricts([]);
+      return;
+    }
+
+    try {
+      console.log('Loading districts for state:', stateId);
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      console.log('Districts response:', data);
+      if (data.success) {
+        setAvailableDistricts(data.data || []);
+        console.log('Districts loaded:', data.data);
+      } else {
+        setAvailableDistricts([]);
+      }
+    } catch (error) {
+      console.error('Error loading districts:', error);
+      setAvailableDistricts([]);
+    }
+  }, []);
+
+  // Load districts when state changes
+  useEffect(() => {
+    if (filterState) {
+      loadDistricts(filterState);
+    } else {
+      setAvailableDistricts([]);
+    }
+  }, [filterState, loadDistricts]);
+
+  // Reload events when filters change
+  useEffect(() => {
+    if (availableStates.length > 0 || availableDistricts.length > 0) {
+      loadEvents();
+    }
+  }, [filterState, filterDistrict, availableStates, availableDistricts, loadEvents]);
+
+  const loadGalleries = useCallback(async (eventId: string) => {
     try {
       const response = await fetch(`/api/photos/galleries?eventId=${eventId}`, {
         credentials: 'include'
@@ -271,9 +258,16 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     } catch (error) {
       console.error('Error loading galleries:', error);
     }
-  };
+  }, []);
 
-  const loadPhotos = async (filters: { eventId?: string; galleryId?: string }) => {
+  // Load galleries when event is selected
+  useEffect(() => {
+    if (selectedEvent) {
+      loadGalleries(selectedEvent);
+    }
+  }, [selectedEvent, loadGalleries]);
+
+  const loadPhotos = useCallback(async (filters: { eventId?: string; galleryId?: string }) => {
     try {
       const params = new URLSearchParams();
       if (filters.eventId) params.append('eventId', filters.eventId);
@@ -307,9 +301,18 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     } catch (error) {
       console.error('Error loading photos:', error);
     }
-  };
+  }, [searchQuery]);
+  
+  // Load photos when gallery is selected
+  useEffect(() => {
+    if (selectedGallery) {
+      loadPhotos({ galleryId: selectedGallery });
+    } else if (selectedEvent) {
+      loadPhotos({ eventId: selectedEvent });
+    }
+  }, [selectedEvent, selectedGallery, loadPhotos]);
 
-  const createEvent = async (eventData: any) => {
+  const createEvent = async (eventData: Record<string, unknown>) => {
     try {
       const response = await fetch('/api/photos/events', {
         method: 'POST',
@@ -334,9 +337,15 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     }
   };
   
-  const updateEvent = async (eventData: any) => {
+  const updateEvent = async (eventData: Record<string, unknown>) => {
     try {
-      const response = await fetch(`/api/photos/events/${eventData.id}`, {
+      const id = (eventData as any).id; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (!id) {
+        notifications.error('Error', 'Event ID is missing');
+        return;
+      }
+      
+      const response = await fetch(`/api/photos/events/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -630,7 +639,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as any)}>
+          <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as 'all' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled')}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
@@ -1238,7 +1247,7 @@ function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }:
 }
 
 // Modal Components
-function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (data: any) => void }) {
+function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (data: Record<string, unknown>) => void }) {
   const [formData, setFormData] = useState({
     eventName: '',
     eventDate: '',
@@ -1286,7 +1295,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
             <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
             <Select
               value={formData.eventType}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select event type" />
@@ -1356,7 +1365,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   );
 }
 
-function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClose: () => void; onSubmit: (data: any) => void }) {
+function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClose: () => void; onSubmit: (data: Record<string, unknown>) => void }) {
   const [formData, setFormData] = useState({
     id: event.id,
     eventName: event.eventName,
@@ -1405,7 +1414,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
             <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
             <Select
               value={formData.eventType}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select event type" />
@@ -1427,7 +1436,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <Select
               value={formData.status}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
@@ -1440,7 +1449,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
               </SelectContent>
             </Select>
             <p className="text-xs text-gray-500 mt-1">
-              Status is automatically determined by event date. Only "Cancelled" status overrides automatic detection.
+              Status is automatically determined by event date. Only &quot;Cancelled&quot; status overrides automatic detection.
             </p>
           </div>
           

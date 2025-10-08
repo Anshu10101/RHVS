@@ -3,7 +3,7 @@ import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
 
 // Get permissions for a specific district admin
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
     const token = req.cookies.get('admin_session')?.value;
@@ -16,11 +16,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    const adminId = params.id;
+    const { id: adminId } = await params;
     
     // Check if district admin exists
     const checkQuery = 'SELECT id FROM district_admins WHERE id = ?';
-    const check = await executeQuery(checkQuery, [adminId]);
+    const check = await executeQuery(checkQuery, [adminId]) as Array<{ id: number }>;
     
     if (!check.length) {
       return NextResponse.json(
@@ -41,10 +41,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       WHERE dap.district_admin_id = ?
     `;
     
-    const permissions = await executeQuery(permissionsQuery, [adminId]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const permissions = await executeQuery(permissionsQuery, [adminId]) as any[];
     
     return NextResponse.json({ 
       success: true, 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       permissions: permissions.map((p: any) => p.permission)
     });
   } catch (error) {
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // Update permissions for a district admin
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
     const token = req.cookies.get('admin_session')?.value;
@@ -70,11 +72,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    const adminId = params.id;
+    const { id: adminId } = await params;
     
     // Check if district admin exists
     const checkQuery = 'SELECT id FROM district_admins WHERE id = ?';
-    const check = await executeQuery(checkQuery, [adminId]);
+    const check = await executeQuery(checkQuery, [adminId]) as Array<{ id: number }>;
     
     if (!check.length) {
       return NextResponse.json(
@@ -114,7 +116,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         WHERE district_admin_id = ? AND permission = ?
       `;
       
-      const existingPerm = await executeQuery(checkPermQuery, [adminId, permission]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const existingPerm = await executeQuery(checkPermQuery, [adminId, permission]) as any[];
       
       if (existingPerm.length > 0) {
         // Update existing permission

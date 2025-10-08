@@ -3,7 +3,7 @@ import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
 
 // Update a district admin
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
     const token = req.cookies.get('admin_session')?.value;
@@ -16,11 +16,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    const adminId = params.id;
+    const { id: adminId } = await params;
     
     // Check if district admin exists
     const checkQuery = 'SELECT id FROM district_admins WHERE id = ?';
-    const check = await executeQuery(checkQuery, [adminId]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const check = await executeQuery(checkQuery, [adminId]) as any[];
     
     if (!check.length) {
       return NextResponse.json(
@@ -74,7 +75,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       WHERE da.id = ?
     `;
     
-    const updatedAdmin = await executeQuery(getUpdatedAdminQuery, [adminId]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatedAdmin = await executeQuery(getUpdatedAdminQuery, [adminId]) as any[];
     
     if (!updatedAdmin.length) {
       return NextResponse.json(
@@ -90,7 +92,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       WHERE district_admin_id = ? AND (expires_at IS NULL OR expires_at > NOW()) AND is_active = 1
     `;
     
-    const permissions = await executeQuery(permissionsQuery, [adminId]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const permissions = await executeQuery(permissionsQuery, [adminId]) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updatedAdmin[0].permissions = permissions.map((p: any) => p.permission);
     
     return NextResponse.json({ success: true, admin: updatedAdmin[0] });
@@ -104,7 +108,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // Delete a district admin
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
     const token = req.cookies.get('admin_session')?.value;
@@ -117,11 +121,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
-    const adminId = params.id;
+    const { id: adminId } = await params;
     
     // Check if district admin exists
     const checkQuery = 'SELECT id, email, district FROM district_admins WHERE id = ?';
-    const check = await executeQuery(checkQuery, [adminId]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const check = await executeQuery(checkQuery, [adminId]) as any[];
     
     if (!check.length) {
       return NextResponse.json(

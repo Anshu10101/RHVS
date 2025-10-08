@@ -99,7 +99,7 @@ export default function CartItem({
                   <button
                     onClick={() => {
                       const message = `Hello! I'm interested in the product: ${product.name}. Price: ₹${product.price}`;
-                      const whatsappUrl = `https://wa.me/${product.seller_whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                      const whatsappUrl = `https://wa.me/${product.seller_whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
                       window.open(whatsappUrl, '_blank');
                     }}
                     className="flex items-center gap-1 hover:text-green-600 transition-colors cursor-pointer"

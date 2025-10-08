@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       FROM events e
       WHERE isVisible = TRUE 
     `;
-    const params: any[] = [];
+    const params: (string | number)[] = [];
 
     if (id) {
       query += ` AND id = ?`;
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     const id = `event_${Date.now()}`;
     
     // Convert undefined values to null for MySQL
-    const safeValue = (val: any) => val === undefined ? null : val;
+    const safeValue = (val: unknown) => val === undefined ? null : val;
     
     // Determine content ownership
     let district = null as string | null;
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
       district = scope.districtName || null;
       state = scope.stateName || null;
-      owner_admin_id = scope.adminId || null;
+      owner_admin_id = scope.adminId?.toString() || null;
     }
 
     await pool.execute(
@@ -145,7 +145,7 @@ export async function PUT(request: NextRequest) {
     } = body;
 
     // Convert undefined values to null for MySQL
-    const safeValue = (val: any) => val === undefined ? null : val;
+    const safeValue = (val: unknown) => val === undefined ? null : val;
     
     await pool.execute(
       `UPDATE events SET 

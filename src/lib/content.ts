@@ -71,7 +71,7 @@ export interface Photo {
   fileSize?: number;
   dimensions?: string;
   fileType?: string;
-  cameraInfo?: any;
+  cameraInfo?: { [key: string]: unknown };
   tags: string[];
   caption?: string;
   description?: string;
@@ -193,12 +193,18 @@ export class ContentService {
   static async getAboutSections(): Promise<AboutSection[]> {
     try {
       const [rows] = await pool.execute('SELECT * FROM about_sections ORDER BY `order` ASC');
-      return (rows as any[]).map(row => ({
-        ...row,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        type: row.type,
+        title: row.title,
+        content: row.content,
+        order: row.order,
+        isVisible: Boolean(row.isVisible),
         styling: row.styling ? JSON.parse(row.styling) : undefined,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
-        updatedBy: row.updated_by
+        updatedBy: String(row.updated_by)
       }));
     } catch (error) {
       console.error('Error fetching about sections:', error);
@@ -244,11 +250,18 @@ export class ContentService {
   static async getContactInfo(): Promise<ContactInfo[]> {
     try {
       const [rows] = await pool.execute('SELECT * FROM contact_info ORDER BY `order` ASC');
-      return (rows as any[]).map(row => ({
-        ...row,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        createdBy: row.created_by
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        contactType: row.contactType,
+        title: row.title,
+        value: row.value,
+        description: row.description,
+        order: row.order,
+        isVisible: Boolean(row.isVisible),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
+        createdBy: String(row.created_by)
       }));
     } catch (error) {
       console.error('Error fetching contact info:', error);
@@ -259,13 +272,23 @@ export class ContentService {
   static async getContactOffices(): Promise<ContactOffice[]> {
     try {
       const [rows] = await pool.execute('SELECT * FROM offices ORDER BY `order` ASC');
-      return (rows as any[]).map(row => ({
-        ...row,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        name: row.name,
         nameHindi: row.name_hindi,
+        address: row.address,
+        city: row.city,
+        state: row.state,
+        pincode: row.pincode,
+        phone: row.phone,
+        email: row.email,
         officeType: row.office_type,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        createdBy: row.created_by
+        order: row.order,
+        isVisible: Boolean(row.isVisible),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
+        createdBy: String(row.created_by)
       }));
     } catch (error) {
       console.error('Error fetching contact offices:', error);
@@ -288,7 +311,7 @@ export class ContentService {
         LEFT JOIN photo_galleries g ON e.id = g.event_id
         LEFT JOIN photos p ON e.id = p.event_id AND p.is_visible = TRUE
       `;
-      const params: any[] = [];
+      const params: (string | number)[] = [];
       const conditions: string[] = [];
 
       // Handle district admin scope restrictions
@@ -324,18 +347,24 @@ export class ContentService {
       console.log('ContentService - Params:', params);
 
       const [rows] = await pool.execute(sql, params);
-      return (rows as any[]).map(row => ({
-        ...row,
-        eventName: row.event_name,
-        eventDate: new Date(row.event_date),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        eventName: String(row.event_name),
+        eventDate: new Date(row.event_date as string),
         eventType: row.event_type,
+        location: row.location,
+        description: row.description,
+        status: row.status,
         isPublic: Boolean(row.is_public),
+        district: row.district,
+        state: row.state,
         ownerAdminId: row.owner_admin_id,
-        createdBy: row.created_by,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        photoCount: parseInt(row.photo_count) || 0,
-        galleryCount: parseInt(row.gallery_count) || 0
+        createdBy: String(row.created_by),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
+        photoCount: parseInt(String(row.photo_count)) || 0,
+        galleryCount: parseInt(String(row.gallery_count)) || 0
       }));
     } catch (error) {
       console.error('Error fetching photo events:', error);
@@ -381,7 +410,7 @@ export class ContentService {
         FROM photo_galleries g
         LEFT JOIN photo_events e ON g.event_id = e.id
       `;
-      const params: any[] = [];
+      const params: (string | number)[] = [];
 
       const conditions = [];
       if (scope && !scope.unrestricted && (scope.district || scope.adminId)) {
@@ -402,19 +431,25 @@ export class ContentService {
       sql += ' ORDER BY g.sort_order ASC, g.created_at DESC';
 
       const [rows] = await pool.execute(sql, params);
-      return (rows as any[]).map(row => ({
-        ...row,
-        galleryName: row.gallery_name,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        eventId: row.event_id,
+        galleryName: String(row.gallery_name),
+        description: row.description,
         coverPhoto: row.cover_photo,
+        photoCount: row.photo_count || 0,
         isPublic: Boolean(row.is_public),
         isFeatured: Boolean(row.is_featured),
         sortOrder: row.sort_order,
+        district: row.district,
+        state: row.state,
         ownerAdminId: row.owner_admin_id,
-        createdBy: row.created_by,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
+        createdBy: String(row.created_by),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
         eventName: row.event_name,
-        eventDate: row.event_date ? new Date(row.event_date) : undefined
+        eventDate: row.event_date ? new Date(row.event_date as string) : undefined
       }));
     } catch (error) {
       console.error('Error fetching photo galleries:', error);
@@ -472,7 +507,7 @@ export class ContentService {
         LEFT JOIN photo_events e ON p.event_id = e.id
         LEFT JOIN photo_galleries g ON p.gallery_id = g.id
       `;
-      const params: any[] = [];
+      const params: (string | number | boolean)[] = [];
       const conditions = [];
 
       // Scope filtering
@@ -542,15 +577,24 @@ export class ContentService {
       sql += ' ORDER BY p.sort_order ASC, p.created_at DESC';
 
       const [rows] = await pool.execute(sql, params);
-      return (rows as any[]).map(row => ({
-        ...row,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        galleryId: row.gallery_id,
+        eventId: row.event_id,
+        filename: row.filename,
+        originalName: row.original_name,
         filePath: row.file_path,
         thumbnailPath: row.thumbnail_path,
         mediumPath: row.medium_path,
         fileSize: row.file_size,
+        dimensions: row.dimensions,
         fileType: row.file_type,
-        cameraInfo: row.camera_info ? JSON.parse(row.camera_info) : undefined,
-        tags: row.tags ? JSON.parse(row.tags) : [],
+        cameraInfo: row.camera_info ? JSON.parse(String(row.camera_info)) : undefined,
+        tags: row.tags ? JSON.parse(String(row.tags)) : [],
+        caption: row.caption,
+        description: row.description,
+        photographer: row.photographer,
         uploadSource: row.upload_source,
         uploadSessionId: row.upload_session_id,
         isFeatured: Boolean(row.is_featured),
@@ -559,12 +603,14 @@ export class ContentService {
         sortOrder: row.sort_order,
         viewCount: row.view_count,
         downloadCount: row.download_count,
+        district: row.district,
+        state: row.state,
         ownerAdminId: row.owner_admin_id,
-        createdBy: row.created_by,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
+        createdBy: String(row.created_by),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
         eventName: row.event_name,
-        eventDate: row.event_date ? new Date(row.event_date) : undefined,
+        eventDate: row.event_date ? new Date(row.event_date as string) : undefined,
         eventType: row.event_type,
         galleryName: row.gallery_name
       }));
@@ -646,7 +692,7 @@ export class ContentService {
         LEFT JOIN states s ON s.state_name_english = COALESCE(p.state_id, co.state_id)
         LEFT JOIN districts d ON d.district_name_english = COALESCE(p.district_id, co.district_id)
       `;
-      const params: any[] = [];
+      const params: (string | number)[] = [];
       const conditions: string[] = [];
 
       // Handle district admin scope restrictions
@@ -676,18 +722,24 @@ export class ContentService {
       sql += ' ORDER BY p.created_at DESC';
 
       const [rows] = await pool.execute(sql, params);
-      return (rows as any[]).map(row => ({
-        ...row,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
         imageUrl: row.image_path,
         originalPrice: row.original_price,
+        category: row.category,
         isVisible: Boolean(row.isVisible),
         isFeatured: Boolean(row.is_featured),
-        tags: row.tags ? JSON.parse(row.tags) : [],
+        stock: row.stock,
+        tags: row.tags ? JSON.parse(String(row.tags)) : [],
         state: row.state,
         district: row.district,
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at),
-        updatedBy: row.updated_by
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string),
+        updatedBy: String(row.updated_by)
       }));
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -698,11 +750,14 @@ export class ContentService {
   static async getProductCategories(): Promise<ProductCategory[]> {
     try {
       const [rows] = await pool.execute('SELECT * FROM product_categories WHERE isVisible = TRUE ORDER BY name ASC');
-      return (rows as any[]).map(row => ({
-        ...row,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
         isVisible: Boolean(row.isVisible),
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at)
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string)
       }));
     } catch (error) {
       console.error('Error fetching product categories:', error);

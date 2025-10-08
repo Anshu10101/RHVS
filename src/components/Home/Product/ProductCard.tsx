@@ -4,7 +4,7 @@ import { Noto_Serif_Devanagari } from 'next/font/google';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import type { ProductCardProps } from './types';
+import type { ProductCardProps, Product } from './types';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -88,8 +88,9 @@ export default function ProductCard({
           <Button
             onClick={async (e) => {
               e.stopPropagation();
-              const hasSeller = !!(product as any).seller_name || !!(product as any).seller_phone || !!(product as any).seller_whatsapp || !!(product as any).seller_email;
-              const detailId = (product as any).detailId as string | undefined;
+              const productWithDetails = product as Product & { seller_name?: string; seller_phone?: string; seller_whatsapp?: string; seller_email?: string; detailId?: string };
+              const hasSeller = !!productWithDetails.seller_name || !!productWithDetails.seller_phone || !!productWithDetails.seller_whatsapp || !!productWithDetails.seller_email;
+              const detailId = productWithDetails.detailId;
               if (detailId && !hasSeller) {
                 try {
                   const res = await fetch(`/api/products/${encodeURIComponent(detailId)}`, { cache: 'no-store' });

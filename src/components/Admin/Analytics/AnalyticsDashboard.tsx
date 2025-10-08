@@ -61,7 +61,7 @@ export function AnalyticsDashboard() {
         <div className="text-center">
           <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-          <p className="text-gray-600">You don't have permission to view analytics.</p>
+          <p className="text-gray-600">You don&apos;t have permission to view analytics.</p>
         </div>
       </div>
     );

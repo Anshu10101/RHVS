@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,7 +52,7 @@ export default function ProductCreationPage() {
 				const res = await fetch('/api/content/store/categories', { cache: 'no-store' });
 				const data = await res.json();
 				if (data?.success && Array.isArray(data.categories)) {
-					setCategories(data.categories.map((c: any) => ({ id: String(c.id), name: c.name })));
+					setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: String(c.id), name: c.name })));
 					if (!category && data.categories.length) setCategory(String(data.categories[0].id));
 				}
 				
@@ -59,7 +60,7 @@ export default function ProductCreationPage() {
 				const sellersRes = await fetch('/api/admin/sellers', { cache: 'no-store' });
 				const sellersData = await sellersRes.json();
 				if (sellersData?.success && Array.isArray(sellersData.data)) {
-					setSellers(sellersData.data.map((s: any) => ({ 
+					setSellers(sellersData.data.map((s: { id: number; name: string; business_name: string; district: string; state: string }) => ({ 
 						id: s.id, 
 						name: s.name, 
 						business_name: s.business_name,
@@ -71,7 +72,7 @@ export default function ProductCreationPage() {
 				console.error('Failed to load data', e);
 			}
 		})();
-  }, []);
+	}, [category]);
 
   // Load existing product in edit mode
   useEffect(() => {
@@ -82,19 +83,19 @@ export default function ProductCreationPage() {
         if (!res.ok) return;
         const data = await res.json();
         if (data?.success && data.product) {
-          const p = data.product as any;
-          setName(p.name || '');
-          setDescription(p.description || '');
+          const p = data.product as Record<string, unknown>;
+          setName((p.name as string) || '');
+          setDescription((p.description as string) || '');
           setPrice(Number(p.price || 0));
           setOriginalPrice(p.originalPrice != null ? Number(p.originalPrice) : 0);
-          setCategory(p.category || '');
-          setSellerId(p.seller_id || '');
+          setCategory((p.category as string) || (p.categoryId as string) || '');
+          setSellerId((p.seller_id as string) || (p.sellerId as string) || '');
           setStock(typeof p.stock === 'number' ? p.stock : 0);
           setIsVisible(Boolean(p.isVisible ?? true));
           setIsFeatured(Boolean(p.isFeatured ?? false));
           setTagsInput(Array.isArray(p.tags) ? p.tags.join(', ') : '');
           setFeatures(Array.isArray(p.features) ? p.features : ['']);
-          setSpecs(p.specifications || {});
+          setSpecs((p.specifications as Record<string, string>) || {});
           // images
           const imgs: string[] = Array.isArray(p.images) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
           const main = imgs[0] || '';
@@ -229,7 +230,7 @@ export default function ProductCreationPage() {
 						</Select>
 					) : (
 						<div className="text-sm text-gray-500 border rounded p-3 bg-gray-50">
-							No sellers available. Click "Add Seller" above to create your first seller.
+							No sellers available. Click &quot;Add Seller&quot; above to create your first seller.
 						</div>
 					)}
 				</div>
@@ -270,7 +271,7 @@ export default function ProductCreationPage() {
 					{supportingPreviews.length>0 && (
 						<div className="flex gap-2 mt-2 flex-wrap">
 							{supportingPreviews.map((u,i)=>(
-								<img key={i} src={u} className="w-16 h-16 object-cover rounded border" />
+								<Image key={i} src={u} width={64} height={64} alt={`Supporting image ${i+1}`} className="w-16 h-16 object-cover rounded border" />
 							))}
 						</div>
 					)}

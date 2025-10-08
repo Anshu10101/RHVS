@@ -17,16 +17,16 @@ export async function GET(request: NextRequest) {
 
     // Build WHERE clause for district filtering
     let whereClause = '';
-    let queryParams: any[] = [];
+    let queryParams: string[] = [];
     
-    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
       whereClause = 'WHERE (m.district = ? OR m.district LIKE ?)';
       queryParams = [scope.districtName, `${scope.districtName}%`];
     }
 
     // Get total members count
     const totalQuery = `SELECT COUNT(*) as total FROM members m ${whereClause}`;
-    const totalResult: any = await executeQuery(totalQuery, queryParams);
+    const totalResult = await executeQuery(totalQuery, queryParams) as Array<{ total: number }>;
     const totalMembers = totalResult[0].total;
 
     // Get members by status
@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
       ${whereClause}
       GROUP BY status
     `;
-    const statusResult: any = await executeQuery(statusQuery, queryParams);
-    const statusStats = statusResult.reduce((acc: any, row: any) => {
+    const statusResult = await executeQuery(statusQuery, queryParams) as Array<{ status: string; count: number }>;
+    const statusStats = statusResult.reduce((acc: { [key: string]: number }, row: { status: string; count: number }) => {
       acc[row.status] = row.count;
       return acc;
     }, {});
@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
       ORDER BY count DESC
       LIMIT 10
     `;
-    const stateResult: any = await executeQuery(stateQuery, queryParams);
-    const stateStats = stateResult.map((row: any) => ({
+    const stateResult = await executeQuery(stateQuery, queryParams) as Array<{ state: string; count: number }>;
+    const stateStats = stateResult.map((row: { state: string; count: number }) => ({
       state: row.state,
       count: row.count
     }));
@@ -72,8 +72,8 @@ export async function GET(request: NextRequest) {
       ORDER BY count DESC
       LIMIT 10
     `;
-    const districtResult: any = await executeQuery(districtQuery, queryParams);
-    const districtStats = districtResult.map((row: any) => ({
+    const districtResult = await executeQuery(districtQuery, queryParams) as Array<{ district: string; count: number }>;
+    const districtStats = districtResult.map((row: { district: string; count: number }) => ({
       district: row.district,
       count: row.count
     }));
@@ -89,8 +89,8 @@ export async function GET(request: NextRequest) {
       ORDER BY count DESC
       LIMIT 10
     `;
-    const departmentResult: any = await executeQuery(departmentQuery, queryParams);
-    const departmentStats = departmentResult.map((row: any) => ({
+    const departmentResult = await executeQuery(departmentQuery, queryParams) as Array<{ department: string; count: number }>;
+    const departmentStats = departmentResult.map((row: { department: string; count: number }) => ({
       department: row.department,
       count: row.count
     }));
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
       FROM members m
       ${whereClause ? whereClause + ' AND' : 'WHERE'} created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `;
-    const recentResult: any = await executeQuery(recentQuery, queryParams);
+    const recentResult = await executeQuery(recentQuery, queryParams) as Array<{ count: number }>;
     const recentMembers = recentResult[0].count;
 
     // Get members added this month
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
       ${whereClause ? whereClause + ' AND' : 'WHERE'} YEAR(created_at) = YEAR(NOW()) 
       AND MONTH(created_at) = MONTH(NOW())
     `;
-    const monthlyResult: any = await executeQuery(monthlyQuery, queryParams);
+    const monthlyResult = await executeQuery(monthlyQuery, queryParams) as Array<{ count: number }>;
     const monthlyMembers = monthlyResult[0].count;
 
     // Get verification stats
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
       FROM members m
       ${whereClause ? whereClause + ' AND' : 'WHERE'} status = 'verified'
     `;
-    const verificationResult: any = await executeQuery(verificationQuery, queryParams);
+    const verificationResult = await executeQuery(verificationQuery, queryParams) as Array<{ total_verified: number; verified_by_members: number; verified_by_admin: number }>;
     const verificationStats = verificationResult[0];
 
     return NextResponse.json({

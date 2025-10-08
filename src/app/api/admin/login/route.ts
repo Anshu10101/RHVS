@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
     }
 
     // First check if user is a superadmin
-    const superadminRows: any[] = await executeQuery(
+    const superadminRows = await executeQuery(
       'SELECT id, email, password_hash, role, is_active FROM superadmin WHERE email = ? LIMIT 1',
       [email]
-    );
+    ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean }>;
 
     if (superadminRows.length > 0) {
       const user = superadminRows[0];
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // If not superadmin, check if user is a district admin
-    const districtAdminRows: any[] = await executeQuery(
+    const districtAdminRows = await executeQuery(
       `SELECT 
         da.id, 
         da.email, 
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       FROM district_admins da
       WHERE da.email = ? LIMIT 1`,
       [email]
-    );
+    ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string }>;
 
     if (districtAdminRows.length === 0) {
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
@@ -106,13 +106,13 @@ export async function POST(req: NextRequest) {
     await executeQuery('UPDATE district_admins SET last_login = NOW() WHERE id = ?', [districtAdmin.id]);
     
     // Get admin's permissions
-    const permissionsRows: any[] = await executeQuery(
+    const permissionsRows = await executeQuery(
       `SELECT permission 
        FROM district_admin_permissions 
        WHERE district_admin_id = ? AND is_active = 1 
          AND (expires_at IS NULL OR expires_at > NOW())`,
       [districtAdmin.id]
-    );
+    ) as Array<{ permission: string }>;
     
     const permissions = permissionsRows.map(row => row.permission);
 

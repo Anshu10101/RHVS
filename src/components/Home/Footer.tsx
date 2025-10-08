@@ -94,7 +94,7 @@ export default function Footer() {
             <h4 className="text-lg font-semibold mb-4 text-orange-800/90">Contact Us</h4>
             <div className="space-y-4">
               <p className="text-orange-700/70 text-sm leading-relaxed">
-                केंद्रीय कार्यालय – D–305, "कान्हा कुंज", इंदिरा पार्क, नजफगढ़, नई दिल्ली – 110043
+                केंद्रीय कार्यालय – D–305, &quot;कान्हा कुंज&quot;, इंदिरा पार्क, नजफगढ़, नई दिल्ली – 110043
               </p>
               <div className="flex items-start space-x-3">
                 <Phone size={16} className="text-orange-600/60 mt-0.5 flex-shrink-0" />

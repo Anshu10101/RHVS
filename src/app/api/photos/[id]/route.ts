@@ -6,7 +6,7 @@ import path from 'path';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -20,7 +20,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: photoId } = params;
+    const { id: photoId } = await params;
 
     // Get photo details before deletion
     const photoResult = await executeQuery(
@@ -32,7 +32,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Photo not found' }, { status: 404 });
     }
 
-    const photo = photoResult[0] as any;
+    const photo = photoResult[0] as { file_path?: string; thumbnail_path?: string; medium_path?: string; event_id?: string };
 
     // Delete the photo record from database
     await executeQuery(
@@ -46,7 +46,7 @@ export async function DELETE(
       const countResult = await executeQuery(
         'SELECT COUNT(*) as count FROM photos WHERE event_id = ?',
         [photo.event_id]
-      );
+      ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       
       const newCount = countResult && countResult.length > 0 ? countResult[0].count : 0;
       

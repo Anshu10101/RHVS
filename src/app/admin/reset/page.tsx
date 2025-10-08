@@ -28,7 +28,7 @@ export default function AdminPasswordResetPage() {
       if (!res.ok || !data.success) throw new Error(data.message || 'Failed');
       setToken(data.token);
       setStep('verify');
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+    } catch (e: unknown) { setError((e as Error).message); } finally { setLoading(false); }
   };
 
   const verifyOtp = async () => {
@@ -42,7 +42,7 @@ export default function AdminPasswordResetPage() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Invalid OTP');
       setStep('reset');
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+    } catch (e: unknown) { setError((e as Error).message); } finally { setLoading(false); }
   };
 
   const doReset = async () => {
@@ -56,7 +56,7 @@ export default function AdminPasswordResetPage() {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Failed');
       router.replace('/admin/login');
-    } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+    } catch (e: unknown) { setError((e as Error).message); } finally { setLoading(false); }
   };
 
   return (

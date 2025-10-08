@@ -15,7 +15,7 @@ export async function generateMemberRegistrationNumber(): Promise<string> {
       WHERE member_reg_number REGEXP "^RHVS[0-9]+$"
     `;
     
-    const countResult: any = await executeQuery(countQuery);
+    const countResult: Array<{ max_num: number }> = await executeQuery(countQuery) as Array<{ max_num: number }>;
     const maxNumber = countResult[0].max_num || 0;
     const nextNumber = maxNumber + 1;
     
@@ -24,7 +24,7 @@ export async function generateMemberRegistrationNumber(): Promise<string> {
     
     // Double-check that the generated number doesn't already exist (safety check)
     const checkQuery = 'SELECT id FROM members WHERE member_reg_number = ?';
-    const existingResult: any = await executeQuery(checkQuery, [memberRegNumber]);
+    const existingResult: Array<{ id: number }> = await executeQuery(checkQuery, [memberRegNumber]) as Array<{ id: number }>;
     
     if (existingResult.length > 0) {
       // If somehow it exists, increment and try again

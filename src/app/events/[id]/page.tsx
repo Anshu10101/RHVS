@@ -95,7 +95,7 @@ export default function EventDetailPage() {
     };
     try {
       if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-        await navigator.share(shareData as any);
+        await navigator.share(shareData);
       } else {
         const text = `${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`;
         await navigator.clipboard.writeText(text);

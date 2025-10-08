@@ -263,7 +263,7 @@ function AdminDashboardContent() {
             <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Permissions Assigned</h3>
             <p className="text-gray-600 mb-4">
-              You don't have any active permissions assigned. Please contact your superadmin to get access to district management features.
+              You don&apos;t have any active permissions assigned. Please contact your superadmin to get access to district management features.
             </p>
             <div className="text-sm text-gray-500">
               <p>Current permissions: {permissions.length > 0 ? permissions.join(', ') : 'None'}</p>

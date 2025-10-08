@@ -82,8 +82,8 @@ export async function verifyPasswordResetJwt(token: string): Promise<{ email: st
   try {
     const key = getJwtKey();
     const { payload } = await jwtVerify(token, key, { issuer: ADMIN_JWT_ISSUER, audience: ADMIN_JWT_AUDIENCE });
-    if ((payload as any).purpose !== 'admin_password_reset') return null;
-    return { email: String((payload as any).email || ''), superadminId: Number(payload.sub) };
+    if ((payload as { purpose?: string }).purpose !== 'admin_password_reset') return null;
+    return { email: String((payload as { email?: string }).email || ''), superadminId: Number(payload.sub) };
   } catch {
     return null;
   }

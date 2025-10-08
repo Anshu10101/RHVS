@@ -212,7 +212,8 @@ export function SearchableSelect({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  handleClear(e as any);
+                  onValueChange('');
+                  setIsOpen(false);
                 }
               }}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-400/50"
@@ -258,7 +259,7 @@ export function SearchableSelect({
               filteredOptions.map((option, index) => (
                 <div
                   key={option.value}
-                  ref={(el) => (optionRefs.current[index] = el)}
+                  ref={(el) => { optionRefs.current[index] = el; }}
                   onClick={() => handleOptionClick(option.value)}
                   className={cn(
                     "flex items-center justify-between px-4 py-3 cursor-pointer transition-colors hover:bg-orange-50",

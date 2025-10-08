@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
     });
 
     // Build WHERE clause
-    let whereConditions = [];
-    let queryParams = [];
+    const whereConditions = [];
+    const queryParams = [];
 
     // Apply district admin scope filter
     if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
     if (state && state !== 'all') {
       console.log('Filtering by state ID:', state);
       const stateNameQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-      const stateNameResult: any = await executeQuery(stateNameQuery, [state]);
+      const stateNameResult = await executeQuery(stateNameQuery, [state]) as Array<{ state_name_english: string }>;
       if (stateNameResult.length > 0) {
         console.log('State name found:', stateNameResult[0].state_name_english);
         whereConditions.push('m.state = ?');
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     if (district && district !== 'all') {
       console.log('Filtering by district ID:', district);
       const districtNameQuery = 'SELECT district_name_english FROM districts WHERE district_code = ?';
-      const districtNameResult: any = await executeQuery(districtNameQuery, [district]);
+      const districtNameResult = await executeQuery(districtNameQuery, [district]) as Array<{ district_name_english: string }>;
       if (districtNameResult.length > 0) {
         console.log('District name found:', districtNameResult[0].district_name_english);
         whereConditions.push('m.district = ?');
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
     queryParams.push(limit, offset);
 
     // Execute the query
-    const members = await executeQuery(membersQuery, queryParams);
+    const members = await executeQuery(membersQuery, queryParams) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     // Get total count for pagination
     const countQuery = `
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
       ${whereClause}
     `;
     const countParams = queryParams.slice(0, -2); // Remove limit and offset
-    const countResult: any = await executeQuery(countQuery, countParams);
+    const countResult = await executeQuery(countQuery, countParams) as Array<{ total: number }>;
     const total = countResult[0].total;
     const totalPages = Math.ceil(total / limit);
 

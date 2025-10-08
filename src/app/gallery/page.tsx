@@ -5,6 +5,7 @@ import { GalleryHeader, GalleryFilter, GalleryGrid, ImageModal } from '@/compone
 import type { GalleryImage } from '@/components/Home/gallery/types';
 
 // Default gallery data for fallback
+/*
 const defaultGalleryImages = [
   {
     id: 1,
@@ -150,6 +151,7 @@ const defaultGalleryImages = [
     tags: ['heritage', 'culture', 'preservation']
   }
 ];
+*/
 
 const categories: string[] = [];
 const sortOptions = [
@@ -164,42 +166,57 @@ const sortOptions = [
 
 export default function GalleryPage() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
-  const [galleryImages, setGalleryImages] = useState(defaultGalleryImages);
-  const [filteredImages, setFilteredImages] = useState(defaultGalleryImages);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [filteredImages, setFilteredImages] = useState<GalleryImage[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedState, setSelectedState] = useState('All');
-  const [selectedDistrict, setSelectedDistrict] = useState('All');
-  const [availableStates, setAvailableStates] = useState<string[]>([]);
-  const [availableDistricts, setAvailableDistricts] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [selectedStateId, setSelectedStateId] = useState<string>('');
+  const [selectedStateName, setSelectedStateName] = useState<string>('All');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
+  const [selectedDistrictName, setSelectedDistrictName] = useState<string>('All');
+  const [stateOptions, setStateOptions] = useState<Array<{id: string; name: string}>>([]);
+  const [districtOptions, setDistrictOptions] = useState<Array<{id: string; name: string}>>([]);
   const [selectedEvent, setSelectedEvent] = useState('All');
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
+
+  const resetFilters = () => {
+    setSelectedStateId('');
+    setSelectedStateName('All');
+    setSelectedDistrictId('');
+    setSelectedDistrictName('All');
+    setDistrictOptions([]);
+    setSelectedEvent('All');
+    setSortBy('newest');
+  };
 
   // Load gallery data from API
   useEffect(() => {
     const loadGalleryData = async () => {
       try {
-        // Load filter options first
+        // Load states for filters
+        const statesRes = await fetch('/api/states', { cache: 'no-store' });
+        const statesData = await statesRes.json();
+        if (statesData?.success && Array.isArray(statesData.data)) {
+          const opts = statesData.data.map((s: { id: number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
+          setStateOptions(opts);
+        }
+
+        // Load filter options
         const filtersResponse = await fetch('/api/public/photos/filters');
         const filtersData = await filtersResponse.json();
         
         if (filtersData.success) {
-          setAvailableStates(['All', ...filtersData.states]);
-          setAvailableDistricts(['All', ...filtersData.districts]);
-          setAvailableTags(filtersData.tags || []);
           setAvailableEvents(['All', ...(filtersData.events || [])]);
         }
 
         // Load photos with current filters
         const params = new URLSearchParams();
-        if (selectedState !== 'All') params.append('state', selectedState);
-        if (selectedDistrict !== 'All') params.append('district', selectedDistrict);
+        if (selectedStateName !== 'All') params.append('state', selectedStateName);
+        if (selectedDistrictName !== 'All') params.append('district', selectedDistrictName);
+        if (selectedDistrictId && selectedDistrictId !== '') params.append('districtId', selectedDistrictId);
         if (selectedEvent !== 'All') params.append('event', selectedEvent);
-        if (selectedTags.length > 0) params.append('tags', selectedTags.join(','));
         
         const response = await fetch(`/api/public/photos?${params}`);
         const data = await response.json();
@@ -212,22 +229,22 @@ export default function GalleryPage() {
           setGalleryImages(data.images);
           setFilteredImages(data.images);
         } else {
-          console.log('No images from new API, using default images');
-          setGalleryImages(defaultGalleryImages);
-          setFilteredImages(defaultGalleryImages);
+          console.log('No images from new API, showing empty state');
+          setGalleryImages([]);
+          setFilteredImages([]);
         }
       } catch (error) {
         console.error('Error loading gallery data:', error);
-        // Use default images on error
-        setGalleryImages(defaultGalleryImages);
-        setFilteredImages(defaultGalleryImages);
+        // Show empty state on error instead of fallback images
+        setGalleryImages([]);
+        setFilteredImages([]);
       } finally {
         setLoading(false);
       }
     };
 
     loadGalleryData();
-  }, [selectedState, selectedDistrict, selectedEvent, selectedTags]);
+  }, [selectedStateName, selectedDistrictName, selectedDistrictId, selectedEvent]);
 
   // Filter and sort images
   useEffect(() => {
@@ -262,7 +279,7 @@ export default function GalleryPage() {
     });
     
     setFilteredImages(filtered);
-  }, [sortBy, favorites]);
+  }, [sortBy, favorites, galleryImages]);
 
   const toggleFavorite = (id: number) => {
     setFavorites(prev => 
@@ -304,15 +321,38 @@ export default function GalleryPage() {
         sortOptions={sortOptions}
         sortBy={sortBy}
         onSortChange={setSortBy}
-        states={availableStates}
-        districts={availableDistricts}
-        selectedState={selectedState}
-        selectedDistrict={selectedDistrict}
-        onStateChange={setSelectedState}
-        onDistrictChange={setSelectedDistrict}
-        tags={availableTags}
-        selectedTags={selectedTags}
-        onTagsChange={setSelectedTags}
+        stateOptions={stateOptions}
+        districtOptions={districtOptions}
+        selectedStateId={selectedStateId}
+        selectedStateName={selectedStateName}
+        selectedDistrictId={selectedDistrictId}
+        selectedDistrictName={selectedDistrictName}
+        onStateChange={async (stateId, stateName) => {
+          setSelectedStateId(stateId);
+          setSelectedStateName(stateName);
+          if (stateId) {
+            const res = await fetch(`/api/districts?stateId=${encodeURIComponent(stateId)}`, { cache: 'no-store' });
+            const data = await res.json();
+            if (data?.success && Array.isArray(data.data)) {
+              const dOpts = data.data.map((d: { id: number; name: string }) => ({ id: String(d.id), name: String(d.name) }));
+              setDistrictOptions(dOpts);
+              setSelectedDistrictId('');
+              setSelectedDistrictName('All');
+            } else {
+              setDistrictOptions([]);
+              setSelectedDistrictId('');
+              setSelectedDistrictName('All');
+            }
+          } else {
+            setDistrictOptions([]);
+            setSelectedDistrictId('');
+            setSelectedDistrictName('All');
+          }
+        }}
+        onDistrictChange={(districtId, districtName) => {
+          setSelectedDistrictId(districtId);
+          setSelectedDistrictName(districtName);
+        }}
         events={availableEvents}
         selectedEvent={selectedEvent}
         onEventChange={setSelectedEvent}
@@ -323,6 +363,7 @@ export default function GalleryPage() {
         favorites={favorites}
         onImageClick={openModal}
         onToggleFavorite={toggleFavorite}
+        onResetFilters={resetFilters}
       />
       
       <ImageModal 

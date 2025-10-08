@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       const { email } = data || {};
       if (!email) return NextResponse.json({ success: false, message: 'Email required' }, { status: 400 });
 
-      const rows: any[] = await executeQuery('SELECT id, email, is_active FROM superadmin WHERE email = ? LIMIT 1', [email]);
+      const rows = await executeQuery('SELECT id, email, is_active FROM superadmin WHERE email = ? LIMIT 1', [email]) as Array<{ id: number; email: string; is_active: boolean }>;
       if (rows.length === 0 || !rows[0].is_active) {
         // Do not reveal account existence
         return NextResponse.json({ success: true });
@@ -69,10 +69,10 @@ export async function POST(req: NextRequest) {
       const payload = await verifyPasswordResetJwt(token);
       if (!payload) return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 400 });
 
-      const rows: any[] = await executeQuery(
+      const rows = await executeQuery(
         'SELECT id, used, expires_at FROM admin_password_resets WHERE token = ? AND otp = ? AND email = ? ORDER BY id DESC LIMIT 1',
         [token, otp, payload.email]
-      );
+      ) as Array<{ id: number; used: boolean; expires_at: string }>;
       if (rows.length === 0) return NextResponse.json({ success: false, message: 'Invalid OTP' }, { status: 400 });
       const rec = rows[0];
       if (rec.used || new Date(rec.expires_at).getTime() < Date.now()) {
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       const payload = await verifyPasswordResetJwt(token);
       if (!payload) return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 400 });
 
-      const rows: any[] = await executeQuery('SELECT id, used, expires_at FROM admin_password_resets WHERE token = ? ORDER BY id DESC LIMIT 1', [token]);
+      const rows = await executeQuery('SELECT id, used, expires_at FROM admin_password_resets WHERE token = ? ORDER BY id DESC LIMIT 1', [token]) as Array<{ id: number; used: boolean; expires_at: string }>;
       if (rows.length === 0) return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 400 });
       const rec = rows[0];
       if (rec.used || new Date(rec.expires_at).getTime() < Date.now()) {

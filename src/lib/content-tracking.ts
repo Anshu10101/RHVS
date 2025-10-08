@@ -58,7 +58,13 @@ export async function getContentOrigin(
       WHERE co.content_type = ? AND co.content_id = ?
       LIMIT 1`,
       [contentType, contentId]
-    );
+    ) as Array<{ 
+      district_id: string;
+      state_id: string;
+      added_at: string;
+      member_id: number;
+      added_by_name: string;
+    }>;
     
     return result.length > 0 ? result[0] : null;
   } catch (error) {
@@ -94,7 +100,7 @@ export async function getContentByDistrict(
       WHERE co.district_id = ?
     `;
     
-    const params: any[] = [contentType, districtId];
+    const params: (string | number)[] = [contentType, districtId];
     
     if (stateId) {
       query += ` AND co.state_id = ?`;
@@ -118,7 +124,7 @@ export async function getContentByDistrict(
  * @param contentType Type of content (news, event, product, gallery, office)
  */
 export async function enrichContentWithDistrictInfo(
-  contentItems: any[],
+  contentItems: Array<{ id: number; [key: string]: unknown }>,
   contentType: 'news' | 'event' | 'product' | 'gallery' | 'office'
 ) {
   if (!contentItems || contentItems.length === 0) return contentItems;
@@ -138,16 +144,16 @@ export async function enrichContentWithDistrictInfo(
       JOIN members m ON da.member_id = m.id
       WHERE co.content_type = ? AND co.content_id IN (?)`,
       [contentType, contentIds]
-    );
+    ) as Array<{ content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string }>;
     
     // Create a map for quick lookup
-    const originsMap = origins.reduce((map: any, origin: any) => {
+    const originsMap = origins.reduce((map: { [key: string]: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string } }, origin: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string }) => {
       map[origin.content_id] = origin;
       return map;
-    }, {});
+    }, {} as { [key: string]: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string } });
     
     // Add district info to content items
-    return contentItems.map((item: any) => ({
+    return contentItems.map((item: { id: number; [key: string]: unknown }) => ({
       ...item,
       district_id: originsMap[item.id]?.district_id || null,
       state_id: originsMap[item.id]?.state_id || null,

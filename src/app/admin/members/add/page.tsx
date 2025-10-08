@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Calendar, Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown, Lock } from 'lucide-react';
+import { Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles, Lock } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -18,6 +18,7 @@ import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
+import Image from 'next/image';
 import { useAdmin } from '@/contexts/AdminContext';
 
 const memberSchema = z.object({
@@ -45,22 +46,41 @@ interface State {
   code: string;
 }
 
-interface District {
-  id: number;
-  name: string;
-}
+// interface District {
+//   id: number;
+//   name: string;
+// }
 
 export default function AdminAddMemberPage() {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [states, setStates] = useState<State[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  // const [districts, setDistricts] = useState<District[]>([]);
+  // const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [adminStateName, setAdminStateName] = useState<string>('');
   const [adminDistrictName, setAdminDistrictName] = useState<string>('');
   const router = useRouter();
   const { currentUser } = useAdmin();
+
+  const form = useForm<MemberFormData>({
+    resolver: zodResolver(memberSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      stateId: '',
+      districtId: '',
+      aadharCardNumber: '',
+      fatherHusbandName: '',
+      motherWifeName: '',
+      registrationDate: new Date(),
+      existingMemberRegNumber: '',
+      feePaid: false,
+    },
+    mode: 'onChange',
+  });
 
   // Fetch states on component mount and set district admin's state/district
   useEffect(() => {
@@ -85,7 +105,7 @@ export default function AdminAddMemberPage() {
             const findStateAndDistrictIds = async () => {
               try {
                 // Find state ID
-                const stateData = data.data.find((state: any) => 
+                const stateData = data.data.find((state: { id: number; name: string }) => 
                   state.name.toLowerCase() === currentUser.state?.toLowerCase()
                 );
                 
@@ -98,7 +118,7 @@ export default function AdminAddMemberPage() {
                   const districtData = await districtResponse.json();
                   
                   if (districtData.success && districtData.data.length > 0) {
-                    const matchingDistrict = districtData.data.find((d: any) => 
+                    const matchingDistrict = districtData.data.find((d: { id: number; name: string }) => 
                       d.name.toLowerCase() === currentUser.district?.toLowerCase()
                     );
                     
@@ -109,7 +129,7 @@ export default function AdminAddMemberPage() {
                   }
                   
                   // Load districts for the state
-                  await fetchDistricts(stateData.id.toString());
+                  // await fetchDistricts(stateData.id.toString());
                 } else {
                   console.log('State not found in states list:', currentUser.state);
                 }
@@ -135,7 +155,7 @@ export default function AdminAddMemberPage() {
     
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
-  }, [currentUser]);
+  }, [currentUser, form]);
 
   // Fetch districts function for async searchable select
   const fetchDistrictsAsync = async (searchTerm: string) => {
@@ -153,7 +173,7 @@ export default function AdminAddMemberPage() {
       const data = await response.json();
       
       if (data.success) {
-        return data.data.map((district: any) => ({
+        return data.data.map((district: { id: number; name: string }) => ({
           value: district.id.toString(),
           label: district.name
         }));
@@ -166,44 +186,25 @@ export default function AdminAddMemberPage() {
   };
 
   // Fetch districts when state changes (for backward compatibility)
-  const fetchDistricts = async (stateId: string) => {
-    if (!stateId) {
-      setDistricts([]);
-      return;
-    }
+  // const fetchDistricts = async (stateId: string) => {
+  //   if (!stateId) {
+  //     setDistricts([]);
+  //     return;
+  //   }
     
-    setLoadingDistricts(true);
-    try {
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
-      const data = await response.json();
-      if (data.success) {
-        setDistricts(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching districts:', error);
-    } finally {
-      setLoadingDistricts(false);
-    }
-  };
-
-  const form = useForm<MemberFormData>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      stateId: '',
-      districtId: '',
-      aadharCardNumber: '',
-      fatherHusbandName: '',
-      motherWifeName: '',
-      registrationDate: new Date(),
-      existingMemberRegNumber: '',
-      feePaid: false,
-    },
-    mode: 'onChange',
-  });
+  //   setLoadingDistricts(true);
+  //   try {
+  //     const response = await fetch(`/api/districts?stateId=${stateId}`);
+  //     const data = await response.json();
+  //     if (data.success) {
+  //       setDistricts(data.data);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error fetching districts:', error);
+  //   } finally {
+  //     setLoadingDistricts(false);
+  //   }
+  // };
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -272,7 +273,7 @@ export default function AdminAddMemberPage() {
             setIsSubmitting(false);
             return;
           }
-        } catch (error) {
+        } catch (_error) {
           toast({
             title: "Upload failed",
             description: 'Failed to upload profile photo',
@@ -488,9 +489,11 @@ export default function AdminAddMemberPage() {
                       <div className="relative group">
                         <div className="w-36 h-36 rounded-3xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105">
                           {profilePhoto ? (
-                            <img
+                            <Image
                               src={URL.createObjectURL(profilePhoto)}
                               alt="Profile preview"
+                              width={144}
+                              height={144}
                               className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
@@ -707,11 +710,11 @@ export default function AdminAddMemberPage() {
                                 onValueChange={(value) => {
                                   field.onChange(value);
                                   form.setValue('districtId', ''); // Reset district when state changes
-                                  if (value) {
-                                    fetchDistricts(value);
-                                  } else {
-                                    setDistricts([]);
-                                  }
+                                  // if (value) {
+                                  //   fetchDistricts(value);
+                                  // } else {
+                                  //   setDistricts([]);
+                                  // }
                                 }}
                                 placeholder="Search or select state..."
                                 searchPlaceholder="Type state name..."

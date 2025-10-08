@@ -98,16 +98,16 @@ export async function POST(request: NextRequest) {
     // Get user details for ownership
     const userType = claims.type || 'superadmin';
     let district = null;
-    let state = null;
+    const state = null;
     let createdBy = claims.email;
 
     if (userType === 'district_admin') {
       district = claims.district;
       // Get district admin details
-      const adminRows: any[] = await executeQuery(
+      const adminRows = await executeQuery(
         'SELECT da.district, m.name FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ?',
         [claims.sub]
-      );
+      ) as Array<{ district: string; name: string }>;
       if (adminRows.length > 0) {
         createdBy = adminRows[0].name || claims.email;
       }
@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
       isApproved: isApproved !== false,
       isVisible: isVisible !== false,
       sortOrder: sortOrder || 0,
-      district,
-      state,
+      district: district || undefined,
+      state: state || undefined,
       ownerAdminId: parseInt(claims.sub),
       createdBy
     };

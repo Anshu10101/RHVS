@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
         LIMIT 1
       `;
       
-      const members: any = await executeQuery(memberQuery, [existingMemberRegNumber, existingMemberRegNumber]);
+      const members = await executeQuery(memberQuery, [existingMemberRegNumber, existingMemberRegNumber]) as Array<{ id: number; name: string; email: string; member_reg_number: string }>;
       
       if (members.length === 0) {
         return NextResponse.json(
@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
       // Try sending OTP email (non-blocking for success path)
       try {
         await sendOTPEmail(member.email, otp, member.name);
-      } catch (e) {
+      } catch (_e) {
         // Log only; allow client to continue and show OTP field
-        console.error('Failed to send OTP email (continuing):', e);
+        console.error('Failed to send OTP email (continuing):', _e);
       }
 
       return NextResponse.json({
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
       // Check if email already exists
       const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
-      const existingMembers: any = await executeQuery(existingMemberQuery, [email]);
+      const existingMembers = await executeQuery(existingMemberQuery, [email]) as Array<{ id: number }>;
       
       if (existingMembers.length > 0) {
         return NextResponse.json(
@@ -104,11 +104,11 @@ export async function POST(request: NextRequest) {
 
       // Get state and district names from IDs
       const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-      const stateResult: any = await executeQuery(stateQuery, [stateId]);
+      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
       const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
 
       const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
-      const districtResult: any = await executeQuery(districtQuery, [districtId]);
+      const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
       const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
 
       // Generate new member registration number - maintain sequential flow
@@ -126,10 +126,10 @@ export async function POST(request: NextRequest) {
       try {
         // Get verifier's ID for tracking
         const verifierQuery = 'SELECT id FROM members WHERE member_reg_number = ? LIMIT 1';
-        const verifierResult: any = await executeQuery(verifierQuery, [existingMemberRegNumber]);
+        const verifierResult = await executeQuery(verifierQuery, [existingMemberRegNumber]) as Array<{ id: number }>;
         const verifierId = verifierResult.length > 0 ? verifierResult[0].id : null;
 
-        const result: any = await executeQuery(insertQuery, [
+        const result = await executeQuery(insertQuery, [
           newMemberRegNumber,
           name,
           email,
@@ -144,11 +144,11 @@ export async function POST(request: NextRequest) {
           existingMemberRegNumber,
           profilePhotoPath || null,
           verifierId
-        ]);
+        ]) as { insertId: number };
 
         // Fire-and-forget welcome email (do not block response)
-        sendWelcomeEmail(email, name, newMemberRegNumber).catch((e) => {
-          console.error('Welcome email error (non-blocking):', e);
+        sendWelcomeEmail(email, name, newMemberRegNumber).catch((_e) => {
+          console.error('Welcome email error (non-blocking):', _e);
         });
 
         return NextResponse.json({
@@ -157,9 +157,9 @@ export async function POST(request: NextRequest) {
           memberId: result.insertId,
           memberRegNumber: newMemberRegNumber
         });
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Handle duplicate keys and other SQL errors explicitly
-        if (e?.code === 'ER_DUP_ENTRY') {
+        if ((e as { code?: string })?.code === 'ER_DUP_ENTRY') {
           return NextResponse.json(
             { success: false, message: 'Duplicate entry (email or member number already exists)' },
             { status: 400 }

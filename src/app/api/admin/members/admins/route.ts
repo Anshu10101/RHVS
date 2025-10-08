@@ -36,9 +36,10 @@ export async function GET(req: NextRequest) {
       ORDER BY da.created_at DESC
     `;
     
-    const admins = await executeQuery(query, []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const admins = await executeQuery(query, []) as any[];
     
-    // Fetch permissions for each admin
+     
     for (const admin of admins) {
       const permissionsQuery = `
         SELECT permission
@@ -46,12 +47,15 @@ export async function GET(req: NextRequest) {
         WHERE district_admin_id = ? AND (expires_at IS NULL OR expires_at > NOW()) AND is_active = 1
       `;
       
-      const permissions = await executeQuery(permissionsQuery, [admin.id]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const permissions = await executeQuery(permissionsQuery, [admin.id]) as any[];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       admin.permissions = permissions.map((p: any) => p.permission);
     }
 
     // Map the admins to ensure consistent property names
-    const mappedAdmins = admins.map(admin => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mappedAdmins = admins.map((admin: any) => ({
       id: admin.id,
       memberId: admin.memberId,
       name: admin.name || 'N/A',
@@ -102,8 +106,8 @@ export async function POST(req: NextRequest) {
     
     // Check if member exists
     const memberCheckQuery = 'SELECT id, email FROM members WHERE id = ?';
-    const memberCheck = await executeQuery(memberCheckQuery, [memberId]);
-    
+    const memberCheck = await executeQuery(memberCheckQuery, [memberId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+
     if (!memberCheck.length) {
       return NextResponse.json(
         { success: false, message: 'Member not found' },
@@ -113,7 +117,7 @@ export async function POST(req: NextRequest) {
     
     // Check if member is already an admin
     const adminCheckQuery = 'SELECT id FROM district_admins WHERE member_id = ?';
-    const adminCheck = await executeQuery(adminCheckQuery, [memberId]);
+    const adminCheck = await executeQuery(adminCheckQuery, [memberId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     
     if (adminCheck.length > 0) {
       return NextResponse.json(
@@ -141,7 +145,7 @@ export async function POST(req: NextRequest) {
       passwordHash,
       claims.sub,
       expiryDate || null
-    ]);
+    ]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     
     const adminId = result.insertId;
     

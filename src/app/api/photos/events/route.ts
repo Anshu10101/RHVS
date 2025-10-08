@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     console.log('Photo events API - Received filters:', { state, district });
     
     // Build scope based on user type
-    let scope: any = {};
+    let scope: Record<string, unknown> = {};
     
     if (claims.type === 'district_admin') {
       // District admins are restricted to their district
@@ -91,10 +91,10 @@ export async function POST(request: NextRequest) {
       finalDistrict = claims.district;
       
       // Get state from district admin's district
-      const adminRows: any[] = await executeQuery(
+      const adminRows = await executeQuery(
         'SELECT da.district, da.state, m.name FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ?',
         [claims.sub]
-      );
+      ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
       if (adminRows.length > 0) {
         finalState = adminRows[0].state;
         createdBy = adminRows[0].name || claims.email;
@@ -113,8 +113,8 @@ export async function POST(request: NextRequest) {
       description,
       status: status || 'upcoming',
       isPublic: isPublic !== false,
-      district: finalDistrict,
-      state: finalState,
+      district: finalDistrict || undefined,
+      state: finalState || undefined,
       ownerAdminId: parseInt(claims.sub),
       createdBy
     };

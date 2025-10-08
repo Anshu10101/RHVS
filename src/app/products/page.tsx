@@ -281,7 +281,7 @@ export default function ProductsPage() {
   const router = useRouter();
 
   // Transform DB product to UI Product type
-  const transformDbProduct = (p: any, index: number): Product & { detailId?: string } => {
+  const transformDbProduct = (p: Record<string, unknown>, index: number): Product & { detailId?: string } => {
     const numericId = Number(String(p.id).replace(/\D/g, "")) || index + 1;
     return {
       id: numericId,
@@ -324,7 +324,7 @@ export default function ProductsPage() {
         const statesRes = await fetch('/api/states', { cache: 'no-store' });
         const statesData = await statesRes.json();
         if (statesData?.success && Array.isArray(statesData.data)) {
-          const opts: StateOption[] = statesData.data.map((s: any) => ({ id: String(s.id), name: String(s.name) }));
+          const opts: StateOption[] = statesData.data.map((s: { id: string | number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
           setStateOptions(opts);
         }
 
@@ -332,10 +332,10 @@ export default function ProductsPage() {
         const res = await fetch('/api/content/store', { cache: 'no-store' });
         const data = await res.json();
         if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
-          const mapped = data.products.map((p: any, i: number) => {
-            const base = transformDbProduct(p as any, i);
-            const categoryName = (catData?.categories ? (catData.categories.reduce((acc: Record<string, string>, c: {id: string | number, name: string}) => { acc[String(c.id)] = c.name; return acc; }, {} as Record<string,string>))[String((p as any).category)] : undefined) || base.category;
-            return { ...base, category: categoryName, detailId: String((p as any).id) };
+          const mapped = data.products.map((p: Record<string, unknown>, i: number) => {
+            const base = transformDbProduct(p, i);
+            const categoryName = (catData?.categories ? (catData.categories.reduce((acc: Record<string, string>, c: {id: string | number, name: string}) => { acc[String(c.id)] = c.name; return acc; }, {} as Record<string,string>))[String(p.category)] : undefined) || base.category;
+            return { ...base, category: categoryName, detailId: String(p.id) };
           });
           // Remove duplicates based on product ID
           const uniqueProducts = mapped.filter((product: Product, index: number, self: Product[]) => 
@@ -427,7 +427,7 @@ export default function ProductsPage() {
   }, [products, searchQuery, selectedCategories, priceRange, sortOption, selectedStateName, selectedDistrictName]);
 
   const handleProductClick = (product: Product) => {
-    const rawId = (product as any).detailId || product.id;
+    const rawId = (product as Product & { detailId?: string }).detailId || product.id;
     router.push(`/products/${rawId}`);
   };
 
@@ -440,9 +440,10 @@ export default function ProductsPage() {
     const product = products.find(p => p.id === productId);
     if (!product) return;
     // Ensure seller fields are attached by fetching detail when missing
-    const hasSeller = !!(product as any).seller_name || !!(product as any).seller_phone || !!(product as any).seller_whatsapp || !!(product as any).seller_email;
-    if ((product as any).detailId && !hasSeller) {
-      const idForDetail = (product as any).detailId as string;
+    const productWithDetails = product as Product & { seller_name?: string; seller_phone?: string; seller_whatsapp?: string; seller_email?: string; detailId?: string };
+    const hasSeller = !!productWithDetails.seller_name || !!productWithDetails.seller_phone || !!productWithDetails.seller_whatsapp || !!productWithDetails.seller_email;
+    if (productWithDetails.detailId && !hasSeller) {
+      const idForDetail = productWithDetails.detailId;
       // Fire and forget enrich; add after enrichment for consistency
       (async () => {
         try {
@@ -602,7 +603,7 @@ export default function ProductsPage() {
                                 const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
                                 const data = await res.json();
                                 if (data?.success && Array.isArray(data.data)) {
-                                  const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+                                  const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
                                   setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
                                   setSelectedDistrictName('All');
                                 } else {
@@ -796,7 +797,7 @@ export default function ProductsPage() {
                               const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
                               const data = await res.json();
                               if (data?.success && Array.isArray(data.data)) {
-                                const dOpts = data.data.map((d: any) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
+                                const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
                                 setDistrictOptions([{ id: 'all', name: 'All' }, ...dOpts]);
                                 setSelectedDistrictName('All');
                               } else {

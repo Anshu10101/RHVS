@@ -58,7 +58,7 @@ interface DistrictAdmin {
 
 
 export default function AdminsManagementPage() {
-  const { currentUser, hasPermission } = useAdmin();
+  const { currentUser } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
   const [districtAdmins, setDistrictAdmins] = useState<DistrictAdmin[]>([]);
@@ -121,7 +121,7 @@ export default function AdminsManagementPage() {
       const response = await fetch(`/api/districts?stateId=${stateId}`);
       const data = await response.json();
       if (data.success) {
-        setDistricts(data.data.map((district: any) => ({
+        setDistricts(data.data.map((district: { id: number; name: string }) => ({
           id: district.id,
           name: district.name
         })));

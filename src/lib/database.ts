@@ -34,12 +34,12 @@ export async function testConnection() {
 }
 
 // Execute query with error handling
-export async function executeQuery(query: string, params: any[] = [], attempt: number = 1) {
+export async function executeQuery(query: string, params: unknown[] = [], attempt: number = 1): Promise<unknown> {
   try {
     const [results] = await pool.execute(query, params);
-    return results as any;
-  } catch (error: any) {
-    const transient = error?.code === 'ECONNRESET' || error?.code === 'PROTOCOL_CONNECTION_LOST' || error?.fatal;
+    return results;
+  } catch (error: unknown) {
+    const transient = (error as { code?: string; fatal?: boolean }).code === 'ECONNRESET' || (error as { code?: string; fatal?: boolean }).code === 'PROTOCOL_CONNECTION_LOST' || (error as { code?: string; fatal?: boolean }).fatal;
     if (transient && attempt < 3) {
       await new Promise((r) => setTimeout(r, 300 * attempt));
       return executeQuery(query, params, attempt + 1);

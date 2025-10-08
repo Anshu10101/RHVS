@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -95,7 +95,7 @@ export function TokenVerification() {
   };
 
   // Fetch tokens
-  const fetchTokens = async () => {
+  const fetchTokens = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -119,12 +119,12 @@ export function TokenVerification() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, searchTerm, selectedStatus]);
 
   // Load data on component mount and when filters change
   useEffect(() => {
     fetchTokens();
-  }, [currentPage, searchTerm, selectedStatus]);
+  }, [fetchTokens]);
 
 
   // Handle search with debounce
@@ -138,7 +138,7 @@ export function TokenVerification() {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]);
+  }, [searchTerm, currentPage, fetchTokens]);
 
   const handleVerifyToken = async (dbToken: string, action: 'verify' | 'reject') => {
     try {
@@ -689,7 +689,7 @@ export function TokenVerification() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="popup-token-input" className="text-sm font-medium text-gray-700">
-                        Enter Member's Token
+                        Enter Member&apos;s Token
                       </Label>
                       <Input
                         id="popup-token-input"

@@ -5,7 +5,7 @@ import { ContentService } from '@/lib/content';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log('DELETE /api/photos/events/[id] called');
@@ -25,7 +25,7 @@ export async function DELETE(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: eventId } = params;
+    const { id: eventId } = await params;
     console.log('Event ID to delete:', eventId);
 
     // Check if event exists
@@ -79,7 +79,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verify admin authentication
@@ -93,7 +93,7 @@ export async function PUT(
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id: eventId } = params;
+    const { id: eventId } = await params;
     const body = await request.json();
     const { eventName, eventDate, eventType, location, description, status, isPublic } = body;
 

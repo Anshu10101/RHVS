@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('Starting database migration...');
 
@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
         console.log('Executing:', migration.substring(0, 50) + '...');
         await executeQuery(migration);
         console.log('✅ Success');
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Some statements might fail if columns already exist, that's okay
-        if (error.message.includes('Duplicate column name') || 
-            error.message.includes('already exists') ||
-            error.message.includes('Duplicate key name')) {
+        if ((error as Error).message.includes('Duplicate column name') || 
+            (error as Error).message.includes('already exists') ||
+            (error as Error).message.includes('Duplicate key name')) {
           console.log('⚠️  Skipped (already exists)');
         } else {
           throw error;

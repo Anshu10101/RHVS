@@ -14,11 +14,11 @@ export async function POST(req: NextRequest) {
     // Update all products with stock = 0 or NULL to have stock = 10
     const result = await executeQuery(
       'UPDATE products SET stock = 10 WHERE stock = 0 OR stock IS NULL'
-    );
+    ) as { affectedRows: number };
 
     // Get updated products count
-    const [products] = await executeQuery('SELECT COUNT(*) as count FROM products WHERE stock > 0');
-    const [zeroStock] = await executeQuery('SELECT COUNT(*) as count FROM products WHERE stock = 0 OR stock IS NULL');
+    const products = await executeQuery('SELECT COUNT(*) as count FROM products WHERE stock > 0') as Array<{ count: number }>;
+    const zeroStock = await executeQuery('SELECT COUNT(*) as count FROM products WHERE stock = 0 OR stock IS NULL') as Array<{ count: number }>;
 
     return NextResponse.json({ 
       success: true, 

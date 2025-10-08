@@ -193,7 +193,7 @@ export default function NewsEventsEditor() {
 
       const method = editingItem ? 'PUT' : 'POST';
       if (editingItem) {
-        data.id = editingItem.id;
+        (data as any).id = editingItem.id; // eslint-disable-line @typescript-eslint/no-explicit-any
       }
 
       const response = await fetch(url, {
