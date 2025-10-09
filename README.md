@@ -227,10 +227,14 @@ NEXTAUTH_SECRET=your-secret-key-here
 # Run database setup script
 node setup-database.js
 
+# Set up department management system
+node setup-department-management.js
+
 # Or manually run SQL files in order:
 # 1. database-schema.sql
 # 2. database-content-tables.sql
 # 3. database-store-tables.sql
+# 4. department-management-schema.sql
 ```
 
 ### 5. Start Development Server
@@ -360,8 +364,9 @@ VALUES ('admin', 'admin@rhvs.org', 'hashed_password', 'superadmin', 1);
 1. **Analytics**: Real-time statistics and charts
 2. **Member Management**: Complete member lifecycle
 3. **Content Management**: Website content editing
-4. **Activity Logs**: Detailed audit trail
-5. **Permission Management**: Role-based access control
+4. **Department Management**: Create and manage departments with posts
+5. **Activity Logs**: Detailed audit trail
+6. **Permission Management**: Role-based access control
 
 ## 🚀 Deployment
 

@@ -1,38 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 
-// GET - Fetch all unique departments
+// GET - Fetch all unique departments from the new department system
 export async function GET(_request: NextRequest) {
   try {
-    // Get unique departments from members table
-    const membersQuery = `
-      SELECT DISTINCT department
-      FROM members 
-      WHERE department IS NOT NULL AND department != ''
-      ORDER BY department
+    // Get departments from the departments table
+    const departmentsQuery = `
+      SELECT id, name_en, name_hi
+      FROM departments 
+      ORDER BY name_en
     `;
-    const membersResult = await executeQuery(membersQuery, []) as Array<{ department: string }>;
-
-    // Get unique departments from registration_tokens table
-    const tokensQuery = `
-      SELECT DISTINCT department
-      FROM registration_tokens 
-      WHERE department IS NOT NULL AND department != ''
-      ORDER BY department
-    `;
-    const tokensResult = await executeQuery(tokensQuery, []) as Array<{ department: string }>;
-
-    // Combine and deduplicate departments
-    const allDepartments = new Set([
-      ...membersResult.map((row: { department: string }) => row.department),
-      ...tokensResult.map((row: { department: string }) => row.department)
-    ]);
-
-    const departments = Array.from(allDepartments).sort();
+    const departmentsResult = await executeQuery(departmentsQuery, []) as Array<{ 
+      id: number;
+      name_en: string; 
+      name_hi: string; 
+    }>;
 
     return NextResponse.json({
       success: true,
-      data: departments
+      data: departmentsResult.map(d => d.name_en)
     });
   } catch (error) {
     console.error('Error fetching departments:', error);

@@ -99,18 +99,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Department filter
-    if (department) {
-      whereConditions.push('m.department = ?');
-      queryParams.push(department);
-    }
-
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
     
+    // Department filter - will be applied in HAVING clause
+    let havingClause = '';
+    if (department) {
+      havingClause = 'HAVING departments LIKE ?';
+      queryParams.push(`%${department}%`);
+    }
+    
     console.log('Final WHERE clause:', whereClause);
+    console.log('HAVING clause:', havingClause);
     console.log('Query parameters:', queryParams);
 
-    // Build the main query
+    // Build the main query with department assignments
     const offset = (page - 1) * limit;
     const membersQuery = `
       SELECT 
@@ -119,12 +121,27 @@ export async function GET(request: NextRequest) {
         m.registration_date, m.existing_member_reg_number, 
         m.profile_photo_path, m.member_reg_number, 
         m.created_at, m.updated_at, m.status, 
-        m.state, m.district, m.department,
+        m.state, m.district,
         m.verified_by_member_id,
-        verifier.name as verified_by_name
+        verifier.name as verified_by_name,
+        GROUP_CONCAT(
+          CONCAT(d.name_en, ' (', dp.name_en, ' - ', dm.level, 
+            CASE 
+              WHEN dm.level = 'district' THEN CONCAT(', ', dm.state, ', ', dm.district)
+              WHEN dm.level = 'state' THEN CONCAT(', ', dm.state)
+              ELSE ''
+            END,
+          ')')
+          SEPARATOR ' | '
+        ) as departments
       FROM members m
       LEFT JOIN members verifier ON m.verified_by_member_id = verifier.id
+      LEFT JOIN department_members dm ON m.id = dm.member_id
+      LEFT JOIN departments d ON dm.department_id = d.id
+      LEFT JOIN department_posts dp ON dm.post_id = dp.id
       ${whereClause}
+      GROUP BY m.id
+      ${havingClause}
       ORDER BY m.${sortBy} ${sortOrder}
       LIMIT ? OFFSET ?
     `;
@@ -134,11 +151,18 @@ export async function GET(request: NextRequest) {
     // Execute the query
     const members = await executeQuery(membersQuery, queryParams) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    // Get total count for pagination
+    // Get total count for pagination (needs same logic as main query for department filter)
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM members m
-      ${whereClause}
+      FROM (
+        SELECT m.id
+        FROM members m
+        LEFT JOIN department_members dm ON m.id = dm.member_id
+        LEFT JOIN departments d ON dm.department_id = d.id
+        ${whereClause}
+        GROUP BY m.id
+        ${havingClause}
+      ) as filtered_members
     `;
     const countParams = queryParams.slice(0, -2); // Remove limit and offset
     const countResult = await executeQuery(countQuery, countParams) as Array<{ total: number }>;

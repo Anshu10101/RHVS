@@ -56,7 +56,7 @@ interface Member {
   status: 'pending' | 'verified' | 'rejected';
   state?: string;
   district?: string;
-  department?: string;
+  departments?: string; // This will contain the formatted department assignments
   verified_by_member_id?: number;
   verified_by_name?: string;
 }
@@ -704,7 +704,7 @@ export function MemberManagement() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{member.state || 'N/A'}</div>
                       <div className="text-sm text-gray-500">{member.district || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{member.department || 'N/A'}</div>
+                      <div className="text-sm text-blue-600 font-medium">{member.departments || 'No assignments'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(member.status)}
@@ -890,7 +890,7 @@ export function MemberManagement() {
                   <Input
                     id="edit_department"
                     name="department"
-                    defaultValue={editingMember.department || ''}
+                    defaultValue={editingMember.departments || ''}
                   />
                 </div>
               </div>
@@ -985,9 +985,24 @@ export function MemberManagement() {
                     <MapPin className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-900">{selectedMember.district || 'N/A'}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Building2 className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-900">{selectedMember.department || 'N/A'}</span>
+                  <div className="flex items-start space-x-2">
+                    <Building2 className="h-4 w-4 text-gray-400 mt-1" />
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-600">Department Assignments:</span>
+                      <div className="text-sm text-gray-900 mt-1">
+                        {selectedMember.departments ? (
+                          <div className="space-y-1">
+                            {selectedMember.departments.split(' | ').map((assignment, index) => (
+                              <div key={index} className="bg-blue-50 px-2 py-1 rounded text-xs">
+                                {assignment}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-gray-500 italic">No department assignments</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-3">

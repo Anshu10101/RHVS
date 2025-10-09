@@ -180,6 +180,32 @@ const navigationItems = [
     href: '/admin/departments',
     icon: Building2,
     roles: ['superadmin'],
+    children: [
+      {
+        name: 'Create Department',
+        href: '/admin/departments/create',
+        icon: UserPlus,
+        roles: ['superadmin'],
+      },
+      {
+        name: 'Manage Departments',
+        href: '/admin/departments/manage',
+        icon: Settings,
+        roles: ['superadmin'],
+      },
+      {
+        name: 'Assign Members',
+        href: '/admin/departments/assign',
+        icon: UserCheck,
+        roles: ['superadmin'],
+      },
+    ],
+  },
+  {
+    name: 'Certificates',
+    href: '/admin/certificates',
+    icon: FileText,
+    roles: ['superadmin'],
   },
   {
     name: 'Analytics',

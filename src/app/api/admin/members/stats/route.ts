@@ -81,15 +81,15 @@ export async function GET(request: NextRequest) {
     // Get members by department
     const departmentQuery = `
       SELECT 
-        department,
-        COUNT(*) as count
-      FROM members m
-      ${whereClause ? whereClause + ' AND' : 'WHERE'} department IS NOT NULL AND department != ''
-      GROUP BY department
+        d.name_en as department,
+        COUNT(DISTINCT dm.member_id) as count
+      FROM departments d
+      LEFT JOIN department_members dm ON d.id = dm.department_id
+      GROUP BY d.id, d.name_en
       ORDER BY count DESC
       LIMIT 10
     `;
-    const departmentResult = await executeQuery(departmentQuery, queryParams) as Array<{ department: string; count: number }>;
+    const departmentResult = await executeQuery(departmentQuery, []) as Array<{ department: string; count: number }>;
     const departmentStats = departmentResult.map((row: { department: string; count: number }) => ({
       department: row.department,
       count: row.count

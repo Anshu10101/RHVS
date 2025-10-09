@@ -11,12 +11,26 @@ export async function GET(
 
     const memberQuery = `
       SELECT 
-        id, name, email, phone, address, father_husband_name, mother_wife_name,
-        registration_date, existing_member_reg_number, profile_photo_path,
-        member_reg_number, created_at, updated_at, status, district, department,
-        verified_by_member_id
-      FROM members 
-      WHERE id = ?
+        m.id, m.name, m.email, m.phone, m.address, m.father_husband_name, m.mother_wife_name,
+        m.registration_date, m.existing_member_reg_number, m.profile_photo_path,
+        m.member_reg_number, m.created_at, m.updated_at, m.status, m.district, m.state,
+        m.verified_by_member_id,
+        GROUP_CONCAT(
+          CONCAT(d.name_en, ' (', dp.name_en, ' - ', dm.level, 
+            CASE 
+              WHEN dm.level = 'district' THEN CONCAT(', ', dm.state, ', ', dm.district)
+              WHEN dm.level = 'state' THEN CONCAT(', ', dm.state)
+              ELSE ''
+            END,
+          ')')
+          SEPARATOR ' | '
+        ) as departments
+      FROM members m
+      LEFT JOIN department_members dm ON m.id = dm.member_id
+      LEFT JOIN departments d ON dm.department_id = d.id
+      LEFT JOIN department_posts dp ON dm.post_id = dp.id
+      WHERE m.id = ?
+      GROUP BY m.id
     `;
 
     const members = await executeQuery(memberQuery, [memberId]) as Array<Record<string, unknown>>;
