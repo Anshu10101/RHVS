@@ -208,7 +208,7 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
       html: htmlContent,
       attachments: [
         {
-          filename: `appointment-certificate-${data.certificateNumber}.png`,
+          filename: `appointment-certificate-${data.certificateNumber}.pdf`,
           path: certificateFilePath,
           cid: 'certificate-attachment'
         }
