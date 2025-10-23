@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
-import { generateCertificate } from '@/lib/certificate-generator';
+import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 import { sendCertificateEmail } from '@/lib/email-service';
 
 const generateCertificateSchema = z.object({
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       certificate_number: certificateNumber
     };
 
-    const certificatePath = await generateCertificate(certificateData);
+    const certificatePath = await generateAppointmentCertificate(certificateData);
 
     // Save certificate record
     const result = await executeQuery(`

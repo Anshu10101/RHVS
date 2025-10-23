@@ -221,8 +221,8 @@ export async function sendTokenEmail(to: string, token: string, memberName: stri
   }
 }
 
-// Send welcome email to new member with certificate
-export async function sendWelcomeEmail(to: string, memberName: string, memberRegNumber: string, certificatePath?: string) {
+// Send welcome email to new member with certificate and ID card
+export async function sendWelcomeEmail(to: string, memberName: string, memberRegNumber: string, certificatePath?: string, idCardPath?: string) {
   try {
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin:0 auto; padding:24px; background:#fff7ed;">
@@ -239,11 +239,16 @@ export async function sendWelcomeEmail(to: string, memberName: string, memberReg
               <span style="font-family:monospace; font-size:18px; margin-left:8px;">${memberRegNumber}</span>
             </p>
           </div>
-          ${certificatePath ? `
+          ${certificatePath || idCardPath ? `
           <div style="background:#dcfce7; padding:16px; border-radius:10px; border:1px solid #86efac; margin:16px 0;">
             <p style="margin:0; color:#166534;">
-              <strong>🎉 Your membership certificate has been generated!</strong><br>
-              <span style="font-size:14px;">The certificate is attached to this email and can also be downloaded from the admin dashboard.</span>
+              <strong>🎉 Your membership documents have been generated!</strong><br>
+              <span style="font-size:14px;">
+                ${certificatePath ? '• Membership Certificate' : ''}
+                ${certificatePath && idCardPath ? '<br>' : ''}
+                ${idCardPath ? '• Member ID Card' : ''}
+                <br>Both documents are attached to this email and can also be downloaded from the admin dashboard.
+              </span>
             </p>
           </div>
           ` : ''}
@@ -260,17 +265,35 @@ export async function sendWelcomeEmail(to: string, memberName: string, memberReg
       html,
     };
 
-    // Attach certificate if provided
+    // Attach certificate and ID card if provided
+    const attachments = [];
+    
     if (certificatePath) {
       const fs = await import('fs');
       const path = await import('path');
       const fullPath = path.join(process.cwd(), 'public', certificatePath);
       if (fs.existsSync(fullPath)) {
-        mailOptions.attachments = [{
+        attachments.push({
           filename: `RHVS_Membership_Certificate_${memberRegNumber}.pdf`,
           path: fullPath
-        }];
+        });
       }
+    }
+    
+    if (idCardPath) {
+      const fs = await import('fs');
+      const path = await import('path');
+      const fullPath = path.join(process.cwd(), 'public', idCardPath);
+      if (fs.existsSync(fullPath)) {
+        attachments.push({
+          filename: `RHVS_ID_Card_${memberRegNumber}.pdf`,
+          path: fullPath
+        });
+      }
+    }
+    
+    if (attachments.length > 0) {
+      mailOptions.attachments = attachments;
     }
 
     const info = await transporter.sendMail(mailOptions);

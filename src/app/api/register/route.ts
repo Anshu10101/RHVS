@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { generateOTP, sendOTPEmail, sendWelcomeEmail } from '@/lib/email';
 import { generateMemberRegistrationNumber } from '@/lib/member-registration';
+import { generateCertificate } from '@/lib/certificate';
+import { generateIDCard } from '@/lib/id-card-generator';
 
 // In-memory OTP store (resets on server restart/redeploy)
 const otpStore: Map<string, { otp: string; email: string; expiresAt: number; used: boolean }> = new Map();
@@ -146,8 +148,51 @@ export async function POST(request: NextRequest) {
           verifierId
         ]) as { insertId: number };
 
-        // Fire-and-forget welcome email (do not block response)
-        sendWelcomeEmail(email, name, newMemberRegNumber).catch((_e) => {
+        // Generate certificate and ID card (fire-and-forget)
+        Promise.all([
+          // Generate certificate
+          generateCertificate({
+            memberId: result.insertId,
+            memberName: name,
+            memberRegNumber: newMemberRegNumber,
+            registrationDate: registrationDate,
+            profilePhotoPath: profilePhotoPath || undefined
+          }).then(async (certResult) => {
+            // Store certificate in database
+            const certificateQuery = `
+              INSERT INTO member_certificates (member_id, certificate_number, certificate_path, generated_by_admin_id)
+              VALUES (?, ?, ?, ?)
+            `;
+            await executeQuery(certificateQuery, [
+              result.insertId,
+              certResult.certificateNumber,
+              certResult.certificatePath,
+              verifierId
+            ]);
+            return certResult.certificatePath;
+          }).catch((e) => {
+            console.error('Certificate generation error (non-blocking):', e);
+            return null;
+          }),
+          
+          // Generate ID card
+          generateIDCard({
+            memberId: result.insertId,
+            memberName: name,
+            memberRegNumber: newMemberRegNumber,
+            profilePhotoPath: profilePhotoPath || undefined,
+            address: address,
+            designation: 'Member'
+          }).then((idCardResult) => {
+            return idCardResult.idCardPath;
+          }).catch((e) => {
+            console.error('ID card generation error (non-blocking):', e);
+            return null;
+          })
+        ]).then(([certPath, idCardPath]) => {
+          // Send welcome email with both documents
+          return sendWelcomeEmail(email, name, newMemberRegNumber, certPath || undefined, idCardPath || undefined);
+        }).catch((_e) => {
           console.error('Welcome email error (non-blocking):', _e);
         });
 

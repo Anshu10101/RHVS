@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateCertificate } from '@/lib/certificate-generator';
+import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       certificate_number: 'TEST-CERT-001'
     };
 
-    const certificatePath = await generateCertificate(testData);
+    const certificatePath = await generateAppointmentCertificate(testData);
 
     return NextResponse.json({
       success: true,

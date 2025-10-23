@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { CalendarDays, BookOpen, Heart } from 'lucide-react';
 import Image from 'next/image';
 import { Noto_Serif_Devanagari } from 'next/font/google';
 
@@ -45,21 +43,6 @@ export default function HeroSection() {
           </span>
         </div>
         
-        {/* Action Buttons */}
-        <div className="flex flex-wrap justify-center gap-3 md:gap-4 mb-10">
-          <Button className="gap-2 rounded-full px-6 bg-orange-600 hover:bg-orange-700 shadow-sm">
-            <CalendarDays size={16} />
-            Upcoming Events
-          </Button>
-          <Button variant="outline" className="gap-2 rounded-full px-6 border-orange-600 text-orange-700 hover:bg-orange-100">
-            <BookOpen size={16} />
-            Our Initiatives
-          </Button>
-          <Button variant="outline" className="gap-2 rounded-full px-6 border-orange-600 text-orange-700 hover:bg-orange-100">
-            <Heart size={16} />
-            Donate
-          </Button>
-        </div>
 
         {/* mantra marquee */}
         <div className="relative overflow-hidden max-w-6xl mx-auto mt-4">

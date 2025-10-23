@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
         registrationDate,
         existingMemberRegNumber,
         profilePhotoPath,
+        signaturePath,
         district,
         department
       } = data;
@@ -113,6 +114,14 @@ export async function POST(request: NextRequest) {
       if (!profilePhotoPath || profilePhotoPath.trim() === '') {
         return NextResponse.json(
           { success: false, message: 'Profile photo is required for registration' },
+          { status: 400 }
+        );
+      }
+      
+      // Validate signature is required
+      if (!signaturePath || signaturePath.trim() === '') {
+        return NextResponse.json(
+          { success: false, message: 'Signature image is required for registration' },
           { status: 400 }
         );
       }
@@ -157,8 +166,8 @@ export async function POST(request: NextRequest) {
         INSERT INTO registration_tokens (
           token, name, email, phone, address, state, district, aadhar_card_number,
           father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
-          profile_photo_path, department, expires_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          profile_photo_path, signature_path, department, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const result = await executeQuery(insertTokenQuery, [
@@ -175,6 +184,7 @@ export async function POST(request: NextRequest) {
         registrationDate || new Date().toISOString().split('T')[0],
         existingMemberRegNumber,
         profilePhotoPath || null,
+        signaturePath || null,
         department || null,
         expiresAt
       ]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any

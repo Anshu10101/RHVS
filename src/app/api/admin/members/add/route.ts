@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { sendWelcomeEmail } from '@/lib/email';
-import { generateCertificate } from '@/lib/certificate';
 import { generateMemberRegistrationNumber } from '@/lib/member-registration';
+import { generateCertificate } from '@/lib/certificate';
+import { generateIDCard } from '@/lib/id-card-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest) {
       motherWifeName,
       registrationDate,
       profilePhotoPath,
+      signaturePath,
       feePaid
     } = await request.json();
 
@@ -44,15 +46,23 @@ export async function POST(request: NextRequest) {
     console.log('Admin member add request:', {
       name, email, phone, address, stateId, districtId,
       aadharCardNumber, fatherHusbandName, motherWifeName,
-      registrationDate, profilePhotoPath, feePaid
+      registrationDate, profilePhotoPath, signaturePath, feePaid
     });
 
     // Validate required fields
     if (!name || !email || !phone || !address || !stateId || !districtId || 
         !aadharCardNumber || !fatherHusbandName || !motherWifeName || 
-        !registrationDate) {
+        !registrationDate || !profilePhotoPath) {
       return NextResponse.json(
         { success: false, message: 'All required fields must be provided' },
+        { status: 400 }
+      );
+    }
+    
+    // Validate signature is required
+    if (!signaturePath) {
+      return NextResponse.json(
+        { success: false, message: 'Signature image is required' },
         { status: 400 }
       );
     }
@@ -75,9 +85,9 @@ export async function POST(request: NextRequest) {
     if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
       // For district admins, use their own registration number
       const adminQuery = `
-        SELECT da.member_reg_number, m.id as member_id
+        SELECT m.member_reg_number, m.id as member_id
         FROM district_admins da
-        LEFT JOIN members m ON da.member_reg_number = m.member_reg_number
+        JOIN members m ON da.member_id = m.id
         WHERE da.id = ?
         LIMIT 1
       `;
@@ -122,11 +132,11 @@ export async function POST(request: NextRequest) {
     const insertMemberQuery = `
       INSERT INTO members (
         name, email, phone, address, father_husband_name, mother_wife_name,
-        registration_date, existing_member_reg_number, profile_photo_path,
+        registration_date, existing_member_reg_number, profile_photo_path, signature_path,
         member_reg_number, state, aadhar_card_number,
-        verified_by_admin_id, verification_date, status, district, department,
+        verified_by_admin_id, verification_date, status, district,
         verified_by_member_id, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'verified', ?, ?, ?, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'verified', ?, ?, NOW(), NOW())
     `;
 
     const memberResult = await executeQuery(insertMemberQuery, [
@@ -137,34 +147,38 @@ export async function POST(request: NextRequest) {
       fatherHusbandName,
       motherWifeName,
       registrationDate,
-      existingMemberRegNumberFinal, // Use automatically determined value
+      existingMemberRegNumberFinal,
       profilePhotoPath,
+      signaturePath,
       memberRegNumber,
-      stateName, // Using state name instead of state_id
+      stateName,
       aadharCardNumber,
-      scope.adminId,
+      scope.isSuperAdmin ? scope.adminId : null, // Only superadmin IDs for verified_by_admin_id
       districtName,
-      'General', // Default department
-      verifierId // Use automatically determined verifier ID
+      verifierId
     ]) as { insertId: number };
 
     const memberId = memberResult.insertId;
 
-    // Generate certificate
+    // Generate membership certificate
     let certificatePath = null;
     let certificateNumber = null;
     
     try {
+      console.log('Generating membership certificate for:', memberRegNumber);
       const certificateResult = await generateCertificate({
         memberId: memberId,
         memberName: name,
         memberRegNumber: memberRegNumber,
-        registrationDate: registrationDate
+        registrationDate: registrationDate,
+        profilePhotoPath: profilePhotoPath
       });
       
       certificatePath = certificateResult.certificatePath;
       certificateNumber = certificateResult.certificateNumber;
-
+      
+      console.log('✅ Certificate generated:', certificateNumber, certificatePath);
+      
       // Store certificate info in database
       const certificateQuery = `
         INSERT INTO member_certificates (member_id, certificate_number, certificate_path, generated_by_admin_id)
@@ -177,17 +191,42 @@ export async function POST(request: NextRequest) {
         certificatePath,
         scope.adminId
       ]);
+      
+      console.log('✅ Certificate record saved to database');
     } catch (error) {
-      console.error('Error generating certificate:', error);
+      console.error('❌ Error generating certificate:', error);
       // Continue without certificate - don't fail the registration
     }
 
-    // Send welcome email with certificate
+    // Generate ID card
+    let idCardPath = null;
+    
     try {
-      await sendWelcomeEmail(email, name, memberRegNumber, certificatePath || undefined);
+      console.log('Generating ID card for:', memberRegNumber);
+      const idCardResult = await generateIDCard({
+        memberId: memberId,
+        memberName: name,
+        memberRegNumber: memberRegNumber,
+        profilePhotoPath: profilePhotoPath,
+        address: address,
+        designation: 'Member'
+      });
+      
+      idCardPath = idCardResult.idCardPath;
+      
+      console.log('✅ ID card generated:', idCardPath);
     } catch (error) {
-      console.error('Error sending welcome email:', error);
-      // Continue without email - don't fail the registration
+      console.error('❌ Error generating ID card:', error);
+      // Continue without ID card - don't fail the registration
+    }
+
+    // Send welcome email with certificate and ID card
+    try {
+      console.log('Sending welcome email to:', email, 'with certificate:', certificatePath, 'and ID card:', idCardPath);
+      await sendWelcomeEmail(email, name, memberRegNumber, certificatePath || undefined, idCardPath || undefined);
+      console.log('✅ Welcome email sent successfully');
+    } catch (error) {
+      console.error('❌ Error sending welcome email:', error);
     }
 
     // Log the admin action
@@ -217,7 +256,6 @@ export async function POST(request: NextRequest) {
       ]);
     } catch (error) {
       console.error('Error logging admin action:', error);
-      // Continue without logging - don't fail the registration
     }
 
     return NextResponse.json({
@@ -226,7 +264,8 @@ export async function POST(request: NextRequest) {
       memberId: memberId,
       memberRegNumber: memberRegNumber,
       certificatePath: certificatePath,
-      certificateNumber: certificateNumber
+      certificateNumber: certificateNumber,
+      idCardPath: idCardPath
     });
 
   } catch (error) {
@@ -237,3 +276,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

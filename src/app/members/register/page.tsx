@@ -33,6 +33,7 @@ const memberSchema = z.object({
   existingMemberRegNumber: z.string().min(1, 'Existing member registration number is required'),
   otp: z.string().min(6, 'OTP must be 6 digits').max(6, 'OTP must be 6 digits'),
   feePaid: z.boolean(),
+  hasSignature: z.boolean().optional(),
 });
 
 type MemberFormData = z.infer<typeof memberSchema>;
@@ -50,6 +51,7 @@ interface District {
 
 export default function MemberRegistrationPage() {
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [signature, setSignature] = useState<File | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -150,9 +152,9 @@ export default function MemberRegistrationPage() {
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (max 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        alert('File size must be less than 2MB');
+      // Validate file size (max 500KB)
+      if (file.size > 500 * 1024) {
+        alert('Profile photo size must be less than 500KB');
         return;
       }
       
@@ -163,6 +165,26 @@ export default function MemberRegistrationPage() {
       }
       
       setProfilePhoto(file);
+    }
+  };
+  
+  const handleSignatureUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file size (max 100KB)
+      if (file.size > 100 * 1024) {
+        alert('Signature image size must be less than 100KB');
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      
+      setSignature(file);
+      form.setValue('hasSignature', true);
     }
   };
 
@@ -218,6 +240,13 @@ export default function MemberRegistrationPage() {
         setIsSubmitting(false);
         return;
       }
+      
+      // Validate signature is required
+      if (!signature) {
+        form.setError('root', { message: 'Signature image is required for registration' });
+        setIsSubmitting(false);
+        return;
+      }
        // First verify OTP
        const otpResponse = await fetch('/api/register-token', {
          method: 'POST',
@@ -268,6 +297,34 @@ export default function MemberRegistrationPage() {
           return;
         }
       }
+      
+      // Upload signature
+      let signaturePath = null;
+      if (signature) {
+        try {
+          const formData = new FormData();
+          formData.append('file', signature);
+          
+          const uploadResponse = await fetch('/api/upload/signature', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          const uploadResult = await uploadResponse.json();
+          
+          if (uploadResult.success) {
+            signaturePath = uploadResult.url;
+          } else {
+            form.setError('root', { message: 'Failed to upload signature: ' + uploadResult.error });
+            setIsSubmitting(false);
+            return;
+          }
+        } catch (error) {
+          form.setError('root', { message: 'Failed to upload signature' });
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
        // Register the member (generates token for admin verification)
        const registerResponse = await fetch('/api/register-token', {
@@ -289,7 +346,8 @@ export default function MemberRegistrationPage() {
              motherWifeName: data.motherWifeName,
              registrationDate: data.registrationDate.toISOString().split('T')[0],
              existingMemberRegNumber: data.existingMemberRegNumber,
-             profilePhotoPath
+             profilePhotoPath,
+             signaturePath
            }
          }),
        });
@@ -527,8 +585,65 @@ export default function MemberRegistrationPage() {
                         </Label>
                         <p className="text-sm text-orange-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
                           <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 2MB • High resolution recommended • Required
+                          JPG, PNG up to 500KB • Passport size photo recommended • Required
                           <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Signature Upload */}
+                  <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-400">
+                    <Label className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                        <path d="M4 22h16"></path>
+                        <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                        <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                      </svg>
+                      Member Signature
+                    </Label>
+                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-2xl border border-blue-200/50">
+                      <div className="relative group">
+                        <div className="w-36 h-20 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
+                          {signature ? (
+                            <img
+                              src={URL.createObjectURL(signature)}
+                              alt="Signature preview"
+                              className="w-full h-full object-contain hover:scale-110 transition-transform duration-300"
+                            />
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                              <path d="M4 22h16"></path>
+                              <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                              <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                            </svg>
+                          )}
+                        </div>
+                        {signature && (
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <CheckCircle className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 text-center sm:text-left">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSignatureUpload}
+                          className="hidden"
+                          id="signature-upload"
+                        />
+                        <Label
+                          htmlFor="signature-upload"
+                          className="cursor-pointer inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform"
+                        >
+                          <Upload className="h-5 w-5" />
+                          {signature ? 'Change Signature' : 'Upload Signature'}
+                        </Label>
+                        <p className="text-sm text-blue-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
+                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
+                          JPG, PNG up to 100KB • Clear signature on white background • Required
+                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
                         </p>
                       </div>
                     </div>

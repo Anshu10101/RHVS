@@ -1,12 +1,14 @@
+import { createCanvas, loadImage, registerFont } from 'canvas';
+import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
-import jsPDF from 'jspdf';
 
 interface CertificateData {
   memberId: number;
   memberName: string;
   memberRegNumber: string;
   registrationDate: string;
+  profilePhotoPath?: string;
 }
 
 interface CertificateResult {
@@ -16,6 +18,18 @@ interface CertificateResult {
 
 export async function generateCertificate(data: CertificateData): Promise<CertificateResult> {
   try {
+    // Register Hindi fonts
+    try {
+      registerFont(path.join(process.cwd(), 'public', 'fonts', 'Noto-Sans-Devanagari.ttf'), {
+        family: 'Noto Sans Devanagari'
+      });
+      registerFont(path.join(process.cwd(), 'public', 'fonts', 'Mangal Regular.ttf'), {
+        family: 'Mangal'
+      });
+    } catch (error) {
+      console.error('Error registering Hindi fonts:', error);
+    }
+
     // Generate certificate number
     const certificateNumber = `CERT-${data.memberRegNumber}-${Date.now()}`;
     
@@ -29,175 +43,338 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const certificatePath = `/certificates/${certificateNumber}.pdf`;
     const fullPath = path.join(process.cwd(), 'public', 'certificates', `${certificateNumber}.pdf`);
 
-    // Generate PDF certificate
-    const doc = new jsPDF('p', 'mm', 'a4');
-    // const org = 'राष्ट्रीय हिंदू वाहिनी संगठन';
-    const orgEnglish = 'Rashtriya Hindu Vahini Sangathan (RHVS)';
+    // Certificate dimensions (A4 size in pixels at 300 DPI)
+    const width = 2480;
+    const height = 3508;
+    
+    const borderMargin = 60;
+    
+    // Create canvas
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
 
-    // Clean white background
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, 210, 297, 'F');
+    // Colors
+    const headerColor = '#DC2626';
+    const borderColor = '#FCD34D';
+    const textColor = '#1F2937';
+    const accentOrange = '#D97706';
 
-    // Add favicon/logo at the top
-    const addLogo = () => {
-      return new Promise((resolve) => {
-        try {
-          // Using already imported fs and path modules
+    // Fill background
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw watermarks in background
+    try {
+      const rhvsWatermark = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'rhvs_logo.png'));
+      ctx.globalAlpha = 0.12;
+      const rhvsSize = 1400;
+      const rhvsX = (width - rhvsSize) / 2;
+      const rhvsY = (height - rhvsSize) / 2;
+      ctx.drawImage(rhvsWatermark, rhvsX, rhvsY, rhvsSize, rhvsSize);
+      ctx.globalAlpha = 1.0;
+    } catch (error) {
+      console.error('Error loading watermark images:', error);
+    }
+
+    // === HEADER SECTION ===
+    const headerHeight = 700;
+    
+    ctx.fillStyle = headerColor;
+    ctx.fillRect(borderMargin, borderMargin + 20, width - 2 * borderMargin, headerHeight - borderMargin - 40);
+
+    // Draw Ram image in header
+    try {
+      const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
+      const ramHeight = 450;
+      const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
+      ctx.drawImage(ramImage, width - ramWidth - borderMargin - 80, borderMargin + 40, ramWidth, ramHeight);
+    } catch (error) {
+      console.error('Error loading Ram image:', error);
+    }
+
+    // Organization name
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, borderMargin + 200);
+
+    // Taglines
+    ctx.font = 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+    ctx.fillStyle = '#FCD34D';
+    ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2, borderMargin + 320);
+    ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2, borderMargin + 400);
+
+    // === CONTENT SECTION ===
+    const contentStartY = headerHeight - borderMargin + 40;
+    const ribbonY = contentStartY + 100;
+    
+    // Ribbon background
+    ctx.fillStyle = headerColor;
+    const ribbonPadding = 30;
+    ctx.fillRect(200, ribbonY - ribbonPadding, width - 400, 100);
+    
+    // Ribbon decorative triangles
+    ctx.fillStyle = headerColor;
+    ctx.beginPath();
+    ctx.moveTo(200, ribbonY + 70 - ribbonPadding);
+    ctx.lineTo(170, ribbonY + 50);
+    ctx.lineTo(200, ribbonY + 30);
+    ctx.closePath();
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.moveTo(width - 200, ribbonY + 70 - ribbonPadding);
+    ctx.lineTo(width - 170, ribbonY + 50);
+    ctx.lineTo(width - 200, ribbonY + 30);
+    ctx.closePath();
+    ctx.fill();
+    
+    // MEMBERSHIP CERTIFICATE text
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 84px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('MEMBERSHIP CERTIFICATE', width / 2, ribbonY + 55);
+
+    // === MEMBER PHOTO ===
+    const photoSize = 480; // Even bigger photo
+    const photoX = width - 600; // Moved more left to avoid text overlap
+    const photoY = ribbonY + 200; // Moved even more down
+    
+    let photoLoaded = false;
+    try {
+      if (data.profilePhotoPath) {
+        const photoPath = path.join(process.cwd(), 'public', data.profilePhotoPath);
+        if (fs.existsSync(photoPath)) {
+          const memberPhoto = await loadImage(photoPath);
           
-          // Try multiple logo paths
-          const logoPaths = [
-            path.join(process.cwd(), 'public', 'rhvs_logo.png'),
-            path.join(process.cwd(), 'src', 'app', 'favicon.ico'),
-            path.join(process.cwd(), 'public', 'favicon.ico')
-          ];
+          // Modern royal frame design
+          const framePadding = 20;
+          const frameSize = photoSize + (framePadding * 2);
           
-          let logoFound = false;
-          for (const logoPath of logoPaths) {
-            if (fs.existsSync(logoPath)) {
-              try {
-                // Read the logo file
-                const logoBuffer = fs.readFileSync(logoPath);
-                const base64 = logoBuffer.toString('base64');
-                
-                // Determine file type
-                let dataUrl;
-                if (logoPath.endsWith('.png')) {
-                  dataUrl = `data:image/png;base64,${base64}`;
-                } else if (logoPath.endsWith('.ico')) {
-                  // For ICO files, we'll skip for now as jsPDF doesn't support them well
-                  console.log('⚠️ ICO files not supported, skipping logo');
-                  resolve(false);
-                  return;
-                } else {
-                  dataUrl = `data:image/png;base64,${base64}`;
-                }
-                
-                // Add image to PDF
-                const logoWidth = 30;
-                const logoHeight = 30;
-                const logoX = (210 - logoWidth) / 2;
-                const logoY = 20;
-                
-                doc.addImage(dataUrl, 'PNG', logoX, logoY, logoWidth, logoHeight);
-                console.log('✅ Logo added to certificate from:', logoPath);
-                logoFound = true;
-                break;
-              } catch (e) {
-                console.log('⚠️ Failed to process logo from:', logoPath, e instanceof Error ? e.message : String(e));
-                continue;
-              }
-            }
+          // Outer shadow for depth
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+          ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
+          
+          // Clean white background for the frame
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+          
+          // Royal gold border - thick and elegant
+          ctx.strokeStyle = '#D4AF37'; // Rich gold color
+          ctx.lineWidth = 8;
+          ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+          
+          // Inner gold accent line for elegance
+          ctx.strokeStyle = '#D4AF37';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
+          
+          // White inner background for photo
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
+          
+          // Draw photo with original aspect ratio
+          const aspectRatio = memberPhoto.width / memberPhoto.height;
+          let drawWidth = photoSize;
+          let drawHeight = photoSize;
+          let drawX = photoX;
+          let drawY = photoY;
+          
+          if (aspectRatio > 1) {
+            // Landscape - fit width
+            drawHeight = photoSize / aspectRatio;
+            drawY = photoY + (photoSize - drawHeight) / 2;
+          } else if (aspectRatio < 1) {
+            // Portrait - fit height
+            drawWidth = photoSize * aspectRatio;
+            drawX = photoX + (photoSize - drawWidth) / 2;
           }
           
-          if (!logoFound) {
-            console.log('⚠️ No suitable logo found in any of the paths');
-            resolve(false);
-          } else {
-            resolve(true);
-          }
-        } catch (e) {
-          console.log('❌ Failed to add logo:', e);
-          resolve(false);
+          ctx.drawImage(memberPhoto, drawX, drawY, drawWidth, drawHeight);
+          photoLoaded = true;
         }
-      });
-    };
-
-    // Organization name in English
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(234, 88, 12);
-    doc.text(orgEnglish, 105, 85, { align: 'center' });
-
-    // Welcome message
-    doc.setFontSize(12);
-    doc.setTextColor(150, 150, 150);
-    doc.text('Welcome to our organization!', 105, 100, { align: 'center' });
-
-    // Certificate title
-    doc.setTextColor(34, 34, 34);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('MEMBERSHIP CERTIFICATE', 105, 120, { align: 'center' });
-
-    // Simple decorative line
-    doc.setDrawColor(234, 88, 12);
-    doc.setLineWidth(1);
-    doc.line(60, 130, 150, 130);
-
-    // Certificate body - clean and minimal
-    const bodyY = 160;
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50, 50, 50);
-    doc.text('This certifies that', 105, bodyY, { align: 'center' });
-
-    // Member name
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(234, 88, 12);
-    doc.text(data.memberName || 'N/A', 105, bodyY + 15, { align: 'center' });
-
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(50, 50, 50);
-    doc.text('is a registered member of', 105, bodyY + 30, { align: 'center' });
-    doc.setFont('helvetica', 'bold');
-    doc.text(orgEnglish, 105, bodyY + 45, { align: 'center' });
-
-    // Member details - clean table format
-    const startY = bodyY + 70;
-    const details = [
-      ['Membership Number', data.memberRegNumber || 'N/A'],
-      ['Registration Date', new Date(data.registrationDate).toLocaleDateString()],
-      ['Certificate Number', certificateNumber],
-    ];
-
-    let y = startY;
-    details.forEach(([label, value]) => {
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(100, 100, 100);
-      doc.text(`${label}:`, 30, y);
-      
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(50, 50, 50);
-      const text = String(value);
-      if (text.length > 40) {
-        const lines = doc.splitTextToSize(text, 100);
-        doc.text(lines, 80, y);
-        y += (lines.length - 1) * 5;
-      } else {
-        doc.text(text, 80, y);
       }
-      y += 8;
+    } catch (error) {
+      console.error('Error loading member photo:', error);
+    }
+
+    // If photo not loaded, draw placeholder with same royal frame
+    if (!photoLoaded) {
+      const framePadding = 20;
+      const frameSize = photoSize + (framePadding * 2);
+      
+      // Outer shadow for depth
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
+      
+      // Clean white background for the frame
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+      
+      // Royal gold border - thick and elegant
+      ctx.strokeStyle = '#D4AF37'; // Rich gold color
+      ctx.lineWidth = 8;
+      ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+      
+      // Inner gold accent line for elegance
+      ctx.strokeStyle = '#D4AF37';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
+      
+      // Light gray inner background for placeholder
+      ctx.fillStyle = '#F3F4F6';
+      ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
+      
+      // Placeholder text
+      ctx.fillStyle = '#9CA3AF';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('No Photo', photoX + photoSize/2, photoY + photoSize/2);
+    }
+
+    // === MEMBER INFO (Right below photo, centered) ===
+    const memberInfoY = photoY + photoSize + 80; // More space below photo to avoid collision with border
+    
+    // Registration Number (much larger font, centered, not underlined)
+    const regNumberY = memberInfoY;
+    ctx.fillStyle = '#DC2626';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Reg: ${data.memberRegNumber}`, photoX + photoSize/2, regNumberY);
+
+    // === MEMBERSHIP TEXT (Left side, clean formatting) ===
+    const membershipBoxY = ribbonY + 280;
+    const textBoxX = borderMargin + 80;
+    const textBoxWidth = photoX - textBoxX - 120;
+    
+    // Clean membership text - only member name underlined
+    ctx.fillStyle = accentOrange;
+    ctx.font = 'bold 64px "Mangal", "Noto Sans Devanagari", Arial, sans-serif'; // Increased from 48px to 64px
+    ctx.textAlign = 'left';
+    
+    const membershipText = `${data.memberName} is now a proud member of राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) and is committed to serve the organization with dedication and devotion to Sanatan Dharma.`;
+    
+    // Wrap text to fit in the available space
+    const membershipLines = wrapText(ctx, membershipText, textBoxWidth);
+    
+    // Draw each line
+    membershipLines.forEach((line, index) => {
+      const lineY = membershipBoxY + (index * 80); // Increased line spacing from 60 to 80
+      ctx.fillText(line, textBoxX, lineY);
+      
+      // Underline only the member name, not the entire line
+      if (line.includes(data.memberName)) {
+        const nameStartIndex = line.indexOf(data.memberName);
+        const textBeforeName = line.substring(0, nameStartIndex);
+        const nameWidth = ctx.measureText(data.memberName).width;
+        const textBeforeWidth = ctx.measureText(textBeforeName).width;
+        
+        ctx.strokeStyle = accentOrange;
+        ctx.lineWidth = 4; // Slightly thicker underline
+        ctx.beginPath();
+        ctx.moveTo(textBoxX + textBeforeWidth, lineY + 10);
+        ctx.lineTo(textBoxX + textBeforeWidth + nameWidth, lineY + 10);
+        ctx.stroke();
+      }
     });
 
-    // Signature section - clean and minimal
-    const sigY = y + 20;
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(40, sigY, 100, sigY);
-    doc.line(110, sigY, 170, sigY);
+    // === MOTIVATIONAL TEXT ===
+    const motTextY = memberInfoY + 450;
+    const motivationalText = "We welcome you to the great family of राष्ट्रीय हिन्दू वाहिनी संगठन. As a member, you are now part of our mission to strengthen Hindu values and protect Sanatan Dharma. We hope you will contribute significantly to the organization with complete devotion, honesty, and dedication to our nation and dharma.";
+
+    // Motivational text
+    ctx.fillStyle = textColor;
+    ctx.font = 'italic 64px "Mangal", "Noto Sans Devanagari", "Georgia", serif'; // Increased from 48px to 64px
+    ctx.textAlign = 'center';
     
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text('Secretary', 70, sigY + 8, { align: 'center' });
-    doc.text('President', 140, sigY + 8, { align: 'center' });
+    const maxWidth = width - 300;
+    const motLines = wrapText(ctx, motivationalText, maxWidth);
+    
+    motLines.forEach((line, index) => {
+      ctx.fillText(line, width / 2, motTextY + (index * 90)); // Increased line spacing from 75 to 90
+    });
 
-    // Footer - minimal
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Certificate #${certificateNumber}`, 20, 280);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 285);
-    doc.text('Official Membership Certificate', 105, 285, { align: 'center' });
+    // === SIGNATURES SECTION ===
+    const signaturesY = motTextY + (motLines.length * 90) + 200; // Updated to match new line spacing
+    
+    const signatureBlockWidth = 500;
+    const signatureSpacing = 60;
+    const totalSignatureWidth = (signatureBlockWidth * 4) + (signatureSpacing * 3);
+    const signatureStartX = (width - totalSignatureWidth) / 2;
+    
+    const sigX1 = signatureStartX;
+    const sigX2 = sigX1 + signatureBlockWidth + signatureSpacing;
+    const sigX3 = sigX2 + signatureBlockWidth + signatureSpacing;
+    const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
 
-    // Add logo
-    await addLogo();
+    drawSignatureBlock(ctx, 'नवीन चन्द्र शुक्ला', 'राष्ट्रीय महामंत्री', sigX1, signaturesY);
+    drawSignatureBlock(ctx, 'रमेश चन्द्र द्विवेदी "राजू भैया"', 'राष्ट्रीय अध्यक्ष', sigX2, signaturesY);
+    drawSignatureBlock(ctx, 'डॉ॰ विभा द्विवेदी', 'राष्ट्रीय महामंत्री, महिला मोर्चा', sigX3, signaturesY);
+    drawSignatureBlock(ctx, 'डॉ॰ मयंक ढेंगुला', 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख', sigX4, signaturesY);
 
-    // Save PDF to file
-    const pdfOutput = doc.output('arraybuffer');
-    fs.writeFileSync(fullPath, Buffer.from(pdfOutput));
+    // === FOOTER ===
+    const footerY = height - 450;
+    
+    ctx.fillStyle = headerColor;
+    ctx.fillRect(borderMargin, footerY, width - 2 * borderMargin, height - footerY - borderMargin);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(`Reg. no - ${certificateNumber}`, borderMargin + 50, footerY + 100);
+    
+    ctx.textAlign = 'right';
+    ctx.fillText(`Date - ${formatDate(data.registrationDate)}`, width - borderMargin - 50, footerY + 100);
+
+    ctx.font = 'bold 40px Arial';
+    ctx.textAlign = 'center';
+    
+    const footerTexts = [
+      'Central Office :- D-305 Kanha Kunj, Indira Park, Najafgarh, New Delhi - 110043',
+      'Head Office :- 883, Shri Vedehi Vallabh Kunj, Vavan Mandir, Ayodhya (Uttar Pradesh) - 224001',
+      'Head Office -: Shri Rameshwaram Dham, Ganga Surajpur Colony, Harpurkala, Haridwar (Uttarakhand) - 249205'
+    ];
+    
+    footerTexts.forEach((text, index) => {
+      ctx.fillText(text, width / 2, footerY + 180 + (index * 60));
+    });
+
+    // === GOLDEN BORDERS ===
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 15;
+    ctx.strokeRect(30, 30, width - 60, height - 60);
+    
+    ctx.lineWidth = 8;
+    ctx.strokeRect(60, 60, width - 120, height - 120);
+
+    // Convert to PDF
+    const pngBuffer = canvas.toBuffer('image/png');
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage([595.28, 841.89]);
+    
+    const pngImage = await pdfDoc.embedPng(pngBuffer);
+    const { width: imgWidth, height: imgHeight } = pngImage.scale(1);
+    const pageWidth = page.getWidth();
+    const pageHeight = page.getHeight();
+    
+    const scaleX = pageWidth / imgWidth;
+    const scaleY = pageHeight / imgHeight;
+    const scale = Math.min(scaleX, scaleY);
+    
+    const scaledWidth = imgWidth * scale;
+    const scaledHeight = imgHeight * scale;
+    const x = (pageWidth - scaledWidth) / 2;
+    const y = (pageHeight - scaledHeight) / 2;
+    
+    page.drawImage(pngImage, {
+      x: x,
+      y: y,
+      width: scaledWidth,
+      height: scaledHeight,
+    });
+
+    const pdfBytes = await pdfDoc.save();
+    fs.writeFileSync(fullPath, pdfBytes);
 
     return {
       certificateNumber,
@@ -217,4 +394,57 @@ export async function downloadCertificate(certificatePath: string): Promise<Buff
     console.error('Error reading certificate:', error);
     throw new Error('Certificate not found');
   }
+}
+
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-GB');
+}
+
+function drawSignatureBlock(ctx: any, name: string, title: string, x: number, y: number) {
+  const blockWidth = 500;
+  const blockHeight = 250;
+  
+  // Signature line
+  ctx.strokeStyle = '#DC2626';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(x + 20, y);
+  ctx.lineTo(x + blockWidth - 40, y);
+  ctx.stroke();
+  
+  // Name
+  ctx.fillStyle = '#1F2937';
+  ctx.font = 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, x + blockWidth / 2, y + 70);
+  
+  // Title
+  ctx.font = 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.fillStyle = '#DC2626';
+  
+  const titleLines = title.split(', ');
+  titleLines.forEach((line, index) => {
+    ctx.fillText(line, x + blockWidth / 2, y + 130 + (index * 45));
+  });
+}
+
+function wrapText(ctx: any, text: string, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    const testLine = currentLine + (currentLine ? ' ' : '') + word;
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth) {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  
+  return lines;
 }
