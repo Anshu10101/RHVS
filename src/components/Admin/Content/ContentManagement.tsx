@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { NewsManagement } from '../Events/NewsManagement';
 import { EventsManagement } from '../Events/EventsManagement';
+import { HeroImagesManagement } from './HeroImagesManagement';
 
 interface ContentSection {
   id: string;
@@ -335,6 +336,12 @@ export function ContentManagement() {
   };
 
   const tabs = [
+    {
+      id: 'hero-images',
+      name: 'Hero Images',
+      icon: ImageIcon,
+      permission: 'manage_hero_images',
+    },
     {
       id: 'about',
       name: 'About Page',
@@ -871,6 +878,10 @@ export function ContentManagement() {
               </div>
             </Card>
           </div>
+        )}
+
+        {activeTab === 'hero-images' && (
+          <HeroImagesManagement />
         )}
 
         {activeTab === 'seo' && (

@@ -6,6 +6,7 @@ export { AdminHeader } from './Layout/AdminHeader';
 export { AboutPageEditor } from './Content/AboutPageEditor';
 export { ContactPageEditor } from './Content/ContactPageEditor';
 export { ContentManagement } from './Content/ContentManagement';
+export { HeroImagesManagement } from './Content/HeroImagesManagement';
 
 // Photos
 export { EventPhotoManager } from './Photos/EventPhotoManager';

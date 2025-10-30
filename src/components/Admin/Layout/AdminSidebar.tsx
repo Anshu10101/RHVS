@@ -126,6 +126,12 @@ const navigationItems = [
         permission: 'edit_about',
       },
       {
+        name: 'Hero Images',
+        href: '/admin/content/hero-images',
+        icon: Camera,
+        permission: 'manage_hero_images',
+      },
+      {
         name: 'Photo Management',
         href: '/admin/photos',
         icon: Camera,
