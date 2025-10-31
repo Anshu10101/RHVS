@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, Sparkles, ExternalLink, FileText } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -123,6 +123,44 @@ export default function Footer() {
           <p className="text-orange-600 mt-2 text-sm font-medium">
             ॥ धर्मो रक्षति रक्षितः ॥
           </p>
+          <div className="mt-4 flex flex-col items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-orange-200/60 bg-white/60 px-4 py-2 shadow-sm backdrop-blur-sm">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white">
+                <Code2 className="h-3.5 w-3.5" />
+              </span>
+              <span className="text-sm text-orange-900 font-semibold">
+                Designed & Engineered by{' '}
+                <span className="relative group inline-flex">
+                  <span className="underline decoration-orange-300/70 underline-offset-4 cursor-pointer">Anshul Yadav</span>
+                  {/* Hover menu */}
+                  <div className="absolute left-1/2 top-full z-20 hidden -translate-x-1/2 pt-2 group-hover:block focus-within:block">
+                    <div className="rounded-xl border border-orange-200/60 bg-white/90 backdrop-blur-sm shadow-md p-2 w-48">
+                      <a
+                        href="https://anshulydv-portfolio.vercel.app/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
+                      >
+                        <ExternalLink className="h-4 w-4 text-orange-600" />
+                        <span>View Portfolio</span>
+                      </a>
+                      <a
+                        href="https://drive.google.com/file/d/1k63R0OBhgFRWNO_OQndMvtEFx2BJLEth/view?usp=drive_link"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
+                      >
+                        <FileText className="h-4 w-4 text-orange-600" />
+                        <span>View Certificate</span>
+                      </a>
+                    </div>
+                  </div>
+                </span>
+              </span>
+              <span className="mx-1 text-orange-300">•</span>
+              <span className="text-xs text-orange-700/80">Developer</span>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

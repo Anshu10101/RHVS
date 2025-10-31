@@ -111,6 +111,9 @@ export async function POST(
       return NextResponse.json({ error: 'Post not found in this department' }, { status: 404 });
     }
 
+    const postData = post[0];
+    const isPresidentPost = postData.position_order === 1;
+
     // Check if member exists
     const member = await executeQuery('SELECT * FROM members WHERE id = ?', [member_id]) as any[];
     
@@ -119,6 +122,24 @@ export async function POST(
     }
 
     const { level, state, district } = validationResult.data;
+
+    // For President post: only allow ONE member assignment. Must remove existing before assigning new one.
+    if (isPresidentPost) {
+      const existingPresidentAssignment = await executeQuery(
+        'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
+        [departmentId, post_id, level, state, district]
+      ) as any[];
+      
+      if (existingPresidentAssignment.length > 0) {
+        // Check if trying to assign the same member (allowed for replacement)
+        const isSameMember = existingPresidentAssignment[0].member_id === member_id;
+        if (!isSameMember) {
+          return NextResponse.json({ 
+            error: 'President post can only have one member. Please remove the existing president assignment before assigning a new member.' 
+          }, { status: 409 });
+        }
+      }
+    }
 
     // Validate level-specific requirements
     if (level === 'national' && (state || district)) {
@@ -159,15 +180,15 @@ export async function POST(
       }
     }
 
-    // Check if post already has a member assigned at this level/state/district
+    // Check if this specific member is already assigned to this same post at this level/state/district
     const existingAssignment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
-      [departmentId, post_id, level, state, district]
+      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
+      [departmentId, post_id, member_id, level, state, district]
     ) as any[];
     
     if (existingAssignment.length > 0) {
       return NextResponse.json({ 
-        error: 'This post already has a member assigned at this level. Remove the current assignment first.' 
+        error: 'This member is already assigned to this post at this level.' 
       }, { status: 409 });
     }
 

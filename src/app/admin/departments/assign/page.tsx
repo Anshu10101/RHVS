@@ -262,6 +262,16 @@ export default function AssignMembersPage() {
   const handleAssignMembers = async () => {
     if (!selectedDepartment || !selectedPost || selectedMembers.length === 0) return;
     
+    // Validate: President post can only have one member
+    if (selectedPost.position_order === 1 && selectedMembers.length > 1) {
+      toast({
+        title: 'Error',
+        description: 'President post can only have one member. Please select only one member.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsAssigning(true);
 
     try {
@@ -370,11 +380,6 @@ export default function AssignMembersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const getPostStatus = (postId: number) => {
-    const assignment = departmentMembers.find(dm => dm.post_id === postId);
-    return assignment ? 'filled' : 'vacant';
   };
 
   if (!currentUser || currentUser.type !== 'superadmin') {
@@ -635,71 +640,88 @@ export default function AssignMembersPage() {
                     ) : (
                       <div className="space-y-4">
                         {posts.map((post) => {
-                          const status = getPostStatus(post.id);
-                          const assignment = departmentMembers.find(dm => dm.post_id === post.id);
+                          const assignments = departmentMembers.filter(dm => dm.post_id === post.id);
+                          const hasAssignments = assignments.length > 0;
                           
                           return (
                             <Card key={post.id} className="overflow-hidden">
-                              <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                <div>
-                                  <h3 className="font-semibold">
-                                    {post.position_order}. {post.name_en}
-                                    {post.position_order === 1 && (
-                                      <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
-                                        President
-                                      </span>
-                                    )}
-                                  </h3>
-                                  <p className="text-sm text-gray-500">{post.name_hi}</p>
-                                </div>
-                                
-                                {status === 'vacant' ? (
+                              <div className="p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="font-semibold">
+                                      {post.position_order}. {post.name_en}
+                                      {post.position_order === 1 && (
+                                        <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
+                                          President
+                                        </span>
+                                      )}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">{post.name_hi}</p>
+                                  </div>
+                                  
                                   <Button
                                     onClick={() => {
                                       setSelectedPost(post);
                                       setIsAssignDialogOpen(true);
                                     }}
                                     className="shrink-0"
+                                    variant={hasAssignments ? "outline" : "default"}
+                                    disabled={post.position_order === 1 && hasAssignments}
+                                    title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
                                   >
                                     <UserPlus className="mr-2 h-4 w-4" />
-                                    Assign Members
+                                    {post.position_order === 1 && hasAssignments 
+                                      ? 'Remove Existing First' 
+                                      : hasAssignments 
+                                        ? 'Assign More' 
+                                        : 'Assign Members'}
                                   </Button>
-                                ) : (
-                                  <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-3">
-                                      <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                                        {assignment?.profile_photo_path ? (
-                                          <Image
-                                            src={assignment.profile_photo_path}
-                                            alt={assignment.member_name}
-                                            width={40}
-                                            height={40}
-                                            className="object-cover w-full h-full"
-                                          />
-                                        ) : (
-                                          <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
-                                            {assignment?.member_name.charAt(0)}
+                                </div>
+                                
+                                {hasAssignments ? (
+                                  <div className="space-y-2 border-t pt-4">
+                                    {assignments.map((assignment) => (
+                                      <div key={assignment.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-3 flex-1">
+                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                            {assignment.profile_photo_path ? (
+                                              <Image
+                                                src={assignment.profile_photo_path}
+                                                alt={assignment.member_name}
+                                                width={40}
+                                                height={40}
+                                                className="object-cover w-full h-full"
+                                              />
+                                            ) : (
+                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
+                                                {assignment.member_name.charAt(0)}
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <p className="font-medium">{assignment?.member_name}</p>
-                                        <div className="flex text-xs text-gray-500 space-x-2">
-                                          <p>{assignment?.member_reg_number}</p>
-                                          <p>• {assignment?.level}</p>
-                                          {assignment?.state && <p>• {assignment.state}</p>}
-                                          {assignment?.district && <p>• {assignment.district}</p>}
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate">{assignment.member_name}</p>
+                                            <div className="flex text-xs text-gray-500 space-x-2 flex-wrap">
+                                              <p>{assignment.member_reg_number}</p>
+                                              <p>• {assignment.level}</p>
+                                              {assignment.state && <p>• {assignment.state}</p>}
+                                              {assignment.district && <p>• {assignment.district}</p>}
+                                            </div>
+                                          </div>
                                         </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handleRemoveMember(assignment.id)}
+                                          className="shrink-0"
+                                        >
+                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                        </Button>
                                       </div>
-                                    </div>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => assignment && handleRemoveMember(assignment.id)}
-                                      className="shrink-0"
-                                    >
-                                      <Trash2 className="h-4 w-4 text-red-500" />
-                                    </Button>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 text-gray-500 text-sm border-t">
+                                    No members assigned yet
                                   </div>
                                 )}
                               </div>
@@ -740,6 +762,11 @@ export default function AssignMembersPage() {
               <p className="text-xs text-blue-600 mt-1">
                 Selected members: <span className="font-medium">{selectedMembers.length}</span>
               </p>
+              {selectedPost?.position_order === 1 && (
+                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800">
+                  ⚠️ <strong>President Post:</strong> Only one member can be assigned. Select only one member.
+                </div>
+              )}
             </div>
           </DialogHeader>
           <div className="py-4 space-y-4 flex-1 overflow-hidden flex flex-col">
@@ -800,7 +827,12 @@ export default function AssignMembersPage() {
                             if (isSelected) {
                               setSelectedMembers(prev => prev.filter(m => m.id !== member.id));
                             } else {
-                              setSelectedMembers(prev => [...prev, member]);
+                              // For president post: only allow one selection (replace previous)
+                              if (selectedPost?.position_order === 1) {
+                                setSelectedMembers([member]);
+                              } else {
+                                setSelectedMembers(prev => [...prev, member]);
+                              }
                             }
                           }}
                         >
@@ -849,6 +881,9 @@ export default function AssignMembersPage() {
             <div className="flex items-center justify-between w-full">
               <div className="text-sm text-gray-600">
                 {selectedMembers.length} member(s) selected
+                {selectedPost?.position_order === 1 && selectedMembers.length > 1 && (
+                  <span className="text-red-600 ml-2">⚠️ Only one member allowed for President post</span>
+                )}
               </div>
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
@@ -856,7 +891,11 @@ export default function AssignMembersPage() {
                 </Button>
                 <Button 
                   onClick={handleAssignMembers} 
-                  disabled={isAssigning || selectedMembers.length === 0}
+                  disabled={
+                    isAssigning || 
+                    selectedMembers.length === 0 || 
+                    (selectedPost?.position_order === 1 && selectedMembers.length > 1)
+                  }
                 >
                   {isAssigning ? (
                     <>
@@ -864,7 +903,9 @@ export default function AssignMembersPage() {
                       Assigning...
                     </>
                   ) : (
-                    `Assign ${selectedMembers.length} Member(s)`
+                    selectedPost?.position_order === 1 
+                      ? `Assign 1 Member`
+                      : `Assign ${selectedMembers.length} Member(s)`
                   )}
                 </Button>
               </div>

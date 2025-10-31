@@ -79,9 +79,10 @@ export async function GET(request: NextRequest) {
       }>;
 
       if (dbDepartments && dbDepartments.length > 0) {
-        // Now check for appointed presidents from certificates table
-        const certificatesQuery = `
-          SELECT DISTINCT
+        // Get presidents from department_members table - specifically for president post (position_order = 1)
+        // Get the FIRST president member assigned (order by assigned_at to ensure we get the original president, not the last added)
+        const presidentQuery = `
+          SELECT 
             d.id,
             d.name_en,
             d.name_hi,
@@ -94,12 +95,23 @@ export async function GET(request: NextRequest) {
             m.email as member_email
           FROM departments d
           LEFT JOIN department_posts dp ON d.id = dp.department_id AND dp.position_order = 1
-          LEFT JOIN certificates c ON d.id = c.department_id AND c.level = 'national'
-          LEFT JOIN members m ON c.member_id = m.id AND m.status = 'verified'
+          LEFT JOIN department_members dm ON d.id = dm.department_id 
+            AND dp.id = dm.post_id 
+            AND dm.level = 'national'
+            AND dm.id = (
+              SELECT dm2.id
+              FROM department_members dm2
+              WHERE dm2.department_id = d.id
+                AND dm2.post_id = dp.id
+                AND dm2.level = 'national'
+              ORDER BY dm2.assigned_at ASC
+              LIMIT 1
+            )
+          LEFT JOIN members m ON dm.member_id = m.id AND m.status = 'verified'
           WHERE d.name_en IS NOT NULL AND d.name_en != ''
         `;
 
-        let certificateDepartments: Array<{
+        let presidentDepartments: Array<{
           id: number;
           name_en: string;
           name_hi: string;
@@ -113,7 +125,7 @@ export async function GET(request: NextRequest) {
         }> = [];
 
         try {
-          certificateDepartments = await executeQuery(certificatesQuery, []) as Array<{
+          presidentDepartments = await executeQuery(presidentQuery, []) as Array<{
             id: number;
             name_en: string;
             name_hi: string;
@@ -125,8 +137,8 @@ export async function GET(request: NextRequest) {
             member_reg_number: string | null;
             member_email: string | null;
           }>;
-        } catch (certError) {
-          console.log('Certificates query failed:', certError);
+        } catch (presError) {
+          console.log('President query failed:', presError);
         }
 
         // Merge departments with their presidents
@@ -144,21 +156,21 @@ export async function GET(request: NextRequest) {
           });
         });
 
-        // Update with certificate appointments
-        certificateDepartments.forEach(certDept => {
-          if (certDept.member_id) {
-            departmentMap.set(certDept.id, {
-              id: certDept.id,
-              name_en: certDept.name_en,
-              name_hi: certDept.name_hi,
-              post_name_en: certDept.post_name_en || 'President',
-              post_name_hi: certDept.post_name_hi || 'अध्यक्ष',
+        // Update with president appointments (only from department_members, president post)
+        presidentDepartments.forEach(presDept => {
+          if (presDept.member_id) {
+            departmentMap.set(presDept.id, {
+              id: presDept.id,
+              name_en: presDept.name_en,
+              name_hi: presDept.name_hi,
+              post_name_en: presDept.post_name_en || 'President',
+              post_name_hi: presDept.post_name_hi || 'अध्यक्ष',
               president: {
-                id: certDept.member_id,
-                name: certDept.member_name,
-                photo_path: certDept.profile_photo_path,
-                reg_number: certDept.member_reg_number,
-                email: certDept.member_email
+                id: presDept.member_id,
+                name: presDept.member_name,
+                photo_path: presDept.profile_photo_path,
+                reg_number: presDept.member_reg_number,
+                email: presDept.member_email
               }
             });
           }
