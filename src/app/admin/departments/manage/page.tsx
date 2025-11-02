@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
-import { ArrowLeft, Loader2, Plus, MoveVertical, Trash2, Edit, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Plus, MoveVertical, Trash2, Edit, Save, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -41,6 +41,8 @@ export default function ManageDepartmentsPage() {
   
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   
@@ -56,6 +58,13 @@ export default function ManageDepartmentsPage() {
   const [editPostNameEn, setEditPostNameEn] = useState('');
   const [editPostNameHi, setEditPostNameHi] = useState('');
   const [isEditingPost, setIsEditingPost] = useState(false);
+
+  // Edit department dialog
+  const [isEditDepartmentDialogOpen, setIsEditDepartmentDialogOpen] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [editDeptNameEn, setEditDeptNameEn] = useState('');
+  const [editDeptNameHi, setEditDeptNameHi] = useState('');
+  const [isEditingDepartment, setIsEditingDepartment] = useState(false);
 
   // Check if user is superadmin
   useEffect(() => {
@@ -75,6 +84,7 @@ export default function ManageDepartmentsPage() {
         
         if (data.departments) {
           setDepartments(data.departments);
+          setFilteredDepartments(data.departments);
         }
       } catch (error) {
         console.error('Error fetching departments:', error);
@@ -91,6 +101,20 @@ export default function ManageDepartmentsPage() {
     fetchDepartments();
   }, [toast]);
 
+  // Filter departments based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredDepartments(departments);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = departments.filter(dept => 
+        dept.name_en.toLowerCase().includes(query) ||
+        dept.name_hi.toLowerCase().includes(query)
+      );
+      setFilteredDepartments(filtered);
+    }
+  }, [searchQuery, departments]);
+
   // Check for department ID in URL and select it
   useEffect(() => {
     const departmentId = searchParams.get('department');
@@ -102,6 +126,76 @@ export default function ManageDepartmentsPage() {
       }
     }
   }, [departments, searchParams]);
+
+  const handleEditDepartment = async () => {
+    if (!editingDepartment) return;
+    
+    if (!editDeptNameEn.trim() || !editDeptNameHi.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter both English and Hindi names for the department',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsEditingDepartment(true);
+
+    try {
+      const response = await fetch(`/api/departments/${editingDepartment.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name_en: editDeptNameEn,
+          name_hi: editDeptNameHi,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update department');
+      }
+
+      // Update the department in the list
+      setDepartments(prevDepts => prevDepts.map(dept => 
+        dept.id === editingDepartment.id 
+          ? { ...dept, name_en: editDeptNameEn, name_hi: editDeptNameHi } 
+          : dept
+      ));
+
+      // Update selected department if it's the one being edited
+      if (selectedDepartment?.id === editingDepartment.id) {
+        setSelectedDepartment(prev => prev ? {
+          ...prev,
+          name_en: editDeptNameEn,
+          name_hi: editDeptNameHi
+        } : null);
+      }
+
+      // Close dialog and reset form
+      setIsEditDepartmentDialogOpen(false);
+      setEditingDepartment(null);
+      setEditDeptNameEn('');
+      setEditDeptNameHi('');
+
+      toast({
+        title: 'Success',
+        description: 'Department updated successfully',
+      });
+    } catch (error) {
+      console.error('Error updating department:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update department',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsEditingDepartment(false);
+    }
+  };
 
   // Fetch posts when department is selected
   useEffect(() => {
@@ -427,22 +521,61 @@ export default function ManageDepartmentsPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {departments.map((department) => (
-                      <Card 
-                        key={department.id} 
-                        className={`cursor-pointer hover:shadow-md transition-shadow ${
-                          selectedDepartment?.id === department.id ? 'ring-2 ring-orange-500' : ''
-                        }`}
-                        onClick={() => setSelectedDepartment(department)}
-                      >
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold text-lg">{department.name_en}</h3>
-                          <p className="text-gray-600 text-sm">{department.name_hi}</p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  <>
+                    {/* Search Box */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          placeholder="Search departments by name (English or Hindi)..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    
+                    {filteredDepartments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No departments found matching your search</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredDepartments.map((department) => (
+                          <Card 
+                            key={department.id} 
+                            className={`cursor-pointer hover:shadow-md transition-shadow ${
+                              selectedDepartment?.id === department.id ? 'ring-2 ring-orange-500' : ''
+                            }`}
+                            onClick={() => setSelectedDepartment(department)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-lg">{department.name_hi}</h3>
+                                  <p className="text-gray-600 text-sm">{department.name_en}</p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="flex-shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingDepartment(department);
+                                    setEditDeptNameEn(department.name_en);
+                                    setEditDeptNameHi(department.name_hi);
+                                    setIsEditDepartmentDialogOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -454,8 +587,8 @@ export default function ManageDepartmentsPage() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle>{selectedDepartment.name_en}</CardTitle>
-                      <p className="text-sm text-gray-500 mt-1">{selectedDepartment.name_hi}</p>
+                      <CardTitle className="font-bold">{selectedDepartment.name_hi}</CardTitle>
+                      <p className="text-sm text-gray-500 mt-1">{selectedDepartment.name_en}</p>
                     </div>
                     <Button onClick={() => setIsNewPostDialogOpen(true)}>
                       <Plus className="mr-2 h-4 w-4" />
@@ -651,6 +784,53 @@ export default function ManageDepartmentsPage() {
             </Button>
             <Button onClick={handleEditPost} disabled={isEditingPost}>
               {isEditingPost ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Department Dialog */}
+      <Dialog open={isEditDepartmentDialogOpen} onOpenChange={setIsEditDepartmentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Department</DialogTitle>
+            <DialogDescription>
+              Update the department name
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_dept_name_en">Department Name (English)</Label>
+              <Input
+                id="edit_dept_name_en"
+                placeholder="Enter department name in English"
+                value={editDeptNameEn}
+                onChange={(e) => setEditDeptNameEn(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_dept_name_hi">Department Name (Hindi)</Label>
+              <Input
+                id="edit_dept_name_hi"
+                placeholder="Enter department name in Hindi"
+                value={editDeptNameHi}
+                onChange={(e) => setEditDeptNameHi(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDepartmentDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditDepartment} disabled={isEditingDepartment}>
+              {isEditingDepartment ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Saving...

@@ -18,25 +18,43 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state'); // Required for districts
 
     if (type === 'states') {
-      // Get all unique states from members table
-      const states = await executeQuery(`
-        SELECT DISTINCT state
-        FROM members
-        WHERE state IS NOT NULL AND state != ''
-        ORDER BY state ASC
-      `) as any[];
+      // Get all states from the states table
+      const statesResult = await executeQuery(`
+        SELECT id, state_code, state_name_english
+        FROM states
+        ORDER BY state_name_english ASC
+      `) as Array<{ id: number; state_code: string; state_name_english: string }>;
       
-      return NextResponse.json({ states: states.map(row => row.state) });
+      return NextResponse.json({ 
+        states: statesResult.map(row => row.state_name_english) 
+      });
     } else if (type === 'districts' && state) {
-      // Get all unique districts for a specific state
-      const districts = await executeQuery(`
-        SELECT DISTINCT district
-        FROM members
-        WHERE state = ? AND district IS NOT NULL AND district != ''
-        ORDER BY district ASC
-      `, [state]) as any[];
+      // Get all districts for a specific state from the districts table
+      // First, find the state_code from the state name
+      const stateResult = await executeQuery(`
+        SELECT state_code
+        FROM states
+        WHERE state_name_english = ?
+        LIMIT 1
+      `, [state]) as Array<{ state_code: string }>;
       
-      return NextResponse.json({ districts: districts.map(row => row.district) });
+      if (stateResult.length === 0) {
+        return NextResponse.json({ districts: [] });
+      }
+      
+      const stateCode = stateResult[0].state_code;
+      
+      // Get all districts for this state
+      const districtsResult = await executeQuery(`
+        SELECT DISTINCT district_code, district_name_english
+        FROM districts
+        WHERE state_code = ?
+        ORDER BY district_name_english ASC
+      `, [stateCode]) as Array<{ district_code: string; district_name_english: string }>;
+      
+      return NextResponse.json({ 
+        districts: districtsResult.map(row => row.district_name_english) 
+      });
     } else {
       return NextResponse.json({ 
         error: 'Invalid request. Specify type=states or type=districts with state parameter' 

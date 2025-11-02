@@ -22,23 +22,11 @@ export async function GET(
       return NextResponse.json({ error: 'Department not found' }, { status: 404 });
     }
 
-    // Posts for the department (ordered)
-    let posts = await executeQuery(
+    // Posts for the department (ordered) - only get from database, no dummy/fallback posts
+    const posts = await executeQuery(
       'SELECT id, name_en, name_hi, position_order FROM department_posts WHERE department_id = ? ORDER BY position_order ASC',
       [departmentId]
     ) as Array<{ id: number; name_en: string; name_hi: string; position_order: number }>;
-
-    // Fallback default post structure if none exist
-    if (!posts || posts.length === 0) {
-      posts = [
-        { id: -1, name_en: 'President', name_hi: 'अध्यक्ष', position_order: 1 },
-        { id: -2, name_en: 'Vice President', name_hi: 'उपाध्यक्ष', position_order: 2 },
-        { id: -3, name_en: 'General Secretary', name_hi: 'महामंत्री', position_order: 3 },
-        { id: -4, name_en: 'Joint Secretary', name_hi: 'संयुक्त मंत्री', position_order: 4 },
-        { id: -5, name_en: 'Treasurer', name_hi: 'कोषाध्यक्ष', position_order: 5 },
-        { id: -6, name_en: 'Executive Member', name_hi: 'कार्यकारिणी सदस्य', position_order: 6 },
-      ];
-    }
 
     // Fetch all assigned national-level members per post
     let assignments: Array<{
@@ -87,18 +75,11 @@ export async function GET(
 
     return NextResponse.json({ success: true, data: result });
   } catch (error) {
-    // Fallback with minimal defaults
-    return NextResponse.json({
-      success: true,
-      data: {
-        department: { id: -1, name_en: 'Department', name_hi: 'विभाग' },
-        posts: [
-          { id: -1, name_en: 'President', name_hi: 'अध्यक्ष', position_order: 1, members: [] },
-          { id: -2, name_en: 'Vice President', name_hi: 'उपाध्यक्ष', position_order: 2, members: [] },
-          { id: -3, name_en: 'General Secretary', name_hi: 'महामंत्री', position_order: 3, members: [] },
-        ],
-      }
-    });
+    console.error('Error fetching department hierarchy:', error);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to fetch department hierarchy' 
+    }, { status: 500 });
   }
 }
 
