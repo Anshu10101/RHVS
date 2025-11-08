@@ -281,16 +281,18 @@ export function TokenVerification() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-orange-900">Token Verification</h1>
-          <p className="text-orange-700/80">Verify registration tokens from potential members</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">Token Verification</h1>
+          <p className="text-sm sm:text-base text-orange-700/80 mt-1">Verify registration tokens from potential members</p>
         </div>
-        <div className="flex gap-2 mt-4 sm:mt-0">
+        <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={fetchTokens}
             disabled={loading}
+            size="sm"
+            className="w-full sm:w-auto"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -301,29 +303,29 @@ export function TokenVerification() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="search">Search</Label>
-              <div className="relative">
+              <Label htmlFor="search" className="text-xs sm:text-sm">Search</Label>
+              <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
                   placeholder="Search by name, email, or token..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
             
             <div>
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status" className="text-xs sm:text-sm">Status</Label>
               <select
                 id="status"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full mt-1 px-3 py-2 h-9 sm:h-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
@@ -333,8 +335,8 @@ export function TokenVerification() {
               </select>
             </div>
             
-            <div className="flex items-end">
-              <Button variant="outline" className="w-full" onClick={fetchTokens}>
+            <div className="flex items-end sm:col-span-2 lg:col-span-1">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto text-sm" onClick={fetchTokens}>
                 Apply Filters
               </Button>
             </div>
@@ -344,33 +346,34 @@ export function TokenVerification() {
 
       {/* Tokens Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Registration Tokens</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">Registration Tokens</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Showing {tokens.length} tokens (Page {currentPage} of {totalPages})
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Applicant
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Token
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Expires
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -378,9 +381,9 @@ export function TokenVerification() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {tokens.map((token) => (
                   <tr key={token.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
+                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                           {isValidImageUrl(token.profile_photo_path) ? (
                             <Image
                               src={getValidImageUrl(token.profile_photo_path)!}
@@ -389,7 +392,6 @@ export function TokenVerification() {
                               height={40}
                               className="rounded-full object-cover"
                               onError={(e) => {
-                                // Hide image and show fallback on error
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 const fallback = target.nextElementSibling as HTMLElement;
@@ -404,38 +406,38 @@ export function TokenVerification() {
                             {token.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="ml-3 xl:ml-4 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
                             {token.name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">
                             {token.existing_member_reg_number}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{token.email}</div>
-                      <div className="text-sm text-gray-500">{token.phone}</div>
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 truncate">{token.email}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{token.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-mono text-gray-900 max-w-xs truncate">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                      <div className="text-xs sm:text-sm font-mono text-gray-900 max-w-xs truncate">
                         {token.token}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(token.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {new Date(token.expires_at).toLocaleDateString()}
                       </div>
-                      <div className={`text-sm ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
+                      <div className={`text-xs sm:text-sm ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
                         {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-1 xl:space-x-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -443,9 +445,9 @@ export function TokenVerification() {
                             setSelectedToken(token);
                             setShowDetails(true);
                           }}
-                          className="cursor-pointer"
+                          className="cursor-pointer h-8 w-8 p-0"
                         >
-                          <User className="h-4 w-4" />
+                          <User className="h-3.5 w-3.5" />
                         </Button>
                         {token.status === 'pending' && !isTokenExpired(token.expires_at) && (
                           <>
@@ -453,19 +455,19 @@ export function TokenVerification() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleVerifyToken(token.token, 'verify')}
-                              className="text-green-600 hover:text-green-700 cursor-pointer disabled:cursor-not-allowed"
+                              className="text-green-600 hover:text-green-700 cursor-pointer disabled:cursor-not-allowed h-8 w-8 p-0"
                               disabled={verifying}
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleVerifyToken(token.token, 'reject')}
-                              className="text-red-600 hover:text-red-700 cursor-pointer disabled:cursor-not-allowed"
+                              className="text-red-600 hover:text-red-700 cursor-pointer disabled:cursor-not-allowed h-8 w-8 p-0"
                               disabled={verifying}
                             >
-                              <XCircle className="h-4 w-4" />
+                              <XCircle className="h-3.5 w-3.5" />
                             </Button>
                           </>
                         )}
@@ -474,10 +476,10 @@ export function TokenVerification() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownloadCertificate(token)}
-                            className="text-blue-600 hover:text-blue-700"
+                            className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
                             disabled={downloading}
                           >
-                            <Download className="h-4 w-4" />
+                            <Download className="h-3.5 w-3.5" />
                           </Button>
                         )}
                       </div>
@@ -488,18 +490,151 @@ export function TokenVerification() {
             </table>
           </div>
 
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden space-y-3">
+            {tokens.map((token) => (
+              <Card key={token.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Applicant Info */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {isValidImageUrl(token.profile_photo_path) ? (
+                            <Image
+                              src={getValidImageUrl(token.profile_photo_path)!}
+                              alt={token.name}
+                              width={48}
+                              height={48}
+                              className="rounded-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'block';
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            className="text-orange-600 font-semibold text-base"
+                            style={{ display: !isValidImageUrl(token.profile_photo_path) ? 'block' : 'none' }}
+                          >
+                            {token.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">{token.name}</h3>
+                          <p className="text-xs text-gray-500 truncate">{token.existing_member_reg_number}</p>
+                          <div className="mt-1">{getStatusBadge(token.status)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-start space-x-2">
+                        <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-500">Email</p>
+                          <p className="text-sm text-gray-900 truncate">{token.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-500">Phone</p>
+                          <p className="text-sm text-gray-900">{token.phone}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Token & Expiry */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Token</p>
+                        <p className="text-xs font-mono text-gray-900 break-all">{token.token}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">Expires</p>
+                        <p className="text-sm text-gray-900">
+                          {new Date(token.expires_at).toLocaleDateString()}
+                        </p>
+                        <p className={`text-xs ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
+                          {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedToken(token);
+                          setShowDetails(true);
+                        }}
+                        className="flex-1 sm:flex-none cursor-pointer text-xs"
+                      >
+                        <User className="h-3.5 w-3.5 mr-1.5" />
+                        View
+                      </Button>
+                      {token.status === 'pending' && !isTokenExpired(token.expires_at) && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerifyToken(token.token, 'verify')}
+                            className="flex-1 sm:flex-none text-green-600 hover:text-green-700 cursor-pointer text-xs"
+                            disabled={verifying}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Verify
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleVerifyToken(token.token, 'reject')}
+                            className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
+                            disabled={verifying}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1.5" />
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      {token.status === 'verified' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadCertificate(token)}
+                          className="flex-1 sm:flex-none text-blue-600 hover:text-blue-700 text-xs"
+                          disabled={downloading}
+                        >
+                          <Download className="h-3.5 w-3.5 mr-1.5" />
+                          Download
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-700">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+              <div className="text-xs sm:text-sm text-gray-700">
                 Page {currentPage} of {totalPages}
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1 || loading}
+                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Previous
                 </Button>
@@ -508,6 +643,7 @@ export function TokenVerification() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages || loading}
+                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Next
                 </Button>

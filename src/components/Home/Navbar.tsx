@@ -18,7 +18,7 @@ export default function Navbar() {
   return (
     <header className="w-full py-1 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="bg-white/90 backdrop-blur-md rounded-full px-6 py-1 shadow-lg border border-orange-100">
+        <div className="bg-white/90 backdrop-blur-md rounded-full px-6 py-1 shadow-lg border border-orange-100 w-full">
           <div className="flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-3 md:gap-4 group">
@@ -44,7 +44,7 @@ export default function Navbar() {
         </div>
         
         <div className="flex items-center gap-4">
-          <nav className="hidden md:flex items-center space-x-3">
+          <nav className="hidden xl:flex items-center space-x-3">
             <Link href="/about" className="flex items-center gap-2 hover:text-orange-600 transition-colors">
               <Users size={16} />
               <span>About</span>
@@ -88,7 +88,7 @@ export default function Navbar() {
           
           <div className="flex items-center gap-3">
             <Link href="/members/register">
-              <Button variant="default" className="hidden md:inline-flex bg-orange-600 hover:bg-orange-700">
+              <Button variant="default" className="hidden xl:inline-flex bg-orange-600 hover:bg-orange-700">
                 JOIN NOW
               </Button>
             </Link>
@@ -96,7 +96,7 @@ export default function Navbar() {
         </div>
         
         {/* Mobile menu button */}
-        <button className="md:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+        <button className="xl:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
           <span className="sr-only">Open menu</span>
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -114,7 +114,7 @@ export default function Navbar() {
 
       {/* Mobile drawer */}
       {open && (
-        <div className="fixed inset-0 z-[9999] md:hidden" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 z-[9999] xl:hidden" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           {/* Full-screen sheet for maximum clarity */}
           <div className="absolute inset-0 bg-white flex flex-col">

@@ -29,3 +29,6 @@ export { ActivityLogs } from './Analytics/ActivityLogs';
 // Security
 export { PermissionManagement } from './Security/PermissionManagement';
 export { OTPVerification } from './Security/OTPVerification';
+
+// Profile
+export { ProfileModal } from './Profile/ProfileModal';

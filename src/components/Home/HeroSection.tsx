@@ -138,18 +138,23 @@ export default function HeroSection() {
       <div className="container mx-auto px-4 text-center relative">
         <h2 className="text-lg md:text-xl mb-3 md:mb-4 text-orange-700">॥ जय श्री राम ॥</h2>
         
-        <div className="mb-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2 md:gap-3">
-          <span aria-hidden="true" />
-          <h1 className={`${devanagari.className} col-start-2 text-3xl md:text-6xl font-extrabold text-orange-900 tracking-tight text-center`}>
-            राष्ट्रीय हिंदू वाहिनी संगठन
-          </h1>
-          <div className="flex items-center justify-start">
+        <div className="mb-6 grid grid-cols-1 md:[grid-template-columns:1fr_auto_1fr] items-center gap-4 md:gap-3">
+          <div className="order-2 md:order-1 hidden md:block" aria-hidden="true" />
+          <div className="order-1 md:order-2 flex flex-col items-center">
+            <h1 className={`${devanagari.className} text-3xl sm:text-4xl md:text-6xl font-extrabold text-orange-900 tracking-tight text-center leading-snug md:leading-tight`}>
+              राष्ट्रीय हिंदू वाहिनी संगठन
+            </h1>
+            <p className="mt-3 text-sm sm:text-base md:hidden text-orange-700/90 max-w-md">
+              Rashtriya Hindu Vahini Sangathan
+            </p>
+          </div>
+          <div className="order-3 md:order-3 flex items-center justify-center md:justify-start">
             <Image
               src="/ram.png"
               alt="Jai Shri Ram"
               width={160}
               height={160}
-              className="w-16 h-16 md:w-28 md:h-28 lg:w-36 lg:h-36 object-contain"
+              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-36 lg:h-36 object-contain"
               priority
             />
           </div>
@@ -175,7 +180,7 @@ export default function HeroSection() {
             <div className="hero-side-gradient hero-side-right">
               <span className="hero-motif text-orange-600" aria-hidden="true">ॐ</span>
             </div>
-            <div className={`relative w-full max-w-7xl h-[66vh] md:h-[77vh] lg:h-[83vh] overflow-hidden smart-image-container hero-image-frame ${imageAspectRatios[currentImage.id] || ''}`}>
+            <div className={`relative w-full max-w-6xl sm:max-w-7xl h-[52vh] sm:h-[58vh] md:h-[72vh] lg:h-[82vh] min-h-[280px] sm:min-h-[340px] overflow-hidden rounded-3xl smart-image-container hero-image-frame ${imageAspectRatios[currentImage.id] || ''}`}>
               <div className="hero-border-strip hero-border-top" />
               <div className="hero-border-strip hero-border-bottom" />
               <div className="hero-image-content">

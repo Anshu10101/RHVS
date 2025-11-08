@@ -229,13 +229,13 @@ export default function DepartmentsSection() {
                   <div className="relative flex items-center justify-center">
                     <div className="relative h-36 w-36 md:h-40 md:w-40 lg:h-44 lg:w-44 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                       {department.president?.photo_path ? (
-                        <div className="absolute inset-0 overflow-hidden">
+                        <div className="absolute inset-0 overflow-hidden bg-white">
                           <Image
                             src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
                             alt={department.president.name}
                             fill
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                            className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                             priority={false}
                           />
                         </div>
@@ -248,14 +248,17 @@ export default function DepartmentsSection() {
                       )}
 
                       {/* Circular overlay with department names */}
-                      <div className="absolute inset-x-0 bottom-0 p-2">
-                        <div className="rounded-b-full px-3 py-1.5 bg-gradient-to-t from-black/80 via-black/50 to-transparent backdrop-blur-[2px]">
-                          <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
-                            {department.name_hi}
-                          </h3>
-                          <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
-                            {department.name_en}
-                          </p>
+                      <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
+                        <div className="relative w-full">
+                          <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
+                          <div className="relative px-4 pb-2 pt-4">
+                            <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                              {department.name_hi}
+                            </h3>
+                            <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
+                              {department.name_en}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -293,13 +296,13 @@ export default function DepartmentsSection() {
                       <div className="relative flex items-center justify-center">
                         <div className="relative h-36 w-36 md:h-40 md:w-40 lg:h-44 lg:w-44 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                           {department.president?.photo_path ? (
-                            <div className="absolute inset-0 overflow-hidden">
+                            <div className="absolute inset-0 overflow-hidden bg-white">
                               <Image
                                 src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
                                 alt={department.president.name}
                                 fill
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                                className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                                 priority={false}
                               />
                             </div>
@@ -312,14 +315,17 @@ export default function DepartmentsSection() {
                           )}
 
                           {/* Circular overlay with department names */}
-                          <div className="absolute inset-x-0 bottom-0 p-2">
-                            <div className="rounded-b-full px-3 py-1.5 bg-gradient-to-t from-black/80 via-black/50 to-transparent backdrop-blur-[2px]">
-                              <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
-                                {department.name_hi}
-                              </h3>
-                              <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
-                                {department.name_en}
-                              </p>
+                          <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
+                            <div className="relative w-full">
+                              <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
+                              <div className="relative px-4 pb-2 pt-4">
+                                <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                                  {department.name_hi}
+                                </h3>
+                                <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
+                                  {department.name_en}
+                                </p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -373,13 +379,13 @@ export default function DepartmentsSection() {
               <div className="relative flex items-center justify-center">
                 <div className="relative h-40 w-40 md:h-44 md:w-44 lg:h-48 lg:w-48 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                 {department.president?.photo_path ? (
-                  <div className="absolute inset-0 overflow-hidden">
+                  <div className="absolute inset-0 overflow-hidden bg-white">
                     <Image
                       src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
                       alt={department.president.name}
                       fill
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                      className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                       priority={false}
                     />
                   </div>
@@ -392,14 +398,17 @@ export default function DepartmentsSection() {
                 )}
 
                   {/* Circular overlay with department names */}
-                  <div className="absolute inset-x-0 bottom-0 p-3">
-                    <div className="rounded-b-full px-3 py-2 bg-gradient-to-t from-black/80 via-black/50 to-transparent backdrop-blur-[2px]">
-                      <h3 className="text-white text-[18px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
-                      {department.name_hi}
-                    </h3>
-                      <p className="text-white/90 text-[12px] leading-tight font-medium line-clamp-1 text-center">
-                      {department.name_en}
-                    </p>
+                  <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
+                    <div className="relative w-full">
+                      <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
+                      <div className="relative px-4 pb-3 pt-4">
+                        <h3 className="text-white text-[18px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                          {department.name_hi}
+                        </h3>
+                        <p className="text-white/90 text-[12px] leading-tight font-medium line-clamp-1 text-center">
+                          {department.name_en}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

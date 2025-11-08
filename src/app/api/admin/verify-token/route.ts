@@ -6,6 +6,153 @@ import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { sendWelcomeEmail } from '@/lib/email';
 
+export async function GET(request: NextRequest) {
+  try {
+    // Check admin authentication
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, message: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+
+    const offset = (page - 1) * limit;
+
+    // Build WHERE clause based on filters
+    let whereConditions = [];
+    let queryParams: any[] = [];
+
+    // District admin can only see tokens from their district
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
+      whereConditions.push('rt.district = ?');
+      queryParams.push(scope.districtName);
+    }
+
+    // Status filter
+    if (status) {
+      whereConditions.push('rt.status = ?');
+      queryParams.push(status);
+    }
+
+    // Search filter
+    if (search) {
+      whereConditions.push(
+        '(rt.name LIKE ? OR rt.email LIKE ? OR rt.phone LIKE ? OR rt.token LIKE ? OR rt.existing_member_reg_number LIKE ?)'
+      );
+      const searchPattern = `%${search}%`;
+      queryParams.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
+    }
+
+    const whereClause = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}`
+      : '';
+
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM registration_tokens rt
+      ${whereClause}
+    `;
+    
+    const countResult = await executeQuery(countQuery, queryParams) as Array<{ total: number }>;
+    const total = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Get tokens with pagination
+    const tokensQuery = `
+      SELECT 
+        rt.*,
+        COALESCE(m.name, 'N/A') as verified_by_admin_name,
+        mem.member_reg_number
+      FROM registration_tokens rt
+      LEFT JOIN district_admins da ON rt.verified_by_admin_id = da.id
+      LEFT JOIN members m ON da.member_id = m.id
+      LEFT JOIN members mem ON mem.email = rt.email AND mem.verified_by_admin_id = rt.verified_by_admin_id
+      ${whereClause}
+      ORDER BY rt.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const tokens = await executeQuery(tokensQuery, [...queryParams, limit, offset]) as Array<{
+      id: number;
+      token: string;
+      name: string;
+      email: string;
+      phone: string;
+      address: string;
+      state: string;
+      district: string;
+      aadhar_card_number: string;
+      father_husband_name: string;
+      mother_wife_name: string;
+      registration_date: string;
+      existing_member_reg_number: string;
+      profile_photo_path: string;
+      signature_path: string;
+      department: string;
+      status: string;
+      created_at: string;
+      expires_at: string;
+      verified_at: string | null;
+      verified_by_admin_id: number | null;
+      verified_by_admin_name: string | null;
+      member_reg_number: string | null;
+    }>;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        tokens: tokens.map(token => ({
+          id: token.id,
+          token: token.token,
+          name: token.name,
+          email: token.email,
+          phone: token.phone,
+          address: token.address,
+          state: token.state,
+          district: token.district,
+          aadharCardNumber: token.aadhar_card_number,
+          fatherHusbandName: token.father_husband_name,
+          motherWifeName: token.mother_wife_name,
+          registrationDate: token.registration_date,
+          existingMemberRegNumber: token.existing_member_reg_number,
+          profilePhotoPath: token.profile_photo_path,
+          signaturePath: token.signature_path,
+          department: token.department,
+          status: token.status,
+          createdAt: token.created_at,
+          expiresAt: token.expires_at,
+          verifiedAt: token.verified_at,
+          verifiedByAdminId: token.verified_by_admin_id,
+          verifiedByAdminName: token.verified_by_admin_name,
+          memberRegNumber: token.member_reg_number,
+        })),
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching tokens:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch tokens' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check admin authentication

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Sparkles, TrendingUp } from "lucide-react";
 import FeaturedProductsMarquee from "@/components/Home/Product/FeaturedProductsMarquee";
 import type { Product as FullProduct } from "@/components/Home/Product/types";
 
@@ -69,17 +70,22 @@ export default function FeaturedProductsSection() {
 
   return (
     <section className="py-10">
-      <div className="container mx-auto px-4 mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-6 w-1.5 rounded bg-orange-600" />
+      <div className="container mx-auto px-4 mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg flex-shrink-0">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+          </div>
           <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Featured Products</h2>
-            <p className="text-sm text-gray-600 leading-tight">विशेष उत्पाद • बेहतरीन ऑफ़र्स</p>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 flex items-center gap-2">
+              Featured Products
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 leading-tight mt-1">विशेष उत्पाद • बेहतरीन ऑफ़र्स • Handpicked for you</p>
           </div>
         </div>
         <Link
           href="/products?featured=1"
-          className="text-sm font-medium text-orange-700 hover:text-orange-800 hover:underline"
+          className="text-sm font-medium text-orange-700 hover:text-orange-800 hover:underline self-start sm:self-auto"
           aria-label="View all featured products"
         >
           View All / सभी देखें

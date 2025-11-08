@@ -62,7 +62,7 @@ export default function LatestPhotosSection() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 8 }).map(() => undefined) : images).map((img, i) => (
             <div key={img?.id || i} className="group relative overflow-hidden rounded-2xl bg-orange-100/60 shadow-sm ring-1 ring-orange-100">
               {loading ? (

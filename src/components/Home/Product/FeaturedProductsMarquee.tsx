@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import Image from 'next/image';
-import { Star, Sparkles, Tag, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product } from './types';
 
 interface FeaturedProductsMarqueeProps {
@@ -45,28 +45,10 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
 
   return (
     <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 border-y border-orange-200 py-6 overflow-hidden relative">
-      {/* Section Header */}
-      <div className="container mx-auto px-4 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                Featured Products
-                <TrendingUp className="h-5 w-5 text-orange-600" />
-              </h2>
-              <p className="text-xs text-gray-600">Handpicked for you • Special offers inside</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation Buttons */}
       <button
         onClick={() => scroll('left')}
-        className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/60 hover:bg-white/90 text-gray-600 hover:text-orange-600 rounded-full p-2 sm:p-2.5 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm cursor-pointer"
+        className="hidden sm:inline-flex absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/60 hover:bg-white/90 text-gray-600 hover:text-orange-600 rounded-full p-2 sm:p-2.5 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm cursor-pointer"
         aria-label="Scroll left"
       >
         <ChevronLeft className="h-5 w-5 sm:h-5 sm:w-5" />
@@ -74,7 +56,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
 
       <button
         onClick={() => scroll('right')}
-        className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/60 hover:bg-white/90 text-gray-600 hover:text-orange-600 rounded-full p-2 sm:p-2.5 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm cursor-pointer"
+        className="hidden sm:inline-flex absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/60 hover:bg-white/90 text-gray-600 hover:text-orange-600 rounded-full p-2 sm:p-2.5 shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm cursor-pointer"
         aria-label="Scroll right"
       >
         <ChevronRight className="h-5 w-5 sm:h-5 sm:w-5" />
@@ -153,7 +135,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           width: 100%;
           overflow-x: auto;
           overflow-y: hidden;
-          padding: 0 4rem;
+          padding: 0 3.5rem;
           scroll-behavior: smooth;
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -166,7 +148,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
         .marquee-content {
           display: flex;
           gap: 1.5rem;
-          animation: marqueeScroll 60s linear infinite;
+          animation: marqueeScroll 16s linear infinite;
           will-change: transform;
         }
 
@@ -220,13 +202,28 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
           .marquee-wrapper {
             padding: 0 3rem;
           }
 
           .marquee-content {
-            animation: marqueeScroll 40s linear infinite;
+            gap: 1.25rem;
+            animation: marqueeScroll 16s linear infinite;
+          }
+
+          .marquee-card {
+            width: 300px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .marquee-wrapper {
+            padding: 0 2.5rem;
+          }
+
+          .marquee-content {
+            animation: marqueeScroll 12s linear infinite;
             gap: 1rem;
           }
 
@@ -237,7 +234,22 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
 
         @media (max-width: 640px) {
           .marquee-wrapper {
-            padding: 0 2.5rem;
+            padding: 0 2rem;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .marquee-wrapper {
+            padding: 0 1.5rem;
+          }
+
+          .marquee-card {
+            width: 240px;
+          }
+
+          .marquee-content {
+            gap: 0.85rem;
+            animation: marqueeScroll 11s linear infinite;
           }
         }
       `}</style>

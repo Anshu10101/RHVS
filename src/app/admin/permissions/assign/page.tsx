@@ -335,12 +335,12 @@ export default function AssignPermissionsPage() {
 
   if (currentUser?.type !== 'superadmin') {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
-          <CardHeader className="text-center">
-            <Shield className="h-12 w-12 mx-auto text-red-500 mb-4" />
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
+      <div className="flex items-center justify-center min-h-screen p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+            <Shield className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-red-500 mb-3 sm:mb-4" />
+            <CardTitle className="text-lg sm:text-xl">Access Denied</CardTitle>
+            <CardDescription className="text-sm sm:text-base mt-2">
               Only superadmins can assign permissions.
             </CardDescription>
           </CardHeader>
@@ -351,42 +351,42 @@ export default function AssignPermissionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading data...</p>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base">Loading data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Assign Permissions</h1>
-          <p className="text-gray-600">Grant specific permissions to district admins</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Assign Permissions</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Grant specific permissions to district admins</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Assignment Form */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
+          <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
               Assign New Permissions
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               Select a district admin and assign specific permissions
             </CardDescription>
           </CardHeader>
-          <CardContent>
-             <form onSubmit={handleSubmit} className="space-y-4">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                {/* Gallery-style Filter Section */}
-               <div className="space-y-4">
-                 <div className="flex items-center justify-between">
-                   <Label className="text-base font-medium">Filter District Admins</Label>
+               <div className="space-y-3 sm:space-y-4">
+                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+                   <Label className="text-sm sm:text-base font-medium">Filter District Admins</Label>
                    {(selectedState || selectedDistrict) && (
                      <Button
                        type="button"
@@ -399,21 +399,22 @@ export default function AssignPermissionsPage() {
                        variant="outline"
                        size="sm"
                        title="Clear all filters"
+                       className="w-full sm:w-auto text-xs sm:text-sm"
                      >
                        Clear Filters
                      </Button>
                    )}
                  </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                    {/* State Selection */}
                    <div className="space-y-2">
-                     <Label htmlFor="state">Select State</Label>
+                     <Label htmlFor="state" className="text-xs sm:text-sm">Select State</Label>
                      <Select 
                        value={selectedState || undefined} 
                        onValueChange={handleStateChange}
                      >
-                       <SelectTrigger>
+                       <SelectTrigger className="h-9 sm:h-10 text-sm">
                          <SelectValue placeholder="All States" />
                        </SelectTrigger>
                        <SelectContent>
@@ -429,13 +430,13 @@ export default function AssignPermissionsPage() {
 
                    {/* District Selection */}
                    <div className="space-y-2">
-                     <Label htmlFor="district">Select District</Label>
+                     <Label htmlFor="district" className="text-xs sm:text-sm">Select District</Label>
                      <Select 
                        value={selectedDistrict || undefined} 
                        onValueChange={handleDistrictChange}
                        disabled={!selectedState}
                      >
-                       <SelectTrigger>
+                       <SelectTrigger className="h-9 sm:h-10 text-sm">
                          <SelectValue placeholder={selectedState ? "All Districts" : "Select state first"} />
                        </SelectTrigger>
                        <SelectContent>
@@ -452,21 +453,21 @@ export default function AssignPermissionsPage() {
 
                  {/* District Admin Selection */}
                  <div className="space-y-2">
-                   <Label htmlFor="admin">Select District Admin</Label>
+                   <Label htmlFor="admin" className="text-xs sm:text-sm">Select District Admin</Label>
                    <Select 
                      value={selectedAdmin} 
                      onValueChange={setSelectedAdmin}
                      disabled={!selectedDistrict}
                    >
-                     <SelectTrigger>
+                     <SelectTrigger className="h-9 sm:h-10 text-sm">
                        <SelectValue placeholder={selectedDistrict ? "Choose a district admin" : "Select district first"} />
                      </SelectTrigger>
                      <SelectContent>
                        {getAdminsForDistrict(selectedDistrict).map((admin) => (
                          <SelectItem key={admin.id} value={admin.id.toString()}>
-                           <div className="flex items-center gap-2">
-                             <span>{admin.name}</span>
-                             <Badge variant="outline">{admin.email}</Badge>
+                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                             <span className="truncate">{admin.name}</span>
+                             <Badge variant="outline" className="text-xs w-fit">{admin.email}</Badge>
                            </div>
                          </SelectItem>
                        ))}
@@ -478,53 +479,57 @@ export default function AssignPermissionsPage() {
               {/* Quick Select Template removed per requirement */}
 
               {/* Permissions Selection */}
-              <div className="space-y-4">
-                <Label>Select Permissions</Label>
-                <div className="space-y-4 max-h-64 overflow-y-auto border rounded-lg p-4">
+              <div className="space-y-3 sm:space-y-4">
+                <Label className="text-xs sm:text-sm font-medium">Select Permissions</Label>
+                <div className="space-y-3 sm:space-y-4 max-h-64 sm:max-h-96 overflow-y-auto border rounded-lg p-3 sm:p-4">
                   {loading ? (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-xs sm:text-sm text-gray-500">
                       Loading permissions...
                     </div>
                   ) : Object.keys(groupedPermissions).length === 0 ? (
-                    <div className="text-center py-4 text-gray-500">
+                    <div className="text-center py-4 text-xs sm:text-sm text-gray-500">
                       No permissions available
                     </div>
                   ) : (
                     Object.entries(groupedPermissions).map(([category, permissions]) => (
                     <div key={category} className="space-y-2">
-                      <h4 className="font-medium text-sm text-gray-700">
+                      <h4 className="font-medium text-xs sm:text-sm text-gray-700">
                         {getPermissionCategory(category)}
                       </h4>
-                      <div className="space-y-2">
+                      <div className="space-y-2 sm:space-y-3">
                         {permissions.map((permission) => (
-                          <div key={`${category}-${permission.key}`} className="flex items-start space-x-2">
+                          <div key={`${category}-${permission.key}`} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
+                            <div className="flex items-start space-x-2 flex-1 min-w-0">
                             <Checkbox
                               id={permission.key}
                               checked={selectedPermissions.includes(permission.key)}
                               onCheckedChange={() => handlePermissionToggle(permission.key)}
+                                className="mt-0.5"
                             />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
                                 <Label 
                                   htmlFor={permission.key}
-                                  className="text-sm font-medium cursor-pointer"
+                                    className="text-xs sm:text-sm font-medium cursor-pointer"
                                 >
                                   {permission.name}
                                 </Label>
                                 <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-xs">
-                                  {permission.type === 'permanent' ? 'Permanent (default)' : 'Time-based (default)'}
+                                    {permission.type === 'permanent' ? 'Permanent' : 'Time-based'}
                                 </Badge>
                               </div>
-                              <p className="text-xs text-gray-500">
+                                <p className="text-xs text-gray-500 line-clamp-2">
                                 {permission.description}
                               </p>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-shrink-0">
                               <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setSelectedPermissions(prev => prev.includes(permission.key) ? prev : [...prev, permission.key])}
+                                className="text-xs h-8 px-2 sm:px-3"
                               >
                                 Grant
                               </Button>
@@ -548,6 +553,7 @@ export default function AssignPermissionsPage() {
                                     toast.error('Failed to revoke');
                                   }
                                 }}
+                                className="text-xs h-8 px-2 sm:px-3"
                               >
                                 Revoke
                               </Button>
@@ -562,10 +568,10 @@ export default function AssignPermissionsPage() {
               </div>
 
               {/* Expiration Settings & Revocation */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Permission Duration</Label>
-                  <Badge variant="outline" className="text-xs">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <Label className="text-xs sm:text-sm font-medium">Permission Duration</Label>
+                  <Badge variant="outline" className="text-xs w-fit">
                     {selectedPermissions.some(p => {
                       const permission = availablePermissions.find(ap => ap.key === p);
                       return permission?.type === 'permanent';
@@ -576,35 +582,41 @@ export default function AssignPermissionsPage() {
                   </Badge>
                 </div>
                 
-                <Alert variant="default" className="bg-blue-50 border-blue-200">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
+                <Alert variant="default" className="bg-blue-50 border-blue-200 p-3 sm:p-4">
+                  <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <AlertDescription className="text-xs sm:text-sm">
                     Member management permissions are permanent and will not expire. Content management permissions can be set to expire.
                   </AlertDescription>
                 </Alert>
                 
                 <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-start space-x-2">
                     <Checkbox
                       id="permanent"
                       checked={expirationType === 'permanent'}
                       onCheckedChange={() => setExpirationType('permanent')}
+                      className="mt-0.5"
                     />
-                    <Label htmlFor="permanent">Permanent (No expiration for time-based permissions)</Label>
+                    <Label htmlFor="permanent" className="text-xs sm:text-sm cursor-pointer">
+                      Permanent (No expiration for time-based permissions)
+                    </Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-start space-x-2">
                     <Checkbox
                       id="temporary"
                       checked={expirationType === 'temporary'}
                       onCheckedChange={() => setExpirationType('temporary')}
+                      className="mt-0.5"
                     />
-                    <Label htmlFor="temporary">Temporary (Expires after specified days)</Label>
+                    <Label htmlFor="temporary" className="text-xs sm:text-sm cursor-pointer">
+                      Temporary (Expires after specified days)
+                    </Label>
                   </div>
                 </div>
                 
                 {expirationType === 'temporary' && (
                   <div className="space-y-2">
-                    <Label htmlFor="days">Expiration Days</Label>
+                    <Label htmlFor="days" className="text-xs sm:text-sm">Expiration Days</Label>
                     <Input
                       id="days"
                       type="number"
@@ -612,7 +624,7 @@ export default function AssignPermissionsPage() {
                       max="365"
                       value={expirationDays}
                       onChange={(e) => setExpirationDays(parseInt(e.target.value) || 30)}
-                      className="w-32"
+                      className="w-full sm:w-32 h-9 sm:h-10 text-sm"
                     />
                     <p className="text-xs text-gray-500">
                       Time-based permissions will expire on {new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
@@ -624,6 +636,7 @@ export default function AssignPermissionsPage() {
                   <Button
                     type="button"
                     variant="destructive"
+                    size="sm"
                     disabled={!selectedAdmin}
                     onClick={async () => {
                       try {
@@ -640,6 +653,7 @@ export default function AssignPermissionsPage() {
                         toast.error('Failed to revoke');
                       }
                     }}
+                    className="w-full sm:w-auto text-xs sm:text-sm"
                   >
                     Revoke All Permissions Immediately
                   </Button>
@@ -648,13 +662,14 @@ export default function AssignPermissionsPage() {
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="text-xs sm:text-sm">Notes (Optional)</Label>
                 <Textarea
                   id="notes"
                   placeholder="Add any notes about this permission assignment..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
+                  className="text-sm resize-none"
                 />
               </div>
 
@@ -662,17 +677,18 @@ export default function AssignPermissionsPage() {
                <Button 
                  type="submit" 
                  className="w-full"
+                 size="sm"
                  disabled={submitting || !selectedState || !selectedDistrict || !selectedAdmin || selectedPermissions.length === 0}
                >
                 {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Assigning Permissions...
+                    <span className="text-xs sm:text-sm">Assigning Permissions...</span>
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Assign Permissions
+                    <span className="text-xs sm:text-sm">Assign Permissions</span>
                   </>
                 )}
               </Button>
@@ -682,26 +698,26 @@ export default function AssignPermissionsPage() {
 
         {/* Current Assignments Preview */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
+          <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
               Current Assignments
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs sm:text-sm">
               View existing permission assignments for district admins
             </CardDescription>
           </CardHeader>
-          <CardContent>
-             <div className="space-y-3">
+          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+             <div className="space-y-3 sm:space-y-4 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
                {districtAdmins.length === 0 ? (
-                 <div className="text-center py-8 text-gray-500">
+                 <div className="text-center py-8 text-sm text-gray-500">
                    No district admins found.
                  </div>
                ) : (
-                 <div className="space-y-2">
+                 <div className="space-y-3 sm:space-y-4">
                    {availableStates.map((state) => (
-                     <div key={state.id} className="space-y-2">
-                       <h4 className="font-medium text-sm text-gray-700 border-b pb-1">
+                     <div key={state.id} className="space-y-2 sm:space-y-3">
+                       <h4 className="font-medium text-sm sm:text-base text-gray-700 border-b pb-2">
                          {state.name}
                        </h4>
                        {districtAdmins
@@ -715,8 +731,8 @@ export default function AssignPermissionsPage() {
                            return districts;
                          }, [] as string[])
                          .map((district) => (
-                         <div key={district} className="ml-4 space-y-1">
-                           <h5 className="font-medium text-xs text-gray-600">
+                         <div key={district} className="ml-2 sm:ml-4 space-y-2 sm:space-y-3">
+                           <h5 className="font-medium text-xs sm:text-sm text-gray-600">
                              {district}
                            </h5>
                            {districtAdmins
@@ -727,25 +743,27 @@ export default function AssignPermissionsPage() {
                                return adminDistrict === district && admin.state === state.name;
                              })
                              .map((admin) => (
-                               <div key={admin.id} className="border rounded-lg p-3 ml-4">
-                               <div className="flex items-center justify-between">
-                                   <div>
-                                     <h6 className="font-medium text-sm">{admin.name}</h6>
-                                     <p className="text-xs text-gray-600">{admin.email}</p>
+                               <div key={admin.id} className="border rounded-lg p-3 sm:p-4 ml-2 sm:ml-4">
+                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
+                                   <div className="min-w-0 flex-1">
+                                     <h6 className="font-medium text-sm sm:text-base truncate">{admin.name}</h6>
+                                     <p className="text-xs sm:text-sm text-gray-600 truncate">{admin.email}</p>
                                    </div>
-                                   <div className="flex items-center gap-2">
+                                   <div className="flex items-center gap-2 flex-shrink-0">
                                      <Badge variant="outline" className="text-xs">
                                        {admin.permissions?.length || 0} permissions
                                      </Badge>
-                                     <Button size="sm" variant="destructive" onClick={() => revokeAll(admin.id)}>Revoke All</Button>
+                                     <Button size="sm" variant="destructive" onClick={() => revokeAll(admin.id)} className="text-xs h-8 px-2 sm:px-3">
+                                       Revoke All
+                                     </Button>
                                    </div>
                                  </div>
                                  {admin.permissions && admin.permissions.length > 0 && (
-                                   <div className="mt-2 flex flex-wrap gap-2">
+                                   <div className="mt-3 flex flex-wrap gap-2">
                                      {[...new Set(admin.permissions)].map((permission, index) => (
                                        <div key={`${admin.id}-${permission}-${index}`} className="flex items-center gap-1">
                                          <Badge variant="secondary" className="text-xs">{permission}</Badge>
-                                         <Button size="icon" variant="destructive" className="h-5 w-5" onClick={() => revokePermission(admin.id, permission)}>×</Button>
+                                         <Button size="icon" variant="destructive" className="h-6 w-6 sm:h-7 sm:w-7 text-xs" onClick={() => revokePermission(admin.id, permission)}>×</Button>
                                        </div>
                                      ))}
                                    </div>

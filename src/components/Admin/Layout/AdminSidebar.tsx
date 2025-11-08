@@ -45,7 +45,7 @@ interface AdminSidebarProps {
 const navigationItems = [
   {
     name: 'Dashboard',
-    href: '/admin',
+    href: '/admin/dashboard',
     icon: BarChart3,
     roles: ['superadmin', 'admin', 'verified_member'],
   },
@@ -79,12 +79,6 @@ const navigationItems = [
         icon: Shield,
         permission: 'verify_tokens', // District admins can verify tokens for their district
       },
-      {
-        name: 'Pending Verification',
-        href: '/admin/members/pending',
-        icon: UserCheck,
-        permission: 'verify_members', // District admins can verify members for their district
-      },
     ],
   },
   {
@@ -97,12 +91,6 @@ const navigationItems = [
         name: 'Assign Permissions',
         href: '/admin/permissions/assign',
         icon: UserCheck,
-        roles: ['superadmin'],
-      },
-      {
-        name: 'Permission Templates',
-        href: '/admin/permissions/templates',
-        icon: FileText,
         roles: ['superadmin'],
       },
       {
@@ -337,7 +325,14 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           {/* Header */}
           <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <Image src="/favicon.ico" alt="RHVS" width={32} height={32} className="rounded-lg" priority />
+              <Image 
+                src="/rhvs_logo.png" 
+                alt="RHVS" 
+                width={48} 
+                height={48} 
+                className="object-contain flex-shrink-0" 
+                priority 
+              />
               <div>
                 <h1 className="text-lg font-semibold text-gray-900">Admin Panel</h1>
                 <p className="text-xs text-gray-500">Dashboard</p>
@@ -394,6 +389,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
               return (
                 <div key={item.name}>
+                  {hasChildren ? (
                   <div
                     className={cn(
                       'flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors',
@@ -402,21 +398,32 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                     )}
                     onClick={() => {
-                      if (hasChildren) {
                         toggleExpanded(item.name);
-                      } else {
-                        onClose();
-                      }
                     }}
                   >
                     <div className="flex items-center space-x-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.name}</span>
                     </div>
-                    {hasChildren && (
                       <Menu className="h-4 w-4" />
-                    )}
+                    </div>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'flex items-center justify-between px-3 py-2 text-sm font-medium rounded-lg cursor-pointer transition-colors',
+                        isActive
+                          ? 'bg-orange-100 text-orange-700'
+                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      )}
+                      onClick={onClose}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.name}</span>
                   </div>
+                    </Link>
+                  )}
 
                   {/* Children */}
                   {hasChildren && isExpanded && (

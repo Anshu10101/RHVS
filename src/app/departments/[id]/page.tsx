@@ -76,12 +76,14 @@ export default async function DepartmentHierarchyPage({ params }: { params: Prom
                         <div key={mi} className="text-center w-[160px] flex-shrink-0">
                           <div className="relative mx-auto h-40 w-40 rounded-full overflow-hidden ring-2 ring-orange-200 shadow mb-2">
                             {m?.photo_path ? (
-                              <Image 
-                                src={m.photo_path.startsWith('/') ? m.photo_path : `/${m.photo_path}`} 
-                                alt={m.name} 
-                                fill 
-                                className="object-cover" 
-                              />
+                              <div className="absolute inset-0 bg-white">
+                                <Image 
+                                  src={m.photo_path.startsWith('/') ? m.photo_path : `/${m.photo_path}`} 
+                                  alt={m.name} 
+                                  fill 
+                                  className="object-contain" 
+                                />
+                              </div>
                             ) : (
                               <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 text-orange-800">
                                 <span className="text-4xl font-bold">{(department.name_en || 'RHVS').split(' ').map((w: string) => w[0]).slice(0,2).join('').toUpperCase()}</span>

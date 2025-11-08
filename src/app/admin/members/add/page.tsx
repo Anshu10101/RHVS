@@ -465,27 +465,27 @@ export default function AdminAddMemberPage() {
         }}></div>
       </div>
       
-      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+      <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-6xl relative z-10">
         {/* Header */}
-        <div className="text-center mb-12 animate-in slide-in-from-top-4 duration-700">
-          <div className="relative inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mb-6 shadow-2xl hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 group">
+        <div className="text-center mb-8 sm:mb-12 animate-in slide-in-from-top-4 duration-700">
+          <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mb-4 sm:mb-6 shadow-2xl hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 group">
             <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-700 rounded-full animate-pulse opacity-75 group-hover:opacity-100"></div>
-            <User className="h-12 w-12 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
-            <div className="absolute -top-1 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
-              <Sparkles className="h-4 w-4 text-orange-800" />
+            <User className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
+            <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
+              <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-orange-800" />
             </div>
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-orange-800 via-orange-600 to-orange-800 bg-clip-text text-transparent mb-6 animate-in slide-in-from-top-2 duration-700 delay-200">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-orange-800 via-orange-600 to-orange-800 bg-clip-text text-transparent mb-4 sm:mb-6 animate-in slide-in-from-top-2 duration-700 delay-200">
             Add New Member
           </h1>
-          <p className="text-xl md:text-2xl text-orange-700 max-w-4xl mx-auto leading-relaxed animate-in slide-in-from-bottom-4 duration-700 delay-400">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-orange-700 max-w-4xl mx-auto leading-relaxed animate-in slide-in-from-bottom-4 duration-700 delay-400 px-2">
             Direct member registration by admin
             <br className="hidden md:block" />
             <span className="text-orange-600 font-medium">Bypass OTP verification for direct office registration</span>
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Admin Info Card */}
           <Card className="lg:col-span-1 shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-left-8 duration-700 delay-600 hover:-translate-y-2">
             <CardHeader className="bg-gradient-to-br from-orange-50 to-orange-100 border-b border-orange-200/50 relative overflow-hidden">
@@ -504,13 +504,13 @@ export default function AdminAddMemberPage() {
                 </span>
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6 p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <div className="p-1 bg-green-500 rounded-full">
-                    <CheckCircle className="h-4 w-4 text-white" />
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <div className="p-1 bg-green-500 rounded-full flex-shrink-0">
+                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
-                  <span className="text-green-700 font-medium">
+                  <span className="text-xs sm:text-sm text-green-700 font-medium">
                     {currentUser?.role === 'superadmin' 
                       ? 'Superadmin verification (RHVS000000 reference)' 
                       : 'District admin verification (auto-referenced)'
@@ -518,28 +518,28 @@ export default function AdminAddMemberPage() {
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="p-1 bg-blue-500 rounded-full">
-                    <User className="h-4 w-4 text-white" />
+                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="p-1 bg-blue-500 rounded-full flex-shrink-0">
+                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
-                  <span className="text-blue-700 font-medium">Member will receive welcome email</span>
+                  <span className="text-xs sm:text-sm text-blue-700 font-medium">Member will receive welcome email</span>
                 </div>
 
-                <div className="flex items-center gap-3 p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                  <div className="p-1 bg-purple-500 rounded-full">
-                    <Shield className="h-4 w-4 text-white" />
+                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                  <div className="p-1 bg-purple-500 rounded-full flex-shrink-0">
+                    <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
-                  <span className="text-purple-700 font-medium">Certificate will be generated</span>
+                  <span className="text-xs sm:text-sm text-purple-700 font-medium">Certificate will be generated</span>
                 </div>
 
                 {currentUser?.type === 'district_admin' && (
-                  <div className="flex items-center gap-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                    <div className="p-1 bg-gray-500 rounded-full">
-                      <Lock className="h-4 w-4 text-white" />
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                    <div className="p-1 bg-gray-500 rounded-full flex-shrink-0">
+                      <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
-                    <div className="text-gray-700 font-medium">
+                    <div className="text-xs sm:text-sm text-gray-700 font-medium">
                       <div>Location locked to your district</div>
-                      <div className="text-sm text-gray-600">
+                      <div className="text-xs text-gray-600 mt-1">
                         {adminStateName && adminDistrictName 
                           ? `State: ${adminStateName}, District: ${adminDistrictName}` 
                           : 'State & District auto-set and cannot be changed'
@@ -567,18 +567,18 @@ export default function AdminAddMemberPage() {
                 Please provide accurate information for direct registration
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-8">
+            <CardContent className="p-4 sm:p-6 lg:p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
                   {/* Profile Photo Upload */}
-                  <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-300">
-                    <Label className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                      <Camera className="h-4 w-4" />
+                  <div className="space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-300">
+                    <Label className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                      <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Profile Photo
                     </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/30 rounded-2xl border border-orange-200/50">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/30 rounded-xl sm:rounded-2xl border border-orange-200/50">
                       <div className="relative group">
-                        <div className="relative w-36 h-36 rounded-3xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105">
+                        <div className="relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105">
                           {profilePhoto ? (
                             <Image
                               src={URL.createObjectURL(profilePhoto)}
@@ -606,33 +606,33 @@ export default function AdminAddMemberPage() {
                         />
                         <Label
                           htmlFor="profile-photo"
-                          className="cursor-pointer inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform"
+                          className="cursor-pointer inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform text-xs sm:text-sm"
                         >
-                          <Upload className="h-5 w-5" />
-                          {profilePhoto ? 'Change Photo' : 'Upload High-Quality Photo'}
+                          <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <span className="whitespace-nowrap">{profilePhoto ? 'Change Photo' : 'Upload Photo'}</span>
                         </Label>
-                        <p className="text-sm text-orange-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
-                          <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 500KB • Passport size photo recommended • Required
-                          <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
+                        <p className="text-xs sm:text-sm text-orange-600 mt-2 sm:mt-3 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full inline-block"></span>
+                          <span className="text-center sm:text-left">JPG, PNG up to 500KB • Passport size recommended • Required</span>
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full inline-block"></span>
                         </p>
                       </div>
                     </div>
                   </div>
                   
                   {/* Signature Upload */}
-                  <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-400">
-                    <Label className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <div className="space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-400">
+                    <Label className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 sm:h-4 sm:w-4">
                         <path d="M4 22h16"></path>
                         <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
                         <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
                       </svg>
                       Member Signature
                     </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-2xl border border-blue-200/50">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-xl sm:rounded-2xl border border-blue-200/50">
                       <div className="relative group">
-                        <div className="relative w-36 h-20 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
+                        <div className="relative w-28 h-16 sm:w-32 sm:h-18 lg:w-36 lg:h-20 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
                           {signature ? (
                             <Image
                               src={URL.createObjectURL(signature)}
@@ -641,7 +641,7 @@ export default function AdminAddMemberPage() {
                               className="object-contain hover:scale-110 transition-transform duration-300"
                             />
                           ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-blue-400 group-hover:scale-110 transition-transform duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 group-hover:scale-110 transition-transform duration-300">
                               <path d="M4 22h16"></path>
                               <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
                               <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
@@ -649,8 +649,8 @@ export default function AdminAddMemberPage() {
                           )}
                         </div>
                         {signature && (
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <CheckCircle className="h-4 w-4 text-white" />
+                          <div className="absolute -top-2 -right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
                           </div>
                         )}
                       </div>
@@ -664,38 +664,38 @@ export default function AdminAddMemberPage() {
                         />
                         <Label
                           htmlFor="signature-upload"
-                          className="cursor-pointer inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform"
+                          className="cursor-pointer inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform text-xs sm:text-sm"
                         >
-                          <Upload className="h-5 w-5" />
-                          {signature ? 'Change Signature' : 'Upload Signature'}
+                          <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+                          <span className="whitespace-nowrap">{signature ? 'Change Signature' : 'Upload Signature'}</span>
                         </Label>
-                        <p className="text-sm text-blue-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 100KB • Clear signature on white background • Required
-                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
+                        <p className="text-xs sm:text-sm text-blue-600 mt-2 sm:mt-3 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2">
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full inline-block"></span>
+                          <span className="text-center sm:text-left">JPG, PNG up to 100KB • Clear signature on white background • Required</span>
+                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full inline-block"></span>
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Name and Email */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-500">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <User className="h-4 w-4" />
+                          <FormLabel className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             Full Name *
                           </FormLabel>
                           <FormControl>
                             <div className="relative group">
-                              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
+                              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
                               <Input
                                 placeholder="Enter full name"
                                 {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
+                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
                               />
                             </div>
                           </FormControl>
@@ -720,7 +720,7 @@ export default function AdminAddMemberPage() {
                                 type="email"
                                 placeholder="Enter email address"
                                 {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
+                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
                               />
                             </div>
                           </FormControl>
@@ -731,7 +731,7 @@ export default function AdminAddMemberPage() {
                   </div>
 
                   {/* Phone and Registration Date */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-700">
                     <FormField
                       control={form.control}
                       name="phone"
@@ -748,7 +748,7 @@ export default function AdminAddMemberPage() {
                                 type="tel"
                                 placeholder="Enter phone number"
                                 {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
+                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
                               />
                             </div>
                           </FormControl>
@@ -771,7 +771,7 @@ export default function AdminAddMemberPage() {
                               <FormControl>
                                 <Button
                                   variant="outline"
-                                  className="w-full justify-start text-left font-normal border-2 border-orange-200 hover:border-orange-400 h-14 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium cursor-pointer"
+                                  className="w-full justify-start text-left font-normal border-2 border-orange-200 hover:border-orange-400 h-12 sm:h-14 text-sm rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium cursor-pointer"
                                 >
                                   <CalendarIcon className="mr-3 h-4 w-4 text-orange-400" />
                                   {field.value ? format(field.value, "PPP") : "Select date"}
@@ -815,7 +815,7 @@ export default function AdminAddMemberPage() {
                             <MapPin className="absolute left-3 top-3 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
                             <Textarea
                               placeholder="Enter complete address"
-                              className="min-h-[140px] pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg resize-none font-medium p-4"
+                              className="min-h-[100px] sm:min-h-[140px] pl-9 sm:pl-10 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg resize-none font-medium p-3 sm:p-4"
                               {...field}
                             />
                           </div>
@@ -826,7 +826,7 @@ export default function AdminAddMemberPage() {
                   />
 
                   {/* State and District */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-1000">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-1000">
                     <FormField
                       control={form.control}
                       name="stateId"
@@ -838,12 +838,12 @@ export default function AdminAddMemberPage() {
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
-                              <div className="w-full h-14 border border-gray-200 rounded-2xl bg-gray-50/50 flex items-center px-4 relative">
-                                <MapPin className="h-4 w-4 text-gray-500 mr-3" />
-                                <span className="text-gray-800 font-medium">
+                              <div className="w-full h-12 sm:h-14 text-sm border border-gray-200 rounded-xl sm:rounded-2xl bg-gray-50/50 flex items-center px-3 sm:px-4 relative">
+                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 mr-2 sm:mr-3 flex-shrink-0" />
+                                <span className="text-gray-800 font-medium truncate">
                                   {adminStateName || 'Loading...'}
                                 </span>
-                                <div className="ml-auto flex items-center">
+                                <div className="ml-auto flex items-center flex-shrink-0">
                                   <Lock className="h-3 w-3 text-gray-400 mr-1" />
                                   <span className="text-xs text-gray-500 font-medium">Locked</span>
                                 </div>
@@ -887,12 +887,12 @@ export default function AdminAddMemberPage() {
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
-                              <div className="w-full h-14 border border-gray-200 rounded-2xl bg-gray-50/50 flex items-center px-4 relative">
-                                <MapPin className="h-4 w-4 text-gray-500 mr-3" />
-                                <span className="text-gray-800 font-medium">
+                              <div className="w-full h-12 sm:h-14 text-sm border border-gray-200 rounded-xl sm:rounded-2xl bg-gray-50/50 flex items-center px-3 sm:px-4 relative">
+                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 mr-2 sm:mr-3 flex-shrink-0" />
+                                <span className="text-gray-800 font-medium truncate">
                                   {adminDistrictName || 'Loading...'}
                                 </span>
-                                <div className="ml-auto flex items-center">
+                                <div className="ml-auto flex items-center flex-shrink-0">
                                   <Lock className="h-3 w-3 text-gray-400 mr-1" />
                                   <span className="text-xs text-gray-500 font-medium">Locked</span>
                                 </div>
@@ -934,7 +934,7 @@ export default function AdminAddMemberPage() {
                             <Input
                               placeholder="Enter 12-digit Aadhar card number"
                               maxLength={12}
-                              className="pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium p-4"
+                              className="pl-9 sm:pl-10 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium p-3 sm:p-4"
                               {...field}
                             />
                           </div>
@@ -945,16 +945,16 @@ export default function AdminAddMemberPage() {
                   />
 
                   {/* Family Information */}
-                  <div className="space-y-6 p-8 bg-gradient-to-r from-orange-50/60 to-orange-100/40 rounded-3xl border border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1100 hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-2xl font-bold text-orange-800 flex items-center gap-3">
-                      <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
-                        <Users className="h-6 w-6 text-white" />
+                  <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-orange-50/60 to-orange-100/40 rounded-2xl sm:rounded-3xl border border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1100 hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-800 flex items-center gap-2 sm:gap-3">
+                      <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
+                        <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
                       </div>
-                      Family Information
-                      <div className="flex-1 h-0.5 bg-gradient-to-r from-orange-300 to-transparent rounded-full ml-4"></div>
+                      <span>Family Information</span>
+                      <div className="flex-1 h-0.5 bg-gradient-to-r from-orange-300 to-transparent rounded-full ml-2 sm:ml-4"></div>
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <FormField
                         control={form.control}
                         name="fatherHusbandName"
@@ -970,7 +970,7 @@ export default function AdminAddMemberPage() {
                                 <Input
                                   placeholder="Enter father or husband name"
                                   {...field}
-                                  className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
+                                  className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
                                 />
                               </div>
                             </FormControl>
@@ -994,7 +994,7 @@ export default function AdminAddMemberPage() {
                                 <Input
                                   placeholder="Enter mother or wife name"
                                   {...field}
-                                  className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
+                                  className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
                                 />
                               </div>
                             </FormControl>
@@ -1028,24 +1028,24 @@ export default function AdminAddMemberPage() {
                   />
 
                   {/* Submit Button */}
-                  <div className="pt-8 border-t border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1300">
-                    <div className="space-y-6">
+                  <div className="pt-4 sm:pt-6 lg:pt-8 border-t border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1300">
+                    <div className="space-y-4 sm:space-y-6">
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 hover:from-orange-700 hover:via-orange-800 hover:to-orange-900 text-white py-5 text-xl font-bold rounded-3xl shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-2xl group relative overflow-hidden cursor-pointer"
+                        className="w-full bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 hover:from-orange-700 hover:via-orange-800 hover:to-orange-900 text-white py-4 sm:py-5 text-base sm:text-lg lg:text-xl font-bold rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-2xl group relative overflow-hidden cursor-pointer"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         {isSubmitting ? (
-                          <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-7 h-7 border-4 border-white border-t-transparent rounded-full animate-spin" />
-                            <span className="text-lg">Registering Member...</span>
+                          <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 border-3 sm:border-4 border-white border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm sm:text-base lg:text-lg">Registering Member...</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-4 relative z-10">
-                            <User className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
-                            <span className="text-lg">Register New Member</span>
-                            <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
+                          <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                            <User className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 group-hover:scale-110 transition-transform duration-300" />
+                            <span className="text-sm sm:text-base lg:text-lg">Register New Member</span>
+                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 group-hover:translate-x-2 transition-transform duration-300" />
                           </div>
                         )}
                       </Button>

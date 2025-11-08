@@ -117,7 +117,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-family: var(--font-devanagari), var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
   }
 }
@@ -137,6 +137,8 @@ html[data-lang="en"] body {
 .full-bleed {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
+  width: 100vw;
+  max-width: 100vw;
 }
 
 /* Responsive marquee speed: slower on mobile, faster on large screens */

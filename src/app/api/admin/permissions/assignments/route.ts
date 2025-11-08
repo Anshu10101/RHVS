@@ -14,8 +14,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get all permission assignments with admin details
-    const assignments = await executeQuery(`
+    // Check if we need all assignments (including inactive)
+    const { searchParams } = new URL(req.url);
+    const includeAll = searchParams.get('all') === 'true';
+
+    // Get permission assignments from both tables (district_admin_permission_assignments and district_admin_permissions)
+    // Using UNION to combine results from both tables
+    let query = `
       SELECT 
         dapa.id,
         dapa.district_admin_id,
@@ -33,9 +38,33 @@ export async function GET(req: NextRequest) {
       JOIN district_admins da ON dapa.district_admin_id = da.id
       JOIN members m ON da.member_id = m.id
       JOIN available_permissions ap ON dapa.permission_key = ap.permission_key
-      WHERE dapa.is_active = true
-      ORDER BY dapa.granted_at DESC
-    `);
+      ${includeAll ? '' : 'WHERE dapa.is_active = true'}
+      
+      UNION ALL
+      
+      SELECT 
+        dap.id,
+        dap.district_admin_id,
+        da2.email as admin_email,
+        da2.district as admin_district,
+        m2.name as admin_name,
+        dap.permission as permission_key,
+        COALESCE(ap2.permission_name, dap.permission) as permission_name,
+        dap.granted_by,
+        dap.granted_at,
+        dap.expires_at,
+        dap.is_active,
+        NULL as notes
+      FROM district_admin_permissions dap
+      JOIN district_admins da2 ON dap.district_admin_id = da2.id
+      JOIN members m2 ON da2.member_id = m2.id
+      LEFT JOIN available_permissions ap2 ON dap.permission = ap2.permission_key
+      ${includeAll ? '' : 'WHERE dap.is_active = true'}
+      
+      ORDER BY granted_at DESC
+    `;
+    
+    const assignments = await executeQuery(query);
 
     return NextResponse.json(assignments);
   } catch (error) {

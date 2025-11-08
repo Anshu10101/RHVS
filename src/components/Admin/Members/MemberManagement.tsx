@@ -395,24 +395,26 @@ export function MemberManagement() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-orange-900">Member Management</h1>
-          <p className="text-orange-700/80">Manage and track all RHVS members</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">Member Management</h1>
+          <p className="text-sm sm:text-base text-orange-700/80 mt-1">Manage and track all RHVS members</p>
         </div>
-        <div className="flex gap-3 mt-4 sm:mt-0">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button
             variant="outline"
             onClick={fetchMembers}
             disabled={loading}
-            className="border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+            size="sm"
+            className="w-full sm:w-auto border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Link href="/admin/members/add" className="cursor-pointer">
+          <Link href="/admin/members/add" className="w-full sm:w-auto cursor-pointer">
             <Button
-              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-6 py-2.5 font-medium cursor-pointer"
+              size="sm"
+              className="w-full sm:w-auto bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-4 sm:px-6 py-2.5 font-medium cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Member
@@ -423,58 +425,58 @@ export function MemberManagement() {
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <Users className="h-6 w-6 text-orange-600" />
+                <div className="p-2 sm:p-2.5 bg-orange-100 rounded-lg flex-shrink-0">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Members</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total Members</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+                <div className="p-2 sm:p-2.5 bg-green-100 rounded-lg flex-shrink-0">
+                  <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Verified</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.status.verified || 0}</p>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Verified</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.verified || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-yellow-600" />
+                <div className="p-2 sm:p-2.5 bg-yellow-100 rounded-lg flex-shrink-0">
+                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.status.pending || 0}</p>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.pending || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <TrendingUp className="h-6 w-6 text-blue-600" />
+                <div className="p-2 sm:p-2.5 bg-blue-100 rounded-lg flex-shrink-0">
+                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">This Month</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.monthly}</p>
+                <div className="ml-3 sm:ml-4 min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.monthly}</p>
                 </div>
               </div>
             </CardContent>
@@ -484,16 +486,16 @@ export function MemberManagement() {
 
       {/* Search Section */}
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-orange-900 flex items-center gap-2">
-            <Search className="h-5 w-5" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
+            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
             Search Members
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="search" className="text-sm font-medium text-gray-700">Search by Name, Email, Phone, or Aadhar</Label>
+              <Label htmlFor="search" className="text-xs sm:text-sm font-medium text-gray-700">Search by Name, Email, Phone, or Aadhar</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -501,21 +503,21 @@ export function MemberManagement() {
                   placeholder="Enter name, email, phone, or Aadhar number..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 h-10"
+                  className="pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
             
             <div>
-              <Label htmlFor="regNumber" className="text-sm font-medium text-gray-700">Search by Registration Number</Label>
+              <Label htmlFor="regNumber" className="text-xs sm:text-sm font-medium text-gray-700">Search by Registration Number</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="regNumber"
-                  placeholder="Enter registration number (e.g., RHVS000001)..."
+                  placeholder="Enter registration number..."
                   value={regNumberSearch}
                   onChange={(e) => setRegNumberSearch(e.target.value)}
-                  className="pl-10 h-10"
+                  className="pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
             </div>
@@ -525,18 +527,18 @@ export function MemberManagement() {
 
       {/* Filters Section */}
       <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold text-orange-900 flex items-center gap-2">
-            <Filter className="h-5 w-5" />
+        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
+            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
             Filter Members
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="state" className="text-sm font-medium text-gray-700">State</Label>
+              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">State</Label>
               <Select value={selectedState} onValueChange={setSelectedState}>
-                <SelectTrigger className="mt-1 h-10">
+                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                   <SelectValue placeholder="All States" />
                 </SelectTrigger>
                 <SelectContent>
@@ -549,13 +551,13 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="district" className="text-sm font-medium text-gray-700">District</Label>
+              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">District</Label>
               <Select 
                 value={selectedDistrict} 
                 onValueChange={setSelectedDistrict}
                 disabled={!selectedState || selectedState === 'all' || loadingDistricts}
               >
-                <SelectTrigger className="mt-1 h-10">
+                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                   <SelectValue placeholder={
                     !selectedState || selectedState === 'all' 
                       ? "Select state first" 
@@ -574,9 +576,9 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="department" className="text-sm font-medium text-gray-700">Department</Label>
+              <Label htmlFor="department" className="text-xs sm:text-sm font-medium text-gray-700">Department</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="mt-1 h-10">
+                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                   <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent>
@@ -589,9 +591,9 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="status" className="text-sm font-medium text-gray-700">Status</Label>
+              <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-gray-700">Status</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="mt-1 h-10">
+                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -604,11 +606,12 @@ export function MemberManagement() {
             </div>
           </div>
           
-          <div className="flex justify-end gap-3 mt-6">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
             <Button 
               variant="outline" 
               onClick={clearFilters}
-              className="px-6 h-10 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer"
+              size="sm"
+              className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
               Clear Filters
@@ -616,7 +619,8 @@ export function MemberManagement() {
             <Button 
               variant="outline" 
               onClick={fetchMembers}
-              className="px-6 h-10 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 cursor-pointer"
+              size="sm"
+              className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 cursor-pointer text-sm"
             >
               <Filter className="h-4 w-4 mr-2" />
               Apply Filters
@@ -627,33 +631,34 @@ export function MemberManagement() {
 
       {/* Members Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Members List</CardTitle>
-          <CardDescription>
+        <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">Members List</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Showing {members.length} members (Page {currentPage} of {totalPages})
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
+          {/* Desktop Table View */}
+          <div className="hidden lg:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Member
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Location
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Registration
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -661,9 +666,9 @@ export function MemberManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {members.map((member) => (
                   <tr key={member.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
+                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                           {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
                               src={getValidImageUrl(member.profile_photo_path)!}
@@ -672,7 +677,6 @@ export function MemberManagement() {
                               height={40}
                               className="rounded-full object-cover"
                               onError={(e) => {
-                                // Hide image and show fallback on error
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
                                 const fallback = target.nextElementSibling as HTMLElement;
@@ -687,45 +691,45 @@ export function MemberManagement() {
                             {member.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="ml-3 xl:ml-4 min-w-0">
+                          <div className="text-sm font-medium text-gray-900 truncate">
                             {member.name}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs sm:text-sm text-gray-500 truncate">
                             {member.member_reg_number}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.email}</div>
-                      <div className="text-sm text-gray-500">{member.phone}</div>
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 truncate">{member.email}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{member.phone}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{member.state || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{member.district || 'N/A'}</div>
-                      <div className="text-sm text-blue-600 font-medium">{member.departments || 'No assignments'}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{member.district || 'N/A'}</div>
+                      <div className="text-xs sm:text-sm text-blue-600 font-medium truncate">{member.departments || 'No assignments'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(member.status)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         {new Date(member.registration_date).toLocaleDateString()}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs sm:text-sm text-gray-500 truncate">
                         {member.verified_by_name ? `Verified by ${member.verified_by_name}` : 'Admin verified'}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
+                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-1 xl:space-x-2">
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => setSelectedMember(member)}
-                          className="cursor-pointer"
+                          className="cursor-pointer h-8 w-8 p-0"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                         <Button
                           size="sm"
@@ -734,9 +738,9 @@ export function MemberManagement() {
                             setEditingMember(member);
                             setShowEditModal(true);
                           }}
-                          className="cursor-pointer"
+                          className="cursor-pointer h-8 w-8 p-0"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
                         {member.status === 'pending' && (
                           <>
@@ -744,17 +748,17 @@ export function MemberManagement() {
                               size="sm"
                               variant="outline"
                               onClick={() => handleStatusChange(member.id, 'verified')}
-                              className="text-green-600 hover:text-green-700 cursor-pointer"
+                              className="text-green-600 hover:text-green-700 cursor-pointer h-8 w-8 p-0"
                             >
-                              <UserCheck className="h-4 w-4" />
+                              <UserCheck className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleStatusChange(member.id, 'rejected')}
-                              className="text-red-600 hover:text-red-700 cursor-pointer"
+                              className="text-red-600 hover:text-red-700 cursor-pointer h-8 w-8 p-0"
                             >
-                              <UserX className="h-4 w-4" />
+                              <UserX className="h-3.5 w-3.5" />
                             </Button>
                           </>
                         )}
@@ -762,9 +766,9 @@ export function MemberManagement() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeleteMember(member.id)}
-                          className="text-red-600 hover:text-red-700 cursor-pointer"
+                          className="text-red-600 hover:text-red-700 cursor-pointer h-8 w-8 p-0"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </td>
@@ -774,19 +778,164 @@ export function MemberManagement() {
             </table>
           </div>
 
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden space-y-3">
+            {members.map((member) => (
+              <Card key={member.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Member Info */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          {isValidImageUrl(member.profile_photo_path) ? (
+                            <Image
+                              src={getValidImageUrl(member.profile_photo_path)!}
+                              alt={member.name}
+                              width={48}
+                              height={48}
+                              className="rounded-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = 'block';
+                              }}
+                            />
+                          ) : null}
+                          <span 
+                            className="text-orange-600 font-semibold text-base"
+                            style={{ display: !isValidImageUrl(member.profile_photo_path) ? 'block' : 'none' }}
+                          >
+                            {member.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h3 className="text-sm font-semibold text-gray-900 truncate">{member.name}</h3>
+                          <p className="text-xs text-gray-500 truncate">{member.member_reg_number}</p>
+                          <div className="mt-1">{getStatusBadge(member.status)}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-start space-x-2">
+                        <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-500">Email</p>
+                          <p className="text-sm text-gray-900 truncate">{member.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start space-x-2">
+                        <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-gray-500">Phone</p>
+                          <p className="text-sm text-gray-900">{member.phone}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Location */}
+                    <div className="flex items-start space-x-2 pt-2 border-t border-gray-100">
+                      <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-500">Location</p>
+                        <p className="text-sm text-gray-900">{member.state || 'N/A'}, {member.district || 'N/A'}</p>
+                        {member.departments && (
+                          <p className="text-xs text-blue-600 font-medium mt-1">{member.departments}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Registration */}
+                    <div className="flex items-start space-x-2 pt-2 border-t border-gray-100">
+                      <Calendar className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs text-gray-500">Registration</p>
+                        <p className="text-sm text-gray-900">
+                          {new Date(member.registration_date).toLocaleDateString()}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {member.verified_by_name ? `Verified by ${member.verified_by_name}` : 'Admin verified'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedMember(member)}
+                        className="flex-1 sm:flex-none cursor-pointer text-xs"
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-1.5" />
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingMember(member);
+                          setShowEditModal(true);
+                        }}
+                        className="flex-1 sm:flex-none cursor-pointer text-xs"
+                      >
+                        <Edit className="h-3.5 w-3.5 mr-1.5" />
+                        Edit
+                      </Button>
+                      {member.status === 'pending' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusChange(member.id, 'verified')}
+                            className="flex-1 sm:flex-none text-green-600 hover:text-green-700 cursor-pointer text-xs"
+                          >
+                            <UserCheck className="h-3.5 w-3.5 mr-1.5" />
+                            Verify
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStatusChange(member.id, 'rejected')}
+                            className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
+                          >
+                            <UserX className="h-3.5 w-3.5 mr-1.5" />
+                            Reject
+                          </Button>
+                        </>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeleteMember(member.id)}
+                        className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-700">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
+              <div className="text-xs sm:text-sm text-gray-700">
                 Page {currentPage} of {totalPages}
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1 || loading}
-                  className="cursor-pointer disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Previous
                 </Button>
@@ -795,7 +944,7 @@ export function MemberManagement() {
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages || loading}
-                  className="cursor-pointer disabled:cursor-not-allowed"
+                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
                   Next
                 </Button>
@@ -808,48 +957,51 @@ export function MemberManagement() {
 
       {/* Edit Member Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Member</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">Edit Member</DialogTitle>
+            <DialogDescription className="text-sm">
               Update member information
             </DialogDescription>
           </DialogHeader>
           {editingMember && (
             <form onSubmit={handleUpdateMember} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_name">Full Name *</Label>
+                  <Label htmlFor="edit_name" className="text-xs sm:text-sm">Full Name *</Label>
                   <Input
                     id="edit_name"
                     name="name"
                     required
                     defaultValue={editingMember.name}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_email">Email *</Label>
+                  <Label htmlFor="edit_email" className="text-xs sm:text-sm">Email *</Label>
                   <Input
                     id="edit_email"
                     name="email"
                     type="email"
                     required
                     defaultValue={editingMember.email}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_phone">Phone *</Label>
+                  <Label htmlFor="edit_phone" className="text-xs sm:text-sm">Phone *</Label>
                   <Input
                     id="edit_phone"
                     name="phone"
                     required
                     defaultValue={editingMember.phone}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_status">Status</Label>
+                  <Label htmlFor="edit_status" className="text-xs sm:text-sm">Status</Label>
                   <Select name="status" defaultValue={editingMember.status}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 sm:h-10 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -860,50 +1012,55 @@ export function MemberManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="edit_father_husband_name">Father/Husband Name *</Label>
+                  <Label htmlFor="edit_father_husband_name" className="text-xs sm:text-sm">Father/Husband Name *</Label>
                   <Input
                     id="edit_father_husband_name"
                     name="father_husband_name"
                     required
                     defaultValue={editingMember.father_husband_name}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_mother_wife_name">Mother/Wife Name *</Label>
+                  <Label htmlFor="edit_mother_wife_name" className="text-xs sm:text-sm">Mother/Wife Name *</Label>
                   <Input
                     id="edit_mother_wife_name"
                     name="mother_wife_name"
                     required
                     defaultValue={editingMember.mother_wife_name}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_district">District</Label>
+                  <Label htmlFor="edit_district" className="text-xs sm:text-sm">District</Label>
                   <Input
                     id="edit_district"
                     name="district"
                     defaultValue={editingMember.district || ''}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_department">Department</Label>
+                  <Label htmlFor="edit_department" className="text-xs sm:text-sm">Department</Label>
                   <Input
                     id="edit_department"
                     name="department"
                     defaultValue={editingMember.departments || ''}
+                    className="h-9 sm:h-10 text-sm"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit_address">Address *</Label>
+                <Label htmlFor="edit_address" className="text-xs sm:text-sm">Address *</Label>
                 <Input
                   id="edit_address"
+                  className="h-9 sm:h-10 text-sm"
                   name="address"
                   required
                   defaultValue={editingMember.address}
                 />
               </div>
-              <div className="flex justify-end space-x-3">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -911,11 +1068,12 @@ export function MemberManagement() {
                     setShowEditModal(false);
                     setEditingMember(null);
                   }}
-                  className="cursor-pointer"
+                  size="sm"
+                  className="w-full sm:w-auto cursor-pointer text-sm"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-orange-600 hover:bg-orange-700 cursor-pointer">
+                <Button type="submit" size="sm" className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 cursor-pointer text-sm">
                   Update Member
                 </Button>
               </div>
