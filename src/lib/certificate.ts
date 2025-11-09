@@ -189,51 +189,51 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     try {
       const memberPhoto = await loadProfilePhotoImage(data.profilePhotoPath);
       if (memberPhoto) {
-        // Modern royal frame design
-        const framePadding = 20;
-        const frameSize = photoSize + (framePadding * 2);
-        
-        // Outer shadow for depth
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-        ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
-        
-        // Clean white background for the frame
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
-        
-        // Royal gold border - thick and elegant
-        ctx.strokeStyle = '#D4AF37'; // Rich gold color
-        ctx.lineWidth = 8;
-        ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
-        
-        // Inner gold accent line for elegance
-        ctx.strokeStyle = '#D4AF37';
-        ctx.lineWidth = 3;
-        ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
-        
-        // White inner background for photo
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
-        
-        // Draw photo with original aspect ratio
-        const aspectRatio = memberPhoto.width / memberPhoto.height;
-        let drawWidth = photoSize;
-        let drawHeight = photoSize;
-        let drawX = photoX;
-        let drawY = photoY;
-        
-        if (aspectRatio > 1) {
-          // Landscape - fit width
-          drawHeight = photoSize / aspectRatio;
-          drawY = photoY + (photoSize - drawHeight) / 2;
-        } else if (aspectRatio < 1) {
-          // Portrait - fit height
-          drawWidth = photoSize * aspectRatio;
-          drawX = photoX + (photoSize - drawWidth) / 2;
-        }
-        
-        ctx.drawImage(memberPhoto, drawX, drawY, drawWidth, drawHeight);
-        photoLoaded = true;
+          // Modern royal frame design
+          const framePadding = 20;
+          const frameSize = photoSize + (framePadding * 2);
+          
+          // Outer shadow for depth
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+          ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
+          
+          // Clean white background for the frame
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+          
+          // Royal gold border - thick and elegant
+          ctx.strokeStyle = '#D4AF37'; // Rich gold color
+          ctx.lineWidth = 8;
+          ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+          
+          // Inner gold accent line for elegance
+          ctx.strokeStyle = '#D4AF37';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
+          
+          // White inner background for photo
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
+          
+          // Draw photo with original aspect ratio
+          const aspectRatio = memberPhoto.width / memberPhoto.height;
+          let drawWidth = photoSize;
+          let drawHeight = photoSize;
+          let drawX = photoX;
+          let drawY = photoY;
+          
+          if (aspectRatio > 1) {
+            // Landscape - fit width
+            drawHeight = photoSize / aspectRatio;
+            drawY = photoY + (photoSize - drawHeight) / 2;
+          } else if (aspectRatio < 1) {
+            // Portrait - fit height
+            drawWidth = photoSize * aspectRatio;
+            drawX = photoX + (photoSize - drawWidth) / 2;
+          }
+          
+          ctx.drawImage(memberPhoto, drawX, drawY, drawWidth, drawHeight);
+          photoLoaded = true;
       }
     } catch (error) {
       console.error('Error loading member photo:', error);

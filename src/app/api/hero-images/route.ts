@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     let imageHash: string | null = null;
     let imageSize: number | null = null;
     let imageOriginalName: string | null = null;
-
+    
     if (contentType.includes('multipart/form-data')) {
       const formData = await request.formData();
       const file = formData.get('file') as File | null;
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         altText = file.name;
       }
 
-      const bytes = await file.arrayBuffer();
+        const bytes = await file.arrayBuffer();
       imageBuffer = Buffer.from(bytes);
       imageMime = file.type || null;
       imageHash = createHash('sha256').update(imageBuffer).digest('hex');
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
         }
         const asset = await consumeStagedBlob(assetId);
         if (!asset) {
-          return NextResponse.json({
-            success: false,
+        return NextResponse.json({
+          success: false,
             error: 'Staged asset expired. Please re-upload.'
           }, { status: 400 });
         }
@@ -163,13 +163,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Alt text is required'
-      }, { status: 400 });
-    }
+        }, { status: 400 });
+      }
 
-    const [result] = await pool.execute(
+      const [result] = await pool.execute(
       `INSERT INTO hero_images (
-         image_path,
-         alt_text,
+          image_path,
+          alt_text,
          title,
          description,
          display_order,
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
         title,
         description,
         displayOrder,
-        scope.adminId,
+          scope.adminId,
         null,
         null,
         imageBuffer,
@@ -211,12 +211,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Hero image added successfully',
+      return NextResponse.json({
+        success: true,
+        message: 'Hero image added successfully',
       image_id: insertId,
       image_path: finalImagePath
-    });
+      });
 
   } catch (error) {
     console.error('Error adding hero image:', error);

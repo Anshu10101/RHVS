@@ -702,7 +702,7 @@ export class ContentService {
     try {
       const id = photo.id || `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      await pool.execute(
+        await pool.execute(
         `INSERT INTO photos (
           id,
           gallery_id,

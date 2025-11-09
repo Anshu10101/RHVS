@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get('offset');
 
     let query = `
-      SELECT n.*,
+      SELECT n.*, 
              CASE 
                WHEN n.image_blob IS NOT NULL THEN CONCAT('/api/media/news/', n.id)
                ELSE n.image_path
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
+    const { 
       title,
       title_hindi,
       content,
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
+    
     // Get district and state information based on admin scope
     let district = null;
     let state = null;
@@ -138,22 +138,22 @@ export async function POST(request: NextRequest) {
         news_type, priority, is_featured, is_published, \`order\`, district, state, owner_admin_id, created_by) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id,
-        safeValue(title),
-        safeValue(title_hindi),
-        safeValue(content),
-        safeValue(excerpt),
+        id, 
+        safeValue(title), 
+        safeValue(title_hindi), 
+        safeValue(content), 
+        safeValue(excerpt), 
         imageAsset.url,
         imageAsset.blob,
         imageAsset.mime,
         imageAsset.hash,
         imageAsset.size,
         imageAsset.originalName,
-        safeValue(news_type),
+        safeValue(news_type), 
         safeValue(priority),
-        safeValue(is_featured),
-        safeValue(is_published),
-        safeValue(order),
+        safeValue(is_featured), 
+        safeValue(is_published), 
+        safeValue(order), 
         safeValue(district),
         safeValue(state),
         safeValue(owner_admin_id),
@@ -193,7 +193,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
+    const { 
       id,
       title,
       title_hindi,
@@ -209,7 +209,7 @@ export async function PUT(request: NextRequest) {
 
     // Convert undefined values to null for MySQL
     const safeValue = (val: unknown) => val === undefined ? null : val;
-
+    
     const updateFields: string[] = [
       'title = ?',
       'title_hindi = ?',
@@ -222,14 +222,14 @@ export async function PUT(request: NextRequest) {
       '`order` = ?'
     ];
     const updateParams: unknown[] = [
-      safeValue(title),
-      safeValue(title_hindi),
-      safeValue(content),
-      safeValue(excerpt),
-      safeValue(news_type),
-      safeValue(priority),
-      safeValue(is_featured),
-      safeValue(is_published),
+        safeValue(title), 
+        safeValue(title_hindi), 
+        safeValue(content), 
+        safeValue(excerpt), 
+        safeValue(news_type), 
+        safeValue(priority),
+        safeValue(is_featured), 
+        safeValue(is_published), 
       safeValue(order)
     ];
 

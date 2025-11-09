@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const offset = searchParams.get('offset');
 
     let query = `
-      SELECT e.*,
+      SELECT e.*, 
              CASE 
                WHEN e.image_blob IS NOT NULL THEN CONCAT('/api/media/events/', e.id)
                ELSE e.image_path
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const {
+    const { 
       title,
       title_hindi,
       description,
@@ -134,31 +134,31 @@ export async function POST(request: NextRequest) {
         max_participants, event_type, \`order\`, isVisible, district, state, owner_admin_id, created_by) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id,
-        safeValue(title),
-        safeValue(title_hindi),
-        safeValue(description),
-        safeValue(event_date),
-        safeValue(event_time),
-        safeValue(end_date),
+        id, 
+        safeValue(title), 
+        safeValue(title_hindi), 
+        safeValue(description), 
+        safeValue(event_date), 
+        safeValue(event_time), 
+        safeValue(end_date), 
         safeValue(end_time),
-        safeValue(location),
-        safeValue(address),
+        safeValue(location), 
+        safeValue(address), 
         imageAsset.url,
         imageAsset.blob,
         imageAsset.mime,
         imageAsset.hash,
         imageAsset.size,
         imageAsset.originalName,
-        safeValue(registration_required),
+        safeValue(registration_required), 
         safeValue(registration_url),
-        safeValue(max_participants),
-        safeValue(event_type),
-        safeValue(order),
+        safeValue(max_participants), 
+        safeValue(event_type), 
+        safeValue(order), 
         true,
         safeValue(district),
         safeValue(state),
-        safeValue(owner_admin_id),
+        safeValue(owner_admin_id), 
         safeValue(created_by)
       ]
     );
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
+    const { 
       id,
       title,
       title_hindi,
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest) {
 
     // Convert undefined values to null for MySQL
     const safeValue = (val: unknown) => val === undefined ? null : val;
-
+    
     const updateFields: string[] = [
       'title = ?',
       'title_hindi = ?',
@@ -229,20 +229,20 @@ export async function PUT(request: NextRequest) {
       'isVisible = ?'
     ];
     const updateParams: unknown[] = [
-      safeValue(title),
-      safeValue(title_hindi),
-      safeValue(description),
-      safeValue(event_date),
-      safeValue(event_time),
-      safeValue(end_date),
-      safeValue(end_time),
-      safeValue(location),
-      safeValue(address),
-      safeValue(registration_required),
-      safeValue(registration_url),
-      safeValue(max_participants),
-      safeValue(event_type),
-      safeValue(order),
+        safeValue(title), 
+        safeValue(title_hindi), 
+        safeValue(description), 
+        safeValue(event_date), 
+        safeValue(event_time), 
+        safeValue(end_date), 
+        safeValue(end_time),
+        safeValue(location), 
+        safeValue(address), 
+        safeValue(registration_required), 
+        safeValue(registration_url),
+        safeValue(max_participants), 
+        safeValue(event_type), 
+        safeValue(order), 
       safeValue(isVisible)
     ];
 

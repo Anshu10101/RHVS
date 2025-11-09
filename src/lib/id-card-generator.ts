@@ -1,4 +1,5 @@
 import { createCanvas, loadImage, registerFont } from 'canvas';
+import type { CanvasRenderingContext2D } from 'canvas';
 import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
@@ -83,36 +84,60 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    // Colors
-    const headerColor = '#F97316'; // Orange
-    const goldColor = '#D4AF37'; // Gold
-    const textColor = '#1F2937'; // Dark gray
-    const accentOrange = '#D97706'; // Orange
+    // Colors inspired by the appointment certificate
+    const headerColor = '#B91C1C'; // Deep red
+    const borderColor = '#D97706'; // Rich gold
+    const textColor = '#0F172A'; // Deep slate
+    const accentColor = '#7C2D12'; // Darker accent red
 
     // Fill background
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, width, height);
 
     // === HEADER SECTION ===
-    const headerHeight = 120;
-    
+    const headerHeight = 150;
+
+    // Apply subtle watermark using RHVS logo (positioned below header)
+    try {
+      const watermark = await loadImage(path.join(process.cwd(), 'public', 'rhvs_logo.png'));
+      const watermarkSize = Math.min(width * 0.45, height * 0.6);
+      const watermarkX = (width - watermarkSize) / 2;
+      const watermarkY = headerHeight + (height - headerHeight - watermarkSize) / 2;
+      ctx.globalAlpha = 0.08;
+      ctx.drawImage(watermark, watermarkX, watermarkY, watermarkSize, watermarkSize);
+      ctx.globalAlpha = 1;
+    } catch (error) {
+      console.error('Error loading RHVS watermark for ID card:', error);
+    }
+
     // Header background
     ctx.fillStyle = headerColor;
     ctx.fillRect(0, 0, width, headerHeight);
 
-    // Organization name in header
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 32px "Mangal", "Noto Sans Devanagari", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, 50);
+    // Lord Ram artwork (mirrors certificate header)
+    try {
+      const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
+      const ramHeight = headerHeight - 30;
+      const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
+      ctx.drawImage(ramImage, width - ramWidth - 30, 15, ramWidth, ramHeight);
+    } catch (error) {
+      console.error('Error loading Ram image for ID card:', error);
+    }
 
-    // Subtitle
-    ctx.font = 'bold 16px Arial';
-    ctx.fillText('Member ID Card', width / 2, 80);
+    // Organization name in header (bold & larger, Hindi font)
+    ctx.fillStyle = '#FDE68A';
+    ctx.font = 'bold 56px "Mangal", "Noto Sans Devanagari", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, 75);
+
+    // Subtitle in Hindi for consistency
+    ctx.font = 'bold 28px "Mangal", "Noto Sans Devanagari", sans-serif';
+    ctx.fillStyle = '#FFFBEB';
+    ctx.fillText('सदस्य पहचान पत्र', width / 2, 115);
 
     // === DECORATIVE GOLD LINE ===
     const lineY = headerHeight + 20;
-    ctx.strokeStyle = goldColor;
+    ctx.strokeStyle = borderColor;
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(50, lineY);
@@ -120,10 +145,10 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     ctx.stroke();
 
     // Decorative center element
-    ctx.fillStyle = goldColor;
-    ctx.font = 'bold 20px Arial';
+    ctx.fillStyle = borderColor;
+    ctx.font = 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('◆', width / 2, lineY + 8);
+    ctx.fillText('◆', width / 2, lineY + 10);
 
     // === MEMBER PHOTO ===
     const photoSize = 180;
@@ -139,7 +164,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         ctx.fillRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
         
         // Gold border
-        ctx.strokeStyle = goldColor;
+        ctx.strokeStyle = borderColor;
         ctx.lineWidth = 3;
         ctx.strokeRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
         
@@ -172,57 +197,66 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       ctx.fillStyle = '#F3F4F6';
       ctx.fillRect(photoX, photoY, photoSize, photoSize);
       
-      ctx.strokeStyle = goldColor;
+      ctx.strokeStyle = borderColor;
       ctx.lineWidth = 3;
       ctx.strokeRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
       
       ctx.fillStyle = '#9CA3AF';
-      ctx.font = 'bold 16px Arial';
+      ctx.font = 'bold 20px "Mangal", "Noto Sans Devanagari", sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('No Photo', photoX + photoSize/2, photoY + photoSize/2);
     }
 
     // === MEMBER INFORMATION ===
-    const infoX = 50;
-    const infoY = lineY + 60;
-    const lineHeight = 35;
-    
+    const infoX = 60;
+    const infoY = lineY + 70;
+    const lineHeight = 42;
+
     ctx.fillStyle = textColor;
-    ctx.font = 'bold 18px Arial';
+    ctx.font = 'bold 32px "Mangal", "Noto Sans Devanagari", sans-serif';
     ctx.textAlign = 'left';
     
     // Registration Number
-    ctx.fillText(`Reg. No. - ${data.memberRegNumber}`, infoX, infoY);
+    ctx.fillText(`पंजीकरण संख्या - ${data.memberRegNumber}`, infoX, infoY);
     
     // Member Name
-    ctx.fillText(`Name - ${data.memberName}`, infoX, infoY + lineHeight);
+    ctx.fillText(`नाम - ${data.memberName}`, infoX, infoY + lineHeight);
     
     // Address
-    const address = data.address || 'Not provided';
-    ctx.fillText(`Address - ${address}`, infoX, infoY + (lineHeight * 2));
+    const address = data.address || '—';
+    const addressLines = wrapTextLines(ctx, `पता - ${address}`, width - photoSize - 140);
+    addressLines.forEach((line, index) => {
+      if (index === 0) {
+        ctx.fillText(line, infoX, infoY + (lineHeight * 2));
+      } else {
+        ctx.fillText(line, infoX + 30, infoY + (lineHeight * 2) + (index * (lineHeight - 6)));
+      }
+    });
     
     // Designation
     const designation = data.designation || 'Member';
-    ctx.fillText(`Designation - ${designation}`, infoX, infoY + (lineHeight * 3));
+    const addressBlockHeight = (addressLines.length - 1) * (lineHeight - 6);
+    const designationY = infoY + (lineHeight * 3) + addressBlockHeight;
+    ctx.fillText(`पद - ${designation}`, infoX, designationY);
 
     // === BOTTOM DECORATIVE LINE ===
     const bottomLineY = height - 40;
-    ctx.strokeStyle = goldColor;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(50, bottomLineY);
     ctx.lineTo(width - 50, bottomLineY);
     ctx.stroke();
 
     // Organization name at bottom
-    ctx.fillStyle = accentOrange;
-    ctx.font = 'bold 14px Arial';
+    ctx.fillStyle = accentColor;
+    ctx.font = 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, bottomLineY + 25);
 
     // === BORDER ===
-    ctx.strokeStyle = goldColor;
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 6;
     ctx.strokeRect(2, 2, width - 4, height - 4);
 
     // Convert to PDF
@@ -272,6 +306,29 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     console.error('Error generating ID card:', error);
     throw new Error('Failed to generate ID card');
   }
+}
+
+function wrapTextLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+
+  words.forEach((word) => {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    const { width } = ctx.measureText(testLine);
+    if (width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  });
+
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+
+  return lines;
 }
 
 export async function downloadIDCard(idCardPath: string): Promise<Buffer> {

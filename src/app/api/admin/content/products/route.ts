@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
-    const {
+    const { 
       name,
       price,
       image_url,
@@ -341,7 +341,7 @@ export async function POST(req: NextRequest) {
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
-              createdId as number,
+            createdId as number,
               asset.url,
               asset.blob,
               asset.mime,
@@ -565,7 +565,7 @@ export async function PUT(req: NextRequest) {
           await executeQuery(
             'UPDATE product_images SET image_url = ? WHERE id = ?',
             [imageMediaUrl, imageId]
-          );
+        );
         }
       }
     }
