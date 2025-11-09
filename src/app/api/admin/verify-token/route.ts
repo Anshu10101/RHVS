@@ -71,6 +71,14 @@ export async function GET(request: NextRequest) {
     const tokensQuery = `
       SELECT 
         rt.*,
+        CASE 
+          WHEN rt.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/registration-tokens/', rt.id, '/profile')
+          ELSE rt.profile_photo_path
+        END AS resolved_profile_photo_path,
+        CASE 
+          WHEN rt.signature_blob IS NOT NULL THEN CONCAT('/api/media/registration-tokens/', rt.id, '/signature')
+          ELSE rt.signature_path
+        END AS resolved_signature_path,
         COALESCE(m.name, 'N/A') as verified_by_admin_name,
         mem.member_reg_number
       FROM registration_tokens rt
@@ -106,6 +114,8 @@ export async function GET(request: NextRequest) {
       verified_by_admin_id: number | null;
       verified_by_admin_name: string | null;
       member_reg_number: string | null;
+      resolved_profile_photo_path?: string | null;
+      resolved_signature_path?: string | null;
     }>;
 
     return NextResponse.json({
@@ -125,8 +135,8 @@ export async function GET(request: NextRequest) {
           motherWifeName: token.mother_wife_name,
           registrationDate: token.registration_date,
           existingMemberRegNumber: token.existing_member_reg_number,
-          profilePhotoPath: token.profile_photo_path,
-          signaturePath: token.signature_path,
+          profilePhotoPath: token.resolved_profile_photo_path ?? token.profile_photo_path,
+          signaturePath: token.resolved_signature_path ?? token.signature_path,
           department: token.department,
           status: token.status,
           createdAt: token.created_at,
@@ -195,7 +205,17 @@ export async function POST(request: NextRequest) {
       registration_date: string;
       existing_member_reg_number: string;
       profile_photo_path: string;
+      profile_photo_blob: Buffer | null;
+      profile_photo_mime: string | null;
+      profile_photo_hash: string | null;
+      profile_photo_size: number | null;
+      profile_photo_original_name: string | null;
       signature_path: string;
+      signature_blob: Buffer | null;
+      signature_mime: string | null;
+      signature_hash: string | null;
+      signature_size: number | null;
+      signature_original_name: string | null;
       department: string;
     }>;
 
@@ -283,6 +303,54 @@ export async function POST(request: NextRequest) {
 
       const memberId = memberResult.insertId;
 
+      let memberProfilePath = tokenData.profile_photo_path;
+      if (tokenData.profile_photo_blob) {
+        memberProfilePath = `/api/media/members/${memberId}/profile`;
+        await executeQuery(
+          `UPDATE members
+           SET profile_photo_blob = ?,
+               profile_photo_mime = ?,
+               profile_photo_hash = ?,
+               profile_photo_size = ?,
+               profile_photo_original_name = ?,
+               profile_photo_path = ?
+           WHERE id = ?`,
+          [
+            tokenData.profile_photo_blob,
+            tokenData.profile_photo_mime,
+            tokenData.profile_photo_hash,
+            tokenData.profile_photo_size,
+            tokenData.profile_photo_original_name,
+            memberProfilePath,
+            memberId
+          ]
+        );
+      }
+
+      let memberSignaturePath = tokenData.signature_path;
+      if (tokenData.signature_blob) {
+        memberSignaturePath = `/api/media/members/${memberId}/signature`;
+        await executeQuery(
+          `UPDATE members
+           SET signature_blob = ?,
+               signature_mime = ?,
+               signature_hash = ?,
+               signature_size = ?,
+               signature_original_name = ?,
+               signature_path = ?
+           WHERE id = ?`,
+          [
+            tokenData.signature_blob,
+            tokenData.signature_mime,
+            tokenData.signature_hash,
+            tokenData.signature_size,
+            tokenData.signature_original_name,
+            memberSignaturePath,
+            memberId
+          ]
+        );
+      }
+
       // Update token status
       await executeQuery(
         'UPDATE registration_tokens SET status = ?, verified_by_admin_id = ?, verified_at = NOW() WHERE id = ?',
@@ -300,7 +368,7 @@ export async function POST(request: NextRequest) {
           memberName: tokenData.name,
           memberRegNumber: memberRegNumber,
           registrationDate: tokenData.registration_date,
-          profilePhotoPath: tokenData.profile_photo_path
+          profilePhotoPath: memberProfilePath || undefined
         });
         
         certificatePath = certificateResult.certificatePath;
@@ -336,7 +404,7 @@ export async function POST(request: NextRequest) {
           memberId: memberId,
           memberName: tokenData.name,
           memberRegNumber: memberRegNumber,
-          profilePhotoPath: tokenData.profile_photo_path,
+          profilePhotoPath: memberProfilePath || undefined,
           address: tokenData.address,
           designation: 'Member'
         });

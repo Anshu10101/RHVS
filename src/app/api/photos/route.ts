@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ContentService, Photo } from '@/lib/content';
+import { ContentService, PhotoCreateInput } from '@/lib/content';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
+import { createHash } from 'crypto';
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,33 +66,42 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      galleryId, 
-      eventId, 
-      filename, 
-      originalName, 
-      filePath, 
-      thumbnailPath,
-      mediumPath,
+    const {
+      galleryId,
+      eventId,
+      filename,
+      originalName,
+      filePath,
       fileSize,
       dimensions,
       fileType,
+      fileHash,
+      fileData,
+      thumbnailData,
+      mediumData,
       cameraInfo,
-      tags, 
-      caption, 
-      photographer, 
-      uploadSource, 
+      tags,
+      caption,
+      photographer,
+      uploadSource,
       uploadSessionId,
-      isFeatured, 
-      isApproved, 
-      isVisible, 
-      sortOrder 
+      isFeatured,
+      isApproved,
+      isVisible,
+      sortOrder
     } = body;
 
-    if (!filename || !filePath) {
+    if (!filename) {
       return NextResponse.json({
         success: false,
-        error: 'Filename and file path are required'
+        error: 'Filename is required'
+      }, { status: 400 });
+    }
+
+    if (!filePath && !fileData) {
+      return NextResponse.json({
+        success: false,
+        error: 'Either file path or file data is required'
       }, { status: 400 });
     }
 
@@ -113,17 +123,37 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    const photoData: Omit<Photo, 'id' | 'createdAt' | 'updatedAt' | 'viewCount' | 'downloadCount'> = {
-      galleryId: galleryId || null,
-      eventId: eventId || null,
+    let primaryBuffer: Buffer | null = null;
+    let derivedHash = fileHash as string | undefined;
+
+    if (typeof fileData === 'string' && fileData.length > 0) {
+      primaryBuffer = Buffer.from(fileData, 'base64');
+      if (!derivedHash) {
+        derivedHash = createHash('sha256').update(primaryBuffer).digest('hex');
+      }
+    }
+
+    const thumbBuffer = typeof thumbnailData === 'string' && thumbnailData.length > 0
+      ? Buffer.from(thumbnailData, 'base64')
+      : null;
+
+    const mediumBuffer = typeof mediumData === 'string' && mediumData.length > 0
+      ? Buffer.from(mediumData, 'base64')
+      : null;
+    
+    const photoData: PhotoCreateInput = {
+      galleryId: galleryId || undefined,
+      eventId: eventId || undefined,
       filename,
       originalName,
-      filePath,
-      thumbnailPath,
-      mediumPath,
+      filePath: filePath || undefined,
       fileSize,
       dimensions,
       fileType,
+      fileHash: derivedHash,
+      fileBuffer: primaryBuffer,
+      thumbnailBuffer: thumbBuffer,
+      mediumBuffer,
       cameraInfo,
       tags: tags || [],
       caption,
@@ -141,10 +171,12 @@ export async function POST(request: NextRequest) {
     };
 
     const photoId = await ContentService.createPhoto(photoData);
+    const photoUrl = `/api/media/photos/${photoId}`;
 
     return NextResponse.json({
       success: true,
       photoId,
+      url: photoUrl,
       message: 'Photo created successfully'
     });
   } catch (error) {

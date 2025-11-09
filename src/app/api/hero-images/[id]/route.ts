@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
-import fs from 'fs';
-import path from 'path';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // PUT - Update hero image
 export async function PUT(
@@ -14,7 +13,7 @@ export async function PUT(
     const { id } = await params;
     
     // Check permissions
-    if (!scope.isSuperAdmin && !scope.permissions.includes('manage_hero_images')) {
+    if (!scope.isSuperAdmin && !scope.permissions?.includes('manage_hero_images')) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions'
@@ -45,27 +44,82 @@ export async function PUT(
       // TODO: Implement proper district-based filtering when district_id is available
     }
 
-    // Update the image
-    await pool.execute(
-      `UPDATE hero_images 
-       SET image_path = COALESCE(?, image_path),
-           alt_text = COALESCE(?, alt_text),
-           title = ?,
-           description = ?,
-           display_order = COALESCE(?, display_order),
-           is_active = COALESCE(?, is_active),
-           updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [
-        image_path,
-        alt_text,
-        title || null,
-        description || null,
-        display_order,
-        is_active,
-        id
-      ]
-    );
+    const updates: string[] = [];
+    const paramsList: unknown[] = [];
+
+    if (alt_text !== undefined) {
+      updates.push('alt_text = ?');
+      paramsList.push(alt_text);
+    }
+    if (title !== undefined) {
+      updates.push('title = ?');
+      paramsList.push(title || null);
+    }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      paramsList.push(description || null);
+    }
+    if (display_order !== undefined) {
+      updates.push('display_order = ?');
+      paramsList.push(display_order);
+    }
+    if (is_active !== undefined) {
+      updates.push('is_active = ?');
+      paramsList.push(is_active);
+    }
+
+    if (image_path !== undefined) {
+      if (typeof image_path === 'string' && image_path.startsWith('/api/media/staged/')) {
+        const assetId = image_path.split('/').pop();
+        if (!assetId) {
+          return NextResponse.json({
+            success: false,
+            error: 'Invalid staged asset reference'
+          }, { status: 400 });
+        }
+        const asset = await consumeStagedBlob(assetId);
+        if (!asset) {
+          return NextResponse.json({
+            success: false,
+            error: 'Staged asset expired. Please re-upload.'
+          }, { status: 400 });
+        }
+        updates.push('image_blob = ?');
+        paramsList.push(asset.data);
+        updates.push('image_mime = ?');
+        paramsList.push(asset.mimeType || null);
+        updates.push('image_hash = ?');
+        paramsList.push(asset.hash || null);
+        updates.push('image_size = ?');
+        paramsList.push(asset.size ?? null);
+        updates.push('image_original_name = ?');
+        paramsList.push(asset.originalName || null);
+        updates.push('image_path = ?');
+        paramsList.push(`/api/media/hero-images/${id}`);
+      } else {
+        updates.push('image_path = ?');
+        paramsList.push(image_path || null);
+        if (!image_path) {
+          updates.push('image_blob = NULL');
+          updates.push('image_mime = NULL');
+          updates.push('image_hash = NULL');
+          updates.push('image_size = NULL');
+          updates.push('image_original_name = NULL');
+        }
+      }
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({
+        success: true,
+        message: 'No changes applied'
+      });
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    const updateSql = `UPDATE hero_images SET ${updates.join(', ')} WHERE id = ?`;
+    paramsList.push(id);
+    await pool.execute(updateSql, paramsList);
 
     return NextResponse.json({
       success: true,
@@ -91,7 +145,7 @@ export async function DELETE(
     const { id } = await params;
     
     // Check permissions
-    if (!scope.isSuperAdmin && !scope.permissions.includes('manage_hero_images')) {
+    if (!scope.isSuperAdmin && !scope.permissions?.includes('manage_hero_images')) {
       return NextResponse.json({
         success: false,
         error: 'Insufficient permissions'
@@ -119,33 +173,14 @@ export async function DELETE(
       // TODO: Implement proper district-based filtering when district_id is available
     }
 
-    // Get the image path before deleting
-    const [imageRows] = await pool.execute(
-      'SELECT image_path FROM hero_images WHERE id = ?',
-      [id]
-    );
-
     // Soft delete the image
     await pool.execute(
-      'UPDATE hero_images SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      `UPDATE hero_images 
+       SET is_active = FALSE,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = ?`,
       [id]
     );
-
-    // Optionally delete the physical file
-    if ((imageRows as any[]).length > 0) {
-      const imagePath = (imageRows as any[])[0].image_path;
-      if (imagePath && imagePath.startsWith('/uploads/')) {
-        try {
-          const fullPath = path.join(process.cwd(), 'public', imagePath);
-          if (fs.existsSync(fullPath)) {
-            fs.unlinkSync(fullPath);
-          }
-        } catch (fileError) {
-          console.error('Error deleting file:', fileError);
-          // Don't fail the request if file deletion fails
-        }
-      }
-    }
 
     return NextResponse.json({
       success: true,

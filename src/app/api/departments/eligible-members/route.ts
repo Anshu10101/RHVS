@@ -35,7 +35,12 @@ export async function GET(request: NextRequest) {
 
     // Build the query based on filters
     let query = `
-      SELECT m.id, m.name, m.email, m.phone, m.member_reg_number, m.profile_photo_path, m.district, m.state
+      SELECT m.id, m.name, m.email, m.phone, m.member_reg_number,
+             CASE 
+               WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+               ELSE m.profile_photo_path
+             END AS profile_photo_path,
+             m.district, m.state
       FROM members m
       WHERE m.status = 'verified'
     `;

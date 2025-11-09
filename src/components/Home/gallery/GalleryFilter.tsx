@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Filter as FilterIcon, X } from 'lucide-react';
 import type { GalleryFilterProps } from './types';
 
 export default function GalleryFilter({ 
@@ -20,22 +20,62 @@ export default function GalleryFilter({
   onDistrictChange,
   events = [],
   selectedEvent = 'All',
-  onEventChange
+  onEventChange,
+  variant = 'desktop',
+  onCloseMobile,
+  className = ''
 }: GalleryFilterProps) {
+  const isMobile = variant === 'mobile';
+
+  const sectionClasses = isMobile
+    ? `fixed inset-0 z-50 bg-white/95 backdrop-blur-md overflow-y-auto md:hidden ${className}`
+    : `py-2 bg-white/30 backdrop-blur-md sticky top-0 z-40 border-b border-orange-100/50 ${className}`;
+
+  const containerClasses = isMobile
+    ? 'max-w-md mx-auto px-4 py-6 space-y-4'
+    : 'container mx-auto px-4';
+
+  const filterGroupClasses = isMobile
+    ? 'flex flex-col gap-4'
+    : 'flex flex-wrap justify-center items-center gap-2';
+
+  const selectTriggerBase = isMobile
+    ? 'w-full h-11 text-sm border-orange-300/70 focus:border-orange-500 rounded-xl shadow-sm'
+    : 'w-28 h-7 text-xs border-orange-300/60 focus:border-orange-400';
+
+  const longSelectTriggerBase = isMobile
+    ? 'w-full h-11 text-sm border-orange-300/70 focus:border-orange-500 rounded-xl shadow-sm'
+    : 'w-32 h-7 text-xs border-orange-300/60 focus:border-orange-400';
+
   return (
-    <section className="py-2 bg-white/30 backdrop-blur-md sticky top-0 z-40 border-b border-orange-100/50">
-      <div className="container mx-auto px-4">
-        {/* All Filters in Single Line */}
-        <div className="flex flex-wrap justify-center items-center gap-2">
+    <section className={sectionClasses}>
+      <div className={containerClasses}>
+        {isMobile && (
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2 text-orange-700">
+              <FilterIcon size={20} />
+              <h2 className="text-lg font-semibold">Filters</h2>
+            </div>
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="p-2 rounded-full bg-orange-100 text-orange-600 hover:bg-orange-200 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        )}
+
+        <div className={filterGroupClasses}>
           {/* Category Filters - Only show if categories exist */}
           {categories.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 md:gap-3">
+            <div className={`flex flex-wrap gap-2 ${isMobile ? 'w-full' : 'items-center gap-1.5 md:gap-3 justify-center'}`}>
               {categories.map((category) => (
                 <Button
                   key={category}
                   variant={activeCategory === category ? "default" : "outline"}
                   onClick={() => onCategoryChange(category)}
-                  className={`rounded-full px-4 py-1.5 text-sm transition-all duration-300 ${
+                  className={`rounded-full ${isMobile ? 'px-4 py-2 text-sm w-full sm:w-auto' : 'px-4 py-1.5 text-sm'} transition-all duration-300 ${
                     activeCategory === category
                       ? 'bg-orange-600 hover:bg-orange-700 text-white shadow-md'
                       : 'border-orange-300/60 text-orange-700/80 hover:bg-orange-100/60 hover:border-orange-400/80'
@@ -49,8 +89,8 @@ export default function GalleryFilter({
 
           {/* Location & Event Filters */}
           {stateOptions.length > 0 && onStateChange && (
-            <div className="flex items-center gap-1 text-orange-700/80 text-xs">
-              <span>State:</span>
+            <div className={`flex ${isMobile ? 'flex-col gap-2 text-sm' : 'items-center gap-1 text-orange-700/80 text-xs'}`}>
+              <span className={isMobile ? 'text-orange-600 font-medium' : ''}>State:</span>
               <Select 
                 value={selectedStateId || 'all'}
                 onValueChange={(id) => {
@@ -59,7 +99,7 @@ export default function GalleryFilter({
                   onStateChange(actualId, stateName);
                 }}
               >
-                <SelectTrigger className="w-28 h-7 text-xs border-orange-300/60 focus:border-orange-400">
+                <SelectTrigger className={selectTriggerBase}>
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -75,8 +115,8 @@ export default function GalleryFilter({
           )}
           
           {districtOptions.length > 0 && onDistrictChange && (
-            <div className="flex items-center gap-1 text-orange-700/80 text-xs">
-              <span>District:</span>
+            <div className={`flex ${isMobile ? 'flex-col gap-2 text-sm' : 'items-center gap-1 text-orange-700/80 text-xs'}`}>
+              <span className={isMobile ? 'text-orange-600 font-medium' : ''}>District:</span>
               <Select 
                 value={selectedDistrictId || 'all'}
                 onValueChange={(id) => {
@@ -85,7 +125,7 @@ export default function GalleryFilter({
                   onDistrictChange(actualId, districtName);
                 }}
               >
-                <SelectTrigger className="w-28 h-7 text-xs border-orange-300/60 focus:border-orange-400">
+                <SelectTrigger className={selectTriggerBase}>
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -101,10 +141,10 @@ export default function GalleryFilter({
           )}
 
           {events.length > 1 && onEventChange && (
-            <div className="flex items-center gap-1 text-orange-700/80 text-xs">
-              <span>Event:</span>
+            <div className={`flex ${isMobile ? 'flex-col gap-2 text-sm' : 'items-center gap-1 text-orange-700/80 text-xs'}`}>
+              <span className={isMobile ? 'text-orange-600 font-medium' : ''}>Event:</span>
               <Select value={selectedEvent} onValueChange={onEventChange}>
-                <SelectTrigger className="w-32 h-7 text-xs border-orange-300/60 focus:border-orange-400">
+                <SelectTrigger className={longSelectTriggerBase}>
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -119,11 +159,13 @@ export default function GalleryFilter({
           )}
           
           {/* Sort Options */}
-          <div className="flex items-center gap-1 text-orange-700/80 text-xs">
-            <ArrowUpDown size={14} />
-            <span>Sort:</span>
+          <div className={`flex ${isMobile ? 'flex-col gap-2 text-sm' : 'items-center gap-1 text-orange-700/80 text-xs'}`}>
+            <div className={isMobile ? 'flex items-center gap-2 text-orange-600 font-medium' : 'flex items-center gap-1'}>
+              <ArrowUpDown size={isMobile ? 18 : 14} />
+              <span>Sort:</span>
+            </div>
             <Select value={sortBy} onValueChange={onSortChange}>
-              <SelectTrigger className="w-32 h-7 text-xs border-orange-300/60 focus:border-orange-400">
+              <SelectTrigger className={longSelectTriggerBase}>
                 <SelectValue placeholder="Sort" />
               </SelectTrigger>
               <SelectContent>
@@ -135,6 +177,15 @@ export default function GalleryFilter({
               </SelectContent>
             </Select>
           </div>
+
+          {isMobile && onCloseMobile && (
+            <Button
+              className="w-full mt-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl py-3 text-base"
+              onClick={onCloseMobile}
+            >
+              Apply Filters
+            </Button>
+          )}
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { createHash } from 'crypto';
+import { createStagedBlob } from '@/lib/blob-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,33 +17,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 });
+    // Validate file size (6MB max to allow higher-res shots)
+    if (file.size > 6 * 1024 * 1024) {
+      return NextResponse.json({ error: 'File size must be less than 6MB' }, { status: 400 });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'store');
-    await mkdir(uploadsDir, { recursive: true });
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${productId}_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadsDir, fileName);
-
-    // Convert file to buffer and save
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    const hash = createHash('sha256').update(buffer).digest('hex');
 
-    // Return public URL
-    const publicUrl = `/uploads/store/${fileName}`;
+    const assetId = await createStagedBlob({
+      category: 'product_image',
+      buffer,
+      originalName: file.name,
+      mimeType: file.type,
+      size: file.size,
+      hash,
+      ttlSeconds: 60 * 60 * 24
+    });
+
+    const stagedUrl = `/api/media/staged/${assetId}`;
     
     return NextResponse.json({ 
       success: true, 
-      url: publicUrl,
-      fileName 
+      url: stagedUrl,
+      assetId,
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      hash
     });
 
   } catch (error) {

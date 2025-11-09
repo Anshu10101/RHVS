@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GalleryHeader, GalleryFilter, GalleryGrid, ImageModal } from '@/components/Home/gallery';
 import type { GalleryImage } from '@/components/Home/gallery/types';
+import { Menu } from 'lucide-react';
 
 // Default gallery data for fallback
 /*
@@ -180,6 +181,7 @@ export default function GalleryPage() {
   const [districtOptions, setDistrictOptions] = useState<Array<{id: string; name: string}>>([]);
   const [selectedEvent, setSelectedEvent] = useState('All');
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   const resetFilters = () => {
     setSelectedStateId('');
@@ -190,6 +192,18 @@ export default function GalleryPage() {
     setSelectedEvent('All');
     setSortBy('newest');
   };
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (isMobileFilterOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileFilterOpen]);
 
   // Load gallery data from API
   useEffect(() => {
@@ -314,7 +328,25 @@ export default function GalleryPage() {
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       <GalleryHeader />
       
+      {/* Mobile filter trigger */}
+      <div className="md:hidden sticky top-0 z-40 px-4 pt-3">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            aria-label="Open gallery filters"
+            aria-expanded={isMobileFilterOpen}
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+          >
+            <Menu size={18} />
+            <span className="sr-only">Filters</span>
+          </button>
+        </div>
+      </div>
+      
+      {/* Desktop filters */}
       <GalleryFilter 
+        className="hidden md:block"
         categories={categories}
         activeCategory={activeCategory}
         onCategoryChange={setActiveCategory}
@@ -357,6 +389,57 @@ export default function GalleryPage() {
         selectedEvent={selectedEvent}
         onEventChange={setSelectedEvent}
       />
+
+      {/* Mobile filter overlay */}
+      {isMobileFilterOpen && (
+        <GalleryFilter
+          variant="mobile"
+          onCloseMobile={() => setIsMobileFilterOpen(false)}
+          categories={categories}
+          activeCategory={activeCategory}
+          onCategoryChange={(category) => {
+            setActiveCategory(category);
+          }}
+          sortOptions={sortOptions}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          stateOptions={stateOptions}
+          districtOptions={districtOptions}
+          selectedStateId={selectedStateId}
+          selectedStateName={selectedStateName}
+          selectedDistrictId={selectedDistrictId}
+          selectedDistrictName={selectedDistrictName}
+          onStateChange={async (stateId, stateName) => {
+            setSelectedStateId(stateId);
+            setSelectedStateName(stateName);
+            if (stateId) {
+              const res = await fetch(`/api/districts?stateId=${encodeURIComponent(stateId)}`, { cache: 'no-store' });
+              const data = await res.json();
+              if (data?.success && Array.isArray(data.data)) {
+                const dOpts = data.data.map((d: { id: number; name: string }) => ({ id: String(d.id), name: String(d.name) }));
+                setDistrictOptions(dOpts);
+                setSelectedDistrictId('');
+                setSelectedDistrictName('All');
+              } else {
+                setDistrictOptions([]);
+                setSelectedDistrictId('');
+                setSelectedDistrictName('All');
+              }
+            } else {
+              setDistrictOptions([]);
+              setSelectedDistrictId('');
+              setSelectedDistrictName('All');
+            }
+          }}
+          onDistrictChange={(districtId, districtName) => {
+            setSelectedDistrictId(districtId);
+            setSelectedDistrictName(districtName);
+          }}
+          events={availableEvents}
+          selectedEvent={selectedEvent}
+          onEventChange={setSelectedEvent}
+        />
+      )}
       
       <GalleryGrid 
         images={filteredImages}

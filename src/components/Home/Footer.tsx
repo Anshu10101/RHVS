@@ -1,7 +1,30 @@
+"use client";
+
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, Sparkles, ExternalLink, FileText } from 'lucide-react';
 
 export default function Footer() {
+  const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
+  const developerMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showDeveloperMenu) {
+      return;
+    }
+    const handler = (event: MouseEvent | TouchEvent) => {
+      if (developerMenuRef.current && !developerMenuRef.current.contains(event.target as Node)) {
+        setShowDeveloperMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    document.addEventListener('touchstart', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('touchstart', handler);
+    };
+  }, [showDeveloperMenu]);
+
   return (
     <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50">
       <div className="container mx-auto px-4">
@@ -130,16 +153,33 @@ export default function Footer() {
               </span>
               <span className="text-sm text-orange-900 font-semibold">
                 Designed & Engineered by{' '}
-                <span className="relative group inline-flex">
-                  <span className="underline decoration-orange-300/70 underline-offset-4 cursor-pointer">Anshul Yadav</span>
-                  {/* Hover menu */}
-                  <div className="absolute left-1/2 top-full z-20 hidden -translate-x-1/2 pt-2 group-hover:block focus-within:block">
+                <span
+                  ref={developerMenuRef}
+                  className="relative inline-flex"
+                  onMouseEnter={() => setShowDeveloperMenu(true)}
+                  onMouseLeave={() => setShowDeveloperMenu(false)}
+                >
+                  <button
+                    type="button"
+                    className="underline decoration-orange-300/70 underline-offset-4 cursor-pointer focus:outline-none"
+                    onClick={() => setShowDeveloperMenu((current) => !current)}
+                    aria-haspopup="true"
+                    aria-expanded={showDeveloperMenu}
+                  >
+                    Anshul Yadav
+                  </button>
+                  <div
+                    className={`absolute left-1/2 top-full z-20 -translate-x-1/2 pt-2 ${
+                      showDeveloperMenu ? 'block' : 'hidden'
+                    }`}
+                  >
                     <div className="rounded-xl border border-orange-200/60 bg-white/90 backdrop-blur-sm shadow-md p-2 w-48">
                       <a
                         href="https://anshulydv-portfolio.vercel.app/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
+                        onClick={() => setShowDeveloperMenu(false)}
                       >
                         <ExternalLink className="h-4 w-4 text-orange-600" />
                         <span>View Portfolio</span>
@@ -149,6 +189,7 @@ export default function Footer() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-1 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
+                        onClick={() => setShowDeveloperMenu(false)}
                       >
                         <FileText className="h-4 w-4 text-orange-600" />
                         <span>View Certificate</span>

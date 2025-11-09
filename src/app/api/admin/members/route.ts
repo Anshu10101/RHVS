@@ -119,7 +119,11 @@ export async function GET(request: NextRequest) {
         m.id, m.name, m.email, m.phone, m.address, 
         m.father_husband_name, m.mother_wife_name,
         m.registration_date, m.existing_member_reg_number, 
-        m.profile_photo_path, m.member_reg_number, 
+        CASE 
+          WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+          ELSE m.profile_photo_path
+        END AS profile_photo_path,
+        m.member_reg_number, 
         m.created_at, m.updated_at, m.status, 
         m.state, m.district,
         m.verified_by_member_id,

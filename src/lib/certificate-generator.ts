@@ -2,6 +2,7 @@ import { createCanvas, loadImage, registerFont } from 'canvas';
 import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import { executeQuery } from '@/lib/database';
 
 interface CertificateData {
   member: {
@@ -23,6 +24,50 @@ interface CertificateData {
   district?: string | null;
   appointment_date: string;
   certificate_number: string;
+}
+
+async function loadProfilePhotoImage(profilePhotoPath?: string | null) {
+  if (!profilePhotoPath) return null;
+  const trimmed = profilePhotoPath.trim();
+  if (!trimmed) return null;
+
+  const memberMatch = trimmed.match(/^\/api\/media\/members\/(\d+)\/profile/);
+  if (memberMatch) {
+    const memberId = Number(memberMatch[1]);
+    if (!Number.isNaN(memberId)) {
+      const rows = await executeQuery(
+        'SELECT profile_photo_blob FROM members WHERE id = ? LIMIT 1',
+        [memberId]
+      ) as Array<{ profile_photo_blob: Buffer | null }>;
+      const buffer = rows[0]?.profile_photo_blob;
+      if (buffer && buffer.length > 0) {
+        return await loadImage(buffer);
+      }
+    }
+  }
+
+  const tokenMatch = trimmed.match(/^\/api\/media\/registration-tokens\/(\d+)\/profile/);
+  if (tokenMatch) {
+    const tokenId = Number(tokenMatch[1]);
+    if (!Number.isNaN(tokenId)) {
+      const rows = await executeQuery(
+        'SELECT profile_photo_blob FROM registration_tokens WHERE id = ? LIMIT 1',
+        [tokenId]
+      ) as Array<{ profile_photo_blob: Buffer | null }>;
+      const buffer = rows[0]?.profile_photo_blob;
+      if (buffer && buffer.length > 0) {
+        return await loadImage(buffer);
+      }
+    }
+  }
+
+  const normalizedPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+  if (fs.existsSync(absolutePath)) {
+    return await loadImage(absolutePath);
+  }
+
+  return null;
 }
 
 export async function generateAppointmentCertificate(data: CertificateData): Promise<string> {
@@ -168,13 +213,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const photoY = appointmentBoxY + 200; // Moved even more down
   
   try {
-    let memberPhoto;
-    if (data.member.profile_photo_path) {
-      const photoPath = path.join(process.cwd(), 'public', data.member.profile_photo_path);
-      if (fs.existsSync(photoPath)) {
-        memberPhoto = await loadImage(photoPath);
-      }
-    }
+    const memberPhoto = await loadProfilePhotoImage(data.member.profile_photo_path);
     
     if (memberPhoto) {
       // White background
@@ -519,13 +558,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   const photoY = membershipBoxY + 200; // Moved even more down
   
   try {
-    let memberPhoto;
-    if (data.member.profile_photo_path) {
-      const photoPath = path.join(process.cwd(), 'public', data.member.profile_photo_path);
-      if (fs.existsSync(photoPath)) {
-        memberPhoto = await loadImage(photoPath);
-      }
-    }
+    const memberPhoto = await loadProfilePhotoImage(data.member.profile_photo_path);
     
     if (memberPhoto) {
       // White background

@@ -2,6 +2,7 @@ import { createCanvas, loadImage, registerFont } from 'canvas';
 import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import { executeQuery } from '@/lib/database';
 
 interface CertificateData {
   memberId: number;
@@ -14,6 +15,50 @@ interface CertificateData {
 interface CertificateResult {
   certificateNumber: string;
   certificatePath: string;
+}
+
+async function loadProfilePhotoImage(profilePhotoPath?: string | null) {
+  if (!profilePhotoPath) return null;
+  const trimmed = profilePhotoPath.trim();
+  if (!trimmed) return null;
+
+  const memberMatch = trimmed.match(/^\/api\/media\/members\/(\d+)\/profile/);
+  if (memberMatch) {
+    const memberId = Number(memberMatch[1]);
+    if (!Number.isNaN(memberId)) {
+      const rows = await executeQuery(
+        'SELECT profile_photo_blob FROM members WHERE id = ? LIMIT 1',
+        [memberId]
+      ) as Array<{ profile_photo_blob: Buffer | null }>;
+      const buffer = rows[0]?.profile_photo_blob;
+      if (buffer && buffer.length > 0) {
+        return await loadImage(buffer);
+      }
+    }
+  }
+
+  const tokenMatch = trimmed.match(/^\/api\/media\/registration-tokens\/(\d+)\/profile/);
+  if (tokenMatch) {
+    const tokenId = Number(tokenMatch[1]);
+    if (!Number.isNaN(tokenId)) {
+      const rows = await executeQuery(
+        'SELECT profile_photo_blob FROM registration_tokens WHERE id = ? LIMIT 1',
+        [tokenId]
+      ) as Array<{ profile_photo_blob: Buffer | null }>;
+      const buffer = rows[0]?.profile_photo_blob;
+      if (buffer && buffer.length > 0) {
+        return await loadImage(buffer);
+      }
+    }
+  }
+
+  const normalizedPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+  if (fs.existsSync(absolutePath)) {
+    return await loadImage(absolutePath);
+  }
+
+  return null;
 }
 
 export async function generateCertificate(data: CertificateData): Promise<CertificateResult> {
@@ -142,57 +187,53 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     
     let photoLoaded = false;
     try {
-      if (data.profilePhotoPath) {
-        const photoPath = path.join(process.cwd(), 'public', data.profilePhotoPath);
-        if (fs.existsSync(photoPath)) {
-          const memberPhoto = await loadImage(photoPath);
-          
-          // Modern royal frame design
-          const framePadding = 20;
-          const frameSize = photoSize + (framePadding * 2);
-          
-          // Outer shadow for depth
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-          ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
-          
-          // Clean white background for the frame
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
-          
-          // Royal gold border - thick and elegant
-          ctx.strokeStyle = '#D4AF37'; // Rich gold color
-          ctx.lineWidth = 8;
-          ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
-          
-          // Inner gold accent line for elegance
-          ctx.strokeStyle = '#D4AF37';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
-          
-          // White inner background for photo
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
-          
-          // Draw photo with original aspect ratio
-          const aspectRatio = memberPhoto.width / memberPhoto.height;
-          let drawWidth = photoSize;
-          let drawHeight = photoSize;
-          let drawX = photoX;
-          let drawY = photoY;
-          
-          if (aspectRatio > 1) {
-            // Landscape - fit width
-            drawHeight = photoSize / aspectRatio;
-            drawY = photoY + (photoSize - drawHeight) / 2;
-          } else if (aspectRatio < 1) {
-            // Portrait - fit height
-            drawWidth = photoSize * aspectRatio;
-            drawX = photoX + (photoSize - drawWidth) / 2;
-          }
-          
-          ctx.drawImage(memberPhoto, drawX, drawY, drawWidth, drawHeight);
-          photoLoaded = true;
+      const memberPhoto = await loadProfilePhotoImage(data.profilePhotoPath);
+      if (memberPhoto) {
+        // Modern royal frame design
+        const framePadding = 20;
+        const frameSize = photoSize + (framePadding * 2);
+        
+        // Outer shadow for depth
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.fillRect(photoX - framePadding + 8, photoY - framePadding + 8, frameSize, frameSize);
+        
+        // Clean white background for the frame
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+        
+        // Royal gold border - thick and elegant
+        ctx.strokeStyle = '#D4AF37'; // Rich gold color
+        ctx.lineWidth = 8;
+        ctx.strokeRect(photoX - framePadding, photoY - framePadding, frameSize, frameSize);
+        
+        // Inner gold accent line for elegance
+        ctx.strokeStyle = '#D4AF37';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(photoX - framePadding + 4, photoY - framePadding + 4, frameSize - 8, frameSize - 8);
+        
+        // White inner background for photo
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(photoX - 4, photoY - 4, photoSize + 8, photoSize + 8);
+        
+        // Draw photo with original aspect ratio
+        const aspectRatio = memberPhoto.width / memberPhoto.height;
+        let drawWidth = photoSize;
+        let drawHeight = photoSize;
+        let drawX = photoX;
+        let drawY = photoY;
+        
+        if (aspectRatio > 1) {
+          // Landscape - fit width
+          drawHeight = photoSize / aspectRatio;
+          drawY = photoY + (photoSize - drawHeight) / 2;
+        } else if (aspectRatio < 1) {
+          // Portrait - fit height
+          drawWidth = photoSize * aspectRatio;
+          drawX = photoX + (photoSize - drawWidth) / 2;
         }
+        
+        ctx.drawImage(memberPhoto, drawX, drawY, drawWidth, drawHeight);
+        photoLoaded = true;
       }
     } catch (error) {
       console.error('Error loading member photo:', error);

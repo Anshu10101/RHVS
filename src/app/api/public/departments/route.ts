@@ -90,7 +90,10 @@ export async function GET(request: NextRequest) {
             dp.name_hi as post_name_hi,
             m.id as member_id,
             m.name as member_name,
-            m.profile_photo_path,
+            CASE 
+              WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+              ELSE m.profile_photo_path
+            END AS profile_photo_path,
             m.member_reg_number,
             m.email as member_email
           FROM departments d

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
-import { ContentService } from '@/lib/content';
+import { ContentService, PhotoCreateInput } from '@/lib/content';
 import { executeQuery } from '@/lib/database';
+import { createHash } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,30 +56,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Create uploads directory structure
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'photos');
-    const eventDir = join(uploadsDir, eventId || 'misc');
-    
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-    if (!existsSync(eventDir)) {
-      await mkdir(eventDir, { recursive: true });
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const filename = `photo_${timestamp}.${fileExtension}`;
-    const filePath = join(eventDir, filename);
-
-    // Convert file to buffer and save
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
-
-    // Generate public URL
-    const publicUrl = `/uploads/photos/${eventId || 'misc'}/${filename}`;
+    const fileHash = createHash('sha256').update(buffer).digest('hex');
 
     // Get file dimensions (basic implementation)
     let dimensions = '';
@@ -134,15 +112,17 @@ export async function POST(request: NextRequest) {
       processedTags.push(state);
     }
     
-    const photoData = {
+    const photoData: PhotoCreateInput = {
       galleryId: galleryId || undefined,
       eventId: eventId || undefined,
-      filename,
+      filename: file.name,
       originalName: file.name,
-      filePath: publicUrl,
+      filePath: undefined,
       fileSize: file.size,
       dimensions,
       fileType: file.type,
+      fileHash,
+      fileBuffer: buffer,
       tags: processedTags,
       caption: caption || file.name,
       description: description || '',
@@ -160,12 +140,13 @@ export async function POST(request: NextRequest) {
     };
 
     const photoId = await ContentService.createPhoto(photoData);
+    const publicUrl = `/api/media/photos/${photoId}`;
 
     return NextResponse.json({ 
       success: true, 
       photoId,
       url: publicUrl,
-      filename,
+      filename: file.name,
       fileSize: file.size,
       fileType: file.type,
       message: 'Photo uploaded successfully'

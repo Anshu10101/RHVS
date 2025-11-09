@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { existsSync } from 'fs';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { createHash } from 'crypto';
+import { createStagedBlob } from '@/lib/blob-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,42 +41,39 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 6MB)
+    if (file.size > 6 * 1024 * 1024) {
       return NextResponse.json({ 
         success: false, 
-        error: 'File size must be less than 5MB' 
+        error: 'File size must be less than 6MB' 
       }, { status: 400 });
     }
 
-    // Create uploads directory structure
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'content', type);
-    
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
-    const filename = `${type}_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadsDir, filename);
-
-    // Convert file to buffer and save
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    const hash = createHash('sha256').update(buffer).digest('hex');
 
-    // Generate public URL
-    const publicUrl = `/uploads/content/${type}/${filename}`;
+    const assetId = await createStagedBlob({
+      category: `content_${type}`,
+      buffer,
+      originalName: file.name,
+      mimeType: file.type,
+      size: file.size,
+      hash,
+      ttlSeconds: 60 * 60 * 24
+    });
+
+    const stagedUrl = `/api/media/staged/${assetId}`;
 
     return NextResponse.json({ 
       success: true, 
-      url: publicUrl,
-      filename,
+      url: stagedUrl,
+      assetId,
       originalName: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      hash
     });
 
   } catch (error) {

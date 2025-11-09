@@ -65,12 +65,15 @@ export interface Photo {
   eventId?: string;
   filename: string;
   originalName?: string;
-  filePath: string;
+  filePath?: string;
+  fileUrl?: string;
   thumbnailPath?: string;
   mediumPath?: string;
   fileSize?: number;
   dimensions?: string;
   fileType?: string;
+  fileHash?: string;
+  hasBlob?: boolean;
   cameraInfo?: { [key: string]: unknown };
   tags: string[];
   caption?: string;
@@ -95,6 +98,39 @@ export interface Photo {
   eventDate?: Date;
   eventType?: string;
   galleryName?: string;
+}
+
+export interface PhotoCreateInput {
+  id?: string;
+  galleryId?: string;
+  eventId?: string;
+  filename: string;
+  originalName?: string;
+  filePath?: string;
+  thumbnailPath?: string;
+  mediumPath?: string;
+  fileSize?: number;
+  dimensions?: string;
+  fileType?: string;
+  fileHash?: string;
+  fileBuffer?: Buffer | null;
+  thumbnailBuffer?: Buffer | null;
+  mediumBuffer?: Buffer | null;
+  cameraInfo?: { [key: string]: unknown };
+  tags: string[];
+  caption?: string;
+  description?: string;
+  photographer?: string;
+  uploadSource: 'admin' | 'member' | 'bulk_import' | 'mobile';
+  uploadSessionId?: string;
+  isFeatured: boolean;
+  isApproved: boolean;
+  isVisible: boolean;
+  sortOrder: number;
+  district?: string;
+  state?: string;
+  ownerAdminId?: number;
+  createdBy: string;
 }
 
 export interface UploadSession {
@@ -502,7 +538,46 @@ export class ContentService {
   }): Promise<Photo[]> {
     try {
       let sql = `
-        SELECT p.*, e.event_name, e.event_date, e.event_type, g.gallery_name
+        SELECT 
+          p.id,
+          p.gallery_id,
+          p.event_id,
+          p.filename,
+          p.original_name,
+          CASE 
+            WHEN p.file_blob IS NOT NULL THEN CONCAT('/api/media/photos/', p.id)
+            ELSE p.file_path
+          END AS resolved_file_path,
+          p.thumbnail_path,
+          p.medium_path,
+          p.file_size,
+          p.dimensions,
+          p.file_type,
+          p.file_hash,
+          (p.file_blob IS NOT NULL) AS has_file_blob,
+          p.camera_info,
+          p.tags,
+          p.caption,
+          p.description,
+          p.photographer,
+          p.upload_source,
+          p.upload_session_id,
+          p.is_featured,
+          p.is_approved,
+          p.is_visible,
+          p.sort_order,
+          p.view_count,
+          p.download_count,
+          p.district,
+          p.state,
+          p.owner_admin_id,
+          p.created_by,
+          p.created_at,
+          p.updated_at,
+          e.event_name,
+          e.event_date,
+          e.event_type,
+          g.gallery_name
         FROM photos p
         LEFT JOIN photo_events e ON p.event_id = e.id
         LEFT JOIN photo_galleries g ON p.gallery_id = g.id
@@ -584,12 +659,15 @@ export class ContentService {
         eventId: row.event_id,
         filename: row.filename,
         originalName: row.original_name,
-        filePath: row.file_path,
+        filePath: row.resolved_file_path ?? undefined,
+        fileUrl: row.resolved_file_path ?? undefined,
         thumbnailPath: row.thumbnail_path,
         mediumPath: row.medium_path,
         fileSize: row.file_size,
         dimensions: row.dimensions,
         fileType: row.file_type,
+        fileHash: row.file_hash ?? undefined,
+        hasBlob: Boolean(row.has_file_blob),
         cameraInfo: row.camera_info ? JSON.parse(String(row.camera_info)) : undefined,
         tags: row.tags ? JSON.parse(String(row.tags)) : [],
         caption: row.caption,
@@ -620,25 +698,60 @@ export class ContentService {
     }
   }
 
-  static async createPhoto(photo: Omit<Photo, 'id' | 'createdAt' | 'updatedAt' | 'viewCount' | 'downloadCount'>): Promise<string> {
+  static async createPhoto(photo: PhotoCreateInput): Promise<string> {
     try {
-      const id = `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const id = photo.id || `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-        await pool.execute(
-        `INSERT INTO photos (id, gallery_id, event_id, filename, original_name, file_path, thumbnail_path, medium_path, file_size, dimensions, file_type, camera_info, tags, caption, description, photographer, upload_source, upload_session_id, is_featured, is_approved, is_visible, sort_order, district, state, owner_admin_id, created_by)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      await pool.execute(
+        `INSERT INTO photos (
+          id,
+          gallery_id,
+          event_id,
+          filename,
+          original_name,
+          file_path,
+          thumbnail_path,
+          medium_path,
+          file_size,
+          dimensions,
+          file_type,
+          file_hash,
+          file_blob,
+          thumbnail_blob,
+          medium_blob,
+          camera_info,
+          tags,
+          caption,
+          description,
+          photographer,
+          upload_source,
+          upload_session_id,
+          is_featured,
+          is_approved,
+          is_visible,
+          sort_order,
+          district,
+          state,
+          owner_admin_id,
+          created_by
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           photo.galleryId || null,
           photo.eventId || null,
           photo.filename,
           photo.originalName || null,
-          photo.filePath,
+          photo.filePath || null,
           photo.thumbnailPath || null,
           photo.mediumPath || null,
-          photo.fileSize || null,
+          photo.fileSize ?? null,
           photo.dimensions || null,
           photo.fileType || null,
+          photo.fileHash || null,
+          photo.fileBuffer ?? null,
+          photo.thumbnailBuffer ?? null,
+          photo.mediumBuffer ?? null,
           photo.cameraInfo ? JSON.stringify(photo.cameraInfo) : null,
           JSON.stringify(photo.tags || []),
           photo.caption || null,
@@ -679,7 +792,12 @@ export class ContentService {
   static async getProducts(scope?: ContentScopeFilter): Promise<Product[]> {
     try {
       let sql = `
-        SELECT DISTINCT p.*, 
+        SELECT DISTINCT 
+               p.*,
+               CASE 
+                 WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+                 ELSE p.image_path
+               END AS resolved_image_path,
                COALESCE(p.district_id, co.district_id) as district_id,
                COALESCE(p.state_id, co.state_id) as state_id,
                COALESCE(p.state_id, co.state_id, s.state_name_english) as state,
@@ -728,7 +846,7 @@ export class ContentService {
         name: row.name,
         description: row.description,
         price: row.price,
-        imageUrl: row.image_path,
+        imageUrl: row.resolved_image_path ?? row.image_path,
         originalPrice: row.original_price,
         category: row.category,
         isVisible: Boolean(row.isVisible),

@@ -47,7 +47,10 @@ export async function GET(
              dm.level, dm.state, dm.district,
              dp.name_en as post_name_en, dp.name_hi as post_name_hi, dp.position_order,
              m.name as member_name, m.email as member_email, m.member_reg_number,
-             m.profile_photo_path
+             CASE 
+               WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+               ELSE m.profile_photo_path
+             END AS profile_photo_path
       FROM department_members dm
       JOIN department_posts dp ON dm.post_id = dp.id
       JOIN members m ON dm.member_id = m.id

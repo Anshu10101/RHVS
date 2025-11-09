@@ -69,6 +69,9 @@ export interface GalleryFilterProps {
   events?: string[];
   selectedEvent?: string;
   onEventChange?: (event: string) => void;
+  variant?: 'desktop' | 'mobile';
+  onCloseMobile?: () => void;
+  className?: string;
 }
 
 export interface GalleryGridProps {

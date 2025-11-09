@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { sendTokenEmail } from '@/lib/email';
 import crypto from 'crypto';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // Generate a secure token
 function generateRegistrationToken(): string {
@@ -157,6 +158,18 @@ export async function POST(request: NextRequest) {
       const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
       const districtName = districtResult.length > 0 ? districtResult[0].district_name_english : '';
 
+      let profileAsset: ResolvedAsset;
+      let signatureAsset: ResolvedAsset;
+      try {
+        profileAsset = await resolveAssetFromInput(profilePhotoPath, 'Profile photo');
+        signatureAsset = await resolveAssetFromInput(signaturePath, 'Signature image');
+      } catch (assetError) {
+        return NextResponse.json(
+          { success: false, message: (assetError as Error).message },
+          { status: 400 }
+        );
+      }
+
       // Generate registration token
       const token = generateRegistrationToken();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -166,8 +179,10 @@ export async function POST(request: NextRequest) {
         INSERT INTO registration_tokens (
           token, name, email, phone, address, state, district, aadhar_card_number,
           father_husband_name, mother_wife_name, registration_date, existing_member_reg_number, 
-          profile_photo_path, signature_path, department, expires_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          profile_photo_path, profile_photo_blob, profile_photo_mime, profile_photo_hash, profile_photo_size, profile_photo_original_name,
+          signature_path, signature_blob, signature_mime, signature_hash, signature_size, signature_original_name,
+          department, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
       const result = await executeQuery(insertTokenQuery, [
@@ -183,11 +198,38 @@ export async function POST(request: NextRequest) {
         motherWifeName,
         registrationDate || new Date().toISOString().split('T')[0],
         existingMemberRegNumber,
-        profilePhotoPath || null,
-        signaturePath || null,
+        profileAsset.url,
+        profileAsset.blob,
+        profileAsset.mime,
+        profileAsset.hash,
+        profileAsset.size,
+        profileAsset.originalName,
+        signatureAsset.url,
+        signatureAsset.blob,
+        signatureAsset.mime,
+        signatureAsset.hash,
+        signatureAsset.size,
+        signatureAsset.originalName,
         department || null,
         expiresAt
-      ]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      ]) as { insertId?: number };
+
+      const tokenId = result.insertId ?? null;
+
+      if (tokenId != null) {
+        if (profileAsset.blob) {
+          await executeQuery(
+            'UPDATE registration_tokens SET profile_photo_path = ? WHERE id = ?',
+            [`/api/media/registration-tokens/${tokenId}/profile`, tokenId]
+          );
+        }
+        if (signatureAsset.blob) {
+          await executeQuery(
+            'UPDATE registration_tokens SET signature_path = ? WHERE id = ?',
+            [`/api/media/registration-tokens/${tokenId}/signature`, tokenId]
+          );
+        }
+      }
 
       // Send token email
       try {
@@ -200,7 +242,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Registration token generated successfully. Please check your email and bring the token to the admin for verification.',
         token: token,
-        tokenId: result.insertId
+        tokenId
       });
 
     } else {
@@ -216,4 +258,54 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+type ResolvedAsset = {
+  url: string | null;
+  blob: Buffer | null;
+  mime: string | null;
+  hash: string | null;
+  size: number | null;
+  originalName: string | null;
+};
+
+async function resolveAssetFromInput(value: unknown, label: string): Promise<ResolvedAsset> {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return {
+      url: null,
+      blob: null,
+      mime: null,
+      hash: null,
+      size: null,
+      originalName: null
+    };
+  }
+
+  if (value.startsWith('/api/media/staged/')) {
+    const assetId = value.split('/').pop();
+    if (!assetId) {
+      throw new Error(`${label}: invalid staged asset reference`);
+    }
+    const asset = await consumeStagedBlob(assetId);
+    if (!asset) {
+      throw new Error(`${label}: staged upload expired. Please re-upload.`);
+    }
+    return {
+      url: null,
+      blob: asset.data,
+      mime: asset.mimeType || null,
+      hash: asset.hash || null,
+      size: asset.size ?? null,
+      originalName: asset.originalName || null
+    };
+  }
+
+  return {
+    url: value,
+    blob: null,
+    mime: null,
+    hash: null,
+    size: null,
+    originalName: null
+  };
 }

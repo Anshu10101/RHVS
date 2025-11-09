@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // GET - Fetch single member by ID
 export async function GET(
@@ -12,7 +13,11 @@ export async function GET(
     const memberQuery = `
       SELECT 
         m.id, m.name, m.email, m.phone, m.address, m.father_husband_name, m.mother_wife_name,
-        m.registration_date, m.existing_member_reg_number, m.profile_photo_path,
+        m.registration_date, m.existing_member_reg_number,
+        CASE 
+          WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+          ELSE m.profile_photo_path
+        END AS profile_photo_path,
         m.member_reg_number, m.created_at, m.updated_at, m.status, m.district, m.state,
         m.verified_by_member_id,
         GROUP_CONCAT(
@@ -148,8 +153,44 @@ export async function PUT(
       updateValues.push(existing_member_reg_number);
     }
     if (profile_photo_path !== undefined) {
-      updateFields.push('profile_photo_path = ?');
-      updateValues.push(profile_photo_path);
+      if (typeof profile_photo_path === 'string' && profile_photo_path.startsWith('/api/media/staged/')) {
+        const assetId = profile_photo_path.split('/').pop();
+        if (!assetId) {
+          return NextResponse.json(
+            { success: false, error: 'Invalid staged profile photo reference' },
+            { status: 400 }
+          );
+        }
+        const asset = await consumeStagedBlob(assetId);
+        if (!asset) {
+          return NextResponse.json(
+            { success: false, error: 'Profile photo upload expired. Please re-upload.' },
+            { status: 400 }
+          );
+        }
+        updateFields.push('profile_photo_blob = ?');
+        updateValues.push(asset.data);
+        updateFields.push('profile_photo_mime = ?');
+        updateValues.push(asset.mimeType || null);
+        updateFields.push('profile_photo_hash = ?');
+        updateValues.push(asset.hash || null);
+        updateFields.push('profile_photo_size = ?');
+        updateValues.push(asset.size ?? null);
+        updateFields.push('profile_photo_original_name = ?');
+        updateValues.push(asset.originalName || null);
+        updateFields.push('profile_photo_path = ?');
+        updateValues.push(`/api/media/members/${memberId}/profile`);
+      } else {
+        updateFields.push('profile_photo_path = ?');
+        updateValues.push(profile_photo_path || null);
+        if (!profile_photo_path) {
+          updateFields.push('profile_photo_blob = NULL');
+          updateFields.push('profile_photo_mime = NULL');
+          updateFields.push('profile_photo_hash = NULL');
+          updateFields.push('profile_photo_size = NULL');
+          updateFields.push('profile_photo_original_name = NULL');
+        }
+      }
     }
     if (district !== undefined) {
       updateFields.push('district = ?');

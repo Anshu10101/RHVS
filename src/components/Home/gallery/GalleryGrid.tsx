@@ -61,8 +61,11 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
                 'h-72 md:h-80'
               }`}
               style={{
+                animationName: 'fadeInUp',
+                animationDuration: '0.6s',
+                animationTimingFunction: 'ease-out',
+                animationFillMode: 'forwards',
                 animationDelay: `${index * 100}ms`,
-                animation: 'fadeInUp 0.6s ease-out forwards',
                 opacity: 0,
                 transform: 'translateY(30px)'
               }}

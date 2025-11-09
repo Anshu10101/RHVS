@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // GET: list products (scoped)
 export async function GET(req: NextRequest) {
@@ -20,7 +21,11 @@ export async function GET(req: NextRequest) {
       const rows = await executeQuery(`
         SELECT DISTINCT
           p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
-          p.image_path AS image_url, p.isVisible, p.is_featured, p.stock, p.tags,
+          CASE 
+            WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+            ELSE p.image_path
+          END AS image_url,
+          p.isVisible, p.is_featured, p.stock, p.tags,
           p.district_id, p.state_id, p.added_by, p.owner_admin_id,
           p.created_at, p.updated_at, p.updated_by,
           co.district_id AS origin_district_id, co.state_id AS origin_state_id, m.name AS added_by_name,
@@ -65,7 +70,11 @@ export async function GET(req: NextRequest) {
     const rows = await executeQuery(`
       SELECT DISTINCT
         p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
-        p.image_path AS image_url, p.isVisible, p.is_featured, p.stock, p.tags,
+        CASE 
+          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+          ELSE p.image_path
+        END AS image_url,
+        p.isVisible, p.is_featured, p.stock, p.tags,
         p.district_id, p.state_id, p.added_by, p.owner_admin_id,
         p.created_at, p.updated_at, p.updated_by,
         co.district_id AS origin_district_id, co.state_id AS origin_state_id, m.name AS added_by_name,
@@ -112,9 +121,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
-    const { 
-      name, price, image_url, description, category, original_price, stock, is_featured, tags,
-      images, features, specifications, seller_id 
+    const {
+      name,
+      price,
+      image_url,
+      description,
+      category,
+      original_price,
+      stock,
+      is_featured,
+      tags,
+      images,
+      features,
+      specifications,
+      seller_id
     } = await req.json();
     
     console.log('Creating product with data:', { name, price, images, features, specifications });
@@ -124,6 +144,51 @@ export async function POST(req: NextRequest) {
     }
     if (Number(price) < 0 || (original_price != null && Number(original_price) < 0)) {
       return NextResponse.json({ success: false, message: 'Price cannot be negative' }, { status: 400 });
+    }
+
+    const stagedAssetCache = new Map<string, ResolvedAsset>();
+    let mainAsset: ResolvedAsset;
+    try {
+      mainAsset = await resolveAssetFromInput(image_url, 'Main product image');
+      if (typeof image_url === 'string' && image_url.startsWith('/api/media/staged/')) {
+        stagedAssetCache.set(image_url, mainAsset);
+      }
+    } catch (assetError) {
+      return NextResponse.json(
+        { success: false, message: (assetError as Error).message },
+        { status: 400 }
+      );
+    }
+
+    const galleryAssets: ResolvedAsset[] = [];
+    if (Array.isArray(images)) {
+      for (let i = 0; i < images.length; i++) {
+        const value = images[i];
+        if (value === null || value === undefined || value === '') {
+          continue;
+        }
+
+        let asset: ResolvedAsset | undefined = undefined;
+        if (typeof value === 'string' && stagedAssetCache.has(value)) {
+          asset = stagedAssetCache.get(value);
+        } else {
+          try {
+            asset = await resolveAssetFromInput(value, `Product gallery image ${i + 1}`);
+            if (typeof value === 'string' && value.startsWith('/api/media/staged/')) {
+              stagedAssetCache.set(value, asset);
+            }
+          } catch (assetError) {
+            return NextResponse.json(
+              { success: false, message: (assetError as Error).message },
+              { status: 400 }
+            );
+          }
+        }
+
+        if (asset && (asset.url || asset.blob)) {
+          galleryAssets.push(asset);
+        }
+      }
     }
 
     // Detect products.id definition to decide inserting strategy
@@ -138,19 +203,19 @@ export async function POST(req: NextRequest) {
       const ts = Date.now();
       const rnd = Math.floor(Math.random() * 1000);
       const genId = `p${ts}${rnd}`;
-      await executeQuery(`
-        INSERT INTO products 
-          (id, name, description, price, original_price, category, seller_id, image_path, isVisible, is_featured, stock, tags, features, specifications, district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), ?)
-      `, [
-        genId,
+      const productParams = [
         name,
-        (description ?? ''),
+        description ?? '',
         price,
         original_price ?? null,
         category ?? 'default',
         seller_id || null,
-        image_url || null,
+        mainAsset.url,
+        mainAsset.blob,
+        mainAsset.mime,
+        mainAsset.hash,
+        mainAsset.size,
+        mainAsset.originalName,
         is_featured ? 1 : 0,
         stock ?? 0,
         tags ? JSON.stringify(tags) : null,
@@ -161,22 +226,43 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         scope.adminId || null,
         scope.adminId ? scope.adminId.toString() : 'admin'
-      ]);
+      ];
+
+      await executeQuery(
+        `
+        INSERT INTO products 
+          (id, name, description, price, original_price, category, seller_id,
+           image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
+           isVisible, is_featured, stock, tags, features, specifications,
+           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
+        VALUES (
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          1, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, 0, NOW(), NOW(), ?
+        )
+      `,
+        [
+          genId,
+          ...productParams
+        ]
+      );
       createdId = genId;
     } else {
       // Auto-increment path
-      const insert = await executeQuery(`
-        INSERT INTO products 
-          (name, description, price, original_price, category, seller_id, image_path, isVisible, is_featured, stock, tags, features, specifications, district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, NOW(), NOW(), ?)
-      `, [
+      const productParams = [
         name,
-        (description ?? ''),
+        description ?? '',
         price,
         original_price ?? null,
         category ?? 'default',
         seller_id || null,
-        image_url || null,
+        mainAsset.url,
+        mainAsset.blob,
+        mainAsset.mime,
+        mainAsset.hash,
+        mainAsset.size,
+        mainAsset.originalName,
         is_featured ? 1 : 0,
         stock ?? 0,
         tags ? JSON.stringify(tags) : null,
@@ -187,7 +273,24 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         scope.adminId || null,
         scope.adminId ? scope.adminId.toString() : 'admin'
-      ]);
+      ];
+
+      const insert = await executeQuery(
+        `
+        INSERT INTO products 
+          (name, description, price, original_price, category, seller_id,
+           image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
+           isVisible, is_featured, stock, tags, features, specifications,
+           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
+        VALUES (
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          1, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, 0, NOW(), NOW(), ?
+        )
+      `,
+        productParams
+      );
       createdId = (insert as { insertId: number }).insertId ?? null;
     }
 
@@ -204,21 +307,60 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (mainAsset.blob && createdId != null) {
+      const mediaUrl = `/api/media/products/${createdId}`;
+      await executeQuery(
+        'UPDATE products SET image_path = ? WHERE id = ?',
+        [mediaUrl, createdId]
+      );
+    }
+
     // Save multiple images if provided
-    if (images && Array.isArray(images) && images.length > 0 && createdId != null) {
+    if (galleryAssets.length > 0 && createdId != null) {
       try {
-        console.log(`Saving ${images.length} images for product ${createdId}`);
-        for (let i = 0; i < images.length; i++) {
-          console.log(`Saving image ${i + 1}: ${images[i]}`);
-          await executeQuery(`
-            INSERT INTO product_images (product_id, image_url, is_primary, sort_order)
-            VALUES (?, ?, ?, ?)
-          `, [
-            createdId as number,
-            images[i],
-            i === 0 ? 1 : 0, // First image is primary
-            i
-          ]);
+        console.log(`Saving ${galleryAssets.length} images for product ${createdId}`);
+        for (let i = 0; i < galleryAssets.length && i < 6; i++) {
+          const asset = galleryAssets[i];
+          if (!asset.url && !asset.blob) {
+            continue;
+          }
+
+          const insertImage = await executeQuery(
+            `
+              INSERT INTO product_images (
+                product_id,
+                image_url,
+                image_blob,
+                image_mime,
+                image_hash,
+                image_size,
+                image_original_name,
+                is_primary,
+                sort_order
+              )
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `,
+            [
+              createdId as number,
+              asset.url,
+              asset.blob,
+              asset.mime,
+              asset.hash,
+              asset.size,
+              asset.originalName,
+              i === 0 ? 1 : 0,
+              i
+            ]
+          );
+
+          const imageId = (insertImage as { insertId?: number }).insertId ?? null;
+          if (asset.blob && imageId != null) {
+            const imageMediaUrl = `/api/media/product-images/${imageId}`;
+            await executeQuery(
+              'UPDATE product_images SET image_url = ? WHERE id = ?',
+              [imageMediaUrl, imageId]
+            );
+          }
         }
         console.log('All images saved successfully');
       } catch (e) {
@@ -276,39 +418,155 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Price cannot be negative' }, { status: 400 });
     }
 
-    await executeQuery(`
-      UPDATE products SET 
-        name = ?, description = ?, price = ?, original_price = ?, category = ?, seller_id = ?,
-        image_path = ?, isVisible = ?, is_featured = ?, stock = ?, tags = ?, features = ?, specifications = ?,
-        updated_at = NOW(), updated_by = ?
-      WHERE id = ?
-    `, [
+    const updateFields: string[] = [
+      'name = ?',
+      'description = ?',
+      'price = ?',
+      'original_price = ?',
+      'category = ?',
+      'seller_id = ?',
+      'isVisible = ?',
+      'is_featured = ?',
+      'stock = ?',
+      'tags = ?',
+      'features = ?',
+      'specifications = ?'
+    ];
+    const updateParams: unknown[] = [
       name,
       description ?? '',
       price,
       original_price ?? null,
       category ?? 'default',
       seller_id || null,
-      image_url || null,
       isVisible ? 1 : 0,
       is_featured ? 1 : 0,
       stock ?? 0,
       tags ? JSON.stringify(tags) : null,
       features ? JSON.stringify(features) : null,
-      specifications ? JSON.stringify(specifications) : null,
-      scope.adminId ? scope.adminId.toString() : 'admin',
-      id
-    ]);
+      specifications ? JSON.stringify(specifications) : null
+    ];
+
+    let resolvedImageAsset: ResolvedAsset | null = null;
+    const stagedCache = new Map<string, ResolvedAsset>();
+
+    if (image_url !== undefined) {
+      try {
+        resolvedImageAsset = await resolveAssetFromInput(image_url, 'Main product image');
+        if (typeof image_url === 'string' && image_url.startsWith('/api/media/staged/')) {
+          stagedCache.set(image_url, resolvedImageAsset);
+        }
+      } catch (assetError) {
+        return NextResponse.json(
+          { success: false, message: (assetError as Error).message },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (resolvedImageAsset) {
+      if (resolvedImageAsset.blob) {
+        updateFields.push('image_blob = ?');
+        updateParams.push(resolvedImageAsset.blob);
+        updateFields.push('image_mime = ?');
+        updateParams.push(resolvedImageAsset.mime);
+        updateFields.push('image_hash = ?');
+        updateParams.push(resolvedImageAsset.hash);
+        updateFields.push('image_size = ?');
+        updateParams.push(resolvedImageAsset.size);
+        updateFields.push('image_original_name = ?');
+        updateParams.push(resolvedImageAsset.originalName);
+        updateFields.push('image_path = ?');
+        updateParams.push(`/api/media/products/${id}`);
+      } else {
+        updateFields.push('image_path = ?');
+        updateParams.push(resolvedImageAsset.url || null);
+        if (!resolvedImageAsset.url) {
+          updateFields.push('image_blob = NULL');
+          updateFields.push('image_mime = NULL');
+          updateFields.push('image_hash = NULL');
+          updateFields.push('image_size = NULL');
+          updateFields.push('image_original_name = NULL');
+        }
+      }
+    }
+
+    updateFields.push('updated_at = NOW()');
+    updateFields.push('updated_by = ?');
+    updateParams.push(scope.adminId ? scope.adminId.toString() : 'admin');
+    updateParams.push(id);
+
+    const updateSql = `UPDATE products SET ${updateFields.join(', ')} WHERE id = ?`;
+    await executeQuery(updateSql, updateParams);
 
     // Save gallery images if provided
     if (Array.isArray(images) && images.length > 0) {
-      // replace existing
+      const galleryAssets: ResolvedAsset[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const value = images[i];
+        if (value === null || value === undefined || value === '') continue;
+
+        let asset: ResolvedAsset | undefined = undefined;
+        if (typeof value === 'string' && stagedCache.has(value)) {
+          asset = stagedCache.get(value);
+        } else {
+          try {
+            asset = await resolveAssetFromInput(value, `Product gallery image ${i + 1}`);
+            if (typeof value === 'string' && value.startsWith('/api/media/staged/')) {
+              stagedCache.set(value, asset);
+            }
+          } catch (assetError) {
+            return NextResponse.json(
+              { success: false, message: (assetError as Error).message },
+              { status: 400 }
+            );
+          }
+        }
+
+        if (asset && (asset.url || asset.blob)) {
+          galleryAssets.push(asset);
+        }
+      }
+
       await executeQuery('DELETE FROM product_images WHERE product_id = ?', [id]);
-      for (let i = 0; i < images.length && i < 4; i++) {
-        await executeQuery(
-          `INSERT INTO product_images (product_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?)`,
-          [id, images[i], i === 0 ? 1 : 0, i]
+
+      for (let i = 0; i < galleryAssets.length && i < 6; i++) {
+        const asset = galleryAssets[i];
+        const insertImage = await executeQuery(
+          `
+            INSERT INTO product_images (
+              product_id,
+              image_url,
+              image_blob,
+              image_mime,
+              image_hash,
+              image_size,
+              image_original_name,
+              is_primary,
+              sort_order
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            id,
+            asset.url,
+            asset.blob,
+            asset.mime,
+            asset.hash,
+            asset.size,
+            asset.originalName,
+            i === 0 ? 1 : 0,
+            i
+          ]
         );
+
+        const imageId = (insertImage as { insertId?: number }).insertId ?? null;
+        if (asset.blob && imageId != null) {
+          const imageMediaUrl = `/api/media/product-images/${imageId}`;
+          await executeQuery(
+            'UPDATE product_images SET image_url = ? WHERE id = ?',
+            [imageMediaUrl, imageId]
+          );
+        }
       }
     }
 
@@ -341,6 +599,8 @@ export async function DELETE(req: NextRequest) {
       try {
         await executeQuery('DELETE FROM products WHERE id = ?', [id]);
         console.log('Successfully deleted from products table');
+        await executeQuery('DELETE FROM product_images WHERE product_id = ?', [id]);
+        console.log('Successfully deleted related product images');
         await executeQuery('DELETE FROM content_origin WHERE content_type = "product" AND content_id = ?', [id]);
         console.log('Successfully deleted from content_origin table');
         return NextResponse.json({ success: true });
@@ -368,6 +628,7 @@ export async function DELETE(req: NextRequest) {
     if (!rows.length) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
 
     await executeQuery('DELETE FROM products WHERE id = ?', [id]);
+    await executeQuery('DELETE FROM product_images WHERE product_id = ?', [id]);
     await executeQuery('DELETE FROM content_origin WHERE content_type = "product" AND content_id = ?', [id]);
     return NextResponse.json({ success: true });
   } catch (e) {
@@ -376,4 +637,52 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
+type ResolvedAsset = {
+  url: string | null;
+  blob: Buffer | null;
+  mime: string | null;
+  hash: string | null;
+  size: number | null;
+  originalName: string | null;
+};
 
+async function resolveAssetFromInput(value: unknown, label: string): Promise<ResolvedAsset> {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return {
+      url: null,
+      blob: null,
+      mime: null,
+      hash: null,
+      size: null,
+      originalName: null
+    };
+  }
+
+  if (value.startsWith('/api/media/staged/')) {
+    const assetId = value.split('/').pop();
+    if (!assetId) {
+      throw new Error(`${label}: invalid staged asset reference`);
+    }
+    const asset = await consumeStagedBlob(assetId);
+    if (!asset) {
+      throw new Error(`${label}: staged upload expired. Please re-upload.`);
+    }
+    return {
+      url: null,
+      blob: asset.data,
+      mime: asset.mimeType || null,
+      hash: asset.hash || null,
+      size: asset.size ?? null,
+      originalName: asset.originalName || null
+    };
+  }
+
+  return {
+    url: value,
+    blob: null,
+    mime: null,
+    hash: null,
+    size: null,
+    originalName: null
+  };
+}

@@ -5,6 +5,7 @@ import { sendWelcomeEmail } from '@/lib/email';
 import { generateMemberRegistrationNumber } from '@/lib/member-registration';
 import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,8 +38,8 @@ export async function POST(request: NextRequest) {
       fatherHusbandName,
       motherWifeName,
       registrationDate,
-      profilePhotoPath,
-      signaturePath,
+      profilePhotoPath: incomingProfilePhotoPath,
+      signaturePath: incomingSignaturePath,
       feePaid
     } = await request.json();
 
@@ -46,13 +47,13 @@ export async function POST(request: NextRequest) {
     console.log('Admin member add request:', {
       name, email, phone, address, stateId, districtId,
       aadharCardNumber, fatherHusbandName, motherWifeName,
-      registrationDate, profilePhotoPath, signaturePath, feePaid
+      registrationDate, profilePhotoPath: incomingProfilePhotoPath, signaturePath: incomingSignaturePath, feePaid
     });
 
     // Validate required fields
     if (!name || !email || !phone || !address || !stateId || !districtId || 
         !aadharCardNumber || !fatherHusbandName || !motherWifeName || 
-        !registrationDate || !profilePhotoPath) {
+        !registrationDate || !incomingProfilePhotoPath) {
       return NextResponse.json(
         { success: false, message: 'All required fields must be provided' },
         { status: 400 }
@@ -60,11 +61,72 @@ export async function POST(request: NextRequest) {
     }
     
     // Validate signature is required
-    if (!signaturePath) {
+    if (!incomingSignaturePath) {
       return NextResponse.json(
         { success: false, message: 'Signature image is required' },
         { status: 400 }
       );
+    }
+
+    let profilePhotoPath = incomingProfilePhotoPath;
+    let signaturePath = incomingSignaturePath;
+
+    let profilePhotoBlob: Buffer | null = null;
+    let profilePhotoMime: string | null = null;
+    let profilePhotoHash: string | null = null;
+    let profilePhotoSize: number | null = null;
+    let profilePhotoOriginalName: string | null = null;
+
+    let signatureBlob: Buffer | null = null;
+    let signatureMime: string | null = null;
+    let signatureHash: string | null = null;
+    let signatureSize: number | null = null;
+    let signatureOriginalName: string | null = null;
+
+    if (typeof profilePhotoPath === 'string' && profilePhotoPath.startsWith('/api/media/staged/')) {
+      const assetId = profilePhotoPath.split('/').pop();
+      if (!assetId) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid staged profile photo reference' },
+          { status: 400 }
+        );
+      }
+      const asset = await consumeStagedBlob(assetId);
+      if (!asset) {
+        return NextResponse.json(
+          { success: false, message: 'Profile photo upload expired. Please re-upload.' },
+          { status: 400 }
+        );
+      }
+      profilePhotoBlob = asset.data;
+      profilePhotoMime = asset.mimeType;
+      profilePhotoHash = asset.hash;
+      profilePhotoSize = asset.size;
+      profilePhotoOriginalName = asset.originalName;
+      profilePhotoPath = null;
+    }
+
+    if (typeof signaturePath === 'string' && signaturePath.startsWith('/api/media/staged/')) {
+      const assetId = signaturePath.split('/').pop();
+      if (!assetId) {
+        return NextResponse.json(
+          { success: false, message: 'Invalid staged signature reference' },
+          { status: 400 }
+        );
+      }
+      const asset = await consumeStagedBlob(assetId);
+      if (!asset) {
+        return NextResponse.json(
+          { success: false, message: 'Signature upload expired. Please re-upload.' },
+          { status: 400 }
+        );
+      }
+      signatureBlob = asset.data;
+      signatureMime = asset.mimeType;
+      signatureHash = asset.hash;
+      signatureSize = asset.size;
+      signatureOriginalName = asset.originalName;
+      signaturePath = null;
     }
 
     // Check if email already exists
@@ -160,6 +222,54 @@ export async function POST(request: NextRequest) {
 
     const memberId = memberResult.insertId;
 
+    let resolvedProfilePath = profilePhotoPath || null;
+    if (profilePhotoBlob) {
+      resolvedProfilePath = `/api/media/members/${memberId}/profile`;
+      await executeQuery(
+        `UPDATE members 
+         SET profile_photo_blob = ?, 
+             profile_photo_mime = ?, 
+             profile_photo_hash = ?, 
+             profile_photo_size = ?, 
+             profile_photo_original_name = ?, 
+             profile_photo_path = ?
+         WHERE id = ?`,
+        [
+          profilePhotoBlob,
+          profilePhotoMime,
+          profilePhotoHash,
+          profilePhotoSize,
+          profilePhotoOriginalName,
+          resolvedProfilePath,
+          memberId
+        ]
+      );
+    }
+
+    let resolvedSignaturePath = signaturePath || null;
+    if (signatureBlob) {
+      resolvedSignaturePath = `/api/media/members/${memberId}/signature`;
+      await executeQuery(
+        `UPDATE members
+         SET signature_blob = ?,
+             signature_mime = ?,
+             signature_hash = ?,
+             signature_size = ?,
+             signature_original_name = ?,
+             signature_path = ?
+         WHERE id = ?`,
+        [
+          signatureBlob,
+          signatureMime,
+          signatureHash,
+          signatureSize,
+          signatureOriginalName,
+          resolvedSignaturePath,
+          memberId
+        ]
+      );
+    }
+
     // Generate membership certificate
     let certificatePath = null;
     let certificateNumber = null;
@@ -171,7 +281,7 @@ export async function POST(request: NextRequest) {
         memberName: name,
         memberRegNumber: memberRegNumber,
         registrationDate: registrationDate,
-        profilePhotoPath: profilePhotoPath
+        profilePhotoPath: resolvedProfilePath
       });
       
       certificatePath = certificateResult.certificatePath;
@@ -207,7 +317,7 @@ export async function POST(request: NextRequest) {
         memberId: memberId,
         memberName: name,
         memberRegNumber: memberRegNumber,
-        profilePhotoPath: profilePhotoPath,
+        profilePhotoPath: resolvedProfilePath,
         address: address,
         designation: 'Member'
       });

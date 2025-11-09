@@ -20,7 +20,11 @@ export async function GET(
     const productRows = await executeQuery(`
       SELECT DISTINCT
         p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
-        p.image_path AS image_url, p.isVisible, p.is_featured, p.stock, p.tags,
+        CASE 
+          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+          ELSE p.image_path
+        END AS image_url,
+        p.isVisible, p.is_featured, p.stock, p.tags,
         p.features, p.specifications, p.rating, p.reviews_count,
         p.district_id, p.state_id, p.added_by, p.owner_admin_id,
         p.created_at, p.updated_at, p.updated_by,
@@ -52,7 +56,13 @@ export async function GET(
 
     // Get product images
     const imageRows = await executeQuery(`
-      SELECT image_url, is_primary, sort_order
+      SELECT 
+        CASE 
+          WHEN image_blob IS NOT NULL THEN CONCAT('/api/media/product-images/', id)
+          ELSE image_url
+        END AS image_url,
+        is_primary,
+        sort_order
       FROM product_images 
       WHERE product_id = ? 
       ORDER BY is_primary DESC, sort_order ASC

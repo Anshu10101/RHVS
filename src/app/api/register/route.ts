@@ -4,6 +4,7 @@ import { generateOTP, sendOTPEmail, sendWelcomeEmail } from '@/lib/email';
 import { generateMemberRegistrationNumber } from '@/lib/member-registration';
 import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
+import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // In-memory OTP store (resets on server restart/redeploy)
 const otpStore: Map<string, { otp: string; email: string; expiresAt: number; used: boolean }> = new Map();
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
         motherWifeName, 
         registrationDate,
         existingMemberRegNumber,
-        profilePhotoPath 
+        profilePhotoPath: incomingProfilePhotoPath 
       } = data;
 
       // Check if email already exists
@@ -115,6 +116,36 @@ export async function POST(request: NextRequest) {
 
       // Generate new member registration number - maintain sequential flow
       const newMemberRegNumber = await generateMemberRegistrationNumber();
+
+      let profilePhotoPath = incomingProfilePhotoPath;
+      let profilePhotoBlob: Buffer | null = null;
+      let profilePhotoMime: string | null = null;
+      let profilePhotoHash: string | null = null;
+      let profilePhotoSize: number | null = null;
+      let profilePhotoOriginalName: string | null = null;
+
+      if (typeof profilePhotoPath === 'string' && profilePhotoPath.startsWith('/api/media/staged/')) {
+        const assetId = profilePhotoPath.split('/').pop();
+        if (!assetId) {
+          return NextResponse.json(
+            { success: false, message: 'Invalid staged profile photo reference' },
+            { status: 400 }
+          );
+        }
+        const asset = await consumeStagedBlob(assetId);
+        if (!asset) {
+          return NextResponse.json(
+            { success: false, message: 'Profile photo upload expired. Please re-upload.' },
+            { status: 400 }
+          );
+        }
+        profilePhotoBlob = asset.data;
+        profilePhotoMime = asset.mimeType;
+        profilePhotoHash = asset.hash;
+        profilePhotoSize = asset.size;
+        profilePhotoOriginalName = asset.originalName;
+        profilePhotoPath = null;
+      }
 
       // Insert new member
       const insertQuery = `
@@ -148,6 +179,31 @@ export async function POST(request: NextRequest) {
           verifierId
         ]) as { insertId: number };
 
+        let resolvedProfilePath = profilePhotoPath || null;
+
+        if (profilePhotoBlob) {
+          resolvedProfilePath = `/api/media/members/${result.insertId}/profile`;
+          await executeQuery(
+            `UPDATE members 
+             SET profile_photo_blob = ?, 
+                 profile_photo_mime = ?, 
+                 profile_photo_hash = ?, 
+                 profile_photo_size = ?, 
+                 profile_photo_original_name = ?, 
+                 profile_photo_path = ?
+             WHERE id = ?`,
+            [
+              profilePhotoBlob,
+              profilePhotoMime,
+              profilePhotoHash,
+              profilePhotoSize,
+              profilePhotoOriginalName,
+              resolvedProfilePath,
+              result.insertId
+            ]
+          );
+        }
+
         // Generate certificate and ID card (fire-and-forget)
         Promise.all([
           // Generate certificate
@@ -156,7 +212,7 @@ export async function POST(request: NextRequest) {
             memberName: name,
             memberRegNumber: newMemberRegNumber,
             registrationDate: registrationDate,
-            profilePhotoPath: profilePhotoPath || undefined
+            profilePhotoPath: resolvedProfilePath || undefined
           }).then(async (certResult) => {
             // Store certificate in database
             const certificateQuery = `
@@ -180,7 +236,7 @@ export async function POST(request: NextRequest) {
             memberId: result.insertId,
             memberName: name,
             memberRegNumber: newMemberRegNumber,
-            profilePhotoPath: profilePhotoPath || undefined,
+            profilePhotoPath: resolvedProfilePath || undefined,
             address: address,
             designation: 'Member'
           }).then((idCardResult) => {
@@ -200,7 +256,8 @@ export async function POST(request: NextRequest) {
           success: true,
           message: 'Member registered successfully',
           memberId: result.insertId,
-          memberRegNumber: newMemberRegNumber
+          memberRegNumber: newMemberRegNumber,
+          profilePhotoPath: resolvedProfilePath
         });
       } catch (e: unknown) {
         // Handle duplicate keys and other SQL errors explicitly

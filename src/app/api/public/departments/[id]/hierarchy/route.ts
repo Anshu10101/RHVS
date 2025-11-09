@@ -43,7 +43,11 @@ export async function GET(
     try {
       assignments = await executeQuery(
         `SELECT dp.id as post_id, dp.position_order, dp.name_en as post_name_en, dp.name_hi as post_name_hi,
-                m.id as member_id, m.name as member_name, m.profile_photo_path as photo_path,
+                m.id as member_id, m.name as member_name,
+                CASE 
+                  WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+                  ELSE m.profile_photo_path
+                END AS photo_path,
                 m.member_reg_number as reg_number, m.email
          FROM department_members dm
          JOIN department_posts dp ON dp.id = dm.post_id AND dp.department_id = dm.department_id
