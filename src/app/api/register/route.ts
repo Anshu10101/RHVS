@@ -6,7 +6,7 @@ import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 
-const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 // In-memory OTP store (resets on server restart/redeploy)
 const otpStore: Map<string, { otp: string; email: string; expiresAt: number; used: boolean }> = new Map();

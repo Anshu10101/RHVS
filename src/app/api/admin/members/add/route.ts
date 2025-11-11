@@ -7,7 +7,7 @@ import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 
-const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 export async function POST(request: NextRequest) {
   try {

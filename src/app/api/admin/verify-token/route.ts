@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 export async function POST(request: NextRequest) {
   try {

@@ -6,7 +6,7 @@ import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 import { sendCertificateEmail } from '@/lib/email-service';
 import { generateIDCard } from '@/lib/id-card-generator';
 
-const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 const generateCertificateSchema = z.object({
   member_id: z.number().int().positive(),

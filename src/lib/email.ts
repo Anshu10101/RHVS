@@ -23,7 +23,7 @@ const emailConfig = {
 // Create transporter
 const transporter = nodemailer.createTransport(emailConfig);
 
-const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 async function cleanupAttachment(pathToFile: string | undefined) {
   if (

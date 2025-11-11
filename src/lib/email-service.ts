@@ -18,7 +18,7 @@ interface EmailData {
   idCardPath?: string;
 }
 
-const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 function resolveAttachmentPath(rawPath: string): string {
   const trimmed = rawPath?.trim();
