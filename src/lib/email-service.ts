@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 import path from 'path';
 
 interface EmailData {
@@ -14,6 +15,48 @@ interface EmailData {
   certificatePath: string;
   appointmentDate: string;
   certificateNumber: string;
+  idCardPath?: string;
+}
+
+const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+
+function resolveAttachmentPath(rawPath: string): string {
+  const trimmed = rawPath?.trim();
+  if (!trimmed) {
+    throw new Error('Attachment path missing');
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    throw new Error('Attachment path must be a local file');
+  }
+
+  // Windows absolute paths like C:\foo or C:/foo
+  if (/^[a-zA-Z]:[\\/]/.test(trimmed)) {
+    return path.normalize(trimmed);
+  }
+
+  // Paths starting with / or \ should be treated as relative to public/
+  if (trimmed.startsWith('/') || trimmed.startsWith('\\')) {
+    const relativePart = trimmed.replace(/^[/\\]+/, '');
+    return path.join(process.cwd(), 'public', relativePart);
+  }
+
+  if (path.isAbsolute(trimmed)) {
+    return path.normalize(trimmed);
+  }
+
+  return path.join(process.cwd(), 'public', trimmed.replace(/^[/\\]+/, ''));
+}
+
+async function cleanupAttachmentFile(filePath: string) {
+  if (shouldRetainCertificates || /^https?:\/\//i.test(filePath)) return;
+  try {
+    await fsPromises.unlink(filePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      console.warn('Failed to cleanup attachment file:', error);
+    }
+  }
 }
 
 // Email transporter configuration
@@ -34,7 +77,7 @@ const createTransporter = () => {
 
 // Generate creative email templates
 const generateEmailTemplate = (data: EmailData) => {
-  const { memberName, memberRegNumber, departmentName, postName, level, state, district, appointmentDate, certificateNumber } = data;
+  const { memberName, memberRegNumber, departmentName, postName, level, state, district, appointmentDate, certificateNumber, idCardPath } = data;
   
   // Determine level text
   let levelText = '';
@@ -163,7 +206,7 @@ const generateEmailTemplate = (data: EmailData) => {
           <div style="background: #FEF2F2; padding: 20px; border-radius: 10px; margin: 30px 0; border: 2px solid #FECACA;">
             <h3 style="color: #991B1B; margin-top: 0; text-align: center;">📧 Important Note</h3>
             <p style="color: #991B1B; text-align: center; margin: 0; font-size: 14px;">
-              Your appointment certificate is attached to this email. Please save it for your records.
+              ${idCardPath ? 'Your appointment certificate and नियुक्ति पहचान पत्र दोनों इस ईमेल में संलग्न हैं। कृपया इन्हें सुरक्षित रखें।' : 'Your appointment certificate is attached to this email. Please save it for your records.'}
             </p>
           </div>
         </div>
@@ -192,7 +235,8 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
     const transporter = createTransporter();
     
     // Check if certificate file exists
-    const certificateFilePath = path.join(process.cwd(), 'public', data.certificatePath);
+    const certificateFilePath = resolveAttachmentPath(data.certificatePath);
+
     if (!fs.existsSync(certificateFilePath)) {
       throw new Error('Certificate file not found');
     }
@@ -200,25 +244,54 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
     // Generate email content
     const htmlContent = generateEmailTemplate(data);
     
+    const attachments: Array<{ filename: string; path: string }> = [
+      {
+        filename: `appointment-certificate-${data.certificateNumber}.pdf`,
+        path: certificateFilePath,
+      }
+    ];
+
+    if (data.idCardPath) {
+      try {
+        const idCardFilePath = resolveAttachmentPath(data.idCardPath);
+        if (fs.existsSync(idCardFilePath)) {
+          attachments.push({
+            filename: `appointment-id-card-${data.memberRegNumber}.pdf`,
+            path: idCardFilePath,
+          });
+        } else {
+          console.warn('Appointment ID card not found for email attachment:', idCardFilePath);
+        }
+      } catch (attachmentError) {
+        console.warn('Could not resolve appointment ID card path:', attachmentError);
+      }
+    }
+    
     // Email options
     const mailOptions = {
       from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <admin@rashtriyahinduvahinisangathan.org>`,
       to: data.to,
       subject: `🎉 Appointment Certificate - ${data.memberName} | राष्ट्रीय हिन्दू वाहिनी संगठन`,
       html: htmlContent,
-      attachments: [
-        {
-          filename: `appointment-certificate-${data.certificateNumber}.pdf`,
-          path: certificateFilePath,
-          cid: 'certificate-attachment'
-        }
-      ]
+      attachments,
     };
 
     // Send email
     const info = await transporter.sendMail(mailOptions);
     
     console.log('Certificate email sent successfully:', info.messageId);
+    
+    if (!shouldRetainCertificates) {
+      await Promise.all(
+        attachments.map(async ({ path: filePath }) => {
+          try {
+            await cleanupAttachmentFile(filePath);
+          } catch (cleanupError) {
+            console.warn('Failed to cleanup attachment:', cleanupError);
+          }
+        })
+      );
+    }
     
     return {
       success: true,

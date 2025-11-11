@@ -12,6 +12,13 @@ interface IDCardData {
   profilePhotoPath?: string;
   address?: string;
   designation?: string;
+  cardType?: 'membership' | 'appointment';
+  departmentName?: string | null;
+  postName?: string | null;
+  level?: 'national' | 'state' | 'district';
+  state?: string | null;
+  district?: string | null;
+  appointmentDate?: string | null;
 }
 
 interface IDCardResult {
@@ -76,6 +83,8 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       console.error('Error registering Hindi fonts:', error);
     }
 
+    const cardType = data.cardType ?? 'membership';
+
     // ID Card dimensions (standard ID card size: 3.375" x 2.125" at 300 DPI)
     const width = 1013; // 3.375" * 300 DPI
     const height = 638;  // 2.125" * 300 DPI
@@ -114,6 +123,16 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     ctx.fillStyle = headerColor;
     ctx.fillRect(0, 0, width, headerHeight);
 
+    // RHVS logo on left within header
+    try {
+      const logoImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'rhvs_logo.png'));
+      const logoHeight = headerHeight - 36;
+      const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+      ctx.drawImage(logoImage, 30, 18, logoWidth, logoHeight);
+    } catch (error) {
+      console.error('Error loading RHVS logo for ID card header:', error);
+    }
+
     // Lord Ram artwork (mirrors certificate header)
     try {
       const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
@@ -133,7 +152,8 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     // Subtitle in Hindi for consistency
     ctx.font = 'bold 28px "Mangal", "Noto Sans Devanagari", sans-serif';
     ctx.fillStyle = '#FFFBEB';
-    ctx.fillText('सदस्य पहचान पत्र', width / 2, 115);
+    const cardTitle = cardType === 'appointment' ? 'नियुक्ति पहचान पत्र' : 'सदस्य पहचान पत्र';
+    ctx.fillText(cardTitle, width / 2, 115);
 
     // === DECORATIVE GOLD LINE ===
     const lineY = headerHeight + 20;
@@ -153,7 +173,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     // === MEMBER PHOTO ===
     const photoSize = 180;
     const photoX = width - 220;
-    const photoY = lineY + 40;
+    const photoY = lineY + 10;
     
     let photoLoaded = false;
     try {
@@ -209,35 +229,57 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     // === MEMBER INFORMATION ===
     const infoX = 60;
-    const infoY = lineY + 70;
-    const lineHeight = 42;
+    let currentY = lineY + 90;
+    const lineSpacing = 40;
+    const infoMaxWidth = width - 120;
 
-    ctx.fillStyle = textColor;
-    ctx.font = 'bold 32px "Mangal", "Noto Sans Devanagari", sans-serif';
     ctx.textAlign = 'left';
-    
-    // Registration Number
-    ctx.fillText(`पंजीकरण संख्या - ${data.memberRegNumber}`, infoX, infoY);
-    
-    // Member Name
-    ctx.fillText(`नाम - ${data.memberName}`, infoX, infoY + lineHeight);
-    
-    // Address
-    const address = data.address || '—';
-    const addressLines = wrapTextLines(ctx, `पता - ${address}`, width - photoSize - 140);
-    addressLines.forEach((line, index) => {
-      if (index === 0) {
-        ctx.fillText(line, infoX, infoY + (lineHeight * 2));
-      } else {
-        ctx.fillText(line, infoX + 30, infoY + (lineHeight * 2) + (index * (lineHeight - 6)));
+
+    const lines: Array<{ label: string; value: string }> = [];
+
+    lines.push({ label: 'पंजीकरण संख्या', value: data.memberRegNumber });
+    lines.push({ label: 'नाम', value: data.memberName });
+
+    const address = data.address && data.address.trim().length > 0 ? data.address : '—';
+
+    if (cardType === 'appointment') {
+      const department = data.departmentName && data.departmentName.trim().length > 0
+        ? data.departmentName
+        : '—';
+      const post = translateDesignation(data.postName || data.designation, 'appointment');
+      const departmentAndPost = department !== '—' ? `${department} ${post}` : post;
+      const appointmentDate = data.appointmentDate
+        ? new Date(data.appointmentDate).toLocaleDateString('hi-IN')
+        : '—';
+
+      lines.push({ label: 'पद', value: departmentAndPost });
+      lines.push({ label: 'नियुक्ति दिनांक', value: appointmentDate });
+      if (address !== '—') {
+        lines.push({ label: 'पता', value: address });
       }
+    } else {
+      const designation = translateDesignation(data.designation, 'membership');
+      lines.push({ label: 'पद', value: designation });
+      if (address !== '—') {
+        lines.push({ label: 'पता', value: address });
+      }
+    }
+
+    lines.forEach(({ label, value }) => {
+      currentY = drawLabelValue(ctx, {
+        label,
+        value,
+        x: infoX,
+        baseline: currentY,
+        maxWidth: infoMaxWidth,
+        lineSpacing,
+        labelFont: '800 30px "Mangal", "Noto Sans Devanagari", sans-serif',
+        valueFont: 'bold 26px "Mangal", "Noto Sans Devanagari", sans-serif',
+        labelColor: accentColor,
+        valueColor: textColor,
+      });
+      currentY += 10;
     });
-    
-    // Designation
-    const designation = data.designation || 'Member';
-    const addressBlockHeight = (addressLines.length - 1) * (lineHeight - 6);
-    const designationY = infoY + (lineHeight * 3) + addressBlockHeight;
-    ctx.fillText(`पद - ${designation}`, infoX, designationY);
 
     // === BOTTOM DECORATIVE LINE ===
     const bottomLineY = height - 40;
@@ -294,7 +336,9 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     }
 
     const pdfBytes = await pdfDoc.save();
-    const fileName = `id-card-${data.memberRegNumber}.pdf`;
+    const safeReg = data.memberRegNumber.replace(/[^a-zA-Z0-9]/g, '');
+    const timestamp = Date.now();
+    const fileName = `${cardType}-id-card-${safeReg}-${timestamp}.pdf`;
     const filePath = path.join(idCardsDir, fileName);
     
     fs.writeFileSync(filePath, pdfBytes);
@@ -338,5 +382,96 @@ export async function downloadIDCard(idCardPath: string): Promise<Buffer> {
   } catch (error) {
     console.error('Error reading ID card:', error);
     throw new Error('ID card not found');
+  }
+}
+
+interface LabelValueOptions {
+  label: string;
+  value: string;
+  x: number;
+  baseline: number;
+  maxWidth: number;
+  lineSpacing: number;
+  labelFont: string;
+  valueFont: string;
+  labelColor: string;
+  valueColor: string;
+}
+
+function drawLabelValue(ctx: CanvasRenderingContext2D, options: LabelValueOptions): number {
+  const {
+    label,
+    value,
+    x,
+    baseline,
+    maxWidth,
+    lineSpacing,
+    labelFont,
+    valueFont,
+    labelColor,
+    valueColor,
+  } = options;
+
+  const labelText = `${label} :`;
+  ctx.font = labelFont;
+  ctx.fillStyle = labelColor;
+  ctx.fillText(labelText, x, baseline);
+  const labelWidth = ctx.measureText(labelText).width;
+
+  ctx.font = valueFont;
+  ctx.fillStyle = valueColor;
+  const availableWidth = Math.max(maxWidth - labelWidth - 20, maxWidth * 0.4);
+  const valueLines = wrapTextLines(ctx, value, availableWidth);
+  const valueStartX = x + labelWidth + 20;
+
+  valueLines.forEach((line, index) => {
+    const drawX = valueStartX;
+    const drawY = baseline + index * lineSpacing;
+    ctx.fillText(line, drawX, drawY);
+  });
+
+  return baseline + valueLines.length * lineSpacing;
+}
+
+function translateDesignation(
+  rawDesignation: string | undefined | null,
+  cardType: 'membership' | 'appointment'
+): string {
+  if (!rawDesignation || rawDesignation.trim().length === 0) {
+    return cardType === 'membership' ? 'सदस्य' : 'पदाधिकारी';
+  }
+
+  const normalized = rawDesignation.trim().toLowerCase();
+
+  const designationMap: Record<string, string> = {
+    member: 'सदस्य',
+    'district admin': 'जिला प्रशासक',
+    'state admin': 'राज्य प्रशासक',
+    'super admin': 'महाप्रशासक',
+  };
+
+  return designationMap[normalized] ?? rawDesignation;
+}
+
+function translateLevel(
+  level: 'national' | 'state' | 'district' | undefined,
+  state?: string | null,
+  district?: string | null
+): string {
+  switch (level) {
+    case 'national':
+      return 'राष्ट्रीय स्तर';
+    case 'state':
+      return state ? `राज्य स्तर - ${state}` : 'राज्य स्तर';
+    case 'district':
+      if (state && district) {
+        return `जिला स्तर - ${district}, ${state}`;
+      }
+      if (district) {
+        return `जिला स्तर - ${district}`;
+      }
+      return 'जिला स्तर';
+    default:
+      return '—';
   }
 }

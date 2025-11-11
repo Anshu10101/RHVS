@@ -4,6 +4,9 @@ import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
 import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 import { sendCertificateEmail } from '@/lib/email-service';
+import { generateIDCard } from '@/lib/id-card-generator';
+
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
 
 const generateCertificateSchema = z.object({
   member_id: z.number().int().positive(),
@@ -34,6 +37,8 @@ export async function POST(request: NextRequest) {
     }
 
     const { member_id, department_id, post_id, level, state, district, appointment_date } = validationResult.data;
+
+    const resolvedAppointmentDate = appointment_date || new Date().toISOString().split('T')[0];
 
     // Validate member exists
     const member = await executeQuery(
@@ -105,11 +110,34 @@ export async function POST(request: NextRequest) {
       level,
       state,
       district,
-      appointment_date: appointment_date || new Date().toISOString().split('T')[0],
+      appointment_date: resolvedAppointmentDate,
       certificate_number: certificateNumber
     };
 
     const certificatePath = await generateAppointmentCertificate(certificateData);
+
+    let appointmentIdCardPath: string | null = null;
+    try {
+      const idCardResult = await generateIDCard({
+        memberId: member_id,
+        memberName: member[0].name,
+        memberRegNumber: member[0].member_reg_number,
+        profilePhotoPath: member[0].profile_photo_path,
+        address: member[0].address,
+        designation: departmentPost[0].post_name_hi || departmentPost[0].post_name_en,
+        cardType: 'appointment',
+        departmentName: departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en,
+        postName: departmentPost[0].post_name_hi || departmentPost[0].post_name_en,
+        level,
+        state,
+        district,
+        appointmentDate: resolvedAppointmentDate,
+      });
+
+      appointmentIdCardPath = idCardResult.idCardPath;
+    } catch (idCardError) {
+      console.error('Error generating appointment ID card:', idCardError);
+    }
 
     // Save certificate record
     const result = await executeQuery(`
@@ -118,7 +146,7 @@ export async function POST(request: NextRequest) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       member_id, department_id, post_id, level, state, district, 
-      certificateNumber, appointment_date || new Date().toISOString().split('T')[0],
+      certificateNumber, resolvedAppointmentDate,
       scope.adminId, certificatePath
     ]) as any;
 
@@ -145,8 +173,9 @@ export async function POST(request: NextRequest) {
         state,
         district,
         certificatePath,
-        appointmentDate: appointment_date || new Date().toISOString().split('T')[0],
-        certificateNumber
+        appointmentDate: resolvedAppointmentDate,
+        certificateNumber,
+        idCardPath: appointmentIdCardPath || undefined,
       };
 
       const emailResult = await sendCertificateEmail(emailData);
@@ -160,6 +189,13 @@ export async function POST(request: NextRequest) {
           SET email_status = 'sent', email_sent_at = NOW(), status = 'emailed'
           WHERE id = ?
         `, [result.insertId]);
+        
+        if (!retainCertificateFiles) {
+          await executeQuery(
+            'UPDATE certificates SET certificate_path = NULL WHERE id = ?',
+            [result.insertId]
+          );
+        }
         
         // Try to log email sending
         try {
@@ -208,7 +244,7 @@ export async function POST(request: NextRequest) {
       success: true,
       certificate_id: result.insertId,
       certificate_number: certificateNumber,
-      certificate_path: certificatePath,
+      certificate_path: retainCertificateFiles ? certificatePath : null,
       message: 'Certificate generated successfully'
     }, { status: 201 });
 

@@ -74,6 +74,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // Certificate dimensions (A4 size in pixels at 300 DPI)
   const width = 2480;
   const height = 3508;
+  const organizationRegNumber = '169';
   
   const borderMargin = 60; // Define border margin for consistent positioning
   
@@ -115,27 +116,44 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   // Additional watermark in header (removed duplicate)
 
-  // Draw Ram image in header (top right)
+  try {
+    const logoImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'rhvs_logo.png'));
+    const logoHeight = 220;
+    const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+    const logoX = borderMargin + 80;
+    const logoY = borderMargin + 130;
+    ctx.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+  } catch (error) {
+    console.error('Error loading RHVS logo:', error);
+  }
+
   try {
     const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
-    const ramHeight = 450;
+    const ramHeight = 400;
     const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
-    ctx.drawImage(ramImage, width - ramWidth - borderMargin - 80, borderMargin + 40, ramWidth, ramHeight);
+    const ramX = width - ramWidth - borderMargin - 40;
+    const ramY = borderMargin + 130;
+    ctx.drawImage(ramImage, ramX, ramY, ramWidth, ramHeight);
   } catch (error) {
     console.error('Error loading Ram image:', error);
   }
 
-  // Organization name - Hindi (larger font)
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 160px "Arial Unicode MS", "Mangal", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, borderMargin + 200);
-
-  // Taglines (larger font)
-  ctx.font = 'bold 72px "Arial Unicode MS", "Mangal", sans-serif';
   ctx.fillStyle = '#FCD34D';
-  ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2, borderMargin + 320);
-  ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2, borderMargin + 400);
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText('Reg. No: 169', width - borderMargin - 120, borderMargin + 120);
+  ctx.textAlign = 'center';
+ 
+  // Organization name
+  ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.fillStyle = '#FCD34D';
+  ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2 + 40, borderMargin + 260);
+ 
+  // Taglines (larger font)
+  ctx.font = 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.fillStyle = '#FCD34D';
+  ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2 + 40, borderMargin + 380);
+  ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2 + 40, borderMargin + 460);
 
   // === CONTENT SECTION ===
   const contentStartY = headerHeight - borderMargin + 40;
@@ -174,99 +192,61 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   // === MEMBER APPOINTMENT INFO ===
   const appointmentBoxY = ribbonY + 180;
-  
-  const appointmentText = `${data.member.name} is appointed as ${data.department.post_name_en}`;
-  const levelText = getLevelText(data.level, data.state, data.district);
-  const fullAppointmentText = `${appointmentText}, ${data.department.dept_name_en}${levelText}.`;
 
-  // Wrap appointment text
-  const appointmentLines = wrapText(ctx, fullAppointmentText, width - 600);
-  
-  // Draw appointment text (no background, centered, selective underlining)
-  const lineHeight = 85; // Increased line height for bigger font
-  
-  // Appointment text in orange/accent color (much larger font, centered)
+  // === MEMBER PHOTO === (define before using photoX for text layout)
+  const photoSize = 480;
+  const photoX = width - 600;
+  const photoY = appointmentBoxY + 200;
+
+  const textStartX = borderMargin + 80;
+  const textAreaWidth = photoX - textStartX - 120;
+  const messageStartY = appointmentBoxY + 320;
+  ctx.textAlign = 'left';
   ctx.fillStyle = accentOrange;
-  ctx.font = 'bold 56px Arial'; // Much bigger font
-  ctx.textAlign = 'center';
-  
-  // Draw text and selectively underline
+  ctx.font = 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+
+  const departmentName = (data.department.dept_name_hi || data.department.dept_name_en || '').trim();
+  const postName = (data.department.post_name_hi || data.department.post_name_en || '').trim();
+  const deptPostPhrase = `${departmentName} ${postName}`.trim();
+  const appointmentMessage = `${data.member.name} को ${deptPostPhrase} पद पर नियुक्त किया जाता है और संगठन अपेक्षा करता है कि आप अनुशासन तथा राष्ट्रधर्म को सर्वोपरि रखेंगे।`;
+
+  const appointmentLines = wrapText(ctx, appointmentMessage, textAreaWidth);
   appointmentLines.forEach((line, index) => {
-    const lineY = appointmentBoxY + 350 + (index * lineHeight); // Moved much further down
-    ctx.fillText(line, width / 2, lineY);
-    
-    // Only underline if line contains member name or designation
-    if (line.includes(data.member.name) || line.includes(data.department.post_name_en)) {
-      const lineMetrics = ctx.measureText(line);
-      ctx.strokeStyle = accentOrange;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(width/2 - lineMetrics.width/2, lineY + 8);
-      ctx.lineTo(width/2 + lineMetrics.width/2, lineY + 8);
-      ctx.stroke();
-    }
+    const lineY = messageStartY + index * 80;
+    ctx.fillText(line, textStartX, lineY);
+
+    underlinePhrase(ctx, line, data.member.name, textStartX, lineY, accentOrange, 4);
+    underlinePhrase(ctx, line, deptPostPhrase, textStartX, lineY, accentOrange, 4);
   });
 
+  // Address intentionally omitted per requirements
+
   // === MEMBER PHOTO ===
-  const photoSize = 300; // Bigger photo
-  const photoX = width - 450; // Moved more left
-  const photoY = appointmentBoxY + 200; // Moved even more down
-  
   try {
     const memberPhoto = await loadProfilePhotoImage(data.member.profile_photo_path);
     
     if (memberPhoto) {
-      // White background
+      // White background + golden border (same as membership certificate)
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(photoX - 8, photoY - 8, photoSize + 16, photoSize + 16);
       
-      // Gold border
       ctx.strokeStyle = borderColor;
       ctx.lineWidth = 4;
       ctx.strokeRect(photoX - 8, photoY - 8, photoSize + 16, photoSize + 16);
       
-      // Draw photo
       ctx.drawImage(memberPhoto, photoX, photoY, photoSize, photoSize);
     }
   } catch (error) {
     console.error('Error loading member photo:', error);
   }
 
-  // === MEMBER NAME AND DESIGNATION (Right below photo, centered and underlined) ===
-  const memberInfoY = photoY + photoSize + 50; // More space below photo
-  
-  // Member name (much larger font, centered, underlined)
-  ctx.fillStyle = '#1F2937'; // Dark gray for better readability
-  ctx.font = 'bold 48px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText(data.member.name, photoX + photoSize/2, memberInfoY);
-  // Underline member name
-  const memberNameMetrics = ctx.measureText(data.member.name);
-  ctx.strokeStyle = '#1F2937'; // Same color as text
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(photoX + photoSize/2 - memberNameMetrics.width / 2, memberInfoY + 8);
-  ctx.lineTo(photoX + photoSize/2 + memberNameMetrics.width / 2, memberInfoY + 8);
-  ctx.stroke();
-  
-  // Designation Post Name (much larger font, centered, underlined)
+  const memberInfoY = photoY + photoSize + 80;
+  ctx.font = 'bold 32px Arial';
   ctx.fillStyle = '#DC2626';
-  ctx.font = 'bold 36px Arial';
-  const postNameY = memberInfoY + 60;
-  ctx.fillText(`${data.department.post_name_en}`, photoX + photoSize/2, postNameY);
-  // Underline post name
-  const postNameMetrics = ctx.measureText(data.department.post_name_en);
-  ctx.strokeStyle = '#DC2626'; // Same color as text
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(photoX + photoSize/2 - postNameMetrics.width / 2, postNameY + 8);
-  ctx.lineTo(photoX + photoSize/2 + postNameMetrics.width / 2, postNameY + 8);
-  ctx.stroke();
-  
-  // Designation Department Name (much larger font, centered, not underlined)
-  const deptNameY = memberInfoY + 120;
-  ctx.fillText(`${data.department.dept_name_en}`, photoX + photoSize/2, deptNameY);
-
+  ctx.textAlign = 'center';
+  ctx.fillText(`Reg: ${data.member.member_reg_number}`, photoX + photoSize / 2, memberInfoY);
+  ctx.textAlign = 'center';
+ 
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
   const motTextY = memberInfoY + 350; // Much more space after member info
   const motivationalText = "Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.";
@@ -335,8 +315,8 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ctx.fillText(`Date - ${formatDate(data.appointment_date)}`, width - borderMargin - 50, footerY + 100); // Adjusted Y position
 
   // Footer text (much larger font)
-  ctx.font = 'bold 40px Arial'; // Much larger font
-  ctx.textAlign = 'center';
+  ctx.font = 'bold 40px Arial';
+  ctx.textAlign = 'left';
   
   const footerTexts = [
     'Central Office :- D-305 Kanha Kunj, Indira Park, Najafgarh, New Delhi - 110043',
@@ -345,7 +325,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ];
   
   footerTexts.forEach((text, index) => {
-    ctx.fillText(text, width / 2, footerY + 180 + (index * 60)); // Adjusted Y position and line spacing
+    ctx.fillText(text, borderMargin + 60, footerY + 180 + (index * 60));
   });
 
   // === DRAW GOLDEN BORDERS ON TOP OF EVERYTHING ===
@@ -424,6 +404,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   // Certificate dimensions (A4 size in pixels at 300 DPI)
   const width = 2480;
   const height = 3508;
+  const organizationRegNumber = '169';
   
   const borderMargin = 60; // Define border margin for consistent positioning
   
@@ -465,15 +446,37 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
 
   // Additional watermark in header (removed duplicate)
 
-  // Draw Ram image in header (top right)
+  // Draw RHVS logo on left side next to organization name
+  try {
+    const logoImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'rhvs_logo.png'));
+    const logoHeight = 260;
+    const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+    const logoX = width / 2 - 520;
+    const logoY = borderMargin + 40;
+    ctx.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+  } catch (error) {
+    console.error('Error loading RHVS logo:', error);
+  }
+
+  // Draw Ram image in header (top right) with lower placement
   try {
     const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
-    const ramHeight = 450;
+    const ramHeight = 420;
     const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
-    ctx.drawImage(ramImage, width - ramWidth - borderMargin - 80, borderMargin + 40, ramWidth, ramHeight);
+    const ramX = width - ramWidth - borderMargin - 80;
+    const ramY = borderMargin + 120;
+    ctx.drawImage(ramImage, ramX, ramY, ramWidth, ramHeight);
   } catch (error) {
     console.error('Error loading Ram image:', error);
   }
+
+  // Registration number top-right within header
+  const membershipHeaderRegText = `Reg. No: ${organizationRegNumber}`;
+  ctx.fillStyle = '#FCD34D';
+  ctx.font = 'bold 48px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText(membershipHeaderRegText, width - borderMargin - 120, borderMargin + 120);
+  ctx.textAlign = 'center';
 
   // Organization name - Hindi (larger font)
   ctx.fillStyle = '#FFFFFF';
@@ -753,9 +756,33 @@ function getLevelText(level: string, state?: string | null, district?: string | 
   }
 }
 
+function getLevelTextHindi(level: string, state?: string | null, district?: string | null): string {
+  switch (level) {
+    case 'national':
+      return 'राष्ट्रीय स्तर';
+    case 'state':
+      return state ? `राज्य स्तर - ${state}` : 'राज्य स्तर';
+    case 'district':
+      if (state && district) {
+        return `जिला स्तर - ${district}, ${state}`;
+      }
+      if (district) {
+        return `जिला स्तर - ${district}`;
+      }
+      return 'जिला स्तर';
+    default:
+      return '—';
+  }
+}
+
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-GB');
+}
+
+function formatDateHindi(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('hi-IN');
 }
 
 function drawOrnamentalLine(ctx: any, x: number, y: number, lineWidth: number, color: string) {
@@ -831,4 +858,28 @@ function wrapText(ctx: any, text: string, maxWidth: number): string[] {
   if (currentLine) lines.push(currentLine);
   
   return lines;
+}
+
+function underlinePhrase(
+  ctx: any,
+  line: string,
+  phrase: string,
+  startX: number,
+  baselineY: number,
+  color: string,
+  lineWidth: number
+) {
+  if (!phrase || !line.includes(phrase)) return;
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  const index = line.indexOf(phrase);
+  const before = line.substring(0, index);
+  const beforeWidth = ctx.measureText(before).width;
+  const phraseWidth = ctx.measureText(phrase).width;
+
+  ctx.beginPath();
+  ctx.moveTo(startX + beforeWidth, baselineY + 10);
+  ctx.lineTo(startX + beforeWidth + phraseWidth, baselineY + 10);
+  ctx.stroke();
 }

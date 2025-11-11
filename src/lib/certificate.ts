@@ -127,27 +127,47 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     ctx.fillStyle = headerColor;
     ctx.fillRect(borderMargin, borderMargin + 20, width - 2 * borderMargin, headerHeight - borderMargin - 40);
 
-    // Draw Ram image in header
+    // Draw RHVS logo on left side next to organization name
+    try {
+      const logoImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'rhvs_logo.png'));
+      const logoHeight = 220;
+      const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+      const logoX = borderMargin + 80;
+      const logoY = borderMargin + 130;
+      ctx.drawImage(logoImage, logoX, logoY, logoWidth, logoHeight);
+    } catch (error) {
+      console.error('Error loading RHVS logo:', error);
+    }
+
+    // Draw Ram image in header slightly lower to accommodate registration number
     try {
       const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
-      const ramHeight = 450;
+      const ramHeight = 400;
       const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
-      ctx.drawImage(ramImage, width - ramWidth - borderMargin - 80, borderMargin + 40, ramWidth, ramHeight);
+      const ramX = width - ramWidth - borderMargin - 40;
+      const ramY = borderMargin + 130;
+      ctx.drawImage(ramImage, ramX, ramY, ramWidth, ramHeight);
     } catch (error) {
       console.error('Error loading Ram image:', error);
     }
 
-    // Organization name
-    ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+    // Organization registration number in header
+    ctx.fillStyle = '#FCD34D';
+    ctx.font = 'bold 48px Arial';
+    ctx.textAlign = 'right';
+    ctx.fillText('Reg. No: 169', width - borderMargin - 120, borderMargin + 120);
     ctx.textAlign = 'center';
-    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, borderMargin + 200);
+
+    // Organization name
+    const textOffsetX = 40;
+    ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2 + textOffsetX, borderMargin + 260);
 
     // Taglines
     ctx.font = 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
     ctx.fillStyle = '#FCD34D';
-    ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2, borderMargin + 320);
-    ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2, borderMargin + 400);
+    ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2 + textOffsetX, borderMargin + 380);
+    ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2 + textOffsetX, borderMargin + 460);
 
     // === CONTENT SECTION ===
     const contentStartY = headerHeight - borderMargin + 40;
@@ -368,7 +388,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     ctx.fillText(`Date - ${formatDate(data.registrationDate)}`, width - borderMargin - 50, footerY + 100);
 
     ctx.font = 'bold 40px Arial';
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     
     const footerTexts = [
       'Central Office :- D-305 Kanha Kunj, Indira Park, Najafgarh, New Delhi - 110043',
@@ -377,7 +397,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     ];
     
     footerTexts.forEach((text, index) => {
-      ctx.fillText(text, width / 2, footerY + 180 + (index * 60));
+      ctx.fillText(text, borderMargin + 60, footerY + 180 + (index * 60));
     });
 
     // === GOLDEN BORDERS ===

@@ -7,6 +7,8 @@ import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 
+const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES === 'true';
+
 export async function POST(request: NextRequest) {
   try {
     // Check admin authentication and permissions
@@ -273,6 +275,7 @@ export async function POST(request: NextRequest) {
     // Generate membership certificate
     let certificatePath = null;
     let certificateNumber = null;
+    let certificateRecordId: number | null = null;
     
     try {
       console.log('Generating membership certificate for:', memberRegNumber);
@@ -295,12 +298,14 @@ export async function POST(request: NextRequest) {
         VALUES (?, ?, ?, ?)
       `;
       
-      await executeQuery(certificateQuery, [
+      const certificateInsertResult = await executeQuery(certificateQuery, [
         memberId,
         certificateNumber,
         certificatePath,
         scope.adminId
-      ]);
+      ]) as { insertId: number };
+      
+      certificateRecordId = certificateInsertResult.insertId ?? null;
       
       console.log('✅ Certificate record saved to database');
     } catch (error) {
@@ -319,7 +324,8 @@ export async function POST(request: NextRequest) {
         memberRegNumber: memberRegNumber,
         profilePhotoPath: resolvedProfilePath,
         address: address,
-        designation: 'Member'
+        designation: 'Member',
+        cardType: 'membership'
       });
       
       idCardPath = idCardResult.idCardPath;
@@ -333,8 +339,26 @@ export async function POST(request: NextRequest) {
     // Send welcome email with certificate and ID card
     try {
       console.log('Sending welcome email to:', email, 'with certificate:', certificatePath, 'and ID card:', idCardPath);
-      await sendWelcomeEmail(email, name, memberRegNumber, certificatePath || undefined, idCardPath || undefined);
+      const welcomeEmailResult = await sendWelcomeEmail(
+        email,
+        name,
+        memberRegNumber,
+        certificatePath || undefined,
+        idCardPath || undefined
+      );
+      
+      if (welcomeEmailResult?.success) {
       console.log('✅ Welcome email sent successfully');
+        
+        if (!retainCertificateFiles && certificateRecordId) {
+          await executeQuery(
+            'UPDATE member_certificates SET certificate_path = NULL WHERE id = ?',
+            [certificateRecordId]
+          );
+        }
+      } else {
+        console.error('❌ Error sending welcome email:', welcomeEmailResult?.error);
+      }
     } catch (error) {
       console.error('❌ Error sending welcome email:', error);
     }
