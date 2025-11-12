@@ -148,7 +148,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
   ctx.fillStyle = '#FCD34D';
   ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2 + 40, borderMargin + 260);
- 
+
   // Taglines (larger font)
   ctx.font = 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
   ctx.fillStyle = '#FCD34D';
@@ -192,7 +192,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   // === MEMBER APPOINTMENT INFO ===
   const appointmentBoxY = ribbonY + 180;
-
+  
   // === MEMBER PHOTO === (define before using photoX for text layout)
   const photoSize = 480;
   const photoX = width - 600;
@@ -246,7 +246,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ctx.textAlign = 'center';
   ctx.fillText(`Reg: ${data.member.member_reg_number}`, photoX + photoSize / 2, memberInfoY);
   ctx.textAlign = 'center';
- 
+
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
   const motTextY = memberInfoY + 350; // Much more space after member info
   const motivationalText = "Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.";

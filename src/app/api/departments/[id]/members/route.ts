@@ -215,7 +215,7 @@ export async function POST(
 
     // Generate certificate automatically
     try {
-      const certificateResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/certificates/generate`, {
+      const certificateResponse = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3010'}/api/certificates/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
