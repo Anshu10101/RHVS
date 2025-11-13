@@ -264,11 +264,29 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
     const transporter = createTransporter();
     
     // Check if certificate file exists
-    const certificateFilePath = resolveAttachmentPath(data.certificatePath);
+    let certificateFilePath: string;
+    try {
+      certificateFilePath = resolveAttachmentPath(data.certificatePath);
+      console.log(`[Email Service] Resolved certificate path: ${certificateFilePath}`);
+    } catch (pathError) {
+      console.error(`[Email Service] Failed to resolve certificate path: ${data.certificatePath}`, pathError);
+      throw new Error(`Invalid certificate path: ${pathError instanceof Error ? pathError.message : 'Unknown error'}`);
+    }
 
     if (!fs.existsSync(certificateFilePath)) {
-      throw new Error('Certificate file not found');
+      console.error(`[Email Service] Certificate file does not exist: ${certificateFilePath}`);
+      console.error(`[Email Service] Original path: ${data.certificatePath}`);
+      console.error(`[Email Service] Process CWD: ${process.cwd()}`);
+      throw new Error(`Certificate file not found at ${certificateFilePath}`);
     }
+    
+    const stats = fs.statSync(certificateFilePath);
+    if (stats.size === 0) {
+      console.error(`[Email Service] Certificate file is empty: ${certificateFilePath}`);
+      throw new Error(`Certificate file is empty at ${certificateFilePath}`);
+    }
+    
+    console.log(`[Email Service] Certificate file verified: ${certificateFilePath} (${stats.size} bytes)`);
 
     // Generate email content
     const htmlContent = generateEmailTemplate(data);

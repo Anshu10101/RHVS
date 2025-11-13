@@ -6,6 +6,8 @@ import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 import { sendCertificateEmail } from '@/lib/email-service';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { getStateLanguagePreference } from '@/lib/language-preference';
+import fs from 'fs';
+import path from 'path';
 
 const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
@@ -146,13 +148,33 @@ export async function POST(request: NextRequest) {
       stateName: member[0].state ?? state ?? null
     });
 
-    const certificatePath = await generateAppointmentCertificate({
-      ...certificateData,
-      language: languagePreference
-    });
+    let certificatePath: string;
+    try {
+      console.log(`[Certificate Generation] Starting certificate generation for member ${member_id}`);
+      certificatePath = await generateAppointmentCertificate({
+        ...certificateData,
+        language: languagePreference
+      });
+      console.log(`[Certificate Generation] Certificate generated successfully: ${certificatePath}`);
+      
+      // Verify certificate file exists before proceeding
+      const fullCertificatePath = path.join(process.cwd(), 'public', certificatePath);
+      if (!fs.existsSync(fullCertificatePath)) {
+        throw new Error(`Certificate file not found at ${fullCertificatePath} after generation`);
+      }
+      console.log(`[Certificate Generation] Certificate file verified: ${fullCertificatePath}`);
+    } catch (certError) {
+      console.error(`[Certificate Generation] Failed to generate certificate:`, certError);
+      return NextResponse.json({
+        error: 'Failed to generate certificate',
+        message: certError instanceof Error ? certError.message : 'Unknown error',
+        details: certError instanceof Error ? certError.stack : undefined
+      }, { status: 500 });
+    }
 
     let appointmentIdCardPath: string | null = null;
     try {
+      console.log(`[ID Card Generation] Starting ID card generation for member ${member_id}`);
       const idCardResult = await generateIDCard({
         memberId: member_id,
         memberName: member[0].name,
@@ -177,8 +199,24 @@ export async function POST(request: NextRequest) {
       });
 
       appointmentIdCardPath = idCardResult.idCardPath;
+      console.log(`[ID Card Generation] ID card generated successfully: ${appointmentIdCardPath}`);
+      
+      // Verify ID card file exists
+      if (appointmentIdCardPath) {
+        const fullIdCardPath = path.join(process.cwd(), 'public', appointmentIdCardPath);
+        if (fs.existsSync(fullIdCardPath)) {
+          const stats = fs.statSync(fullIdCardPath);
+          console.log(`[ID Card Generation] ID card file verified: ${fullIdCardPath} (${stats.size} bytes)`);
+        } else {
+          console.warn(`[ID Card Generation] ID card file not found at ${fullIdCardPath}, will skip attachment`);
+          appointmentIdCardPath = null;
+        }
+      }
     } catch (idCardError) {
-      console.error('Error generating appointment ID card:', idCardError);
+      console.error('[ID Card Generation] Error generating appointment ID card:', idCardError);
+      console.error('[ID Card Generation] Error details:', idCardError instanceof Error ? idCardError.stack : idCardError);
+      // Don't fail the whole process if ID card generation fails - certificate email can still be sent
+      appointmentIdCardPath = null;
     }
 
     // Save certificate record
@@ -205,6 +243,13 @@ export async function POST(request: NextRequest) {
 
     // Send email to member
     try {
+      // Double-check certificate file exists before sending email
+      const fullCertificatePath = path.join(process.cwd(), 'public', certificatePath);
+      if (!fs.existsSync(fullCertificatePath)) {
+        throw new Error(`Certificate file not found at ${fullCertificatePath} before email sending`);
+      }
+      console.log(`[Email] Certificate file verified before email: ${fullCertificatePath}`);
+      
       const emailData = {
         to: member[0].email,
         memberName: member[0].name,
@@ -225,6 +270,7 @@ export async function POST(request: NextRequest) {
         language: languagePreference,
       };
 
+      console.log(`[Email] Attempting to send certificate email to ${member[0].email}`);
       const emailResult = await sendCertificateEmail(emailData);
       
       if (emailResult.success) {

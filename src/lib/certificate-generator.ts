@@ -538,7 +538,36 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const fileName = `certificate-${data.certificate_number}.pdf`;
   const filePath = path.join(certificatesDir, fileName);
   
-  fs.writeFileSync(filePath, pdfBytes);
+  try {
+    fs.writeFileSync(filePath, pdfBytes);
+    console.log(`[Appointment Certificate] PDF saved successfully: ${filePath}`);
+    
+    // Verify file was created
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`Certificate file was not created at ${filePath}`);
+    }
+    
+    const stats = fs.statSync(filePath);
+    if (stats.size === 0) {
+      throw new Error(`Certificate file is empty at ${filePath}`);
+    }
+    
+    console.log(`[Appointment Certificate] File verified: ${filePath} (${stats.size} bytes)`);
+  } catch (writeError) {
+    console.error(`[Appointment Certificate] Error writing certificate file:`, writeError);
+    console.error(`[Appointment Certificate] File path: ${filePath}`);
+    console.error(`[Appointment Certificate] Directory exists: ${fs.existsSync(certificatesDir)}`);
+    
+    // Try to check directory permissions
+    try {
+      fs.accessSync(certificatesDir, fs.constants.W_OK);
+      console.log(`[Appointment Certificate] Directory is writable`);
+    } catch (permError) {
+      console.error(`[Appointment Certificate] Directory is NOT writable:`, permError);
+    }
+    
+    throw new Error(`Failed to write certificate file: ${writeError instanceof Error ? writeError.message : 'Unknown error'}`);
+  }
 
   return `/certificates/${fileName}`;
 }
