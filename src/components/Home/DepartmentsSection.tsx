@@ -27,6 +27,7 @@ export default function DepartmentsSection() {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const isTouchingRef = useRef<boolean>(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const firstSequenceWidthRef = useRef<number>(0);
   const firstTrackRef = useRef<HTMLDivElement | null>(null);
@@ -88,20 +89,30 @@ export default function DepartmentsSection() {
     return () => ro.disconnect();
   }, [departments.length]);
 
-  // RAF marquee loop for seamless wrap
+  // RAF marquee loop for seamless wrap - auto-scroll on mobile and desktop
   useEffect(() => {
     if (showAll) return;
     const node = scrollerRef.current;
     if (!node) return;
-    const speedPxPerSec = 60; // tune speed
+    
     let lastTs = performance.now();
 
     const step = (ts: number) => {
       if (!node) return;
+      
+      // Check if mobile dynamically
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const speedPxPerSec = isMobile ? 50 : 60; // Slower on mobile for better readability
+      
       const dt = Math.max(0, ts - lastTs) / 1000;
       lastTs = ts;
-      if (!isHovering) {
+      
+      // On mobile, always scroll unless actively touching. On desktop, pause on hover
+      const shouldScroll = isMobile ? !isTouchingRef.current : !isHovering;
+      
+      if (shouldScroll) {
         const firstWidth = firstSequenceWidthRef.current || 0;
+        // Only scroll if we have a valid width, otherwise wait for it
         if (firstWidth > 0) {
           node.scrollLeft += speedPxPerSec * dt;
           while (node.scrollLeft >= firstWidth) {
@@ -112,12 +123,14 @@ export default function DepartmentsSection() {
       rafIdRef.current = requestAnimationFrame(step);
     };
 
+    // Start animation immediately - it will wait for width to be calculated
     rafIdRef.current = requestAnimationFrame(step);
+    
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
     };
-  }, [showAll, isHovering]);
+  }, [showAll, isHovering, departments.length]);
 
   if (loading) {
     return (
@@ -179,7 +192,7 @@ export default function DepartmentsSection() {
         {/* Header actions */}
         <div className="flex items-center justify-end mb-4">
           <Button size="sm" className="rounded-full bg-orange-600 hover:bg-orange-700" onClick={() => setShowAll(v => !v)}>
-            {showAll ? 'Show Marquee' : 'View All'}
+            {showAll ? 'Close' : 'View All'}
           </Button>
         </div>
 
@@ -192,18 +205,19 @@ export default function DepartmentsSection() {
               aria-label="Scroll left"
               onClick={() => {
                 setIsHovering(true);
-                scrollerRef.current?.scrollBy({ left: -320, behavior: 'smooth' });
+                const scrollAmount = typeof window !== 'undefined' && window.innerWidth < 768 ? -260 : -320;
+                scrollerRef.current?.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
                 resumeTimerRef.current = window.setTimeout(() => setIsHovering(false), 600);
               }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/80 shadow p-2 hover:bg-white border border-slate-200"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 shadow-md p-1.5 sm:p-2 hover:bg-white border border-slate-200 active:scale-95 transition-transform"
             >
-              <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
             </button>
 
             <div
               ref={scrollerRef}
-              className="overflow-x-scroll py-2 flex gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+              className="overflow-x-scroll py-2 flex gap-3 sm:gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
               style={{ msOverflowStyle: 'none' as unknown as undefined }}
               onScroll={(e) => {
                 const node = e.currentTarget;
@@ -214,20 +228,35 @@ export default function DepartmentsSection() {
               }}
               onMouseEnter={() => setIsHovering(true)}
               onMouseLeave={() => setIsHovering(false)}
+              onTouchStart={() => {
+                isTouchingRef.current = true;
+                setIsHovering(true);
+              }}
+              onTouchEnd={() => {
+                // Resume after a short delay on mobile
+                setTimeout(() => {
+                  isTouchingRef.current = false;
+                  setIsHovering(false);
+                }, 800);
+              }}
+              onTouchCancel={() => {
+                isTouchingRef.current = false;
+                setIsHovering(false);
+              }}
             >
               {/* Track A */}
-              <div ref={firstTrackRef} className="flex gap-4">
+              <div ref={firstTrackRef} className="flex gap-3 sm:gap-4">
                 {departments.map((department, index) => (
                   <div key={`${String(department.id)}-a-${index}`} className="shrink-0 snap-start">
                     <Card
-                      className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-3xl p-4 flex flex-col items-center w-60"
+                      className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col items-center w-52 sm:w-56 md:w-60"
                       onClick={() => router.push(`/departments/${department.id}`)}
                     >
                   <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:"radial-gradient(700px 150px at 50% 0%, rgba(251,146,60,0.10), transparent)"}} />
 
                   {/* Media (Photo or Fallback) - Circular professional card */}
                   <div className="relative flex items-center justify-center">
-                    <div className="relative h-36 w-36 md:h-40 md:w-40 lg:h-44 lg:w-44 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
+                    <div className="relative h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                       {department.president?.photo_path ? (
                         <div className="absolute inset-0 overflow-hidden bg-white">
                           <Image
@@ -251,11 +280,11 @@ export default function DepartmentsSection() {
                       <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
                         <div className="relative w-full">
                           <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
-                          <div className="relative px-4 pb-2 pt-4">
-                            <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                          <div className="relative px-2 sm:px-3 md:px-4 pb-1.5 sm:pb-2 pt-3 sm:pt-4">
+                            <h3 className="text-white text-xs sm:text-sm md:text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
                               {department.name_hi}
                             </h3>
-                            <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
+                            <p className="text-white/90 text-[9px] sm:text-[10px] md:text-[11px] leading-tight font-medium line-clamp-1 text-center">
                               {department.name_en}
                             </p>
                           </div>
@@ -264,15 +293,15 @@ export default function DepartmentsSection() {
                     </div>
                   </div>
 
-                  <CardContent className="px-0 pt-3 pb-0 w-full">
+                  <CardContent className="px-0 pt-2 sm:pt-3 pb-0 w-full">
                     <div className="text-center">
-                      <p className="text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
+                      <p className="text-xs sm:text-sm md:text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
                         {department.president ? department.president.name : 'Position Vacant'}
                       </p>
-                      <p className="text-[12px] font-semibold text-orange-700 leading-snug line-clamp-1">
+                      <p className="text-[10px] sm:text-[11px] md:text-[12px] font-semibold text-orange-700 leading-snug line-clamp-1">
                         {department.post_name_hi}
                       </p>
-                      <p className="text-[11px] text-slate-700 leading-snug line-clamp-1">
+                      <p className="text-[9px] sm:text-[10px] md:text-[11px] text-slate-700 leading-snug line-clamp-1">
                         {department.post_name_en}
                       </p>
                     </div>
@@ -283,18 +312,18 @@ export default function DepartmentsSection() {
               </div>
 
               {/* Track B (duplicate, aria-hidden) */}
-              <div aria-hidden className="flex gap-4">
+              <div aria-hidden className="flex gap-3 sm:gap-4">
                 {departments.map((department, index) => (
                   <div key={`${String(department.id)}-b-${index}`} className="shrink-0 snap-start">
                     <Card
-                      className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-3xl p-4 flex flex-col items-center w-60"
+                      className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col items-center w-52 sm:w-56 md:w-60"
                       onClick={() => router.push(`/departments/${department.id}`)}
                     >
                       <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:"radial-gradient(700px 150px at 50% 0%, rgba(251,146,60,0.10), transparent)"}} />
 
                       {/* Media (Photo or Fallback) - Circular professional card */}
                       <div className="relative flex items-center justify-center">
-                        <div className="relative h-36 w-36 md:h-40 md:w-40 lg:h-44 lg:w-44 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
+                        <div className="relative h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                           {department.president?.photo_path ? (
                             <div className="absolute inset-0 overflow-hidden bg-white">
                               <Image
@@ -318,11 +347,11 @@ export default function DepartmentsSection() {
                           <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
                             <div className="relative w-full">
                               <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
-                              <div className="relative px-4 pb-2 pt-4">
-                                <h3 className="text-white text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                              <div className="relative px-2 sm:px-3 md:px-4 pb-1.5 sm:pb-2 pt-3 sm:pt-4">
+                                <h3 className="text-white text-xs sm:text-sm md:text-[16px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
                                   {department.name_hi}
                                 </h3>
-                                <p className="text-white/90 text-[11px] leading-tight font-medium line-clamp-1 text-center">
+                                <p className="text-white/90 text-[9px] sm:text-[10px] md:text-[11px] leading-tight font-medium line-clamp-1 text-center">
                                   {department.name_en}
                                 </p>
                               </div>
@@ -331,15 +360,15 @@ export default function DepartmentsSection() {
                         </div>
                       </div>
 
-                      <CardContent className="px-0 pt-3 pb-0 w-full">
+                      <CardContent className="px-0 pt-2 sm:pt-3 pb-0 w-full">
                         <div className="text-center">
-                          <p className="text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
+                          <p className="text-xs sm:text-sm md:text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
                             {department.president ? department.president.name : 'Position Vacant'}
                           </p>
-                          <p className="text-[12px] font-semibold text-orange-700 leading-snug line-clamp-1">
+                          <p className="text-[10px] sm:text-[11px] md:text-[12px] font-semibold text-orange-700 leading-snug line-clamp-1">
                             {department.post_name_hi}
                           </p>
-                          <p className="text-[11px] text-slate-700 leading-snug line-clamp-1">
+                          <p className="text-[9px] sm:text-[10px] md:text-[11px] text-slate-700 leading-snug line-clamp-1">
                             {department.post_name_en}
                           </p>
                         </div>
@@ -356,28 +385,29 @@ export default function DepartmentsSection() {
               aria-label="Scroll right"
               onClick={() => {
                 setIsHovering(true);
-                scrollerRef.current?.scrollBy({ left: 320, behavior: 'smooth' });
+                const scrollAmount = typeof window !== 'undefined' && window.innerWidth < 768 ? 260 : 320;
+                scrollerRef.current?.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                 if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
                 resumeTimerRef.current = window.setTimeout(() => setIsHovering(false), 600);
               }}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/80 shadow p-2 hover:bg-white border border-slate-200"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 shadow-md p-1.5 sm:p-2 hover:bg-white border border-slate-200 active:scale-95 transition-transform"
             >
-              <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+              <svg className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
           {departments.map((department) => (
             <Card
               key={department.id}
-              className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-3xl p-4 flex flex-col items-center"
+              className="group relative cursor-pointer border border-slate-200/70 bg-white/90 backdrop-blur-sm shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-orange-200/70 rounded-2xl sm:rounded-3xl p-3 sm:p-4 flex flex-col items-center"
               onClick={() => router.push(`/departments/${department.id}`)}
             >
               <div className="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{background:"radial-gradient(700px 150px at 50% 0%, rgba(251,146,60,0.10), transparent)"}} />
 
               {/* Media (Photo or Fallback) - Circular professional card */}
-              <div className="relative flex items-center justify-center">
-                <div className="relative h-40 w-40 md:h-44 md:w-44 lg:h-48 lg:w-48 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
+              <div className="relative flex items-center justify-center w-full">
+                <div className="relative h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36 lg:h-40 lg:w-40 xl:h-44 xl:w-44 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
                 {department.president?.photo_path ? (
                   <div className="absolute inset-0 overflow-hidden bg-white">
                     <Image
@@ -391,7 +421,7 @@ export default function DepartmentsSection() {
                   </div>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200 text-orange-800">
-                    <div className="text-5xl font-bold tracking-tight">
+                    <div className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
                       {(department.name_en || 'RHVS').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase()}
                     </div>
                   </div>
@@ -401,11 +431,11 @@ export default function DepartmentsSection() {
                   <div className="absolute inset-0 pointer-events-none flex flex-col justify-end">
                     <div className="relative w-full">
                       <div className="absolute inset-0 rounded-b-full bg-gradient-to-t from-black/30 via-black/10 to-transparent backdrop-blur-[1.5px]" />
-                      <div className="relative px-4 pb-3 pt-4">
-                        <h3 className="text-white text-[18px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
+                      <div className="relative px-2 sm:px-3 md:px-4 pb-2 sm:pb-2.5 md:pb-3 pt-3 sm:pt-3.5 md:pt-4">
+                        <h3 className="text-white text-xs sm:text-sm md:text-base lg:text-[18px] font-extrabold tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.45)] line-clamp-1 text-center">
                           {department.name_hi}
                         </h3>
-                        <p className="text-white/90 text-[12px] leading-tight font-medium line-clamp-1 text-center">
+                        <p className="text-white/90 text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] leading-tight font-medium line-clamp-1 text-center">
                           {department.name_en}
                         </p>
                       </div>
@@ -415,15 +445,15 @@ export default function DepartmentsSection() {
               </div>
 
               {/* Content */}
-              <CardContent className="px-0 pt-4 pb-0 w-full">
+              <CardContent className="px-0 pt-2 sm:pt-3 md:pt-4 pb-0 w-full">
                 <div className="text-center">
-                    <p className="text-[16px] font-bold text-slate-900 leading-tight line-clamp-1">
+                    <p className="text-xs sm:text-sm md:text-[15px] lg:text-[16px] font-bold text-slate-900 leading-tight line-clamp-1">
                       {department.president ? department.president.name : 'Position Vacant'}
                     </p>
-                    <p className="text-[13px] font-semibold text-orange-700 leading-snug line-clamp-1">
+                    <p className="text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] font-semibold text-orange-700 leading-snug line-clamp-1">
                       {department.post_name_hi}
                     </p>
-                    <p className="text-[12px] text-slate-700 leading-snug line-clamp-1">
+                    <p className="text-[9px] sm:text-[10px] md:text-[11px] lg:text-[12px] text-slate-700 leading-snug line-clamp-1">
                       {department.post_name_en}
                     </p>
                 </div>

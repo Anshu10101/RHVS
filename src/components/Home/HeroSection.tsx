@@ -1,13 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Noto_Serif_Devanagari } from 'next/font/google';
-import { useEffect, useState } from 'react';
-
-const devanagari = Noto_Serif_Devanagari({
-  subsets: ['devanagari'],
-  weight: ['400', '600', '700'],
-});
+import { useEffect, useState, useRef } from 'react';
 
 interface HeroImage {
   id: number;
@@ -39,10 +33,115 @@ export default function HeroSection() {
   const [isLoading, setIsLoading] = useState(true);
   const [imageAspectRatios, setImageAspectRatios] = useState<{[key: number]: string}>({});
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  
+  // Refs for marquee seamless scrolling
+  const welcomeMarqueeRef = useRef<HTMLDivElement | null>(null);
+  const welcomeTrackRef = useRef<HTMLDivElement | null>(null);
+  const welcomeWidthRef = useRef<number>(0);
+  const welcomeRafRef = useRef<number | null>(null);
+  
+  const shlokasMarqueeRef = useRef<HTMLDivElement | null>(null);
+  const shlokasTrackRef = useRef<HTMLDivElement | null>(null);
+  const shlokasWidthRef = useRef<number>(0);
+  const shlokasRafRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetchHeroImages();
     fetchHeroSettings();
+  }, []);
+
+  // Measure welcome marquee width
+  useEffect(() => {
+    const el = welcomeTrackRef.current;
+    if (!el) return;
+    const update = () => {
+      welcomeWidthRef.current = el.scrollWidth || el.offsetWidth || 0;
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Measure shlokas marquee width
+  useEffect(() => {
+    const el = shlokasTrackRef.current;
+    if (!el) return;
+    const update = () => {
+      shlokasWidthRef.current = el.scrollWidth || el.offsetWidth || 0;
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Welcome marquee RAF loop
+  useEffect(() => {
+    const node = welcomeMarqueeRef.current;
+    if (!node) return;
+    
+    let lastTs = performance.now();
+
+    const step = (ts: number) => {
+      if (!node) return;
+      
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const speedPxPerSec = isMobile ? 50 : 40; // Slower on desktop
+      
+      const dt = Math.max(0, ts - lastTs) / 1000;
+      lastTs = ts;
+      
+      const firstWidth = welcomeWidthRef.current || 0;
+      if (firstWidth > 0) {
+        node.scrollLeft += speedPxPerSec * dt;
+        while (node.scrollLeft >= firstWidth) {
+          node.scrollLeft -= firstWidth;
+        }
+      }
+      welcomeRafRef.current = requestAnimationFrame(step);
+    };
+
+    welcomeRafRef.current = requestAnimationFrame(step);
+    
+    return () => {
+      if (welcomeRafRef.current) cancelAnimationFrame(welcomeRafRef.current);
+      welcomeRafRef.current = null;
+    };
+  }, []);
+
+  // Shlokas marquee RAF loop
+  useEffect(() => {
+    const node = shlokasMarqueeRef.current;
+    if (!node) return;
+    
+    let lastTs = performance.now();
+
+    const step = (ts: number) => {
+      if (!node) return;
+      
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const speedPxPerSec = isMobile ? 50 : 40; // Slower on desktop
+      
+      const dt = Math.max(0, ts - lastTs) / 1000;
+      lastTs = ts;
+      
+      const firstWidth = shlokasWidthRef.current || 0;
+      if (firstWidth > 0) {
+        node.scrollLeft += speedPxPerSec * dt;
+        while (node.scrollLeft >= firstWidth) {
+          node.scrollLeft -= firstWidth;
+        }
+      }
+      shlokasRafRef.current = requestAnimationFrame(step);
+    };
+
+    shlokasRafRef.current = requestAnimationFrame(step);
+    
+    return () => {
+      if (shlokasRafRef.current) cancelAnimationFrame(shlokasRafRef.current);
+      shlokasRafRef.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -142,47 +241,12 @@ export default function HeroSection() {
   };
 
   return (
-    <section className="relative overflow-hidden pt-8 md:pt-10 pb-16 md:pb-20 bg-gradient-to-b from-orange-50 to-white">
+    <section className="relative overflow-hidden pt-0 pb-16 md:pb-20 bg-gradient-to-b from-orange-50 to-white">
       {/* subtle ornamental aura */}
       <div className="pointer-events-none absolute inset-0 [background:radial-gradient(600px_300px_at_50%_-10%,rgba(253,186,116,0.22),transparent)]" />
       <div className="container mx-auto px-4 text-center relative">
-        <h2 className="text-lg md:text-xl mb-3 md:mb-4 text-orange-700">॥ जय श्री राम ॥</h2>
-        
-        <div className="mb-6 grid grid-cols-1 md:[grid-template-columns:1fr_auto_1fr] items-center gap-4 md:gap-3">
-          <div className="order-2 md:order-1 hidden md:block" aria-hidden="true" />
-          <div className="order-1 md:order-2 flex flex-col items-center">
-            <h1 className={`${devanagari.className} text-3xl sm:text-4xl md:text-6xl font-extrabold text-orange-900 tracking-tight text-center leading-snug md:leading-tight`}>
-              राष्ट्रीय हिंदू वाहिनी संगठन
-            </h1>
-            <p className="mt-3 text-sm sm:text-base md:hidden text-orange-700/90 max-w-md">
-              Rashtriya Hindu Vahini Sangathan
-            </p>
-          </div>
-          <div className="order-3 md:order-3 flex items-center justify-center md:justify-start">
-            <Image
-              src="/ram.png"
-              alt="Jai Shri Ram"
-              width={160}
-              height={160}
-              className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-36 lg:h-36 object-contain"
-              priority
-            />
-          </div>
-        </div>
-
-        {/* lotus divider */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="h-px w-10 bg-orange-200" />
-          <span className="text-2xl">🪷</span>
-          <span className="h-px w-10 bg-orange-200" />
-        </div>
-        
-        <p className="text-base md:text-lg text-orange-700/90 mb-10 max-w-3xl mx-auto">
-          Dedicated to preserving, protecting and promoting Hindu dharma and culture
-        </p>
-        
-         {/* Hero Image Display - full view, preserves aspect (no stretch) */}
-         <div className="mx-auto my-10 flex justify-center relative">
+         {/* Hero Image Display - full view, preserves aspect (no stretch) - moved to top */}
+         <div className="mx-auto my-0 flex justify-center relative">
             {/* side decorative gradients to enrich leftover space */}
             <div className="hero-side-gradient hero-side-left">
               <span className="hero-motif text-orange-600" aria-hidden="true">ॐ</span>
@@ -241,24 +305,67 @@ export default function HeroSection() {
         </div>
 
 
+        {/* Welcome marquee */}
+        <div className="relative overflow-hidden full-bleed mt-2 py-2 sm:py-3 bg-gradient-to-r from-orange-100 to-orange-50">
+          <div
+            ref={welcomeMarqueeRef}
+            className="overflow-x-scroll flex gap-3 sm:gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+            style={{ msOverflowStyle: 'none' as unknown as undefined }}
+            onScroll={(e) => {
+              const node = e.currentTarget;
+              const firstWidth = welcomeWidthRef.current || 0;
+              if (firstWidth > 0 && node.scrollLeft >= firstWidth) {
+                node.scrollLeft = node.scrollLeft - firstWidth;
+              }
+            }}
+          >
+            {/* Track A */}
+            <div ref={welcomeTrackRef} className="flex gap-3 sm:gap-4 whitespace-nowrap">
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">✨ राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - हम सनातन धर्म और संस्कृति की रक्षा, संरक्षण और प्रचार के लिए समर्पित हैं ✨</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">🙏 राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - सनातन धर्म को मजबूत करने और समाज की सेवा करने के लिए हमारे साथ जुड़ें 🙏</span>
+            </div>
+            {/* Track B (duplicate for seamless loop) */}
+            <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">✨ राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - हम सनातन धर्म और संस्कृति की रक्षा, संरक्षण और प्रचार के लिए समर्पित हैं ✨</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">🙏 राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - सनातन धर्म को मजबूत करने और समाज की सेवा करने के लिए हमारे साथ जुड़ें 🙏</span>
+            </div>
+          </div>
+        </div>
+
         {/* mantra marquee */}
-        <div className="relative overflow-hidden full-bleed mt-6 py-2">
-          <div className="whitespace-nowrap will-change-transform marquee-run">
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ सर्वे भवन्तु सुखिनः</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ नमः शिवाय</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ जय जगदीश हरे</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">जय श्री राम</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">हरे कृष्ण हरे राम</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ गं गणपतये नमः</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ ऐं ह्रीं क्लीं चामुण्डायै नमः</span>
-            {/* duplicate for seamless loop */}
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ सर्वे भवन्तु सुखिनः</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ नमः शिवाय</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ जय जगदीश हरे</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">जय श्री राम</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">हरे कृष्ण हरे राम</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ गं गणपतये नमः</span>
-            <span className="mx-4 md:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-sm md:text-base">ॐ ऐं ह्रीं क्लीं चामुण्डायै नमः</span>
+        <div className="relative overflow-hidden full-bleed mt-1 sm:mt-2 py-1.5 sm:py-2">
+          <div
+            ref={shlokasMarqueeRef}
+            className="overflow-x-scroll flex gap-3 sm:gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+            style={{ msOverflowStyle: 'none' as unknown as undefined }}
+            onScroll={(e) => {
+              const node = e.currentTarget;
+              const firstWidth = shlokasWidthRef.current || 0;
+              if (firstWidth > 0 && node.scrollLeft >= firstWidth) {
+                node.scrollLeft = node.scrollLeft - firstWidth;
+              }
+            }}
+          >
+            {/* Track A */}
+            <div ref={shlokasTrackRef} className="flex gap-3 sm:gap-4 whitespace-nowrap">
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ सर्वे भवन्तु सुखिनः</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ नमः शिवाय</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ जय जगदीश हरे</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">जय श्री राम</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">हरे कृष्ण हरे राम</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ गं गणपतये नमः</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ ऐं ह्रीं क्लीं चामुण्डायै नमः</span>
+            </div>
+            {/* Track B (duplicate for seamless loop) */}
+            <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ सर्वे भवन्तु सुखिनः</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ नमः शिवाय</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ जय जगदीश हरे</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">जय श्री राम</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">हरे कृष्ण हरे राम</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ गं गणपतये नमः</span>
+              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-semibold tracking-wide text-xs sm:text-sm md:text-base">ॐ ऐं ह्रीं क्लीं चामुण्डायै नमः</span>
+            </div>
           </div>
         </div>
       </div>
