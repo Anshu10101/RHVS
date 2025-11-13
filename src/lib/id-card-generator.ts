@@ -95,10 +95,15 @@ async function getHindiLocationName(
   }
   
   // Try to fetch Hindi name (only if state is Hindi for districts)
+  // Note: districts table doesn't have district_name_hindi column, so skip for districts
+  if (type === 'district') {
+    return null; // Districts table doesn't have Hindi column
+  }
+  
   try {
-    const table = type === 'district' ? 'districts' : 'states';
-    const nameColumn = type === 'district' ? 'district_name_english' : 'state_name_english';
-    const hindiColumn = type === 'district' ? 'district_name_hindi' : 'state_name_hindi';
+    const table = 'states';
+    const nameColumn = 'state_name_english';
+    const hindiColumn = 'state_name_hindi';
     
     // Check if Hindi column exists by trying to query it
     const query = `SELECT ${hindiColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`;
@@ -109,8 +114,9 @@ async function getHindiLocationName(
     }
   } catch (error: unknown) {
     // If Hindi column doesn't exist (ER_BAD_FIELD_ERROR), silently fall back to English
-    const dbError = error as { code?: string; errno?: number };
-    if (dbError.code === 'ER_BAD_FIELD_ERROR' || dbError.errno === 1054) {
+    const dbError = error as { code?: string; errno?: number; sqlMessage?: string };
+    if (dbError.code === 'ER_BAD_FIELD_ERROR' || dbError.errno === 1054 || 
+        (dbError.sqlMessage && dbError.sqlMessage.includes('Unknown column'))) {
       // Column doesn't exist - this is expected if Hindi columns haven't been added yet
       return null;
     }
@@ -367,8 +373,6 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       return null;
     })();
 
-    const address = displayAddress || '—';
-
     if (cardType === 'appointment') {
       const department = data.departmentName && data.departmentName.trim().length > 0
         ? data.departmentName
@@ -380,15 +384,16 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         : '—';
 
       lines.push({ label: strings.designationLabel, value: departmentAndPost });
-      lines.push({ label: strings.appointmentDateLabel, value: appointmentDate });
-      if (address !== '—') {
-        lines.push({ label: strings.addressLabel, value: address });
+      // Add address right after designation (like membership card) - always show if district or state exists
+      if (displayAddress) {
+        lines.push({ label: strings.addressLabel, value: displayAddress });
       }
+      lines.push({ label: strings.appointmentDateLabel, value: appointmentDate });
     } else {
       const designation = translateDesignation(data.designation, 'membership', language);
       lines.push({ label: strings.designationLabel, value: designation });
-      if (address !== '—') {
-        lines.push({ label: strings.addressLabel, value: address });
+      if (displayAddress) {
+        lines.push({ label: strings.addressLabel, value: displayAddress });
       }
     }
 

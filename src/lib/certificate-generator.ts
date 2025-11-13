@@ -98,9 +98,10 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         footerAddress: 'bold 40px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         reg: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        regLine: 'bold 36px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         paragraph: 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        signatureName: 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        signatureTitle: 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        signatureName: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        signatureTitle: 'bold 52px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         placeholder: 'bold 24px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
       }
     : {
@@ -113,9 +114,10 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         footer: '700 48px "Arial", sans-serif',
         footerAddress: '600 36px "Arial", sans-serif',
         reg: '700 42px "Arial", sans-serif',
+        regLine: '700 34px "Arial", sans-serif',
         paragraph: '700 56px "Arial", sans-serif',
-        signatureName: '700 34px "Arial", sans-serif',
-        signatureTitle: '600 30px "Arial", sans-serif',
+        signatureName: '700 42px "Arial", sans-serif',
+        signatureTitle: '600 40px "Arial", sans-serif',
         placeholder: '600 22px "Arial", sans-serif',
       };
   
@@ -269,19 +271,88 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const motivationalText = isHindi
     ? 'हार्दिक बधाई। हमें विश्वास है कि आप संगठन को नई गति और शक्ति प्रदान करेंगे। कृपया संगठन, राष्ट्र और सनातन धर्म की रक्षा को सर्वोपरि रखते हुए अपने दायित्वों का पूर्ण निष्ठा, अनुशासन और ईमानदारी से निर्वहन करें।'
     : 'Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.';
-  const signatureBlocks = isHindi
-    ? [
-        { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री' },
-        { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष' },
-        { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा' },
-        { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख' },
-      ]
-    : [
-        { name: 'Naveen Chandra Shukla', title: 'National General Secretary' },
-        { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President' },
-        { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing' },
-        { name: 'Dr. Mayank Dhengula', title: 'National In-charge & Membership Head' },
-      ];
+  // Load signatures from database
+  let signatureRows: Array<{
+    name_en: string;
+    name_hi: string | null;
+    designation_en: string;
+    designation_hi: string | null;
+    signature_path: string | null;
+  }> = [];
+  
+  try {
+    // Try to load appointment signatures first
+    signatureRows = await executeQuery(
+      `SELECT name_en, name_hi, designation_en, designation_hi, 
+              CASE 
+                WHEN signature_blob IS NOT NULL THEN CONCAT('/api/media/certificate-signatures/', id, '/signature')
+                ELSE signature_path
+              END AS signature_path
+       FROM certificate_signatures
+       WHERE certificate_type = 'appointment' AND is_active = TRUE
+       ORDER BY display_order ASC, id ASC
+       LIMIT 4`,
+      []
+    ) as Array<{
+      name_en: string;
+      name_hi: string | null;
+      designation_en: string;
+      designation_hi: string | null;
+      signature_path: string | null;
+    }>;
+    
+    // If no appointment signatures found, use membership signatures (same as membership certificate)
+    if (signatureRows.length === 0) {
+      signatureRows = await executeQuery(
+        `SELECT name_en, name_hi, designation_en, designation_hi, 
+                CASE 
+                  WHEN signature_blob IS NOT NULL THEN CONCAT('/api/media/certificate-signatures/', id, '/signature')
+                  ELSE signature_path
+                END AS signature_path
+         FROM certificate_signatures
+         WHERE certificate_type = 'membership' AND is_active = TRUE
+         ORDER BY display_order ASC, id ASC
+         LIMIT 4`,
+        []
+      ) as Array<{
+        name_en: string;
+        name_hi: string | null;
+        designation_en: string;
+        designation_hi: string | null;
+        signature_path: string | null;
+      }>;
+      console.log(`[Appointment Certificate] No appointment signatures found, using ${signatureRows.length} membership signatures`);
+    } else {
+      console.log(`[Appointment Certificate] Loaded ${signatureRows.length} appointment signatures from database`);
+    }
+    
+    if (signatureRows.length > 0) {
+      console.log(`[Appointment Certificate] Signature names:`, signatureRows.map(s => s.name_en || s.name_hi));
+    }
+  } catch (error) {
+    console.error('[Appointment Certificate] Error loading signatures from database:', error);
+  }
+
+  // Fallback to hardcoded signatures if none found in database
+  const signatureBlocks = signatureRows.length > 0
+    ? signatureRows.map(sig => ({
+        name: isHindi && sig.name_hi ? sig.name_hi : sig.name_en,
+        title: isHindi && sig.designation_hi ? sig.designation_hi : sig.designation_en,
+        signaturePath: sig.signature_path
+      }))
+    : (isHindi
+        ? [
+            { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री', signaturePath: null },
+            { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष', signaturePath: null },
+            { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा', signaturePath: null },
+            { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख', signaturePath: null },
+          ]
+        : [
+            { name: 'Naveen Chandra Shukla', title: 'National General Secretary', signaturePath: null },
+            { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President', signaturePath: null },
+            { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing', signaturePath: null },
+            { name: 'Dr. Mayank Dhengula', title: 'National In-charge & Membership Head', signaturePath: null },
+          ]);
   const footerRegLine = isHindi
     ? `पंजीकरण संख्या - ${data.certificate_number}`
     : `Reg. no - ${data.certificate_number}`;
@@ -336,15 +407,23 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     console.error('Error loading member photo:', error);
   }
 
-  const memberInfoY = photoY + photoSize + 80;
-  ctx.font = fonts.reg;
+  const memberInfoY = photoY + photoSize + 50;
+  ctx.font = fonts.regLine || fonts.reg;
   ctx.fillStyle = '#DC2626';
-  ctx.textAlign = 'right';
-  ctx.fillText(memberRegLabel, photoX + photoSize, memberInfoY);
+  ctx.textAlign = 'center';
+  
+  // Registration number - keep on one line, use larger width to prevent wrapping
+  const maxRegWidth = photoSize + 100; // Increased width to keep on one line
+  const regLines = wrapText(ctx, memberRegLabel, maxRegWidth);
+  // Only draw first line to keep it on one line
+  if (regLines.length > 0) {
+    ctx.fillText(regLines[0], photoX + photoSize / 2, memberInfoY);
+  }
   ctx.textAlign = 'left';
 
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
-  const motTextY = memberInfoY + 350; // Much more space after member info
+  // Calculate based on registration number (always one line now)
+  const motTextY = memberInfoY + 50 + 300; // Much more space after member info
 
   // Add quote marks around motivational text
   ctx.font = fonts.quote;
@@ -370,7 +449,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // === CENTRAL EMBLEM (REMOVED - No more Shri Ram Hindu Rashtra round UI) ===
 
   // === SIGNATURES SECTION (Much lower on certificate) ===
-  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 200; // Much more space after oath
+  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
   
 
   // Center the signatures properly
@@ -387,11 +466,12 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
   const signaturePositions = [sigX1, sigX2, sigX3, sigX4];
 
-  // Draw all four signature blocks
-  signatureBlocks.forEach((block, index) => {
+  // Draw all signature blocks
+  for (let index = 0; index < signatureBlocks.length; index++) {
+    const block = signatureBlocks[index];
     const position = signaturePositions[index] ?? sigX1;
-    drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts, language);
-  });
+    await drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts, language, block.signaturePath || undefined);
+  }
 
   // === FOOTER ===
   const footerY = height - 450; // Even larger footer height
@@ -732,7 +812,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   // === CENTRAL EMBLEM (REMOVED - No more Shri Ram Hindu Rashtra round UI) ===
 
   // === SIGNATURES SECTION (Much lower on certificate) ===
-  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 200; // Much more space after oath
+  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
   
 
   // Center the signatures properly
@@ -919,51 +999,162 @@ function drawOrnamentalLine(
   ctx.stroke();
 }
 
-function drawSignatureBlock(
+async function drawSignatureBlock(
   ctx: CanvasRenderingContext2D,
   name: string,
   title: string,
   x: number,
   y: number,
   fonts?: { signatureName: string; signatureTitle: string },
-  language: 'hi' | 'en' = 'hi'
+  language: 'hi' | 'en' = 'hi',
+  signaturePath?: string
 ) {
   const blockWidth = 500; // Even wider blocks for larger text
   const blockHeight = 250; // Even taller blocks for multi-line titles
   const nameFont =
     fonts?.signatureName ??
     (language === 'hi'
-      ? 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif'
-      : '700 34px "Arial", sans-serif');
+      ? 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif'
+      : '700 42px "Arial", sans-serif');
   const titleFont =
     fonts?.signatureTitle ??
     (language === 'hi'
-      ? 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif'
-      : '600 32px "Arial", sans-serif');
+      ? 'bold 52px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif'
+      : '600 40px "Arial", sans-serif');
   
-  // Signature line (thicker)
+  // Load and draw signature image if available
+  let signatureImage = null;
+  if (signaturePath) {
+    try {
+      signatureImage = await loadSignatureImage(signaturePath);
+      if (!signatureImage) {
+        console.warn(`Signature image not loaded for path: ${signaturePath}`);
+      }
+    } catch (error) {
+      console.error('Error loading signature image:', error, 'Path:', signaturePath);
+    }
+  }
+
+  // Calculate positions
+  let lineY = y; // Horizontal line position
+  let nameY = y + 80; // Name position (below the line)
+  
+  // Draw signature image first (if available)
+  if (signatureImage) {
+    // Draw signature image bigger and higher up
+    const sigHeight = 130; // Increased from 90 to 130 for bigger signature
+    const sigWidth = (signatureImage.width / signatureImage.height) * sigHeight;
+    const sigX = x + (blockWidth - sigWidth) / 2;
+    const sigY = y - 150; // Move signature higher up to accommodate larger size
+    ctx.drawImage(signatureImage, sigX, sigY, sigWidth, sigHeight);
+    
+    // Adjust line position to be below signature with more spacing
+    lineY = sigY + sigHeight + 20; // Increased spacing from 15 to 20
+    nameY = lineY + 50; // Increased spacing from 25 to 50 to prevent merging
+  } else {
+    // If no signature image, adjust name position for better spacing
+    nameY = lineY + 50; // Increased spacing from default
+  }
+  
+  // Draw horizontal line (always draw, either below signature or at default position)
   ctx.strokeStyle = '#DC2626';
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.moveTo(x + 20, y);
-  ctx.lineTo(x + blockWidth - 40, y);
+  ctx.moveTo(x + 20, lineY);
+  ctx.lineTo(x + blockWidth - 40, lineY);
   ctx.stroke();
   
-  // Name (MUCH larger font)
+  // Name (bigger font) - wrap if too long
   ctx.fillStyle = '#1F2937';
-  ctx.font = nameFont; // Slightly smaller for longer names
+  ctx.font = nameFont;
   ctx.textAlign = 'center';
-  ctx.fillText(name, x + blockWidth / 2, y + 70);
+  const maxNameWidth = blockWidth - 40; // Leave padding
+  const nameLines = wrapText(ctx, name, maxNameWidth);
+  nameLines.forEach((line, index) => {
+    ctx.fillText(line, x + blockWidth / 2, nameY + (index * 55));
+  });
   
-  // Title (MUCH larger and bolder font)
-  ctx.font = titleFont; // Much bigger and bolder
+  // Adjust title Y position based on name lines
+  const titleStartY = nameY + (nameLines.length * 55) + 20;
+  
+  // Title/Designation (bigger font)
+  ctx.font = titleFont;
   ctx.fillStyle = '#DC2626';
   
-  // Handle multi-line titles
-  const titleLines = title.split(', ');
+  // Handle multi-line titles with text wrapping to prevent overflow
+  const maxTitleWidth = blockWidth - 40; // Leave some padding
+  const titleParts = title.split(', ');
+  const titleLines: string[] = [];
+  
+  // Wrap each part and combine
+  for (const part of titleParts) {
+    const wrapped = wrapText(ctx, part, maxTitleWidth);
+    titleLines.push(...wrapped);
+  }
+  
+  // Draw wrapped title lines
   titleLines.forEach((line, index) => {
-    ctx.fillText(line, x + blockWidth / 2, y + 130 + (index * 45));
+    ctx.fillText(line, x + blockWidth / 2, titleStartY + (index * 50));
   });
+}
+
+async function loadSignatureImage(signaturePath?: string | null) {
+  if (!signaturePath) return null;
+  const trimmed = signaturePath.trim();
+  if (!trimmed) return null;
+
+  // Handle API endpoint for certificate signatures
+  const apiMatch = trimmed.match(/^\/api\/media\/certificate-signatures\/(\d+)\/signature/);
+  if (apiMatch) {
+    const signatureId = Number(apiMatch[1]);
+    if (!Number.isNaN(signatureId)) {
+      try {
+        const rows = await executeQuery(
+          'SELECT signature_blob, signature_path FROM certificate_signatures WHERE id = ? AND is_active = TRUE LIMIT 1',
+          [signatureId]
+        ) as Array<{ signature_blob: Buffer | null; signature_path: string | null }>;
+        
+        if (rows.length > 0) {
+          const row = rows[0];
+          // Try blob first
+          if (row.signature_blob && row.signature_blob.length > 0) {
+            try {
+              return await loadImage(row.signature_blob);
+            } catch (error) {
+              console.error(`Error loading signature blob for ID ${signatureId}:`, error);
+            }
+          }
+          // Fallback to file path if blob is not available
+          if (row.signature_path) {
+            const normalizedPath = row.signature_path.startsWith('/') ? row.signature_path.slice(1) : row.signature_path;
+            const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+            if (fs.existsSync(absolutePath)) {
+              try {
+                return await loadImage(absolutePath);
+              } catch (error) {
+                console.error(`Error loading signature file for ID ${signatureId}:`, error);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error querying signature for ID ${signatureId}:`, error);
+      }
+    }
+  }
+
+  // Handle direct file path
+  const normalizedPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+  if (fs.existsSync(absolutePath)) {
+    try {
+      return await loadImage(absolutePath);
+    } catch (error) {
+      console.error(`Error loading signature file from path ${absolutePath}:`, error);
+    }
+  }
+
+  return null;
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {

@@ -113,8 +113,8 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
           regLine: 'bold 36px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           footerAddress: 'bold 40px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-          signatureName: 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-          signatureTitle: 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          signatureName: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          signatureTitle: 'bold 52px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         }
       : {
           header: 'bold 160px "Arial Black", "Arial", sans-serif',
@@ -126,22 +126,63 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
           regLine: '700 34px "Arial", sans-serif',
           footer: '700 48px "Arial", sans-serif',
           footerAddress: '600 36px "Arial", sans-serif',
-          signatureName: '700 34px "Arial", sans-serif',
-          signatureTitle: '600 32px "Arial", sans-serif',
+          signatureName: '700 42px "Arial", sans-serif',
+          signatureTitle: '600 40px "Arial", sans-serif',
         };
-    const signatureBlocks = isHindi
-      ? [
-          { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री' },
-          { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष' },
-          { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा' },
-          { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख' },
-        ]
-      : [
-          { name: 'Naveen Chandra Shukla', title: 'National General Secretary' },
-          { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President' },
-          { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing' },
-          { name: 'Dr. Mayank Dhengula', title: 'National In-charge & Membership Head' },
-        ];
+    // Load signatures from database
+    let signatureRows: Array<{
+      name_en: string;
+      name_hi: string | null;
+      designation_en: string;
+      designation_hi: string | null;
+      signature_path: string | null;
+    }> = [];
+    
+    try {
+      signatureRows = await executeQuery(
+        `SELECT name_en, name_hi, designation_en, designation_hi, 
+                CASE 
+                  WHEN signature_blob IS NOT NULL THEN CONCAT('/api/media/certificate-signatures/', id, '/signature')
+                  ELSE signature_path
+                END AS signature_path
+         FROM certificate_signatures
+         WHERE certificate_type = 'membership' AND is_active = TRUE
+         ORDER BY display_order ASC
+         LIMIT 4`,
+        []
+      ) as Array<{
+        name_en: string;
+        name_hi: string | null;
+        designation_en: string;
+        designation_hi: string | null;
+        signature_path: string | null;
+      }>;
+      
+      console.log(`[Membership Certificate] Loaded ${signatureRows.length} signatures from database`);
+    } catch (error) {
+      console.error('[Membership Certificate] Error loading signatures from database:', error);
+    }
+
+    // Fallback to hardcoded signatures if none found in database
+    const signatureBlocks = signatureRows.length > 0
+      ? signatureRows.map(sig => ({
+          name: isHindi && sig.name_hi ? sig.name_hi : sig.name_en,
+          title: isHindi && sig.designation_hi ? sig.designation_hi : sig.designation_en,
+          signaturePath: sig.signature_path
+        }))
+      : (isHindi
+          ? [
+              { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री', signaturePath: null },
+              { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष', signaturePath: null },
+              { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा', signaturePath: null },
+              { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख', signaturePath: null },
+            ]
+          : [
+              { name: 'Naveen Chandra Shukla', title: 'National General Secretary', signaturePath: null },
+              { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President', signaturePath: null },
+              { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing', signaturePath: null },
+              { name: 'Dr. Mayank Dhengula', title: 'National In-charge & Membership Head', signaturePath: null },
+            ]);
     const placeholderText = isHindi ? 'फोटो उपलब्ध नहीं' : 'No Photo';
 
     // Create certificate directory if it doesn't exist
@@ -425,7 +466,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // === SIGNATURES SECTION ===
     const lineSpacing = isHindi ? 90 : 100;
-    const signaturesY = motTextY + (motLines.length * lineSpacing) + 200; // Updated to match new line spacing
+    const signaturesY = motTextY + (motLines.length * lineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
     
     const signatureBlockWidth = 500;
     const signatureSpacing = 60;
@@ -438,10 +479,11 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
     const signaturePositions = [sigX1, sigX2, sigX3, sigX4];
 
-    signatureBlocks.forEach((block, index) => {
+    for (let index = 0; index < signatureBlocks.length; index++) {
+      const block = signatureBlocks[index];
       const position = signaturePositions[index] ?? sigX1;
-      drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts);
-    });
+      await drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts, block.signaturePath || undefined);
+    }
 
     // === FOOTER ===
     const footerY = height - 450;
@@ -533,39 +575,120 @@ function formatDateByLanguage(dateString: string, language: 'hi' | 'en'): string
   return date.toLocaleDateString(locale);
 }
 
-function drawSignatureBlock(
+async function drawSignatureBlock(
   ctx: CanvasRenderingContext2D,
   name: string,
   title: string,
   x: number,
   y: number,
-  fonts: { signatureName: string; signatureTitle: string }
+  fonts: { signatureName: string; signatureTitle: string },
+  signaturePath?: string
 ) {
   const blockWidth = 500;
   const blockHeight = 250;
   
-  // Signature line
+  // Load and draw signature image if available
+  let signatureImage = null;
+  if (signaturePath) {
+    try {
+      signatureImage = await loadSignatureImage(signaturePath);
+    } catch (error) {
+      console.error('Error loading signature image:', error);
+    }
+  }
+
+  // Calculate positions
+  let lineY = y; // Horizontal line position
+  let nameY = y + 80; // Name position (below the line)
+  
+  // Draw signature image first (if available)
+  if (signatureImage) {
+    // Draw signature image bigger and higher up
+    const sigHeight = 130; // Increased from 90 to 130 for bigger signature
+    const sigWidth = (signatureImage.width / signatureImage.height) * sigHeight;
+    const sigX = x + (blockWidth - sigWidth) / 2;
+    const sigY = y - 150; // Move signature higher up to accommodate larger size
+    ctx.drawImage(signatureImage, sigX, sigY, sigWidth, sigHeight);
+    
+    // Adjust line position to be below signature with more spacing
+    lineY = sigY + sigHeight + 20; // Increased spacing from 15 to 20
+    nameY = lineY + 50; // Increased spacing from 25 to 50 to prevent merging
+  } else {
+    // If no signature image, adjust name position for better spacing
+    nameY = lineY + 50; // Increased spacing from default
+  }
+  
+  // Draw horizontal line (always draw, either below signature or at default position)
   ctx.strokeStyle = '#DC2626';
   ctx.lineWidth = 5;
   ctx.beginPath();
-  ctx.moveTo(x + 20, y);
-  ctx.lineTo(x + blockWidth - 40, y);
+  ctx.moveTo(x + 20, lineY);
+  ctx.lineTo(x + blockWidth - 40, lineY);
   ctx.stroke();
   
-  // Name
+  // Name (bigger font) - wrap if too long
   ctx.fillStyle = '#1F2937';
   ctx.font = fonts.signatureName;
   ctx.textAlign = 'center';
-  ctx.fillText(name, x + blockWidth / 2, y + 70);
+  const maxNameWidth = blockWidth - 40; // Leave padding
+  const nameLines = wrapText(ctx, name, maxNameWidth);
+  nameLines.forEach((line, index) => {
+    ctx.fillText(line, x + blockWidth / 2, nameY + (index * 55));
+  });
   
-  // Title
+  // Adjust title Y position based on name lines
+  const titleStartY = nameY + (nameLines.length * 55) + 20;
+  
+  // Title/Designation (bigger font) - wrap if too long
   ctx.font = fonts.signatureTitle;
   ctx.fillStyle = '#DC2626';
   
-  const titleLines = title.split(', ');
+  // Handle multi-line titles with text wrapping to prevent overflow
+  const maxTitleWidth = blockWidth - 40; // Leave some padding
+  const titleParts = title.split(', ');
+  const titleLines: string[] = [];
+  
+  // Wrap each part and combine
+  for (const part of titleParts) {
+    const wrapped = wrapText(ctx, part, maxTitleWidth);
+    titleLines.push(...wrapped);
+  }
+  
+  // Draw wrapped title lines
   titleLines.forEach((line, index) => {
-    ctx.fillText(line, x + blockWidth / 2, y + 130 + (index * 45));
+    ctx.fillText(line, x + blockWidth / 2, titleStartY + (index * 50));
   });
+}
+
+async function loadSignatureImage(signaturePath?: string | null) {
+  if (!signaturePath) return null;
+  const trimmed = signaturePath.trim();
+  if (!trimmed) return null;
+
+  // Handle API endpoint for certificate signatures
+  const apiMatch = trimmed.match(/^\/api\/media\/certificate-signatures\/(\d+)\/signature/);
+  if (apiMatch) {
+    const signatureId = Number(apiMatch[1]);
+    if (!Number.isNaN(signatureId)) {
+      const rows = await executeQuery(
+        'SELECT signature_blob FROM certificate_signatures WHERE id = ? AND is_active = TRUE LIMIT 1',
+        [signatureId]
+      ) as Array<{ signature_blob: Buffer | null }>;
+      const buffer = rows[0]?.signature_blob;
+      if (buffer && buffer.length > 0) {
+        return await loadImage(buffer);
+      }
+    }
+  }
+
+  // Handle file path
+  const normalizedPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+  if (fs.existsSync(absolutePath)) {
+    return await loadImage(absolutePath);
+  }
+
+  return null;
 }
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {

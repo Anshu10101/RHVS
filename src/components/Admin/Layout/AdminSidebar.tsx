@@ -200,6 +200,14 @@ const navigationItems = [
     href: '/admin/certificates',
     icon: FileText,
     roles: ['superadmin'],
+    children: [
+      {
+        name: 'Add Sign',
+        href: '/admin/certificates/signs',
+        icon: FileText,
+        roles: ['superadmin'],
+      },
+    ],
   },
   {
     name: 'Analytics',
