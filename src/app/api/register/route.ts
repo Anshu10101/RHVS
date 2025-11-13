@@ -108,9 +108,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Get state and district names from IDs
-      const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
+      const stateQuery = 'SELECT state_name_english, language_pref FROM states WHERE id = ?';
+      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string; language_pref: number | null }>;
       const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
+      const languagePreference = stateResult.length > 0
+        ? (stateResult[0].language_pref === 0 ? 'en' : 'hi')
+        : 'hi';
 
       const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
       const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
@@ -215,7 +218,8 @@ export async function POST(request: NextRequest) {
             memberName: name,
             memberRegNumber: newMemberRegNumber,
             registrationDate: registrationDate,
-            profilePhotoPath: resolvedProfilePath || undefined
+            profilePhotoPath: resolvedProfilePath || undefined,
+            language: languagePreference
           }).then(async (certResult) => {
                 const certificateInsert = await executeQuery(
                   `
@@ -245,7 +249,10 @@ export async function POST(request: NextRequest) {
             profilePhotoPath: resolvedProfilePath || undefined,
             address: address,
                 designation: 'Member',
-                cardType: 'membership'
+                cardType: 'membership',
+                language: languagePreference,
+                state: stateName,
+                district: districtName
           }).then((idCardResult) => {
             return idCardResult.idCardPath;
           }).catch((e) => {
@@ -262,7 +269,8 @@ export async function POST(request: NextRequest) {
               name,
               newMemberRegNumber,
               certificatePathForEmail,
-              idCardPath || undefined
+              idCardPath || undefined,
+              languagePreference
             );
 
             if (

@@ -16,6 +16,7 @@ interface EmailData {
   appointmentDate: string;
   certificateNumber: string;
   idCardPath?: string;
+  language?: 'hi' | 'en';
 }
 
 const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
@@ -77,102 +78,135 @@ const createTransporter = () => {
 
 // Generate creative email templates
 const generateEmailTemplate = (data: EmailData) => {
-  const { memberName, memberRegNumber, departmentName, postName, level, state, district, appointmentDate, certificateNumber, idCardPath } = data;
-  
-  // Determine level text
-  let levelText = '';
-  switch (level) {
-    case 'national':
-      levelText = 'राष्ट्रीय स्तर पर (National Level)';
-      break;
-    case 'state':
-      levelText = state ? `राज्य स्तर पर, ${state} (State Level, ${state})` : 'राज्य स्तर पर (State Level)';
-      break;
-    case 'district':
-      levelText = state && district ? `जिला स्तर पर, ${district}, ${state} (District Level, ${district}, ${state})` : 'जिला स्तर पर (District Level)';
-      break;
-  }
+  const {
+    memberName,
+    memberRegNumber,
+    departmentName,
+    postName,
+    level,
+    state,
+    district,
+    appointmentDate,
+    certificateNumber,
+    idCardPath,
+    language = 'hi',
+  } = data;
 
-  // Creative Hindi and English message
-  const hindiMessage = `
-    <div style="font-family: 'Noto Sans Devanagari', Arial, sans-serif; direction: rtl;">
-      <h2 style="color: #DC2626; text-align: center;">🎉 हार्दिक बधाई! 🎉</h2>
-      
-      <p style="font-size: 18px; line-height: 1.6;">
-        प्रिय <strong>${memberName}</strong> जी,
-      </p>
-      
-      <p style="font-size: 16px; line-height: 1.6;">
-        आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${departmentName}</strong> के <strong>${postName}</strong> पद पर ${levelText} नियुक्त किया गया है।
-      </p>
-      
-      <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
-        <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
-          "जब तक सूरज चाँद रहेगा, तब तक हिन्दू धर्म रहेगा।"<br/>
-          <span style="font-size: 14px; color: #78350F;">- स्वामी विवेकानंद</span>
-        </p>
-      </div>
-      
-      <p style="font-size: 16px; line-height: 1.6;">
-        आपकी यह नियुक्ति संगठन के लिए गर्व की बात है। हम आशा करते हैं कि आप अपने पद की जिम्मेदारियों का निर्वहन पूरी निष्ठा और ईमानदारी से करेंगे।
-      </p>
-      
-      <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
-        <h3 style="color: #0C4A6E; margin-top: 0;">📋 नियुक्ति विवरण:</h3>
-        <ul style="color: #0C4A6E; font-size: 14px;">
-          <li><strong>नाम:</strong> ${memberName}</li>
-          <li><strong>पंजीकरण संख्या:</strong> ${memberRegNumber}</li>
-          <li><strong>विभाग:</strong> ${departmentName}</li>
-          <li><strong>पद:</strong> ${postName}</li>
-          <li><strong>स्तर:</strong> ${levelText}</li>
-          <li><strong>नियुक्ति दिनांक:</strong> ${new Date(appointmentDate).toLocaleDateString('hi-IN')}</li>
-          <li><strong>प्रमाणपत्र संख्या:</strong> ${certificateNumber}</li>
-        </ul>
-      </div>
-    </div>
-  `;
+  const isHindi = language === 'hi';
 
-  const englishMessage = `
-    <div style="font-family: Arial, sans-serif;">
-      <h2 style="color: #DC2626; text-align: center;">🎉 Heartfelt Congratulations! 🎉</h2>
-      
-      <p style="font-size: 18px; line-height: 1.6;">
-        Dear <strong>${memberName}</strong>,
-      </p>
-      
-      <p style="font-size: 16px; line-height: 1.6;">
-        We are delighted to inform you that you have been appointed as <strong>${postName}</strong> in the <strong>${departmentName}</strong> department of <strong>Rashtriya Hindu Vahini Sangathan</strong> at ${levelText}.
-      </p>
-      
-      <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
-        <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
-          "As long as the sun and moon exist, Hindu Dharma will exist."<br/>
-          <span style="font-size: 14px; color: #78350F;">- Swami Vivekananda</span>
+  const formatLevelText = () => {
+    if (isHindi) {
+      switch (level) {
+        case 'national':
+          return 'राष्ट्रीय स्तर पर';
+        case 'state':
+          return state ? `राज्य स्तर पर, ${state}` : 'राज्य स्तर पर';
+        case 'district':
+          if (state && district) {
+            return `जिला स्तर पर, ${district}, ${state}`;
+          }
+          if (district) return `जिला स्तर पर, ${district}`;
+          return 'जिला स्तर पर';
+        default:
+          return '';
+      }
+    }
+
+    switch (level) {
+      case 'national':
+        return 'National Level';
+      case 'state':
+        return state ? `State Level, ${state}` : 'State Level';
+      case 'district': {
+        const parts = [district, state].filter(Boolean);
+        return parts.length > 0 ? `District Level, ${parts.join(', ')}` : 'District Level';
+      }
+      default:
+        return '';
+    }
+  };
+
+  const levelText = formatLevelText();
+
+  const appointmentDateText = new Date(appointmentDate).toLocaleDateString(isHindi ? 'hi-IN' : 'en-IN');
+
+  const messageBlock = isHindi
+    ? `
+      <div style="font-family: 'Noto Sans Devanagari', Arial, sans-serif; text-align:left;">
+        <h2 style="color: #DC2626; text-align: center;">🎉 हार्दिक बधाई! 🎉</h2>
+        <p style="font-size: 18px; line-height: 1.6; margin-top: 16px;">
+          प्रिय <strong>${memberName}</strong> जी,
         </p>
+        <p style="font-size: 16px; line-height: 1.6;">
+          आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${departmentName}</strong> के <strong>${postName}</strong> पद पर ${levelText} नियुक्त किया गया है।
+        </p>
+        <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
+          <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
+            "जब तक सूरज चाँद रहेगा, तब तक हिन्दू धर्म रहेगा।"<br/>
+            <span style="font-size: 14px; color: #78350F;">- स्वामी विवेकानंद</span>
+          </p>
+        </div>
+        <p style="font-size: 16px; line-height: 1.6;">
+          आपकी यह नियुक्ति संगठन के लिए गर्व की बात है। हम आशा करते हैं कि आप अपने पद की जिम्मेदारियों का निर्वहन पूरी निष्ठा और ईमानदारी से करेंगे।
+        </p>
+        <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
+          <h3 style="color: #0C4A6E; margin-top: 0;">📋 नियुक्ति विवरण:</h3>
+          <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
+            <li><strong>नाम:</strong> ${memberName}</li>
+            <li><strong>पंजीकरण संख्या:</strong> ${memberRegNumber}</li>
+            <li><strong>विभाग:</strong> ${departmentName}</li>
+            <li><strong>पद:</strong> ${postName}</li>
+            <li><strong>स्तर:</strong> ${levelText}</li>
+            <li><strong>नियुक्ति दिनांक:</strong> ${appointmentDateText}</li>
+            <li><strong>प्रमाणपत्र संख्या:</strong> ${certificateNumber}</li>
+          </ul>
+        </div>
       </div>
-      
-      <p style="font-size: 16px; line-height: 1.6;">
-        This appointment is a matter of pride for our organization. We expect you to fulfill your responsibilities with complete dedication and honesty in the interest of the organization, the nation, and the protection of Sanatan Dharma.
-      </p>
-      
-      <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
-        <h3 style="color: #0C4A6E; margin-top: 0;">📋 Appointment Details:</h3>
-        <ul style="color: #0C4A6E; font-size: 14px;">
-          <li><strong>Name:</strong> ${memberName}</li>
-          <li><strong>Registration Number:</strong> ${memberRegNumber}</li>
-          <li><strong>Department:</strong> ${departmentName}</li>
-          <li><strong>Post:</strong> ${postName}</li>
-          <li><strong>Level:</strong> ${levelText}</li>
-          <li><strong>Appointment Date:</strong> ${new Date(appointmentDate).toLocaleDateString('en-IN')}</li>
-          <li><strong>Certificate Number:</strong> ${certificateNumber}</li>
-        </ul>
+    `
+    : `
+      <div style="font-family: Arial, sans-serif; text-align:left;">
+        <h2 style="color: #DC2626; text-align: center;">🎉 Heartfelt Congratulations! 🎉</h2>
+        <p style="font-size: 18px; line-height: 1.6; margin-top: 16px;">
+          Dear <strong>${memberName}</strong>,
+        </p>
+        <p style="font-size: 16px; line-height: 1.6;">
+          We are delighted to inform you that you have been appointed as <strong>${postName}</strong> in the <strong>${departmentName}</strong> department of <strong>Rashtriya Hindu Vahini Sangathan</strong> at the <strong>${levelText}</strong>.
+        </p>
+        <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
+          <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
+            "As long as the sun and moon exist, Hindu Dharma will exist."<br/>
+            <span style="font-size: 14px; color: #78350F;">- Swami Vivekananda</span>
+          </p>
+        </div>
+        <p style="font-size: 16px; line-height: 1.6;">
+          This appointment is a matter of pride for our organization. We expect you to fulfill your responsibilities with complete dedication and honesty for the organization, the nation, and the protection of Sanatan Dharma.
+        </p>
+        <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
+          <h3 style="color: #0C4A6E; margin-top: 0;">📋 Appointment Details:</h3>
+          <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
+            <li><strong>Name:</strong> ${memberName}</li>
+            <li><strong>Registration Number:</strong> ${memberRegNumber}</li>
+            <li><strong>Department:</strong> ${departmentName}</li>
+            <li><strong>Post:</strong> ${postName}</li>
+            <li><strong>Level:</strong> ${levelText}</li>
+            <li><strong>Appointment Date:</strong> ${appointmentDateText}</li>
+            <li><strong>Certificate Number:</strong> ${certificateNumber}</li>
+          </ul>
+        </div>
       </div>
-    </div>
-  `;
+    `;
+
+  const importantNote = isHindi
+    ? idCardPath
+      ? 'आपका नियुक्ति प्रमाणपत्र और नियुक्ति पहचान पत्र दोनों इस ईमेल में संलग्न हैं। कृपया इन्हें सुरक्षित रखें।'
+      : 'आपका नियुक्ति प्रमाणपत्र इस ईमेल में संलग्न है। कृपया इसे सुरक्षित रखें।'
+    : idCardPath
+      ? 'Your appointment certificate and ID card are attached to this email. Please save them for your records.'
+      : 'Your appointment certificate is attached to this email. Please save it for your records.';
 
   return `
     <!DOCTYPE html>
-    <html lang="hi">
+    <html lang="${isHindi ? 'hi' : 'en'}">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -196,17 +230,12 @@ const generateEmailTemplate = (data: EmailData) => {
         </div>
         
         <!-- Content -->
-        <div style="padding: 30px;">
-          ${hindiMessage}
-          
-          <hr style="border: none; height: 2px; background: linear-gradient(90deg, #DC2626, #FCD34D, #DC2626); margin: 30px 0;">
-          
-          ${englishMessage}
-          
+        <div style="padding: 30px; text-align:left;">
+          ${messageBlock}
           <div style="background: #FEF2F2; padding: 20px; border-radius: 10px; margin: 30px 0; border: 2px solid #FECACA;">
-            <h3 style="color: #991B1B; margin-top: 0; text-align: center;">📧 Important Note</h3>
+            <h3 style="color: #991B1B; margin-top: 0; text-align: center;">📧 ${isHindi ? 'महत्वपूर्ण सूचना' : 'Important Note'}</h3>
             <p style="color: #991B1B; text-align: center; margin: 0; font-size: 14px;">
-              ${idCardPath ? 'Your appointment certificate and नियुक्ति पहचान पत्र दोनों इस ईमेल में संलग्न हैं। कृपया इन्हें सुरक्षित रखें।' : 'Your appointment certificate is attached to this email. Please save it for your records.'}
+              ${importantNote}
             </p>
           </div>
         </div>
@@ -268,10 +297,14 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
     }
     
     // Email options
+    const subject = data.language === 'en'
+      ? `🎉 Appointment Certificate - ${data.memberName} | Rashtriya Hindu Vahini Sangathan`
+      : `🎉 नियुक्ति प्रमाणपत्र - ${data.memberName} | राष्ट्रीय हिन्दू वाहिनी संगठन`;
+
     const mailOptions = {
       from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <admin@rashtriyahinduvahinisangathan.org>`,
       to: data.to,
-      subject: `🎉 Appointment Certificate - ${data.memberName} | राष्ट्रीय हिन्दू वाहिनी संगठन`,
+      subject,
       html: htmlContent,
       attachments,
     };

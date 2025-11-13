@@ -1,4 +1,5 @@
 import { createCanvas, loadImage, registerFont } from 'canvas';
+import type { CanvasRenderingContext2D } from 'canvas';
 import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
@@ -10,6 +11,7 @@ interface CertificateData {
   memberRegNumber: string;
   registrationDate: string;
   profilePhotoPath?: string;
+  language?: 'hi' | 'en';
 }
 
 interface CertificateResult {
@@ -77,7 +79,71 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // Generate certificate number
     const certificateNumber = `CERT-${data.memberRegNumber}-${Date.now()}`;
+    const language = data.language ?? 'hi';
+    const isHindi = language === 'hi';
     
+    const orgName = 'राष्ट्रीय हिन्दू वाहिनी संगठन';
+    const tagline1 = '।। गर्व से कहो हम हिन्दू हैं ।।';
+    const tagline2 = '।। हिन्दुस्तान हमारा है ।।';
+    const headerRegLabel = isHindi ? 'पंजीकरण संख्या: 169' : 'Reg. No: 169';
+    const membershipTitle = isHindi ? 'सदस्यता प्रमाणपत्र' : 'MEMBERSHIP CERTIFICATE';
+    const membershipText = isHindi
+      ? `${data.memberName} अब राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) का गर्वित सदस्य है और संगठन की सेवा में पूर्ण निष्ठा तथा समर्पण के साथ सनातन धर्म की रक्षा हेतु प्रतिबद्ध है।`
+      : `${data.memberName} is now a proud member of Rashtriya Hindu Vahini Sangathan (RHVS) and is committed to serve the organization with dedication and devotion to Sanatan Dharma.`;
+    const motivationalText = isHindi
+      ? 'हम आपको राष्ट्रीय हिन्दू वाहिनी संगठन के परिवार में हार्दिक स्वागत करते हैं। हमें विश्वास है कि आप संगठन को और सशक्त बनाने में महत्वपूर्ण योगदान देंगे। संगठन, राष्ट्र एवं सनातन धर्म के हित में आप अपने दायित्वों का पूर्ण निष्ठा, अनुशासन और ईमानदारी से निर्वहन करेंगे।'
+      : 'We welcome you to the great family of Rashtriya Hindu Vahini Sangathan. We believe you will strengthen the organization with renewed momentum. You are expected to fulfill every responsibility with discipline, honesty, and complete devotion to the organization, the nation, and the protection of Sanatan Dharma.';
+    const profileRegLabel = isHindi
+      ? `पंजीकरण संख्या: ${data.memberRegNumber}`
+      : `Reg: ${data.memberRegNumber}`;
+    const footerRegLine = isHindi
+      ? `पंजीकरण संख्या - ${certificateNumber}`
+      : `Reg. no - ${certificateNumber}`;
+    const footerDateLine = isHindi
+      ? `दिनांक - ${formatDateByLanguage(data.registrationDate, language)}`
+      : `Date - ${formatDateByLanguage(data.registrationDate, language)}`;
+    const fonts = isHindi
+      ? {
+          header: 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          tagline: 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          ribbon: 'bold 84px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          membership: 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          motivational: 'italic 64px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
+          quote: 'bold 150px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          regLine: 'bold 36px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          footerAddress: 'bold 40px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          signatureName: 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          signatureTitle: 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        }
+      : {
+          header: 'bold 160px "Arial Black", "Arial", sans-serif',
+          tagline: 'bold 72px "Arial", sans-serif',
+          ribbon: 'bold 70px "Arial Black", "Arial", sans-serif',
+          membership: '700 52px "Arial", sans-serif',
+          motivational: 'italic 58px "Georgia", serif',
+          quote: 'bold 140px "Georgia", serif',
+          regLine: '700 34px "Arial", sans-serif',
+          footer: '700 48px "Arial", sans-serif',
+          footerAddress: '600 36px "Arial", sans-serif',
+          signatureName: '700 34px "Arial", sans-serif',
+          signatureTitle: '600 32px "Arial", sans-serif',
+        };
+    const signatureBlocks = isHindi
+      ? [
+          { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री' },
+          { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष' },
+          { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा' },
+          { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख' },
+        ]
+      : [
+          { name: 'Naveen Chandra Shukla', title: 'National General Secretary' },
+          { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President' },
+          { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing' },
+          { name: 'Dr. Mayank Dhengula', title: 'National In-charge & Membership Head' },
+        ];
+    const placeholderText = isHindi ? 'फोटो उपलब्ध नहीं' : 'No Photo';
+
     // Create certificate directory if it doesn't exist
     const certDir = path.join(process.cwd(), 'public', 'certificates');
     if (!fs.existsSync(certDir)) {
@@ -153,21 +219,24 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // Organization registration number in header
     ctx.fillStyle = '#FCD34D';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = fonts.regLine;
     ctx.textAlign = 'right';
-    ctx.fillText('Reg. No: 169', width - borderMargin - 120, borderMargin + 120);
+    ctx.fillText(headerRegLabel, width - borderMargin - 120, borderMargin + 120);
     ctx.textAlign = 'center';
 
     // Organization name
-    const textOffsetX = 40;
-    ctx.font = 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
-    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2 + textOffsetX, borderMargin + 260);
+    // For English, adjust positioning to avoid logo collision
+    // Left logo ends around 360px (140 + 220), right logo starts around 2080px (2480 - 400)
+    // Center text in available space, but keep offset for Hindi
+    const textOffsetX = isHindi ? 40 : 0;
+    ctx.font = fonts.header;
+    ctx.fillText(orgName, width / 2 + textOffsetX, borderMargin + 260);
 
     // Taglines
-    ctx.font = 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+    ctx.font = fonts.tagline;
     ctx.fillStyle = '#FCD34D';
-    ctx.fillText('।। गर्व से कहो हम हिन्दू हैं ।।', width / 2 + textOffsetX, borderMargin + 380);
-    ctx.fillText('।। हिन्दुस्तान हमारा है ।।', width / 2 + textOffsetX, borderMargin + 460);
+    ctx.fillText(tagline1, width / 2 + textOffsetX, borderMargin + 380);
+    ctx.fillText(tagline2, width / 2 + textOffsetX, borderMargin + 460);
 
     // === CONTENT SECTION ===
     const contentStartY = headerHeight - borderMargin + 40;
@@ -196,9 +265,9 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     
     // MEMBERSHIP CERTIFICATE text
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 84px Arial';
+    ctx.font = fonts.ribbon;
     ctx.textAlign = 'center';
-    ctx.fillText('MEMBERSHIP CERTIFICATE', width / 2, ribbonY + 55);
+    ctx.fillText(membershipTitle, width / 2, ribbonY + 55);
 
     // === MEMBER PHOTO ===
     const photoSize = 480; // Even bigger photo
@@ -288,9 +357,9 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
       
       // Placeholder text
       ctx.fillStyle = '#9CA3AF';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = fonts.regLine;
       ctx.textAlign = 'center';
-      ctx.fillText('No Photo', photoX + photoSize/2, photoY + photoSize/2);
+      ctx.fillText(placeholderText, photoX + photoSize / 2, photoY + photoSize / 2);
     }
 
     // === MEMBER INFO (Right below photo, centered) ===
@@ -299,9 +368,9 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     // Registration Number (much larger font, centered, not underlined)
     const regNumberY = memberInfoY;
     ctx.fillStyle = '#DC2626';
-    ctx.font = 'bold 36px Arial';
+    ctx.font = fonts.regLine;
     ctx.textAlign = 'center';
-    ctx.fillText(`Reg: ${data.memberRegNumber}`, photoX + photoSize/2, regNumberY);
+    ctx.fillText(profileRegLabel, photoX + photoSize / 2, regNumberY);
 
     // === MEMBERSHIP TEXT (Left side, clean formatting) ===
     const membershipBoxY = ribbonY + 280;
@@ -310,10 +379,8 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     
     // Clean membership text - only member name underlined
     ctx.fillStyle = accentOrange;
-    ctx.font = 'bold 64px "Mangal", "Noto Sans Devanagari", Arial, sans-serif'; // Increased from 48px to 64px
+    ctx.font = fonts.membership;
     ctx.textAlign = 'left';
-    
-    const membershipText = `${data.memberName} is now a proud member of राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) and is committed to serve the organization with dedication and devotion to Sanatan Dharma.`;
     
     // Wrap text to fit in the available space
     const membershipLines = wrapText(ctx, membershipText, textBoxWidth);
@@ -341,22 +408,24 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // === MOTIVATIONAL TEXT ===
     const motTextY = memberInfoY + 450;
-    const motivationalText = "We welcome you to the great family of राष्ट्रीय हिन्दू वाहिनी संगठन. As a member, you are now part of our mission to strengthen Hindu values and protect Sanatan Dharma. We hope you will contribute significantly to the organization with complete devotion, honesty, and dedication to our nation and dharma.";
 
     // Motivational text
     ctx.fillStyle = textColor;
-    ctx.font = 'italic 64px "Mangal", "Noto Sans Devanagari", "Georgia", serif'; // Increased from 48px to 64px
+    ctx.font = fonts.motivational;
     ctx.textAlign = 'center';
     
     const maxWidth = width - 300;
     const motLines = wrapText(ctx, motivationalText, maxWidth);
     
     motLines.forEach((line, index) => {
-      ctx.fillText(line, width / 2, motTextY + (index * 90)); // Increased line spacing from 75 to 90
+      // Adjust line spacing based on language (English has larger font, needs more spacing)
+      const lineSpacing = isHindi ? 90 : 100;
+      ctx.fillText(line, width / 2, motTextY + (index * lineSpacing));
     });
 
     // === SIGNATURES SECTION ===
-    const signaturesY = motTextY + (motLines.length * 90) + 200; // Updated to match new line spacing
+    const lineSpacing = isHindi ? 90 : 100;
+    const signaturesY = motTextY + (motLines.length * lineSpacing) + 200; // Updated to match new line spacing
     
     const signatureBlockWidth = 500;
     const signatureSpacing = 60;
@@ -367,11 +436,12 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const sigX2 = sigX1 + signatureBlockWidth + signatureSpacing;
     const sigX3 = sigX2 + signatureBlockWidth + signatureSpacing;
     const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
+    const signaturePositions = [sigX1, sigX2, sigX3, sigX4];
 
-    drawSignatureBlock(ctx, 'नवीन चन्द्र शुक्ला', 'राष्ट्रीय महामंत्री', sigX1, signaturesY);
-    drawSignatureBlock(ctx, 'रमेश चन्द्र द्विवेदी "राजू भैया"', 'राष्ट्रीय अध्यक्ष', sigX2, signaturesY);
-    drawSignatureBlock(ctx, 'डॉ॰ विभा द्विवेदी', 'राष्ट्रीय महामंत्री, महिला मोर्चा', sigX3, signaturesY);
-    drawSignatureBlock(ctx, 'डॉ॰ मयंक ढेंगुला', 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख', sigX4, signaturesY);
+    signatureBlocks.forEach((block, index) => {
+      const position = signaturePositions[index] ?? sigX1;
+      drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts);
+    });
 
     // === FOOTER ===
     const footerY = height - 450;
@@ -380,14 +450,14 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     ctx.fillRect(borderMargin, footerY, width - 2 * borderMargin, height - footerY - borderMargin);
 
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 48px Arial';
+    ctx.font = fonts.footer;
     ctx.textAlign = 'left';
-    ctx.fillText(`Reg. no - ${certificateNumber}`, borderMargin + 50, footerY + 100);
+    ctx.fillText(footerRegLine, borderMargin + 50, footerY + 100);
     
     ctx.textAlign = 'right';
-    ctx.fillText(`Date - ${formatDate(data.registrationDate)}`, width - borderMargin - 50, footerY + 100);
+    ctx.fillText(footerDateLine, width - borderMargin - 50, footerY + 100);
 
-    ctx.font = 'bold 40px Arial';
+    ctx.font = fonts.footerAddress;
     ctx.textAlign = 'left';
     
     const footerTexts = [
@@ -457,12 +527,20 @@ export async function downloadCertificate(certificatePath: string): Promise<Buff
   }
 }
 
-function formatDate(dateString: string): string {
+function formatDateByLanguage(dateString: string, language: 'hi' | 'en'): string {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-GB');
+  const locale = language === 'hi' ? 'hi-IN' : 'en-GB';
+  return date.toLocaleDateString(locale);
 }
 
-function drawSignatureBlock(ctx: any, name: string, title: string, x: number, y: number) {
+function drawSignatureBlock(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  title: string,
+  x: number,
+  y: number,
+  fonts: { signatureName: string; signatureTitle: string }
+) {
   const blockWidth = 500;
   const blockHeight = 250;
   
@@ -476,12 +554,12 @@ function drawSignatureBlock(ctx: any, name: string, title: string, x: number, y:
   
   // Name
   ctx.fillStyle = '#1F2937';
-  ctx.font = 'bold 38px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.font = fonts.signatureName;
   ctx.textAlign = 'center';
   ctx.fillText(name, x + blockWidth / 2, y + 70);
   
   // Title
-  ctx.font = 'bold 42px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif';
+  ctx.font = fonts.signatureTitle;
   ctx.fillStyle = '#DC2626';
   
   const titleLines = title.split(', ');
@@ -490,7 +568,7 @@ function drawSignatureBlock(ctx: any, name: string, title: string, x: number, y:
   });
 }
 
-function wrapText(ctx: any, text: string, maxWidth: number): string[] {
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(' ');
   const lines = [];
   let currentLine = '';

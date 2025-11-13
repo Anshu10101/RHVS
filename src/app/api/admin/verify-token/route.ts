@@ -5,6 +5,7 @@ import { generateMemberRegistrationNumber } from '@/lib/member-registration';
 import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { sendWelcomeEmail } from '@/lib/email';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,8 +29,8 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Build WHERE clause based on filters
-    let whereConditions = [];
-    let queryParams: any[] = [];
+    const whereConditions: string[] = [];
+    const queryParams: Array<string | number> = [];
 
     // District admin can only see tokens from their district
     if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
@@ -229,6 +230,9 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = tokens[0];
+    const languagePreference = await getStateLanguagePreference({
+      stateName: tokenData.state
+    });
 
     if (action === 'reject') {
       // Reject the token
@@ -371,7 +375,8 @@ export async function POST(request: NextRequest) {
           memberName: tokenData.name,
           memberRegNumber: memberRegNumber,
           registrationDate: tokenData.registration_date,
-          profilePhotoPath: memberProfilePath || undefined
+          profilePhotoPath: memberProfilePath || undefined,
+          language: languagePreference
         });
         
         certificatePath = certificateResult.certificatePath;
@@ -412,7 +417,8 @@ export async function POST(request: NextRequest) {
           profilePhotoPath: memberProfilePath || undefined,
           address: tokenData.address,
           designation: 'Member',
-          cardType: 'membership'
+          cardType: 'membership',
+          language: languagePreference
         });
         
         idCardPath = idCardResult.idCardPath;
@@ -431,7 +437,8 @@ export async function POST(request: NextRequest) {
           tokenData.name,
           memberRegNumber,
           certificatePath || undefined,
-          idCardPath || undefined
+          idCardPath || undefined,
+          languagePreference
         );
         
         if (welcomeEmailResult?.success) {

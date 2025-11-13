@@ -19,6 +19,7 @@ interface IDCardData {
   state?: string | null;
   district?: string | null;
   appointmentDate?: string | null;
+  language?: 'hi' | 'en';
 }
 
 interface IDCardResult {
@@ -69,6 +70,58 @@ async function loadProfilePhotoImage(profilePhotoPath?: string | null) {
   return null;
 }
 
+async function getHindiLocationName(
+  englishName: string | null | undefined, 
+  type: 'district' | 'state',
+  stateName?: string | null
+): Promise<string | null> {
+  if (!englishName || !englishName.trim()) return null;
+  
+  // For districts, first check if the state is Hindi
+  if (type === 'district' && stateName) {
+    try {
+      const stateQuery = 'SELECT language_pref FROM states WHERE state_name_english = ? LIMIT 1';
+      const stateResult = await executeQuery(stateQuery, [stateName.trim()]) as Array<{ language_pref: number | null }>;
+      
+      // Only try to convert to Hindi if state language preference is Hindi (1)
+      if (stateResult.length === 0 || stateResult[0].language_pref !== 1) {
+        return null; // State is not Hindi, keep English
+      }
+    } catch (error) {
+      // If we can't check state preference, skip Hindi conversion
+      console.warn(`Could not check state language preference:`, error);
+      return null;
+    }
+  }
+  
+  // Try to fetch Hindi name (only if state is Hindi for districts)
+  try {
+    const table = type === 'district' ? 'districts' : 'states';
+    const nameColumn = type === 'district' ? 'district_name_english' : 'state_name_english';
+    const hindiColumn = type === 'district' ? 'district_name_hindi' : 'state_name_hindi';
+    
+    // Check if Hindi column exists by trying to query it
+    const query = `SELECT ${hindiColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`;
+    const result = await executeQuery(query, [englishName.trim()]) as Array<{ [key: string]: string | null }>;
+    
+    if (result.length > 0 && result[0][hindiColumn]) {
+      return result[0][hindiColumn];
+    }
+  } catch (error: unknown) {
+    // If Hindi column doesn't exist (ER_BAD_FIELD_ERROR), silently fall back to English
+    const dbError = error as { code?: string; errno?: number };
+    if (dbError.code === 'ER_BAD_FIELD_ERROR' || dbError.errno === 1054) {
+      // Column doesn't exist - this is expected if Hindi columns haven't been added yet
+      return null;
+    }
+    // For other errors, log a warning but still return null
+    console.warn(`Could not fetch Hindi name for ${type}:`, error);
+    return null;
+  }
+  
+  return null;
+}
+
 export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
   try {
     // Register Hindi fonts
@@ -84,6 +137,56 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     }
 
     const cardType = data.cardType ?? 'membership';
+    const language = data.language ?? 'hi';
+    const isHindi = language === 'hi';
+
+    const ORG_NAME = 'राष्ट्रीय हिन्दू वाहिनी संगठन';
+
+    const strings = isHindi
+      ? {
+          orgName: ORG_NAME,
+          membershipTitle: 'सदस्य पहचान पत्र',
+          appointmentTitle: 'नियुक्ति पहचान पत्र',
+          registrationLabel: 'पंजीकरण संख्या',
+          nameLabel: 'नाम',
+          designationLabel: 'पद',
+          addressLabel: 'पता',
+          appointmentDateLabel: 'नियुक्ति दिनांक',
+          placeholderNoPhoto: 'फोटो उपलब्ध नहीं',
+          bottomOrgName: ORG_NAME,
+        }
+      : {
+          orgName: ORG_NAME,
+          membershipTitle: 'Member Identity Card',
+          appointmentTitle: 'Appointment Identity Card',
+          registrationLabel: 'Registration No.',
+          nameLabel: 'Name',
+          designationLabel: 'Designation',
+          addressLabel: 'Address',
+          appointmentDateLabel: 'Date of Appointment',
+          placeholderNoPhoto: 'No Photo',
+          bottomOrgName: ORG_NAME,
+        };
+
+    const fonts = isHindi
+      ? {
+          header: 'bold 56px "Mangal", "Noto Sans Devanagari", sans-serif',
+          subtitle: 'bold 28px "Mangal", "Noto Sans Devanagari", sans-serif',
+          decorative: 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif',
+          label: '800 30px "Mangal", "Noto Sans Devanagari", sans-serif',
+          value: 'bold 26px "Mangal", "Noto Sans Devanagari", sans-serif',
+          placeholder: 'bold 20px "Mangal", "Noto Sans Devanagari", sans-serif',
+          bottom: 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif',
+        }
+      : {
+          header: 'bold 64px "Arial Black", "Arial", sans-serif',
+          subtitle: '700 26px "Arial", sans-serif',
+          decorative: 'bold 20px "Arial", sans-serif',
+          label: '700 24px "Arial", sans-serif',
+          value: '600 22px "Arial", sans-serif',
+          placeholder: '600 18px "Arial", sans-serif',
+          bottom: '700 20px "Arial", sans-serif',
+        };
 
     // ID Card dimensions (standard ID card size: 3.375" x 2.125" at 300 DPI)
     const width = 1013; // 3.375" * 300 DPI
@@ -143,16 +246,16 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       console.error('Error loading Ram image for ID card:', error);
     }
 
-    // Organization name in header (bold & larger, Hindi font)
+    // Organization name in header (bold & larger)
     ctx.fillStyle = '#FDE68A';
-    ctx.font = 'bold 56px "Mangal", "Noto Sans Devanagari", sans-serif';
+    ctx.font = fonts.header;
     ctx.textAlign = 'center';
-    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, 75);
+    ctx.fillText(strings.orgName, width / 2, 75);
 
-    // Subtitle in Hindi for consistency
-    ctx.font = 'bold 28px "Mangal", "Noto Sans Devanagari", sans-serif';
+    // Subtitle
+    ctx.font = fonts.subtitle;
     ctx.fillStyle = '#FFFBEB';
-    const cardTitle = cardType === 'appointment' ? 'नियुक्ति पहचान पत्र' : 'सदस्य पहचान पत्र';
+    const cardTitle = cardType === 'appointment' ? strings.appointmentTitle : strings.membershipTitle;
     ctx.fillText(cardTitle, width / 2, 115);
 
     // === DECORATIVE GOLD LINE ===
@@ -166,14 +269,14 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     // Decorative center element
     ctx.fillStyle = borderColor;
-    ctx.font = 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif';
+    ctx.font = fonts.decorative;
     ctx.textAlign = 'center';
     ctx.fillText('◆', width / 2, lineY + 10);
 
     // === MEMBER PHOTO ===
     const photoSize = 180;
     const photoX = width - 220;
-    const photoY = lineY + 10;
+    const photoY = lineY + 25; // Moved slightly lower
     
     let photoLoaded = false;
     try {
@@ -222,9 +325,9 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       ctx.strokeRect(photoX - 5, photoY - 5, photoSize + 10, photoSize + 10);
       
       ctx.fillStyle = '#9CA3AF';
-      ctx.font = 'bold 20px "Mangal", "Noto Sans Devanagari", sans-serif';
+      ctx.font = fonts.placeholder;
       ctx.textAlign = 'center';
-      ctx.fillText('No Photo', photoX + photoSize/2, photoY + photoSize/2);
+      ctx.fillText(strings.placeholderNoPhoto, photoX + photoSize / 2, photoY + photoSize / 2);
     }
 
     // === MEMBER INFORMATION ===
@@ -237,31 +340,55 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     const lines: Array<{ label: string; value: string }> = [];
 
-    lines.push({ label: 'पंजीकरण संख्या', value: data.memberRegNumber });
-    lines.push({ label: 'नाम', value: data.memberName });
+    lines.push({ label: strings.registrationLabel, value: data.memberRegNumber });
+    lines.push({ label: strings.nameLabel, value: data.memberName });
 
-    const address = data.address && data.address.trim().length > 0 ? data.address : '—';
+    // Convert address to Hindi if language is Hindi
+    const displayAddress = await (async () => {
+      let district = data.district?.trim() || null;
+      let state = data.state?.trim() || null;
+      
+      if (isHindi) {
+        // Try to get Hindi names for district and state
+        // For district, pass state name to check if state is Hindi first
+        if (district) {
+          const hindiDistrict = await getHindiLocationName(district, 'district', state);
+          if (hindiDistrict) district = hindiDistrict;
+        }
+        if (state) {
+          const hindiState = await getHindiLocationName(state, 'state');
+          if (hindiState) state = hindiState;
+        }
+      }
+      
+      if (district && state) return `${district}, ${state}`;
+      if (district) return district;
+      if (state) return state;
+      return null;
+    })();
+
+    const address = displayAddress || '—';
 
     if (cardType === 'appointment') {
       const department = data.departmentName && data.departmentName.trim().length > 0
         ? data.departmentName
         : '—';
-      const post = translateDesignation(data.postName || data.designation, 'appointment');
+      const post = translateDesignation(data.postName || data.designation, 'appointment', language);
       const departmentAndPost = department !== '—' ? `${department} ${post}` : post;
       const appointmentDate = data.appointmentDate
-        ? new Date(data.appointmentDate).toLocaleDateString('hi-IN')
+        ? new Date(data.appointmentDate).toLocaleDateString(isHindi ? 'hi-IN' : 'en-IN')
         : '—';
 
-      lines.push({ label: 'पद', value: departmentAndPost });
-      lines.push({ label: 'नियुक्ति दिनांक', value: appointmentDate });
+      lines.push({ label: strings.designationLabel, value: departmentAndPost });
+      lines.push({ label: strings.appointmentDateLabel, value: appointmentDate });
       if (address !== '—') {
-        lines.push({ label: 'पता', value: address });
+        lines.push({ label: strings.addressLabel, value: address });
       }
     } else {
-      const designation = translateDesignation(data.designation, 'membership');
-      lines.push({ label: 'पद', value: designation });
+      const designation = translateDesignation(data.designation, 'membership', language);
+      lines.push({ label: strings.designationLabel, value: designation });
       if (address !== '—') {
-        lines.push({ label: 'पता', value: address });
+        lines.push({ label: strings.addressLabel, value: address });
       }
     }
 
@@ -273,8 +400,8 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         baseline: currentY,
         maxWidth: infoMaxWidth,
         lineSpacing,
-        labelFont: '800 30px "Mangal", "Noto Sans Devanagari", sans-serif',
-        valueFont: 'bold 26px "Mangal", "Noto Sans Devanagari", sans-serif',
+        labelFont: fonts.label,
+        valueFont: fonts.value,
         labelColor: accentColor,
         valueColor: textColor,
       });
@@ -292,9 +419,9 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     // Organization name at bottom
     ctx.fillStyle = accentColor;
-    ctx.font = 'bold 24px "Mangal", "Noto Sans Devanagari", sans-serif';
+    ctx.font = fonts.bottom;
     ctx.textAlign = 'center';
-    ctx.fillText('राष्ट्रीय हिन्दू वाहिनी संगठन', width / 2, bottomLineY + 25);
+    ctx.fillText(strings.bottomOrgName, width / 2, bottomLineY + 25);
 
     // === BORDER ===
     ctx.strokeStyle = borderColor;
@@ -435,22 +562,44 @@ function drawLabelValue(ctx: CanvasRenderingContext2D, options: LabelValueOption
 
 function translateDesignation(
   rawDesignation: string | undefined | null,
-  cardType: 'membership' | 'appointment'
+  cardType: 'membership' | 'appointment',
+  language: 'hi' | 'en'
 ): string {
   if (!rawDesignation || rawDesignation.trim().length === 0) {
-    return cardType === 'membership' ? 'सदस्य' : 'पदाधिकारी';
+    if (language === 'hi') {
+      return cardType === 'membership' ? 'रक्षा दल' : 'पदाधिकारी';
+    }
+
+    return cardType === 'membership' ? 'Security Unit' : 'Appointee';
   }
 
   const normalized = rawDesignation.trim().toLowerCase();
 
-  const designationMap: Record<string, string> = {
-    member: 'सदस्य',
-    'district admin': 'जिला प्रशासक',
-    'state admin': 'राज्य प्रशासक',
-    'super admin': 'महाप्रशासक',
+  const designationMaps: Record<'hi' | 'en', Record<string, string>> = {
+    hi: {
+      member: 'रक्षा दल',
+      'sadashya': 'रक्षा दल',
+      'district admin': 'जिला प्रशासक',
+      'state admin': 'राज्य प्रशासक',
+      'super admin': 'महाप्रशासक',
+      'national president': 'राष्ट्रीय अध्यक्ष',
+      president: 'अध्यक्ष',
+      secretary: 'सचिव',
+    },
+    en: {
+      member: 'Security Unit',
+      'sadashya': 'Security Unit',
+      'district admin': 'District Administrator',
+      'state admin': 'State Administrator',
+      'super admin': 'Chief Administrator',
+      'national president': 'National President',
+      president: 'President',
+      secretary: 'Secretary',
+    },
   };
 
-  return designationMap[normalized] ?? rawDesignation;
+  const map = designationMaps[language];
+  return map[normalized] ?? rawDesignation;
 }
 
 function translateLevel(

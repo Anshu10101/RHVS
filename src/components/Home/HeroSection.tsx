@@ -38,6 +38,7 @@ export default function HeroSection() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [imageAspectRatios, setImageAspectRatios] = useState<{[key: number]: string}>({});
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchHeroImages();
@@ -67,7 +68,16 @@ export default function HeroSection() {
       const response = await fetch('/api/hero-images');
       if (response.ok) {
         const data = await response.json();
-        setHeroImages(data.images || []);
+        // Filter out images with invalid paths (legacy /uploads/ paths that don't exist)
+        const validImages = (data.images || []).filter((img: HeroImage) => {
+          if (!img.image_path) return false;
+          // Keep images that use API routes or external URLs
+          // Exclude legacy /uploads/ paths that may not exist
+          return img.image_path.startsWith('/api/') || 
+                 img.image_path.startsWith('http://') || 
+                 img.image_path.startsWith('https://');
+        });
+        setHeroImages(validImages);
       }
     } catch (error) {
       console.error('Error fetching hero images:', error);
@@ -188,6 +198,10 @@ export default function HeroSection() {
                   <div className="w-full h-full bg-orange-100 animate-pulse flex items-center justify-center">
                     <span className="text-orange-600">Loading...</span>
                   </div>
+                ) : imageErrors.has(currentImage.id) ? (
+                  <div className="w-full h-full bg-orange-100 flex items-center justify-center">
+                    <span className="text-orange-600">Image unavailable</span>
+                  </div>
                 ) : (
                   <Image
                     src={currentImage.image_path}
@@ -199,6 +213,9 @@ export default function HeroSection() {
                     priority
                     style={{
                       objectPosition: 'center center'
+                    }}
+                    onError={() => {
+                      setImageErrors(prev => new Set(prev).add(currentImage.id));
                     }}
                   />
                 )}

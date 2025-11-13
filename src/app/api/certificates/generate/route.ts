@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { generateAppointmentCertificate } from '@/lib/certificate-generator';
 import { sendCertificateEmail } from '@/lib/email-service';
 import { generateIDCard } from '@/lib/id-card-generator';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 
 const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
@@ -44,7 +45,15 @@ export async function POST(request: NextRequest) {
     const member = await executeQuery(
       'SELECT * FROM members WHERE id = ? AND status = "verified"',
       [member_id]
-    ) as any[];
+    ) as Array<{
+      id: number;
+      name: string;
+      member_reg_number: string;
+      email: string;
+      address: string | null;
+      profile_photo_path: string | null;
+      state: string | null;
+    }>;
 
     if (member.length === 0) {
       return NextResponse.json({ error: 'Member not found or not verified' }, { status: 404 });
@@ -57,7 +66,12 @@ export async function POST(request: NextRequest) {
       FROM departments d
       JOIN department_posts dp ON d.id = dp.department_id
       WHERE d.id = ? AND dp.id = ?
-    `, [department_id, post_id]) as any[];
+    `, [department_id, post_id]) as Array<{
+      dept_name_en: string | null;
+      dept_name_hi: string | null;
+      post_name_en: string | null;
+      post_name_hi: string | null;
+    }>;
 
     if (departmentPost.length === 0) {
       return NextResponse.json({ error: 'Department or post not found' }, { status: 404 });
@@ -80,7 +94,11 @@ export async function POST(request: NextRequest) {
       state || null,
       state || null,
       district || null
-    ]) as any[];
+    ]) as Array<{
+      id: number;
+      generated_at: string;
+      certificate_path: string | null;
+    }>;
 
     if (existingCertificate.length > 0) {
       // If certificate exists but is old (more than a day), allow regeneration
@@ -105,8 +123,18 @@ export async function POST(request: NextRequest) {
 
     // Generate certificate
     const certificateData = {
-      member: member[0],
-      department: departmentPost[0],
+      member: {
+        ...member[0],
+        profile_photo_path: member[0].profile_photo_path ?? undefined,
+        state: member[0].state ?? undefined,
+        district: undefined // District comes from separate parameter
+      },
+      department: {
+        dept_name_en: departmentPost[0].dept_name_en ?? '',
+        dept_name_hi: departmentPost[0].dept_name_hi ?? '',
+        post_name_en: departmentPost[0].post_name_en ?? '',
+        post_name_hi: departmentPost[0].post_name_hi ?? ''
+      },
       level,
       state,
       district,
@@ -114,7 +142,14 @@ export async function POST(request: NextRequest) {
       certificate_number: certificateNumber
     };
 
-    const certificatePath = await generateAppointmentCertificate(certificateData);
+    const languagePreference = await getStateLanguagePreference({
+      stateName: member[0].state ?? state ?? null
+    });
+
+    const certificatePath = await generateAppointmentCertificate({
+      ...certificateData,
+      language: languagePreference
+    });
 
     let appointmentIdCardPath: string | null = null;
     try {
@@ -122,16 +157,23 @@ export async function POST(request: NextRequest) {
         memberId: member_id,
         memberName: member[0].name,
         memberRegNumber: member[0].member_reg_number,
-        profilePhotoPath: member[0].profile_photo_path,
-        address: member[0].address,
-        designation: departmentPost[0].post_name_hi || departmentPost[0].post_name_en,
+        profilePhotoPath: member[0].profile_photo_path ?? undefined,
+        address: member[0].address ?? undefined,
+        designation: languagePreference === 'hi'
+          ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
+          : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),
         cardType: 'appointment',
-        departmentName: departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en,
-        postName: departmentPost[0].post_name_hi || departmentPost[0].post_name_en,
+        departmentName: languagePreference === 'hi'
+          ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || undefined)
+          : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || undefined),
+        postName: languagePreference === 'hi'
+          ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
+          : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),
         level,
         state,
         district,
         appointmentDate: resolvedAppointmentDate,
+        language: languagePreference
       });
 
       appointmentIdCardPath = idCardResult.idCardPath;
@@ -148,7 +190,7 @@ export async function POST(request: NextRequest) {
       member_id, department_id, post_id, level, state, district, 
       certificateNumber, resolvedAppointmentDate,
       scope.adminId, certificatePath
-    ]) as any;
+    ]) as { insertId: number };
 
     // Try to log certificate generation (but don't fail if table doesn't exist)
     try {
@@ -167,15 +209,20 @@ export async function POST(request: NextRequest) {
         to: member[0].email,
         memberName: member[0].name,
         memberRegNumber: member[0].member_reg_number,
-        departmentName: departmentPost[0].dept_name_en,
-        postName: departmentPost[0].post_name_en,
+        departmentName: languagePreference === 'hi'
+          ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || '')
+          : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || ''),
+        postName: languagePreference === 'hi'
+          ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || '')
+          : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || ''),
         level,
-        state,
-        district,
+        state: state || undefined,
+        district: district || undefined,
         certificatePath,
         appointmentDate: resolvedAppointmentDate,
         certificateNumber,
         idCardPath: appointmentIdCardPath || undefined,
+        language: languagePreference,
       };
 
       const emailResult = await sendCertificateEmail(emailData);

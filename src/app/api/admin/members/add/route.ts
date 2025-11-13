@@ -170,9 +170,12 @@ export async function POST(request: NextRequest) {
     // For superadmins, use RHVS000000 as reference (superadmin reference)
 
     // Get state and district names from IDs
-    const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
-    const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
+    const stateQuery = 'SELECT state_name_english, language_pref FROM states WHERE id = ?';
+    const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string; language_pref: number | null }>;
     const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
+    const languagePreference = stateResult.length > 0
+      ? (stateResult[0].language_pref === 0 ? 'en' : 'hi')
+      : 'hi';
 
     const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
     const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;
@@ -284,7 +287,8 @@ export async function POST(request: NextRequest) {
         memberName: name,
         memberRegNumber: memberRegNumber,
         registrationDate: registrationDate,
-        profilePhotoPath: resolvedProfilePath
+        profilePhotoPath: resolvedProfilePath,
+        language: languagePreference
       });
       
       certificatePath = certificateResult.certificatePath;
@@ -325,7 +329,10 @@ export async function POST(request: NextRequest) {
         profilePhotoPath: resolvedProfilePath,
         address: address,
         designation: 'Member',
-        cardType: 'membership'
+        cardType: 'membership',
+        language: languagePreference,
+        state: stateName,
+        district: districtName
       });
       
       idCardPath = idCardResult.idCardPath;
@@ -344,7 +351,8 @@ export async function POST(request: NextRequest) {
         name,
         memberRegNumber,
         certificatePath || undefined,
-        idCardPath || undefined
+        idCardPath || undefined,
+        languagePreference
       );
       
       if (welcomeEmailResult?.success) {
