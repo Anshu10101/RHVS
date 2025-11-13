@@ -373,9 +373,35 @@ export async function POST(request: NextRequest) {
 
     // Log the admin action
     try {
+      // Get admin name for logging
+      let adminName = 'Unknown Admin';
+      try {
+        if (scope.isSuperAdmin) {
+          const adminQuery = 'SELECT name FROM superadmins WHERE id = ? LIMIT 1';
+          const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ name: string }>;
+          if (adminResult.length > 0) {
+            adminName = adminResult[0].name;
+          }
+        } else if (scope.isDistrictAdmin) {
+          const adminQuery = `
+            SELECT m.name 
+            FROM district_admins da 
+            JOIN members m ON da.member_id = m.id 
+            WHERE da.id = ? 
+            LIMIT 1
+          `;
+          const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ name: string }>;
+          if (adminResult.length > 0) {
+            adminName = adminResult[0].name;
+          }
+        }
+      } catch (nameError) {
+        console.warn('Could not fetch admin name for activity log:', nameError);
+      }
+
       const activityLogQuery = `
-        INSERT INTO activity_logs (user_id, user_type, action, details, created_at)
-        VALUES (?, ?, ?, ?, NOW())
+        INSERT INTO activity_logs (user_id, user_name, user_type, action, details, created_at)
+        VALUES (?, ?, ?, ?, ?, NOW())
       `;
       
       const logDetails = JSON.stringify({
@@ -391,7 +417,8 @@ export async function POST(request: NextRequest) {
       });
 
       await executeQuery(activityLogQuery, [
-        scope.adminId, 
+        scope.adminId?.toString() || '0', 
+        adminName,
         scope.isSuperAdmin ? 'superadmin' : 'district_admin', 
         'member_added_direct', 
         logDetails

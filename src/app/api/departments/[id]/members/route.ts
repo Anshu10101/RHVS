@@ -215,36 +215,160 @@ export async function POST(
 
     // Generate certificate automatically
     try {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_BASE_URL ??
-        process.env.API_BASE_URL ??
-        'http://localhost:3000';
+      // Import certificate generation function directly instead of HTTP call
+      const { generateAppointmentCertificate } = await import('@/lib/certificate-generator');
+      const { sendCertificateEmail } = await import('@/lib/email-service');
+      const { generateIDCard } = await import('@/lib/id-card-generator');
+      const { getStateLanguagePreference } = await import('@/lib/language-preference');
+      
+      // Get member details
+      const member = await executeQuery(
+        'SELECT * FROM members WHERE id = ? AND status = "verified"',
+        [member_id]
+      ) as Array<{
+        id: number;
+        name: string;
+        member_reg_number: string;
+        email: string;
+        address: string | null;
+        profile_photo_path: string | null;
+        state: string | null;
+      }>;
 
-      const certificateResponse = await fetch(`${baseUrl}/api/certificates/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cookie': request.headers.get('cookie') || '',
-        },
-        body: JSON.stringify({
-          member_id,
-          department_id: departmentId,
-          post_id,
-          level,
-          state,
-          district,
-          appointment_date: new Date().toISOString().split('T')[0],
-        }),
-      });
-
-      if (certificateResponse.ok) {
-        const certificateData = await certificateResponse.json();
-        console.log('Certificate generated automatically:', certificateData.certificate_id);
+      if (member.length === 0) {
+        console.warn('Member not found or not verified, skipping certificate generation');
+        // Continue to return success response below
       } else {
-        console.error('Failed to generate certificate automatically:', await certificateResponse.text());
+        // Get department and post details
+        const departmentPost = await executeQuery(`
+          SELECT d.name_en as dept_name_en, d.name_hi as dept_name_hi,
+                 dp.name_en as post_name_en, dp.name_hi as post_name_hi
+          FROM departments d
+          JOIN department_posts dp ON d.id = dp.department_id
+          WHERE d.id = ? AND dp.id = ?
+        `, [departmentId, post_id]) as Array<{
+          dept_name_en: string | null;
+          dept_name_hi: string | null;
+          post_name_en: string | null;
+          post_name_hi: string | null;
+        }>;
+
+        if (departmentPost.length === 0) {
+          console.warn('Department or post not found, skipping certificate generation');
+        } else {
+          // Generate certificate number
+          const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+          const appointmentDate = new Date().toISOString().split('T')[0];
+
+          // Get language preference
+          const languagePreference = await getStateLanguagePreference({
+            stateName: member[0].state ?? state ?? null
+          });
+
+          // Generate certificate
+          const certificatePath = await generateAppointmentCertificate({
+            member: {
+              ...member[0],
+              profile_photo_path: member[0].profile_photo_path ?? undefined,
+              state: member[0].state ?? undefined,
+              district: undefined
+            },
+            department: {
+              dept_name_en: departmentPost[0].dept_name_en ?? '',
+              dept_name_hi: departmentPost[0].dept_name_hi ?? '',
+              post_name_en: departmentPost[0].post_name_en ?? '',
+              post_name_hi: departmentPost[0].post_name_hi ?? ''
+            },
+            level,
+            state,
+            district,
+            appointment_date: appointmentDate,
+            certificate_number: certificateNumber,
+            language: languagePreference
+          });
+
+          // Generate ID card
+          let appointmentIdCardPath: string | null = null;
+          try {
+            const idCardResult = await generateIDCard({
+              memberId: member_id,
+              memberName: member[0].name,
+              memberRegNumber: member[0].member_reg_number,
+              profilePhotoPath: member[0].profile_photo_path ?? undefined,
+              address: member[0].address ?? undefined,
+              designation: languagePreference === 'hi'
+                ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
+                : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),
+              cardType: 'appointment',
+              departmentName: languagePreference === 'hi'
+                ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || undefined)
+                : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || undefined),
+              postName: languagePreference === 'hi'
+                ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
+                : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),
+              level,
+              state,
+              district,
+              appointmentDate,
+              language: languagePreference
+            });
+            appointmentIdCardPath = idCardResult.idCardPath;
+          } catch (idCardError) {
+            console.warn('ID card generation failed, continuing without it:', idCardError);
+          }
+
+          // Save certificate record
+          const certResult = await executeQuery(`
+            INSERT INTO certificates 
+            (member_id, department_id, post_id, level, state, district, certificate_number, appointment_date, generated_by, certificate_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `, [
+            member_id, departmentId, post_id, level, state, district, 
+            certificateNumber, appointmentDate, scope.adminId, certificatePath
+          ]) as { insertId: number };
+
+          // Send email
+          try {
+            const emailData = {
+              to: member[0].email,
+              memberName: member[0].name,
+              memberRegNumber: member[0].member_reg_number,
+              departmentName: languagePreference === 'hi'
+                ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || '')
+                : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || ''),
+              postName: languagePreference === 'hi'
+                ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || '')
+                : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || ''),
+              level,
+              state: state || undefined,
+              district: district || undefined,
+              certificatePath,
+              appointmentDate,
+              certificateNumber,
+              idCardPath: appointmentIdCardPath || undefined,
+              language: languagePreference,
+            };
+
+            const emailResult = await sendCertificateEmail(emailData);
+            if (emailResult.success) {
+              console.log('✅ Certificate email sent automatically:', emailResult.messageId);
+              await executeQuery(`
+                UPDATE certificates 
+                SET email_status = 'sent', email_sent_at = NOW(), status = 'emailed'
+                WHERE id = ?
+              `, [certResult.insertId]);
+            } else {
+              console.error('❌ Failed to send certificate email:', emailResult.error);
+            }
+          } catch (emailError) {
+            console.error('❌ Error sending certificate email:', emailError);
+          }
+
+          console.log('✅ Certificate generated automatically:', certResult.insertId);
+        }
       }
     } catch (error) {
-      console.error('Error generating certificate automatically:', error);
+      console.error('❌ Error generating certificate automatically:', error);
       // Don't fail the assignment if certificate generation fails
     }
 
