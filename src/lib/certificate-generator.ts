@@ -281,7 +281,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   }> = [];
   
   try {
-    // Try to load appointment signatures first
+    // Load appointment signatures ONLY (no fallback to membership)
     signatureRows = await executeQuery(
       `SELECT name_en, name_hi, designation_en, designation_hi, 
               CASE 
@@ -301,33 +301,12 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
       signature_path: string | null;
     }>;
     
-    // If no appointment signatures found, use membership signatures (same as membership certificate)
-    if (signatureRows.length === 0) {
-      signatureRows = await executeQuery(
-        `SELECT name_en, name_hi, designation_en, designation_hi, 
-                CASE 
-                  WHEN signature_blob IS NOT NULL THEN CONCAT('/api/media/certificate-signatures/', id, '/signature')
-                  ELSE signature_path
-                END AS signature_path
-         FROM certificate_signatures
-         WHERE certificate_type = 'membership' AND is_active = TRUE
-         ORDER BY display_order ASC, id ASC
-         LIMIT 4`,
-        []
-      ) as Array<{
-        name_en: string;
-        name_hi: string | null;
-        designation_en: string;
-        designation_hi: string | null;
-        signature_path: string | null;
-      }>;
-      console.log(`[Appointment Certificate] No appointment signatures found, using ${signatureRows.length} membership signatures`);
-    } else {
-      console.log(`[Appointment Certificate] Loaded ${signatureRows.length} appointment signatures from database`);
-    }
+    console.log(`[Appointment Certificate] Loaded ${signatureRows.length} appointment signatures from database`);
     
     if (signatureRows.length > 0) {
       console.log(`[Appointment Certificate] Signature names:`, signatureRows.map(s => s.name_en || s.name_hi));
+    } else {
+      console.log(`[Appointment Certificate] No appointment signatures found in database - will use fallback hardcoded signatures`);
     }
   } catch (error) {
     console.error('[Appointment Certificate] Error loading signatures from database:', error);

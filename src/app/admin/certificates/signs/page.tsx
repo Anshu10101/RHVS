@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
 import { 
@@ -79,6 +80,9 @@ export default function AddSignPage() {
   const [designationEn, setDesignationEn] = useState('');
   const [designationHi, setDesignationHi] = useState('');
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const [copyFromOtherType, setCopyFromOtherType] = useState(false);
+  const [otherTypeSignatures, setOtherTypeSignatures] = useState<Signature[]>([]);
+  const [selectedSourceSignature, setSelectedSourceSignature] = useState<Signature | null>(null);
 
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -101,7 +105,21 @@ export default function AddSignPage() {
   useEffect(() => {
     fetchExistingSignatures();
     fetchDepartments();
+    // Reset copy checkbox and source signature when certificate type changes
+    setCopyFromOtherType(false);
+    setSelectedSourceSignature(null);
+    setOtherTypeSignatures([]);
   }, [certificateType]);
+
+  // Fetch signatures from the other certificate type when copy checkbox is checked
+  useEffect(() => {
+    if (copyFromOtherType) {
+      fetchOtherTypeSignatures();
+    } else {
+      setOtherTypeSignatures([]);
+      setSelectedSourceSignature(null);
+    }
+  }, [copyFromOtherType, certificateType]);
 
   useEffect(() => {
     if (selectedDepartment) {
@@ -136,6 +154,24 @@ export default function AddSignPage() {
       }
     } catch (error) {
       console.error('Error fetching signatures:', error);
+    }
+  };
+
+  const fetchOtherTypeSignatures = async () => {
+    try {
+      const otherType = certificateType === 'membership' ? 'appointment' : 'membership';
+      const response = await fetch(`/api/admin/certificates/signatures?type=${otherType}&_t=${Date.now()}`);
+      const data = await response.json();
+      if (data.success) {
+        setOtherTypeSignatures(data.signatures);
+      }
+    } catch (error) {
+      console.error('Error fetching other type signatures:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load signatures from other certificate type',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -209,6 +245,16 @@ export default function AddSignPage() {
       toast({
         title: 'Error',
         description: 'Maximum 4 signatures allowed per certificate type',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // When copying from other type, ensure a source signature is selected
+    if (copyFromOtherType && !selectedSourceSignature) {
+      toast({
+        title: 'Error',
+        description: 'Please select a signature to copy',
         variant: 'destructive',
       });
       return;
@@ -540,14 +586,109 @@ export default function AddSignPage() {
                 )}
               </div>
 
+              {/* Copy from other certificate type */}
+              <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <Checkbox
+                  id="copy_from_other"
+                  checked={copyFromOtherType}
+                  onCheckedChange={(checked) => {
+                    setCopyFromOtherType(checked as boolean);
+                    if (checked) {
+                      // Force manual entry mode when copying
+                      setMethod('manual');
+                      setSelectedMember(null);
+                      setSelectedDepartment('');
+                    } else {
+                      // Reset form when unchecking
+                      setNameEn('');
+                      setNameHi('');
+                      setDesignationEn('');
+                      setDesignationHi('');
+                      setSignatureFile(null);
+                      setSignaturePreview(null);
+                      setSelectedSourceSignature(null);
+                    }
+                  }}
+                />
+                <Label
+                  htmlFor="copy_from_other"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Copy signature from {certificateType === 'membership' ? 'Appointment' : 'Membership'} Certificate
+                </Label>
+              </div>
+
+              {copyFromOtherType && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
+                  <div>
+                    <Label htmlFor="source_signature">Select Signature to Copy</Label>
+                    {otherTypeSignatures.length === 0 ? (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          No signatures found in {certificateType === 'membership' ? 'Appointment' : 'Membership'} Certificate. Add signatures there first.
+                        </p>
+                      </div>
+                    ) : (
+                      <Select
+                        value={selectedSourceSignature?.id.toString() || ''}
+                        onValueChange={(value) => {
+                          const sig = otherTypeSignatures.find(s => s.id.toString() === value);
+                          setSelectedSourceSignature(sig || null);
+                          if (sig) {
+                            // Auto-populate form fields
+                            setNameEn(sig.nameEn);
+                            setNameHi(sig.nameHi || '');
+                            setDesignationEn(sig.designationEn);
+                            setDesignationHi(sig.designationHi || '');
+                            // Note: We can't copy the signature image file directly, user needs to upload it
+                            setSignatureFile(null);
+                            setSignaturePreview(null);
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a signature to copy" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {otherTypeSignatures.map((sig) => (
+                            <SelectItem key={sig.id} value={sig.id.toString()}>
+                              {sig.nameEn} - {sig.designationEn}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+
+                  {selectedSourceSignature && (
+                    <div className="p-3 bg-white rounded border">
+                      <p className="text-sm font-semibold mb-2">Selected Signature:</p>
+                      <p className="text-sm">Name (EN): {selectedSourceSignature.nameEn}</p>
+                      {selectedSourceSignature.nameHi && (
+                        <p className="text-sm">Name (HI): {selectedSourceSignature.nameHi}</p>
+                      )}
+                      <p className="text-sm">Designation (EN): {selectedSourceSignature.designationEn}</p>
+                      {selectedSourceSignature.designationHi && (
+                        <p className="text-sm">Designation (HI): {selectedSourceSignature.designationHi}</p>
+                      )}
+                      <p className="text-xs text-orange-600 mt-2">
+                        ⚠️ Note: You still need to upload the signature image file below.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Tabs value={method} onValueChange={(value) => {
-                setMethod(value as 'manual' | 'member');
-                setSelectedMember(null);
-                setSelectedDepartment('');
+                if (!copyFromOtherType) {
+                  setMethod(value as 'manual' | 'member');
+                  setSelectedMember(null);
+                  setSelectedDepartment('');
+                }
               }}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="manual">Manual Entry</TabsTrigger>
-                  <TabsTrigger value="member">From Member</TabsTrigger>
+                  <TabsTrigger value="manual" disabled={copyFromOtherType}>Manual Entry</TabsTrigger>
+                  <TabsTrigger value="member" disabled={copyFromOtherType}>From Member</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="manual" className="space-y-4 mt-4">
@@ -558,6 +699,7 @@ export default function AddSignPage() {
                       value={nameEn}
                       onChange={(e) => setNameEn(e.target.value)}
                       required
+                      disabled={copyFromOtherType && !!selectedSourceSignature}
                     />
                   </div>
 
@@ -567,6 +709,7 @@ export default function AddSignPage() {
                       id="name_hi"
                       value={nameHi}
                       onChange={(e) => setNameHi(e.target.value)}
+                      disabled={copyFromOtherType && !!selectedSourceSignature}
                     />
                   </div>
 
@@ -577,6 +720,7 @@ export default function AddSignPage() {
                       value={designationEn}
                       onChange={(e) => setDesignationEn(e.target.value)}
                       required
+                      disabled={copyFromOtherType && !!selectedSourceSignature}
                     />
                   </div>
 
@@ -586,6 +730,7 @@ export default function AddSignPage() {
                       id="designation_hi"
                       value={designationHi}
                       onChange={(e) => setDesignationHi(e.target.value)}
+                      disabled={copyFromOtherType && !!selectedSourceSignature}
                     />
                   </div>
 
