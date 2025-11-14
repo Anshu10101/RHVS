@@ -3,61 +3,99 @@ import { executeQuery } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    // For now, return default departments to ensure the section always works
-    const defaultDepartments = [
-      {
-        id: 'default-1',
-        name_en: 'Cultural Affairs',
-        name_hi: 'सांस्कृतिक मामले',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
-      },
-      {
-        id: 'default-2', 
-        name_en: 'Youth Affairs',
-        name_hi: 'युवा मामले',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
-      },
-      {
-        id: 'default-3',
-        name_en: 'Women\'s Wing',
-        name_hi: 'महिला मोर्चा',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
-      },
-      {
-        id: 'default-4',
-        name_en: 'Education & Research',
-        name_hi: 'शिक्षा एवं अनुसंधान',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
-      },
-      {
-        id: 'default-5',
-        name_en: 'Social Service',
-        name_hi: 'सामाजिक सेवा',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
-      },
-      {
-        id: 'default-6',
-        name_en: 'Media & Communication',
-        name_hi: 'मीडिया एवं संचार',
-        post_name_en: 'President',
-        post_name_hi: 'अध्यक्ष',
-        president: null
+    const { searchParams } = new URL(request.url);
+    const requestedLevel = (searchParams.get('level') || 'national').toLowerCase();
+    const validLevels = new Set(['national', 'state', 'district']);
+    const level = validLevels.has(requestedLevel) ? requestedLevel : 'national';
+    const stateFilter = searchParams.get('state')?.trim() || null;
+    const districtFilter = searchParams.get('district')?.trim() || null;
+
+    // Require filters for state/district requests so UI can show guidance
+    if (level === 'state' && !stateFilter) {
+      return NextResponse.json({ success: true, departments: [] });
+    }
+    if (level === 'district' && (!stateFilter || !districtFilter)) {
+      return NextResponse.json({ success: true, departments: [] });
+    }
+
+    const shouldFallbackToDefaults = level === 'national';
+
+    const defaultDepartments = shouldFallbackToDefaults
+      ? [
+          {
+            id: 'default-1',
+            name_en: 'Cultural Affairs',
+            name_hi: 'सांस्कृतिक मामले',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          },
+          {
+            id: 'default-2',
+            name_en: 'Youth Affairs',
+            name_hi: 'युवा मामले',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          },
+          {
+            id: 'default-3',
+            name_en: "Women's Wing",
+            name_hi: 'महिला मोर्चा',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          },
+          {
+            id: 'default-4',
+            name_en: 'Education & Research',
+            name_hi: 'शिक्षा एवं अनुसंधान',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          },
+          {
+            id: 'default-5',
+            name_en: 'Social Service',
+            name_hi: 'सामाजिक सेवा',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          },
+          {
+            id: 'default-6',
+            name_en: 'Media & Communication',
+            name_hi: 'मीडिया एवं संचार',
+            post_name_en: 'President',
+            post_name_hi: 'अध्यक्ष',
+            president: null
+          }
+        ]
+      : [];
+
+    const buildLevelClause = (alias: string) => {
+      const clauses: string[] = [`${alias}.level = ?`];
+      const params: string[] = [level];
+
+      if (level === 'state') {
+        clauses.push(`${alias}.state = ?`);
+        params.push(stateFilter!);
+      } else if (level === 'district') {
+        clauses.push(`${alias}.state = ?`);
+        clauses.push(`${alias}.district = ?`);
+        params.push(stateFilter!);
+        params.push(districtFilter!);
       }
-    ];
+
+      return {
+        clause: clauses.join(' AND '),
+        params
+      };
+    };
 
     // Try to get real departments from database
     try {
-      // First, get all departments (since most don't have level set, show all)
+      // First, get all departments (exclude National Executive Department - it's shown separately)
       const departmentsQuery = `
         SELECT 
           d.id,
@@ -67,6 +105,7 @@ export async function GET(request: NextRequest) {
           'अध्यक्ष' as post_name_hi
         FROM departments d
         WHERE d.name_en IS NOT NULL AND d.name_en != ''
+          AND (d.is_national_executive IS NULL OR d.is_national_executive = FALSE)
         ORDER BY d.name_en
       `;
 
@@ -79,8 +118,10 @@ export async function GET(request: NextRequest) {
       }>;
 
       if (dbDepartments && dbDepartments.length > 0) {
-        // Get presidents from department_members table - specifically for president post (position_order = 1)
-        // Get the FIRST president member assigned (order by assigned_at to ensure we get the original president, not the last added)
+        const levelJoin = buildLevelClause('dm');
+        const levelSub = buildLevelClause('dm2');
+
+        // Get presidents from department_members table for the requested level
         const presidentQuery = `
           SELECT 
             d.id,
@@ -100,18 +141,19 @@ export async function GET(request: NextRequest) {
           LEFT JOIN department_posts dp ON d.id = dp.department_id AND dp.position_order = 1
           LEFT JOIN department_members dm ON d.id = dm.department_id 
             AND dp.id = dm.post_id 
-            AND dm.level = 'national'
+            AND (${levelJoin.clause})
             AND dm.id = (
               SELECT dm2.id
               FROM department_members dm2
               WHERE dm2.department_id = d.id
                 AND dm2.post_id = dp.id
-                AND dm2.level = 'national'
+                AND (${levelSub.clause})
               ORDER BY dm2.assigned_at ASC
               LIMIT 1
             )
           LEFT JOIN members m ON dm.member_id = m.id AND m.status = 'verified'
           WHERE d.name_en IS NOT NULL AND d.name_en != ''
+            AND (d.is_national_executive IS NULL OR d.is_national_executive = FALSE)
         `;
 
         let presidentDepartments: Array<{
@@ -128,7 +170,8 @@ export async function GET(request: NextRequest) {
         }> = [];
 
         try {
-          presidentDepartments = await executeQuery(presidentQuery, []) as Array<{
+          const presidentParams = [...levelJoin.params, ...levelSub.params];
+          presidentDepartments = await executeQuery(presidentQuery, presidentParams) as Array<{
             id: number;
             name_en: string;
             name_hi: string;
@@ -187,10 +230,10 @@ export async function GET(request: NextRequest) {
         });
       }
     } catch (dbError) {
-      console.log('Database query failed, using default departments:', dbError);
+      console.log('Database query failed, using fallback data:', dbError);
     }
 
-    // Return default departments if database query fails
+    // Return fallback departments if database query fails or level filters missing data
     return NextResponse.json({
       success: true,
       departments: defaultDepartments

@@ -26,7 +26,8 @@ export async function GET(request: NextRequest) {
     const district = searchParams.get('district');
 
     // Build the query based on filters
-    let query = 'SELECT * FROM departments WHERE 1=1';
+    // Exclude National Executive Department from regular list (it will be shown in separate tab)
+    let query = 'SELECT * FROM departments WHERE is_national_executive = FALSE';
     const params: any[] = [];
 
     if (level) {

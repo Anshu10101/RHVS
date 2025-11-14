@@ -10,9 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Calendar, Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Upload, User, UserRound, Mail, Phone, Home, MapPin, Map, IdCard, Calendar as CalendarIcon, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown, Bell, Send } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import Image from 'next/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
@@ -59,6 +62,8 @@ export default function MemberRegistrationPage() {
   const [states, setStates] = useState<State[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [showInitiatedNotice, setShowInitiatedNotice] = useState(false);
+  const [initiatedNoticeDetails, setInitiatedNoticeDetails] = useState<{ token?: string | null; expiresAt?: string | null; name?: string | null } | null>(null);
 
   // Fetch states on component mount
   useEffect(() => {
@@ -364,6 +369,16 @@ export default function MemberRegistrationPage() {
         setOtpSent(false);
         setCurrentStep(0);
       } else {
+        if (registerResult.code === 'REGISTRATION_PENDING') {
+          setInitiatedNoticeDetails({
+            token: registerResult.token || form.getValues('existingMemberRegNumber'),
+            expiresAt: registerResult.expiresAt || null,
+            name: registerResult.name || data.name,
+          });
+          setShowInitiatedNotice(true);
+          setIsSubmitting(false);
+          return;
+        }
         form.setError('root', { message: registerResult.message });
       }
     } catch (error) {
@@ -400,49 +415,78 @@ export default function MemberRegistrationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 py-8 relative overflow-hidden animate-in fade-in-0 duration-1000">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fed7aa' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
-      </div>
-      
-      <div className="container mx-auto px-4 max-w-6xl relative z-10">
+    <div className="min-h-screen bg-[#fefaf6] text-slate-900">
+      <div className="container mx-auto px-4 max-w-6xl py-10">
+
+        <Dialog open={showInitiatedNotice} onOpenChange={setShowInitiatedNotice}>
+          <DialogContent className="sm:max-w-md rounded-2xl border border-orange-200 bg-white/95">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="flex items-center gap-2 text-orange-800">
+                <Bell className="h-5 w-5 text-orange-500" />
+                Already initiated?
+              </DialogTitle>
+              <DialogDescription className="text-sm text-orange-700 leading-relaxed space-y-2">
+                <span>
+                  {initiatedNoticeDetails?.token ? (
+                    <>
+                      A registration for this email is already pending for{' '}
+                      <span className="font-semibold">{initiatedNoticeDetails.name || 'the same member'}</span> with token{' '}
+                      <span className="font-semibold">{initiatedNoticeDetails.token}</span>. Please bring this token to the RHVS admin for verification instead of submitting the form again.
+                      {initiatedNoticeDetails.expiresAt && (
+                        <span className="block text-xs text-orange-600 mt-2">
+                          Valid until: {new Date(initiatedNoticeDetails.expiresAt).toLocaleDateString('en-GB')}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>A registration for this email is already pending. Please bring the previously issued token for verification—no need to submit this form again.</>
+                  )}
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+            <Button onClick={() => setShowInitiatedNotice(false)} className="w-full bg-orange-600 hover:bg-orange-700">
+              Got it, continue
+            </Button>
+          </DialogContent>
+        </Dialog>
         {/* Header */}
-        <div className="text-center mb-12 animate-in slide-in-from-top-4 duration-700">
-          <div className="relative inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mb-6 shadow-2xl hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-700 rounded-full animate-pulse opacity-75 group-hover:opacity-100"></div>
-            <User className="h-12 w-12 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
-            <div className="absolute -top-1 -right-1 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
-              <Sparkles className="h-4 w-4 text-orange-800" />
-            </div>
+        <div className="text-center mb-12 space-y-4">
+          <div className="inline-flex items-center justify-center">
+            <Image
+              src="/rhvs_logo.png"
+              alt="RHVS"
+              width={144}
+              height={144}
+              className="w-32 h-32 sm:w-36 sm:h-36 object-contain drop-shadow-xl"
+              priority
+            />
           </div>
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-orange-800 via-orange-600 to-orange-800 bg-clip-text text-transparent mb-6 animate-in slide-in-from-top-2 duration-700 delay-200">
+          <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-slate-900">
             Member Registration
           </h1>
-          <p className="text-xl md:text-2xl text-orange-700 max-w-4xl mx-auto leading-relaxed animate-in slide-in-from-bottom-4 duration-700 delay-400">
-            Join <span className="font-semibold text-orange-800 relative">
-              राष्ट्रीय हिंदू वाहिनी संगठन
-              <span className="absolute -bottom-1 left-0 right-0 block h-0.5 bg-gradient-to-r from-orange-500 to-orange-600 rounded-full"></span>
-            </span> as a new member.
-            <br className="hidden md:block" />
-            <span className="text-orange-600 font-medium">An existing member must verify your registration.</span>
+          <p className="text-base md:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">
+            Join <span className="font-semibold text-orange-600">राष्ट्रीय हिन्दू वाहिनी संगठन</span> and represent your region with integrity. Every application is verified by an existing member to keep the community authentic and accountable.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mb-10">
+          <div className="rounded-3xl border border-slate-100 bg-white/95 shadow-sm p-6 grid grid-cols-1 md:grid-cols-[auto,1fr] items-center gap-4 text-sm text-slate-600 leading-relaxed">
+            <div className="font-semibold text-slate-800">Transparent, patient, trusted.</div>
+            <p>Generated Token remains active for 10 days. Share it with the RHVS admin and avoid duplicate submissions our team will guide you through the final verification.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[360px,1fr] gap-8">
           {/* Existing Member Verification */}
-          <Card className="lg:col-span-1 shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-left-8 duration-700 delay-600 hover:-translate-y-2">
-            <CardHeader className="bg-gradient-to-br from-orange-50 to-orange-100 border-b border-orange-200/50 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200/30 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-              <CardTitle className="flex items-center gap-3 text-orange-800 text-xl relative z-10">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Shield className="h-5 w-5 text-white" />
+          <Card className="rounded-3xl border border-slate-100 shadow-lg bg-white">
+            <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white rounded-t-3xl">
+              <CardTitle className="flex items-center gap-3 text-slate-900 text-lg">
+                <div className="p-2 bg-orange-500/10 rounded-xl text-orange-600">
+                  <Shield className="h-5 w-5 text-orange-500" />
                 </div>
                 Member Verification
               </CardTitle>
-              <CardDescription className="text-orange-600 text-base relative z-10">
+              <CardDescription className="text-slate-500 text-sm">
                 An existing member must verify this registration
               </CardDescription>
             </CardHeader>
@@ -453,23 +497,23 @@ export default function MemberRegistrationPage() {
                   name="existingMemberRegNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide">Existing Member Registration Number</FormLabel>
+                      <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                        <IdCard className="h-4 w-4 text-orange-500" />
+                        Existing Member Registration Number
+                      </FormLabel>
                       <FormControl>
                         <div className="flex gap-3">
-                          <div className="relative flex-1">
-                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400" />
-                            <Input
-                              placeholder="Enter existing member's registration number"
-                              {...field}
-                              onChange={(e) => {
-                                field.onChange(e);
-                                if (otpSent) {
-                                  handleChangeRegNumber();
-                                }
-                              }}
-                              className="pl-10 h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400/20 rounded-xl"
-                            />
-                          </div>
+                          <Input
+                            placeholder="Enter existing member's registration number"
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              if (otpSent) {
+                                handleChangeRegNumber();
+                              }
+                            }}
+                            className="flex-1 h-12 border border-slate-200 rounded-2xl px-4 focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                          />
                           <Button
                             type="button"
                             onClick={handleSendOTP}
@@ -482,7 +526,10 @@ export default function MemberRegistrationPage() {
                                 Sent
                               </div>
                             ) : (
-                              'Send OTP'
+                              <div className="flex items-center gap-2">
+                                <Send className="h-4 w-4" />
+                                <span>Send OTP</span>
+                              </div>
                             )}
                           </Button>
                         </div>
@@ -498,7 +545,10 @@ export default function MemberRegistrationPage() {
                     name="otp"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide">OTP Verification</FormLabel>
+                        <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-orange-500" />
+                          OTP Verification
+                        </FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Enter 6-digit OTP"
@@ -526,125 +576,122 @@ export default function MemberRegistrationPage() {
           </Card>
 
           {/* Main Registration Form */}
-          <Card className="lg:col-span-2 shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-right-8 duration-700 delay-800 hover:-translate-y-2">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200/50 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-orange-200/20 to-transparent rounded-full -translate-y-20 -translate-x-20"></div>
-              <CardTitle className="flex items-center gap-3 text-orange-800 text-2xl relative z-10">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <User className="h-6 w-6 text-white" />
+          <Card className="rounded-3xl border border-slate-100 shadow-lg bg-white">
+            <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-white to-orange-50/40 rounded-t-3xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-orange-100/40 rounded-full -translate-y-16 -translate-x-10" />
+              <CardTitle className="flex items-center gap-3 text-slate-900 text-2xl relative z-10">
+                <div className="p-3 bg-orange-500/15 rounded-xl text-orange-600">
+                  <User className="h-6 w-6 text-orange-500" />
                 </div>
                 Personal Information
                 <ArrowRight className="h-5 w-5 text-orange-500 ml-auto animate-pulse" />
               </CardTitle>
-              <CardDescription className="text-orange-600 text-base relative z-10">
+              <CardDescription className="text-slate-500 text-sm relative z-10">
                 Please provide accurate information for registration
               </CardDescription>
             </CardHeader>
             <CardContent className="p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Profile Photo Upload */}
-                  <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-300">
-                    <Label className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                      <Camera className="h-4 w-4" />
-                      Profile Photo
-                    </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/30 rounded-2xl border border-orange-200/50">
-                      <div className="relative group">
-                        <div className="w-36 h-36 rounded-3xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105">
-                          {profilePhoto ? (
-                            <img
-                              src={URL.createObjectURL(profilePhoto)}
-                              alt="Profile preview"
-                              className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <User className="h-16 w-16 text-orange-400 group-hover:scale-110 transition-transform duration-300" />
+                  {/* Profile & Signature Uploads */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <Label className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                        <Camera className="h-4 w-4 text-orange-500" />
+                        Profile Photo
+                      </Label>
+                      <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-slate-100 bg-white">
+                        <div className="relative group">
+                          <div className="w-36 h-36 rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {profilePhoto ? (
+                              <img
+                                src={URL.createObjectURL(profilePhoto)}
+                                alt="Profile preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="h-16 w-16 text-slate-300" />
+                            )}
+                          </div>
+                          {profilePhoto && (
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow">
+                              <CheckCircle className="h-4 w-4 text-white" />
+                            </div>
                           )}
                         </div>
-                        {profilePhoto && (
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          className="hidden"
-                          id="profile-photo"
-                        />
-                        <Label
-                          htmlFor="profile-photo"
-                          className="cursor-pointer inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform"
-                        >
-                          <Upload className="h-5 w-5" />
-                          {profilePhoto ? 'Change Photo' : 'Upload High-Quality Photo'}
-                        </Label>
-                        <p className="text-sm text-orange-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
-                          <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 500KB • Passport size photo recommended • Required
-                          <span className="w-2 h-2 bg-orange-400 rounded-full inline-block"></span>
-                        </p>
+                        <div className="flex-1 text-center sm:text-left space-y-3">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                            id="profile-photo"
+                          />
+                          <Label
+                            htmlFor="profile-photo"
+                            className="cursor-pointer inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200"
+                          >
+                            <Upload className="h-4 w-4" />
+                            {profilePhoto ? 'Change Photo' : 'Upload Photo'}
+                          </Label>
+                          <p className="text-sm text-slate-500">
+                            Up to 500KB • Passport-size photo on white background
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Signature Upload */}
-                  <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-400">
-                    <Label className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                        <path d="M4 22h16"></path>
-                        <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
-                        <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
-                      </svg>
-                      Member Signature
-                    </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-2xl border border-blue-200/50">
-                      <div className="relative group">
-                        <div className="w-36 h-20 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
-                          {signature ? (
-                            <img
-                              src={URL.createObjectURL(signature)}
-                              alt="Signature preview"
-                              className="w-full h-full object-contain hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                              <path d="M4 22h16"></path>
-                              <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
-                              <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
-                            </svg>
+
+                    <div className="space-y-4">
+                      <Label className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-orange-500">
+                          <path d="M4 22h16"></path>
+                          <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                          <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                        </svg>
+                        Member Signature
+                      </Label>
+                      <div className="flex flex-col sm:flex-row items-center gap-6 p-6 rounded-2xl border border-slate-100 bg-white">
+                        <div className="relative group">
+                          <div className="w-36 h-36 rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {signature ? (
+                              <img
+                                src={URL.createObjectURL(signature)}
+                                alt="Signature preview"
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-slate-300">
+                                <path d="M4 22h16"></path>
+                                <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                                <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                              </svg>
+                            )}
+                          </div>
+                          {signature && (
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow">
+                              <CheckCircle className="h-4 w-4 text-white" />
+                            </div>
                           )}
                         </div>
-                        {signature && (
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleSignatureUpload}
-                          className="hidden"
-                          id="signature-upload"
-                        />
-                        <Label
-                          htmlFor="signature-upload"
-                          className="cursor-pointer inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform"
-                        >
-                          <Upload className="h-5 w-5" />
-                          {signature ? 'Change Signature' : 'Upload Signature'}
-                        </Label>
-                        <p className="text-sm text-blue-600 mt-3 font-medium flex items-center justify-center sm:justify-start gap-2">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
-                          JPG, PNG up to 100KB • Clear signature on white background • Required
-                          <span className="w-2 h-2 bg-blue-400 rounded-full inline-block"></span>
-                        </p>
+                        <div className="flex-1 text-center sm:text-left space-y-3">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSignatureUpload}
+                            className="hidden"
+                            id="signature-upload"
+                          />
+                          <Label
+                            htmlFor="signature-upload"
+                            className="cursor-pointer inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl border border-blue-200 text-blue-600 font-semibold bg-white hover:bg-blue-50 transition-colors duration-200"
+                          >
+                            <Upload className="h-4 w-4" />
+                            {signature ? 'Change Signature' : 'Upload Signature'}
+                          </Label>
+                          <p className="text-sm text-slate-500">
+                            Up to 100KB • Clear signature on white background
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -656,19 +703,16 @@ export default function MemberRegistrationPage() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <User className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <UserRound className="h-4 w-4 text-orange-500" />
                             Full Name *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                placeholder="Enter full name"
-                                {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              placeholder="Enter full name"
+                              {...field}
+                              className="h-12 border border-slate-200 rounded-2xl px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -680,20 +724,17 @@ export default function MemberRegistrationPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-orange-500" />
                             Email Address *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                type="email"
-                                placeholder="Enter email address"
-                                {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              type="email"
+                              placeholder="Enter email address"
+                              {...field}
+                              className="h-12 border border-slate-200 rounded-2xl px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -702,26 +743,23 @@ export default function MemberRegistrationPage() {
                   </div>
 
                   {/* Phone and Registration Date */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-orange-500" />
                             Phone Number *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                type="tel"
-                                placeholder="Enter phone number"
-                                {...field}
-                                className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              type="tel"
+                              placeholder="Enter phone number"
+                              {...field}
+                              className="h-12 border border-slate-200 rounded-2xl px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -733,38 +771,15 @@ export default function MemberRegistrationPage() {
                       name="registrationDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <CalendarIcon className="h-4 w-4 text-orange-500" />
                             Registration Date *
                           </FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant="outline"
-                                  className="w-full justify-start text-left font-normal border-2 border-orange-200 hover:border-orange-400 h-14 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium cursor-pointer"
-                                >
-                                  <CalendarIcon className="mr-3 h-4 w-4 text-orange-400" />
-                                  {field.value ? format(field.value, "PPP") : "Select date"}
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 shadow-2xl border-0 rounded-2xl bg-white/95 backdrop-blur-sm" align="start">
-                              <CalendarComponent
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                                captionLayout="dropdown"
-                                fromYear={1900}
-                                toYear={new Date().getFullYear() + 10}
-                                className="rounded-2xl border-0"
-                              />
-                            </PopoverContent>
-                          </Popover>
+                          <Input
+                            value={field.value ? format(field.value, 'dd MMM yyyy') : ''}
+                            readOnly
+                            className="h-12 border border-slate-200 rounded-2xl bg-slate-50 cursor-not-allowed px-4"
+                          />
                           <FormMessage />
                         </FormItem>
                       )}
@@ -777,19 +792,16 @@ export default function MemberRegistrationPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem className="animate-in slide-in-from-bottom-4 duration-500 delay-900">
-                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
+                        <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                          <Home className="h-4 w-4 text-orange-500" />
                           Address *
                         </FormLabel>
                         <FormControl>
-                          <div className="relative group">
-                            <MapPin className="absolute left-3 top-3 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                            <Textarea
-                              placeholder="Enter complete address"
-                              className="min-h-[140px] pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg resize-none font-medium p-4"
-                              {...field}
-                            />
-                          </div>
+                          <Textarea
+                            placeholder="Enter complete address"
+                            className="min-h-[140px] border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-2xl bg-white resize-none font-medium p-4"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -803,8 +815,8 @@ export default function MemberRegistrationPage() {
                       name="stateId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-orange-500" />
                             State *
                           </FormLabel>
                           <FormControl>
@@ -839,8 +851,8 @@ export default function MemberRegistrationPage() {
                       name="districtId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Map className="h-4 w-4 text-orange-500" />
                             District *
                           </FormLabel>
                           <FormControl>
@@ -868,21 +880,18 @@ export default function MemberRegistrationPage() {
                     control={form.control}
                     name="aadharCardNumber"
                     render={({ field }) => (
-                      <FormItem className="animate-in slide-in-from-bottom-4 duration-500 delay-1100">
-                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                          <IdCard className="h-4 w-4 text-orange-500" />
                           Aadhar Card Number *
                         </FormLabel>
                         <FormControl>
-                          <div className="relative group">
-                            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                            <Input
-                              placeholder="Enter 12-digit Aadhar card number"
-                              maxLength={12}
-                              className="pl-10 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium p-4"
-                              {...field}
-                            />
-                          </div>
+                          <Input
+                            placeholder="Enter 12-digit Aadhar card number"
+                            maxLength={12}
+                            className="h-12 border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-2xl bg-white px-4"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -890,14 +899,11 @@ export default function MemberRegistrationPage() {
                   />
 
                   {/* Family Information */}
-                  <div className="space-y-6 p-8 bg-gradient-to-r from-orange-50/60 to-orange-100/40 rounded-3xl border border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1100 hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-2xl font-bold text-orange-800 flex items-center gap-3">
-                      <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg">
-                        <Users className="h-6 w-6 text-white" />
-                      </div>
-                      Family Information
-                      <div className="flex-1 h-0.5 bg-gradient-to-r from-orange-300 to-transparent rounded-full ml-4"></div>
-                    </h3>
+                  <div className="space-y-6 p-8 bg-white border border-slate-200 rounded-3xl shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-slate-900 uppercase tracking-wide">Family Information</h3>
+                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">Required</span>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
@@ -905,19 +911,16 @@ export default function MemberRegistrationPage() {
                         name="fatherHusbandName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                              <User className="h-4 w-4" />
+                            <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                              <UserRound className="h-4 w-4 text-orange-500" />
                               Father/Husband Name *
                             </FormLabel>
                             <FormControl>
-                              <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                                <Input
-                                  placeholder="Enter father or husband name"
-                                  {...field}
-                                  className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                                />
-                              </div>
+                              <Input
+                                placeholder="Enter father or husband name"
+                                {...field}
+                                className="h-12 border border-slate-200 rounded-2xl px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -929,19 +932,16 @@ export default function MemberRegistrationPage() {
                         name="motherWifeName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                              <User className="h-4 w-4" />
+                            <FormLabel className="text-slate-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
+                              <UserRound className="h-4 w-4 text-orange-500" />
                               Mother/Wife Name *
                             </FormLabel>
                             <FormControl>
-                              <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                                <Input
-                                  placeholder="Enter mother or wife name"
-                                  {...field}
-                                  className="pl-10 h-14 border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                                />
-                              </div>
+                              <Input
+                                placeholder="Enter mother or wife name"
+                                {...field}
+                                className="h-12 border border-slate-200 rounded-2xl px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -955,73 +955,61 @@ export default function MemberRegistrationPage() {
                     control={form.control}
                     name="feePaid"
                     render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <input
-                          id="feePaid"
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                          className="h-5 w-5 rounded-md border-orange-300 text-orange-600 focus:ring-orange-500"
-                        />
-                        <FormLabel htmlFor="feePaid" className="text-orange-800 font-semibold">
-                          I have paid the membership fee
-                        </FormLabel>
+                      <FormItem>
+                        <Label
+                          htmlFor="feePaid"
+                          className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-4 py-3 cursor-pointer select-none"
+                        >
+                          <Checkbox
+                            id="feePaid"
+                            checked={field.value}
+                            onCheckedChange={(checked) => field.onChange(Boolean(checked))}
+                            className="h-5 w-5 border-2 border-slate-300 rounded-md text-orange-600 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white"
+                          />
+                          <span className="text-slate-800 font-semibold">I have paid the membership fee</span>
+                        </Label>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   {/* Submit Button */}
-                  <div className="pt-8 border-t border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1300">
+                  <div className="pt-8 border-t border-slate-200">
                     <div className="space-y-6">
                       <Button
                         type="submit"
                         disabled={isSubmitting || !otpSent}
-                        className="w-full bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 hover:from-orange-700 hover:via-orange-800 hover:to-orange-900 text-white py-5 text-xl font-bold rounded-3xl shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-2xl group relative overflow-hidden cursor-pointer"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white py-4 text-lg font-semibold rounded-2xl shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         {isSubmitting ? (
-                          <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-7 h-7 border-4 border-white border-t-transparent rounded-full animate-spin" />
-                            <span className="text-lg">Registering Member...</span>
+                          <div className="flex items-center justify-center gap-3">
+                            <div className="w-5 h-5 border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
+                            <span>Registering member…</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-4 relative z-10">
-                            <User className="h-7 w-7 group-hover:scale-110 transition-transform duration-300" />
-                            <span className="text-lg">Register New Member</span>
-                            <ArrowRight className="h-6 w-6 group-hover:translate-x-2 transition-transform duration-300" />
+                          <div className="flex items-center justify-center gap-3">
+                            <span>Register new member</span>
+                            <ArrowRight className="h-5 w-5" />
                           </div>
                         )}
                       </Button>
 
                       {!otpSent && (
-                        <div className="flex items-center justify-center gap-3 mt-6 p-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl shadow-lg">
-                          <div className="p-2 bg-orange-500 rounded-full shadow-lg">
-                            <Shield className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-orange-800 font-bold text-lg">
-                              Verification Required
-                            </p>
-                            <p className="text-orange-700 font-medium">
-                              Please verify with an existing member first
-                            </p>
+                        <div className="flex items-center gap-3 p-4 bg-orange-50 border border-orange-100 rounded-2xl text-sm text-orange-800">
+                          <Shield className="h-5 w-5" />
+                          <div>
+                            <p className="font-semibold">Verification required</p>
+                            <p>Please confirm OTP with an existing member before submitting.</p>
                           </div>
                         </div>
                       )}
 
                       {otpSent && (
-                        <div className="flex items-center justify-center gap-3 mt-6 p-6 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-2xl shadow-lg">
-                          <div className="p-2 bg-green-500 rounded-full shadow-lg animate-bounce">
-                            <CheckCircle className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="text-center">
-                            <p className="text-green-800 font-bold text-lg">
-                              Ready to Register!
-                            </p>
-                            <p className="text-green-700 font-medium">
-                              All verification steps completed
-                            </p>
+                        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-100 rounded-2xl text-sm text-green-800">
+                          <CheckCircle className="h-5 w-5" />
+                          <div>
+                            <p className="font-semibold">Ready to register</p>
+                            <p>Identity verification complete. Finish the form to submit.</p>
                           </div>
                         </div>
                       )}

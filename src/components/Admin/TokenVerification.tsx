@@ -22,6 +22,7 @@ import {
   Shield,
   AlertCircle,
   Download,
+  UserPlus,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -39,13 +40,20 @@ interface RegistrationToken {
   mother_wife_name: string;
   registration_date: string;
   existing_member_reg_number: string;
-  profile_photo_path?: string;
+  memberRegNumber?: string | null;
+  profilePhotoPath?: string | null;
+  signaturePath?: string | null;
+  profile_photo_path?: string | null;
+  signature_path?: string | null;
   department?: string;
   status: 'pending' | 'verified' | 'expired' | 'rejected';
   expires_at: string;
   created_at: string;
   verified_by_admin_id?: number;
   verified_at?: string;
+  initiated_by_name?: string | null;
+  initiated_by_email?: string | null;
+  initiated_by_phone?: string | null;
 }
 
 export function TokenVerification() {
@@ -410,9 +418,15 @@ export function TokenVerification() {
                           <div className="text-sm font-medium text-gray-900 truncate">
                             {token.name}
                           </div>
-                          <div className="text-xs sm:text-sm text-gray-500 truncate">
-                            {token.existing_member_reg_number}
+                          {(token.status === 'verified' && token.memberRegNumber) ? (
+                            <div className="text-xs sm:text-sm text-green-600 truncate">
+                              {token.memberRegNumber}
                           </div>
+                          ) : (
+                            <div className="text-xs sm:text-sm text-gray-400 truncate">
+                              Pending Registration
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -655,7 +669,7 @@ export function TokenVerification() {
 
       {/* Token Details Modal */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
@@ -805,6 +819,44 @@ export function TokenVerification() {
                     <div>
                       <span className="text-sm font-medium text-gray-600">Existing Member ID:</span>
                       <p className="text-sm text-gray-900 font-mono break-words">{selectedToken.existing_member_reg_number}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Initiated By */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <UserPlus className="h-5 w-5 text-orange-600" />
+                      Initiated By
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Member Name:</span>
+                      <p className="text-sm text-gray-900 break-words">
+                        {selectedToken.initiated_by_name || 'Not Provided'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-sm font-medium text-gray-600">Member Reg No.:</span>
+                      <p className="text-sm text-gray-900 font-mono break-words">
+                        {selectedToken.existing_member_reg_number || 'N/A'}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Email:</span>
+                        <p className="text-sm text-gray-900 break-words">
+                          {selectedToken.initiated_by_email || 'N/A'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Phone:</span>
+                        <p className="text-sm text-gray-900 break-words">
+                          {selectedToken.initiated_by_phone || 'N/A'}
+                        </p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

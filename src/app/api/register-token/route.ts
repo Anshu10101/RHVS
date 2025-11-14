@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { sendTokenEmail } from '@/lib/email';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 import crypto from 'crypto';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 
 // Generate a secure token
-function generateRegistrationToken(): string {
-  return crypto.randomBytes(32).toString('hex').toUpperCase();
+function generateRegistrationToken(sourceDate?: string): string {
+  const prefix = 'RHVS';
+
+  // 5-digit pseudo-random number (10000-99999)
+  const randomDigits = crypto.randomInt(10000, 100000).toString();
+
+  // Use provided registration date if valid, else fallback to today
+  const referenceDate = sourceDate && !Number.isNaN(Date.parse(sourceDate))
+    ? new Date(sourceDate)
+    : new Date();
+
+  const day = referenceDate.getDate().toString().padStart(2, '0');
+  const month = (referenceDate.getMonth() + 1).toString().padStart(2, '0');
+
+  return `${prefix}-${randomDigits}-${day}${month}`;
 }
 
 // Send OTP to existing member
@@ -139,12 +153,26 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if email already has a pending token
-      const existingTokenQuery = 'SELECT id FROM registration_tokens WHERE email = ? AND status = "pending"';
-      const existingTokens = await executeQuery(existingTokenQuery, [email]) as Array<{ id: number }>;
+      const pendingTokenQuery = `
+        SELECT token, expires_at 
+        FROM registration_tokens 
+        WHERE email = ? AND status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      const pendingTokens = await executeQuery(pendingTokenQuery, [email]) as Array<{ token: string; expires_at: string }>;
       
-      if (existingTokens.length > 0) {
+      if (pendingTokens.length > 0) {
         return NextResponse.json(
-          { success: false, message: 'Registration already pending. Please check your email for the verification token.' },
+          { 
+            success: false, 
+            message: 'Registration already pending. Please check your email for the verification token.', 
+            code: 'REGISTRATION_PENDING',
+            token: pendingTokens[0].token,
+            expiresAt: pendingTokens[0].expires_at,
+            name,
+            email
+          },
           { status: 400 }
         );
       }
@@ -170,9 +198,27 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Generate registration token
-      const token = generateRegistrationToken();
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      // Generate unique registration token (retry on collision)
+      let token = '';
+      for (let attempt = 0; attempt < 5; attempt++) {
+        token = generateRegistrationToken(registrationDate);
+        const existingToken = await executeQuery(
+          'SELECT id FROM registration_tokens WHERE token = ? LIMIT 1',
+          [token]
+        ) as Array<{ id: number }>;
+
+        if (existingToken.length === 0) {
+          break;
+        }
+
+        if (attempt === 4) {
+          return NextResponse.json(
+            { success: false, message: 'Could not generate a unique registration token. Please try again.' },
+            { status: 500 }
+          );
+        }
+      }
+      const expiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 days
 
       // Insert registration token
       const insertTokenQuery = `
@@ -231,9 +277,11 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      const languagePreference = await getStateLanguagePreference({ stateName });
+
       // Send token email
       try {
-        await sendTokenEmail(email, token, name, 'registration');
+        await sendTokenEmail(email, token, name, 'registration', languagePreference);
       } catch (e) {
         console.error('Failed to send token email (continuing):', e);
       }

@@ -1,21 +1,40 @@
 import Image from 'next/image';
 import { headers } from 'next/headers';
 
-async function getHierarchy(id: string) {
+interface HierarchyQuery {
+  level?: string;
+  state?: string;
+  district?: string;
+}
+
+async function getHierarchy(id: string, query: HierarchyQuery = {}) {
   const h = await headers();
   const host = h.get('x-forwarded-host') || h.get('host') || 'localhost:3010';
   const proto = h.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
   const base = `${proto}://${host}`;
 
-  const res = await fetch(`${base}/api/public/departments/${id}/hierarchy`, { cache: 'no-store' });
+  const searchParams = new URLSearchParams();
+  if (query.level) searchParams.set('level', query.level);
+  if (query.state) searchParams.set('state', query.state);
+  if (query.district) searchParams.set('district', query.district);
+  const qs = searchParams.toString();
+
+  const res = await fetch(`${base}/api/public/departments/${id}/hierarchy${qs ? `?${qs}` : ''}`, { cache: 'no-store' });
   if (!res.ok) return null;
   const json = await res.json();
   return json?.data ?? null;
 }
 
-export default async function DepartmentHierarchyPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function DepartmentHierarchyPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<HierarchyQuery>;
+}) {
   const { id } = await params;
-  const data = await getHierarchy(id);
+  const query = await searchParams;
+  const data = await getHierarchy(id, query);
 
   const department = data?.department ?? { name_en: 'Department', name_hi: 'विभाग' };
   const posts = (data?.posts ?? []).sort((a: any, b: any) => a.position_order - b.position_order);

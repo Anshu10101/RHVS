@@ -79,6 +79,12 @@ export default function AssignMembersPage() {
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   
+  // National Executive Department state
+  const [nationalExecutiveDept, setNationalExecutiveDept] = useState<Department | null>(null);
+  const [nationalExecutivePosts, setNationalExecutivePosts] = useState<Post[]>([]);
+  const [nationalExecutiveMembers, setNationalExecutiveMembers] = useState<DepartmentMember[]>([]);
+  const [isLoadingNationalExecutive, setIsLoadingNationalExecutive] = useState(false);
+  
   // Member assignment dialog
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -160,7 +166,51 @@ export default function AssignMembersPage() {
     fetchDepartments();
   }, [toast]);
 
-  // Fetch posts and department members when department is selected
+  // Fetch National Executive Department and its data
+  useEffect(() => {
+    const fetchNationalExecutive = async () => {
+      setIsLoadingNationalExecutive(true);
+      try {
+        const response = await fetch('/api/departments/national-executive');
+        const data = await response.json();
+        
+        if (data.success && data.department) {
+          setNationalExecutiveDept(data.department);
+          
+          // Fetch posts for National Executive Department
+          const postsResponse = await fetch(`/api/departments/${data.department.id}/posts`);
+          const postsData = await postsResponse.json();
+          if (postsData.posts) {
+            setNationalExecutivePosts(postsData.posts);
+          }
+
+          // Fetch members for National Executive Department (national level only)
+          const membersResponse = await fetch(`/api/departments/${data.department.id}/members?level=national`);
+          const membersData = await membersResponse.json();
+          if (membersData.members) {
+            setNationalExecutiveMembers(membersData.members);
+          }
+        } else {
+          setNationalExecutiveDept(null);
+          setNationalExecutivePosts([]);
+          setNationalExecutiveMembers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching National Executive Department:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load National Executive Department',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingNationalExecutive(false);
+      }
+    };
+
+    fetchNationalExecutive();
+  }, [toast]);
+
+  // Fetch posts and department members when department/level changes
   useEffect(() => {
     const fetchDepartmentData = async () => {
       if (!selectedDepartment) return;
@@ -168,7 +218,7 @@ export default function AssignMembersPage() {
       setIsLoading(true);
       
       try {
-        // Fetch posts
+        // Fetch posts (ensures latest structure)
         const postsResponse = await fetch(`/api/departments/${selectedDepartment.id}/posts`);
         const postsData = await postsResponse.json();
         
@@ -176,12 +226,33 @@ export default function AssignMembersPage() {
           setPosts(postsData.posts);
         }
 
-        // Fetch department members
-        const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members`);
+        // Guard until required filters chosen
+        if (selectedLevel === 'state' && !selectedState) {
+          setDepartmentMembers([]);
+          return;
+        }
+
+        if (selectedLevel === 'district' && (!selectedState || !selectedDistrict)) {
+          setDepartmentMembers([]);
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('level', selectedLevel);
+        if (selectedLevel !== 'national' && selectedState) {
+          params.set('state', selectedState);
+        }
+        if (selectedLevel === 'district' && selectedDistrict) {
+          params.set('district', selectedDistrict);
+        }
+
+        const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members?${params.toString()}`);
         const membersData = await membersResponse.json();
         
         if (membersData.members) {
           setDepartmentMembers(membersData.members);
+        } else {
+          setDepartmentMembers([]);
         }
       } catch (error) {
         console.error('Error fetching department data:', error);
@@ -196,7 +267,7 @@ export default function AssignMembersPage() {
     };
 
     fetchDepartmentData();
-  }, [selectedDepartment, toast]);
+  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, toast]);
 
   // Fetch eligible members when the assign dialog is opened (based on selected level)
   useEffect(() => {
@@ -320,6 +391,15 @@ export default function AssignMembersPage() {
       // Add all new assignments to the list
       setDepartmentMembers(prev => [...prev, ...assignments]);
 
+      // If assigning to National Executive Department, refresh its members list
+      if (selectedDepartment && nationalExecutiveDept && selectedDepartment.id === nationalExecutiveDept.id) {
+        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+        const membersData = await membersResponse.json();
+        if (membersData.members) {
+          setNationalExecutiveMembers(membersData.members);
+        }
+      }
+
       // Close dialog and reset form
       setIsAssignDialogOpen(false);
       setSelectedPost(null);
@@ -366,6 +446,15 @@ export default function AssignMembersPage() {
       // Remove the assignment from the list
       setDepartmentMembers(prev => prev.filter(dm => dm.id !== assignmentId));
 
+      // If removing from National Executive Department, refresh its members list
+      if (selectedDepartment && nationalExecutiveDept && selectedDepartment.id === nationalExecutiveDept.id) {
+        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+        const membersData = await membersResponse.json();
+        if (membersData.members) {
+          setNationalExecutiveMembers(membersData.members);
+        }
+      }
+
       toast({
         title: 'Success',
         description: 'Member removed successfully',
@@ -404,6 +493,7 @@ export default function AssignMembersPage() {
         <Tabs defaultValue="select" className="space-y-6">
           <TabsList>
             <TabsTrigger value="select">1. Select Department</TabsTrigger>
+            <TabsTrigger value="national-executive">National Executive Department</TabsTrigger>
             {selectedDepartment && (
               <TabsTrigger value="level">2. Select Level</TabsTrigger>
             )}
@@ -489,6 +579,196 @@ export default function AssignMembersPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="national-executive" className="space-y-6">
+            {isLoadingNationalExecutive ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+              </div>
+            ) : !nationalExecutiveDept ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <p className="text-gray-500 mb-4">No National Executive Department is currently set.</p>
+                  <p className="text-sm text-gray-400 mb-6">
+                    Please go to <strong>Manage Departments</strong> and set a department as National Executive first.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/admin/departments/manage')}
+                  >
+                    Go to Manage Departments
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <h3 className="font-medium text-orange-800 mb-2">📋 National Executive Department Assignment</h3>
+                  <p className="text-sm text-orange-700">
+                    <strong>Department:</strong> {nationalExecutiveDept.name_en} ({nationalExecutiveDept.name_hi})
+                  </p>
+                  <p className="text-xs text-orange-600 mt-1">
+                    All members assigned here will be at <strong>National Level</strong> only. This is the top-most department of the organization.
+                  </p>
+                </div>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>{nationalExecutiveDept.name_en}</CardTitle>
+                    <p className="text-sm text-gray-500">{nationalExecutiveDept.name_hi}</p>
+                  </CardHeader>
+                  <CardContent>
+                    {nationalExecutivePosts.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No posts found in this department</p>
+                        <Button 
+                          variant="outline" 
+                          className="mt-4"
+                          onClick={() => router.push(`/admin/departments/manage?department=${nationalExecutiveDept.id}`)}
+                        >
+                          Create Posts
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {nationalExecutivePosts.map((post) => {
+                          const assignments = nationalExecutiveMembers.filter(dm => dm.post_id === post.id);
+                          const hasAssignments = assignments.length > 0;
+                          
+                          return (
+                            <Card key={post.id} className="overflow-hidden">
+                              <div className="p-4 space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="font-semibold">
+                                      {post.position_order}. {post.name_en}
+                                      {post.position_order === 1 && (
+                                        <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
+                                          President
+                                        </span>
+                                      )}
+                                    </h3>
+                                    <p className="text-sm text-gray-500">{post.name_hi}</p>
+                                  </div>
+                                  
+                                  <Button
+                                    onClick={() => {
+                                      setSelectedPost(post);
+                                      setSelectedDepartment(nationalExecutiveDept);
+                                      setSelectedLevel('national');
+                                      setSelectedState('');
+                                      setSelectedDistrict('');
+                                      setIsAssignDialogOpen(true);
+                                    }}
+                                    className="shrink-0"
+                                    variant={hasAssignments ? "outline" : "default"}
+                                    disabled={post.position_order === 1 && hasAssignments}
+                                    title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
+                                  >
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    {post.position_order === 1 && hasAssignments 
+                                      ? 'Remove Existing First' 
+                                      : hasAssignments 
+                                        ? 'Assign More' 
+                                        : 'Assign Members'}
+                                  </Button>
+                                </div>
+                                
+                                {hasAssignments ? (
+                                  <div className="space-y-2 border-t pt-4">
+                                    {assignments.map((assignment) => (
+                                      <div key={assignment.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-3 flex-1">
+                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                            {assignment.profile_photo_path ? (
+                                              <Image
+                                                src={assignment.profile_photo_path}
+                                                alt={assignment.member_name}
+                                                width={40}
+                                                height={40}
+                                                className="object-cover w-full h-full"
+                                              />
+                                            ) : (
+                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
+                                                {assignment.member_name.charAt(0)}
+                                              </div>
+                                            )}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <p className="font-medium truncate">{assignment.member_name}</p>
+                                            <div className="flex text-xs text-gray-500 space-x-2 flex-wrap">
+                                              <p>{assignment.member_reg_number}</p>
+                                              <p>• {assignment.level}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={async () => {
+                                            if (!nationalExecutiveDept) return;
+                                            // Confirm before removing
+                                            if (!window.confirm('Are you sure you want to remove this member from the post?')) {
+                                              return;
+                                            }
+
+                                            setIsLoading(true);
+                                            try {
+                                              const response = await fetch(`/api/departments/${nationalExecutiveDept.id}/members/${assignment.id}`, {
+                                                method: 'DELETE',
+                                              });
+
+                                              const data = await response.json();
+
+                                              if (!response.ok) {
+                                                throw new Error(data.error || 'Failed to remove member');
+                                              }
+
+                                              // Refresh National Executive members after removal
+                                              const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+                                              const membersData = await membersResponse.json();
+                                              if (membersData.members) {
+                                                setNationalExecutiveMembers(membersData.members);
+                                              }
+
+                                              toast({
+                                                title: 'Success',
+                                                description: 'Member removed successfully',
+                                              });
+                                            } catch (error) {
+                                              console.error('Error removing member:', error);
+                                              toast({
+                                                title: 'Error',
+                                                description: error instanceof Error ? error.message : 'Failed to remove member',
+                                                variant: 'destructive',
+                                              });
+                                            } finally {
+                                              setIsLoading(false);
+                                            }
+                                          }}
+                                          className="shrink-0"
+                                        >
+                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4 text-gray-500 text-sm border-t">
+                                    No members assigned yet
+                                  </div>
+                                )}
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </TabsContent>
           
           <TabsContent value="level" className="space-y-6">

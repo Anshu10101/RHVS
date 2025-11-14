@@ -171,13 +171,13 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
           signaturePath: sig.signature_path
         }))
       : (isHindi
-          ? [
+      ? [
               { name: 'नवीन चन्द्र शुक्ला', title: 'राष्ट्रीय महामंत्री', signaturePath: null },
               { name: 'रमेश चन्द्र द्विवेदी "राजू भैया"', title: 'राष्ट्रीय अध्यक्ष', signaturePath: null },
               { name: 'डॉ॰ विभा द्विवेदी', title: 'राष्ट्रीय महामंत्री, महिला मोर्चा', signaturePath: null },
               { name: 'डॉ॰ मयंक ढेंगुला', title: 'राष्ट्रीय प्रभारी एवं सदस्यता प्रमुख', signaturePath: null },
-            ]
-          : [
+        ]
+      : [
               { name: 'Naveen Chandra Shukla', title: 'National General Secretary', signaturePath: null },
               { name: 'Ramesh Chandra Dwivedi "Raju Bhaiya"', title: 'National President', signaturePath: null },
               { name: 'Dr. Vibha Dwivedi', title: 'National General Secretary, Women Wing', signaturePath: null },

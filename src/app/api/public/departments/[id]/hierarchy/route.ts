@@ -12,6 +12,32 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid department ID' }, { status: 400 });
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const requestedLevel = (searchParams.get('level') || 'national').toLowerCase();
+    const validLevels = new Set(['national', 'state', 'district']);
+    const level = validLevels.has(requestedLevel) ? requestedLevel : 'national';
+    const stateFilter = searchParams.get('state')?.trim() || null;
+    const districtFilter = searchParams.get('district')?.trim() || null;
+
+    if (level === 'state' && !stateFilter) {
+      return NextResponse.json({ error: 'State filter required for state view' }, { status: 400 });
+    }
+    if (level === 'district' && (!stateFilter || !districtFilter)) {
+      return NextResponse.json({ error: 'State and district filters required for district view' }, { status: 400 });
+    }
+
+    const levelConditions: string[] = ['dm.level = ?'];
+    const levelParams: Array<string> = [level];
+    if (level === 'state') {
+      levelConditions.push('dm.state = ?');
+      levelParams.push(stateFilter!);
+    } else if (level === 'district') {
+      levelConditions.push('dm.state = ?');
+      levelConditions.push('dm.district = ?');
+      levelParams.push(stateFilter!, districtFilter!);
+    }
+    const levelClause = ` AND ${levelConditions.join(' AND ')}`;
+
     // Get department basic info
     const [dept] = await executeQuery(
       'SELECT id, name_en, name_hi FROM departments WHERE id = ? LIMIT 1',
@@ -28,7 +54,7 @@ export async function GET(
       [departmentId]
     ) as Array<{ id: number; name_en: string; name_hi: string; position_order: number }>;
 
-    // Fetch all assigned national-level members per post
+    // Fetch all assigned members per post for requested level
     let assignments: Array<{
       post_id: number;
       position_order: number;
@@ -52,9 +78,9 @@ export async function GET(
          FROM department_members dm
          JOIN department_posts dp ON dp.id = dm.post_id AND dp.department_id = dm.department_id
          JOIN members m ON m.id = dm.member_id
-         WHERE dm.department_id = ? AND dm.level = 'national'
+         WHERE dm.department_id = ?${levelClause}
          ORDER BY dp.position_order ASC`,
-        [departmentId]
+        [departmentId, ...levelParams]
       ) as any[];
     } catch {}
 

@@ -46,6 +46,11 @@ export default function ManageDepartmentsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   
+  // National Executive Department state
+  const [nationalExecutiveDept, setNationalExecutiveDept] = useState<Department | null>(null);
+  const [isLoadingNationalExecutive, setIsLoadingNationalExecutive] = useState(false);
+  const [isSettingNationalExecutive, setIsSettingNationalExecutive] = useState(false);
+  
   // New post dialog
   const [isNewPostDialogOpen, setIsNewPostDialogOpen] = useState(false);
   const [newPostNameEn, setNewPostNameEn] = useState('');
@@ -99,6 +104,34 @@ export default function ManageDepartmentsPage() {
     };
 
     fetchDepartments();
+  }, [toast]);
+
+  // Fetch National Executive Department
+  useEffect(() => {
+    const fetchNationalExecutive = async () => {
+      setIsLoadingNationalExecutive(true);
+      try {
+        const response = await fetch('/api/departments/national-executive');
+        const data = await response.json();
+        
+        if (data.success && data.department) {
+          setNationalExecutiveDept(data.department);
+        } else {
+          setNationalExecutiveDept(null);
+        }
+      } catch (error) {
+        console.error('Error fetching National Executive Department:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load National Executive Department',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingNationalExecutive(false);
+      }
+    };
+
+    fetchNationalExecutive();
   }, [toast]);
 
   // Filter departments based on search query
@@ -390,6 +423,96 @@ export default function ManageDepartmentsPage() {
     }
   };
 
+  const handleSetNationalExecutive = async (departmentId: number) => {
+    setIsSettingNationalExecutive(true);
+    try {
+      const response = await fetch('/api/departments/national-executive', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ department_id: departmentId }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to set National Executive Department');
+      }
+
+      // Update the National Executive Department state
+      const dept = departments.find(d => d.id === departmentId);
+      if (dept) {
+        setNationalExecutiveDept(dept);
+      }
+
+      // Refresh departments list (the selected one will be removed from regular list)
+      const deptResponse = await fetch('/api/departments');
+      const deptData = await deptResponse.json();
+      if (deptData.departments) {
+        setDepartments(deptData.departments);
+        setFilteredDepartments(deptData.departments);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'National Executive Department set successfully',
+      });
+    } catch (error) {
+      console.error('Error setting National Executive Department:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to set National Executive Department',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSettingNationalExecutive(false);
+    }
+  };
+
+  const handleUnsetNationalExecutive = async () => {
+    if (!window.confirm('Are you sure you want to unset the National Executive Department?')) {
+      return;
+    }
+
+    setIsSettingNationalExecutive(true);
+    try {
+      const response = await fetch('/api/departments/national-executive', {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to unset National Executive Department');
+      }
+
+      setNationalExecutiveDept(null);
+
+      // Refresh departments list
+      const deptResponse = await fetch('/api/departments');
+      const deptData = await deptResponse.json();
+      if (deptData.departments) {
+        setDepartments(deptData.departments);
+        setFilteredDepartments(deptData.departments);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'National Executive Department unset successfully',
+      });
+    } catch (error) {
+      console.error('Error unsetting National Executive Department:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to unset National Executive Department',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSettingNationalExecutive(false);
+    }
+  };
+
   const handleDragEnd = async (result: any) => {
     if (!result.destination || !selectedDepartment) return;
     
@@ -493,6 +616,7 @@ export default function ManageDepartmentsPage() {
         <Tabs defaultValue="departments" className="space-y-6">
           <TabsList>
             <TabsTrigger value="departments">Select Department</TabsTrigger>
+            <TabsTrigger value="national-executive">Manage National Executive Department</TabsTrigger>
             {selectedDepartment && (
               <TabsTrigger value="posts">Manage Posts</TabsTrigger>
             )}
@@ -576,6 +700,115 @@ export default function ManageDepartmentsPage() {
                       </div>
                     )}
                   </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="national-executive" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage National Executive Department</CardTitle>
+                <p className="text-sm text-gray-500 mt-2">
+                  Select a department to be marked as the top-most National Executive Department. 
+                  Only one department can be marked as National Executive at a time.
+                </p>
+              </CardHeader>
+              <CardContent>
+                {isLoadingNationalExecutive ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Current National Executive Department */}
+                    {nationalExecutiveDept ? (
+                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
+                                CURRENT NATIONAL EXECUTIVE DEPARTMENT
+                              </span>
+                            </div>
+                            <h3 className="font-bold text-lg text-gray-900">{nationalExecutiveDept.name_hi}</h3>
+                            <p className="text-gray-600 text-sm">{nationalExecutiveDept.name_en}</p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleUnsetNationalExecutive}
+                            disabled={isSettingNationalExecutive}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {isSettingNationalExecutive ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Unsetting...
+                              </>
+                            ) : (
+                              'Unset'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                        <p className="text-gray-500">No National Executive Department is currently set.</p>
+                        <p className="text-sm text-gray-400 mt-1">Select a department below to set it as National Executive.</p>
+                      </div>
+                    )}
+
+                    {/* Available Departments to Select */}
+                    <div>
+                      <h3 className="font-semibold text-lg mb-4">Select Department</h3>
+                      {departments.length === 0 ? (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">No departments available</p>
+                          <Button 
+                            variant="outline" 
+                            className="mt-4"
+                            onClick={() => router.push('/admin/departments/create')}
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create Department
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {departments.map((department) => (
+                            <Card 
+                              key={department.id} 
+                              className="cursor-pointer hover:shadow-md transition-shadow"
+                            >
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-lg">{department.name_hi}</h3>
+                                    <p className="text-gray-600 text-sm">{department.name_en}</p>
+                                  </div>
+                                </div>
+                                <Button
+                                  className="w-full mt-4"
+                                  onClick={() => handleSetNationalExecutive(department.id)}
+                                  disabled={isSettingNationalExecutive}
+                                >
+                                  {isSettingNationalExecutive ? (
+                                    <>
+                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      Setting...
+                                    </>
+                                  ) : (
+                                    'Set as National Executive'
+                                  )}
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>

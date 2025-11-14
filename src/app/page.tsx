@@ -1,5 +1,6 @@
 import Navbar from '@/components/Home/Navbar';
 import HeroSection from '@/components/Home/HeroSection';
+import NationalExecutiveSection from '@/components/Home/NationalExecutiveSection';
 import DepartmentsSection from '@/components/Home/DepartmentsSection';
 import LatestPhotosSection from '@/components/Home/LatestPhotosSection';
 import LatestNewsEventsSection from '@/components/Home/LatestNewsEventsSection';
@@ -14,6 +15,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-grow">
         <HeroSection />
+        <NationalExecutiveSection />
         <DepartmentsSection />
         <LatestPhotosSection />
         <LatestNewsEventsSection />

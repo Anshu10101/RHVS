@@ -194,67 +194,125 @@ export async function sendAdminOTPEmail(to: string, otp: string, adminName: stri
 export default transporter;
 
 // Send token email for registration verification
-export async function sendTokenEmail(to: string, token: string, memberName: string, type: 'otp' | 'registration' = 'otp') {
+export async function sendTokenEmail(
+  to: string,
+  token: string,
+  memberName: string,
+  type: 'otp' | 'registration' = 'otp',
+  language: 'hi' | 'en' = 'hi'
+) {
   try {
     const isRegistration = type === 'registration';
+    const isHindi = language === 'hi';
+    const currentYear = new Date().getFullYear();
+    const validityDays = isRegistration ? 10 : 0;
+    const tokenParts = isRegistration ? token.split('-') : [token];
+
     const subject = isRegistration 
-      ? 'RHVS Registration Token - Bring to Admin for Verification'
-      : 'RHVS Member Registration - OTP Verification';
+      ? (isHindi
+          ? 'आरएचवीएस पंजीकरण टोकन – 10 दिन में सत्यापन पूरा करें'
+          : 'RHVS Registration Token – Complete verification within 10 days')
+      : (isHindi
+          ? 'आरएचवीएस सदस्यता ओटीपी सत्यापन'
+          : 'RHVS Member Registration – OTP Verification');
+
+    const greeting = isHindi ? `प्रिय ${memberName} जी,` : `Dear ${memberName},`;
+    const introText = isRegistration
+      ? isHindi
+        ? 'आपका सदस्यता पंजीकरण टोकन तैयार है। कृपया 10 दिनों के भीतर संगठन कार्यालय जाकर सत्यापन प्रक्रिया पूरी करें।'
+        : 'Your membership registration token is ready. Please visit the nearest RHVS office within 10 days to complete verification.'
+      : isHindi
+        ? 'नए सदस्य पंजीकरण को सत्यापित करने हेतु यह ओटीपी जारी किया गया है।'
+        : 'A new membership registration needs your approval. Use the OTP below to verify it.';
+
+    const expiryText = isRegistration
+      ? (isHindi
+          ? `यह टोकन ${validityDays} दिनों तक मान्य है (${validityDays}वें दिन के अंत तक)।`
+          : `This token remains valid for ${validityDays} days (until the end of day ${validityDays}).`)
+      : (isHindi
+          ? 'यह ओटीपी 10 मिनट में समाप्त हो जाएगा।'
+          : 'This OTP expires in 10 minutes.');
+
+    const stepsBlock = isRegistration
+      ? (isHindi
+          ? `
+            <ol style="margin:0; padding-left:20px; color:#1e1b4b; line-height:1.6; font-size:14px;">
+              <li>इस ईमेल या टोकन को प्रिंट कर सुरक्षित रखें।</li>
+              <li>मान्य पहचान पत्र और आवेदन दस्तावेज़ों के साथ RHVS कार्यालय पहुँचे।</li>
+              <li>एडमिन सत्यापन के दौरान यह टोकन साझा करें और प्रक्रिया 10 दिनों के अंदर पूरी करें।</li>
+            </ol>
+          `
+          : `
+            <ol style="margin:0; padding-left:20px; color:#1e1b4b; line-height:1.6; font-size:14px;">
+              <li>Print or save this email containing your token.</li>
+              <li>Visit the nearest RHVS office with a valid ID and your application documents.</li>
+              <li>Present this token during verification and complete the process within 10 days.</li>
+            </ol>
+          `)
+      : '';
+
+    const confidentialityNote = isHindi
+      ? 'यदि आपने यह अनुरोध नहीं किया है तो इस ईमेल को अनदेखा करें। इस टोकन/ओटीपी को किसी के साथ साझा न करें।'
+      : 'If you did not request this, please ignore the email. Do not share this token/OTP with anyone.';
+
+    const footerText = isHindi
+      ? 'यह RHVS द्वारा भेजा गया स्वचालित संदेश है; कृपया इसका प्रत्यक्ष उत्तर न दें।'
+      : 'This is an automated message from RHVS; please do not reply directly.';
+
+    const heroLabel = isRegistration
+      ? (isHindi ? 'पंजीकरण टोकन' : 'Registration Token')
+      : (isHindi ? 'सदस्यता सत्यापन ओटीपी' : 'Verification OTP');
     
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 10px;">
-        <div style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #ea580c; font-size: 28px; margin: 0;">राष्ट्रीय हिंदू वाहिनी संगठन</h1>
-            <p style="color: #666; margin: 10px 0 0 0;">${isRegistration ? 'Registration Token' : 'Member Registration Verification'}</p>
+      <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif; max-width:640px; margin:0 auto; background:#f8fafc; padding:24px;">
+        <div style="background:linear-gradient(135deg,#f97316,#ea580c); border-radius:16px 16px 0 0; color:#fff; text-align:center; padding:24px 16px;">
+          <h1 style="margin:0; font-size:28px; letter-spacing:0.4px;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
+          <p style="margin:8px 0 0; font-size:16px; color:#fde68a; font-weight:600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
           </div>
+        <div style="background:#ffffff; border:1px solid #ffe0c4; border-top:none; padding:28px 24px; border-radius:0 0 16px 16px; box-shadow:0 15px 35px rgba(16,24,40,0.08);">
+          <p style="margin:0 0 12px; color:#111827; font-weight:600;">${greeting}</p>
+          <p style="margin:0 0 20px; color:#374151; line-height:1.6;">${introText}</p>
           
-          <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f59e0b;">
-            <h2 style="color: #92400e; margin: 0 0 10px 0;">${isRegistration ? 'Registration Token Generated' : 'OTP Verification Required'}</h2>
-            <p style="color: #92400e; margin: 0;">Hello ${memberName},</p>
-            <p style="color: #92400e; margin: 10px 0 0 0;">
-              ${isRegistration 
-                ? 'Your registration token has been generated. Please bring this token to the RHVS admin office for verification and final membership approval.'
-                : 'A new member registration requires your verification. Please use the OTP below to verify this registration:'
-              }
-            </p>
-          </div>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <div style="background: #ea580c; color: white; font-size: ${isRegistration ? '24px' : '32px'}; font-weight: bold; padding: 20px; border-radius: 8px; letter-spacing: ${isRegistration ? '2px' : '5px'}; display: inline-block; font-family: monospace; word-break: break-all;">
-              ${token}
+          <div style="max-width:100%; border-radius:14px; padding:18px; text-align:center; background:#ffffff; border:1px solid #ffe8d1; overflow:hidden;">
+            <p style="margin:0; color:#ea580c; font-weight:600; letter-spacing:1.1px; text-transform:uppercase;">${heroLabel}</p>
+            <div style="margin:12px auto; display:inline-flex; align-items:center; justify-content:center; gap:${isRegistration ? '8px' : '4px'}; padding:${isRegistration ? '12px 16px' : '14px 18px'}; color:#7c2d12; font-size:${isRegistration ? '18px' : '24px'}; font-weight:700; border-radius:12px; font-family:'SFMono-Regular','Consolas',monospace; letter-spacing:${isRegistration ? '0.8px' : '3px'}; white-space:nowrap; max-width:100%; box-sizing:border-box; border:1px solid #fde68a; background:#fff;">
+              ${tokenParts.map((segment, idx) => `
+                <span style="display:block;">${segment}</span>
+                ${idx < tokenParts.length - 1 ? '<span style="color:#b45309; font-weight:700;">-</span>' : ''}
+              `).join('')}
             </div>
-            <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">
-              ${isRegistration ? 'This token will expire in 7 days' : 'This OTP will expire in 10 minutes'}
-            </p>
+            <p style="margin:0; color:#4b5563; font-size:14px;">${expiryText}</p>
           </div>
           
           ${isRegistration ? `
-          <div style="background: #dbeafe; padding: 15px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #3b82f6;">
-            <p style="color: #1e40af; margin: 0; font-size: 14px;">
-              <strong>Next Steps:</strong> Visit your nearest RHVS office with this token and a valid ID proof. The admin will verify your details and complete your membership registration.
+            <div style="margin:24px 0 12px; background:#eef2ff; border-radius:12px; padding:18px; border-left:4px solid #4f46e5;">
+              <p style="margin:0 0 10px; color:#312e81; font-weight:600;">${isHindi ? 'आगे की प्रक्रिया:' : 'Next Steps:'}</p>
+              ${stepsBlock}
+            </div>
+          ` : `
+            <div style="margin:24px 0 12px; background:#dcfce7; border-radius:12px; padding:18px; border-left:4px solid #16a34a;">
+              <p style="margin:0; color:#065f46; font-size:14px; line-height:1.6;">
+                ${isHindi
+                  ? 'यह ओटीपी केवल पंजीकरण सत्यापन हेतु है। कृपया इसे दर्ज करके प्रक्रिया पूर्ण करें।'
+                  : 'Use this OTP only for approving the registration request. Enter it promptly to complete the verification.'}
             </p>
           </div>
-          ` : ''}
+          `}
           
-          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 20px;">
-            <p style="color: #374151; margin: 0; font-size: 14px;">
-              <strong>Important:</strong> If you did not request this ${isRegistration ? 'registration' : 'verification'}, please ignore this email. 
-              Do not share this ${isRegistration ? 'token' : 'OTP'} with anyone.
-            </p>
+          <div style="margin-top:20px; background:#f3f4f6; border-radius:12px; padding:16px;">
+            <p style="margin:0; color:#374151; font-size:14px; line-height:1.6;">${confidentialityNote}</p>
           </div>
           
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 12px; margin: 0;">
-              © 2024 राष्ट्रीय हिंदू वाहिनी संगठन. All rights reserved.
-            </p>
-          </div>
+          <p style="margin:20px 0 0; color:#9ca3af; font-size:12px;">${footerText}</p>
+          <p style="margin:6px 0 0; color:#9ca3af; font-size:12px;">© ${currentYear} राष्ट्रीय हिन्दू वाहिनी संगठन • All Rights Reserved</p>
         </div>
       </div>
     `;
 
     const result = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER || 'noreply@example.com',
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${
+        process.env.EMAIL_FROM || process.env.EMAIL_USER || 'admin@rashtriyahinduvahinisangathan.org'
+      }>`,
       to,
       subject,
       html,

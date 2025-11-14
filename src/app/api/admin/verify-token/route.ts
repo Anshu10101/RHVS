@@ -81,11 +81,15 @@ export async function GET(request: NextRequest) {
           ELSE rt.signature_path
         END AS resolved_signature_path,
         COALESCE(m.name, 'N/A') as verified_by_admin_name,
-        mem.member_reg_number
+        mem.member_reg_number,
+        initiator.name AS initiated_by_name,
+        initiator.email AS initiated_by_email,
+        initiator.phone AS initiated_by_phone
       FROM registration_tokens rt
       LEFT JOIN district_admins da ON rt.verified_by_admin_id = da.id
       LEFT JOIN members m ON da.member_id = m.id
       LEFT JOIN members mem ON mem.email = rt.email AND mem.verified_by_admin_id = rt.verified_by_admin_id
+      LEFT JOIN members initiator ON initiator.member_reg_number = rt.existing_member_reg_number
       ${whereClause}
       ORDER BY rt.created_at DESC
       LIMIT ? OFFSET ?
@@ -115,6 +119,9 @@ export async function GET(request: NextRequest) {
       verified_by_admin_id: number | null;
       verified_by_admin_name: string | null;
       member_reg_number: string | null;
+      initiated_by_name?: string | null;
+      initiated_by_email?: string | null;
+      initiated_by_phone?: string | null;
       resolved_profile_photo_path?: string | null;
       resolved_signature_path?: string | null;
     }>;
@@ -136,6 +143,7 @@ export async function GET(request: NextRequest) {
           motherWifeName: token.mother_wife_name,
           registrationDate: token.registration_date,
           existingMemberRegNumber: token.existing_member_reg_number,
+          existing_member_reg_number: token.existing_member_reg_number,
           profilePhotoPath: token.resolved_profile_photo_path ?? token.profile_photo_path,
           signaturePath: token.resolved_signature_path ?? token.signature_path,
           department: token.department,
@@ -146,6 +154,12 @@ export async function GET(request: NextRequest) {
           verifiedByAdminId: token.verified_by_admin_id,
           verifiedByAdminName: token.verified_by_admin_name,
           memberRegNumber: token.member_reg_number,
+          initiatedByName: token.initiated_by_name,
+          initiatedByEmail: token.initiated_by_email,
+          initiatedByPhone: token.initiated_by_phone,
+          initiated_by_name: token.initiated_by_name,
+          initiated_by_email: token.initiated_by_email,
+          initiated_by_phone: token.initiated_by_phone,
         })),
         pagination: {
           page,

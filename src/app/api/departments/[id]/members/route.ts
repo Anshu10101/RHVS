@@ -41,7 +41,39 @@ export async function GET(
       return NextResponse.json({ error: 'Department not found' }, { status: 404 });
     }
 
-    // Get all members assigned to posts in this department
+    const searchParams = request.nextUrl.searchParams;
+    const requestedLevel = (searchParams.get('level') || '').toLowerCase();
+    const validLevels = new Set(['national', 'state', 'district']);
+    const stateFilter = searchParams.get('state')?.trim() || null;
+    const districtFilter = searchParams.get('district')?.trim() || null;
+
+    let levelClause = '';
+    const queryParams: Array<number | string> = [departmentId];
+
+    if (requestedLevel) {
+      if (!validLevels.has(requestedLevel as any)) {
+        return NextResponse.json({ error: 'Invalid level filter' }, { status: 400 });
+      }
+
+      levelClause += ' AND dm.level = ?';
+      queryParams.push(requestedLevel);
+
+      if (requestedLevel === 'state') {
+        if (!stateFilter) {
+          return NextResponse.json({ error: 'State filter is required for state level' }, { status: 400 });
+        }
+        levelClause += ' AND dm.state = ?';
+        queryParams.push(stateFilter);
+      } else if (requestedLevel === 'district') {
+        if (!stateFilter || !districtFilter) {
+          return NextResponse.json({ error: 'State and district filters are required for district level' }, { status: 400 });
+        }
+        levelClause += ' AND dm.state = ? AND dm.district = ?';
+        queryParams.push(stateFilter, districtFilter);
+      }
+    }
+
+    // Get members assigned to posts in this department (optionally filtered)
     const members = await executeQuery(`
       SELECT dm.id, dm.post_id, dm.member_id, dm.assigned_at,
              dm.level, dm.state, dm.district,
@@ -54,9 +86,9 @@ export async function GET(
       FROM department_members dm
       JOIN department_posts dp ON dm.post_id = dp.id
       JOIN members m ON dm.member_id = m.id
-      WHERE dm.department_id = ?
+      WHERE dm.department_id = ?${levelClause}
       ORDER BY dp.position_order ASC
-    `, [departmentId]) as any[];
+    `, queryParams) as any[];
 
     return NextResponse.json({ members });
   } catch (error) {
@@ -125,12 +157,14 @@ export async function POST(
     }
 
     const { level, state, district } = validationResult.data;
+    const normalizedState = level === 'national' ? null : (state ?? null);
+    const normalizedDistrict = level === 'district' ? (district ?? null) : null;
 
     // For President post: only allow ONE member assignment. Must remove existing before assigning new one.
     if (isPresidentPost) {
       const existingPresidentAssignment = await executeQuery(
-        'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
-        [departmentId, post_id, level, state, district]
+        'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND state <=> ? AND district <=> ?',
+        [departmentId, post_id, level, normalizedState, normalizedDistrict]
       ) as any[];
       
       if (existingPresidentAssignment.length > 0) {
@@ -185,8 +219,8 @@ export async function POST(
 
     // Check if this specific member is already assigned to this same post at this level/state/district
     const existingAssignment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
-      [departmentId, post_id, member_id, level, state, district]
+      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
+      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict]
     ) as any[];
     
     if (existingAssignment.length > 0) {
@@ -197,8 +231,8 @@ export async function POST(
 
     // Check if member is already assigned to another post in this department at this level/state/district
     const memberInDepartment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND (state = ? OR state IS NULL) AND (district = ? OR district IS NULL)',
-      [departmentId, member_id, level, state, district]
+      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
+      [departmentId, member_id, level, normalizedState, normalizedDistrict]
     ) as any[];
     
     if (memberInDepartment.length > 0) {
@@ -210,7 +244,7 @@ export async function POST(
     // Assign the member to the post
     const result = await executeQuery(
       'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [departmentId, post_id, member_id, level, state, district, scope.adminId]
+      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, scope.adminId]
     ) as any;
 
     // Generate certificate automatically
