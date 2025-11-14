@@ -163,15 +163,11 @@ export default function NationalExecutiveSection() {
                           <div className="flex flex-col items-center text-center">
                             {/* Photo with 3D effect */}
                             <div className="relative mb-3 -mt-2 md:-mt-4">
-                              <div className={`relative rounded-full ring-4 ${
+                              <div className={`relative rounded-full border ${
                                 isFirst
-                                  ? 'w-32 h-32 md:w-40 md:h-40 ring-orange-500' 
-                                  : 'w-24 h-24 md:w-28 md:h-28 ring-orange-300'
-                              } transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 bg-white scale-105 translate-y-[-2px] ${
-                                isFirst
-                                  ? 'shadow-[0_10px_30px_rgba(249,115,22,0.4),0_0_0_4px_rgba(249,115,22,0.1),inset_0_2px_10px_rgba(255,255,255,0.8)]'
-                                  : 'shadow-[0_8px_25px_rgba(249,115,22,0.3),0_0_0_4px_rgba(249,115,22,0.08),inset_0_2px_8px_rgba(255,255,255,0.8)]'
-                              } group-hover:shadow-[0_15px_40px_rgba(249,115,22,0.5),0_0_0_6px_rgba(249,115,22,0.15),inset_0_2px_12px_rgba(255,255,255,0.9)]`}>
+                                  ? 'w-32 h-32 md:w-40 md:h-40 border-orange-200' 
+                                  : 'w-24 h-24 md:w-28 md:h-28 border-orange-100'
+                              } transition-all duration-200 group-hover:scale-105 bg-white scale-105 translate-y-[-2px] shadow-[0_4px_15px_rgba(0,0,0,0.08)] group-hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]`}>
                                 {/* Photo extending beyond frame */}
                                 {heroEntry.member?.photo_path ? (
                                   <div className="absolute inset-[-8px] md:inset-[-10px] rounded-full overflow-hidden group-hover:scale-105 transition-transform duration-300">
@@ -189,7 +185,7 @@ export default function NationalExecutiveSection() {
                                     <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none z-10"></div>
                                   </div>
                                 ) : (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200 rounded-full overflow-hidden">
+                                  <div className="absolute inset-0 flex items-center justify-center bg-white rounded-full overflow-hidden">
                                     <UserRound className={`text-orange-400 ${isFirst ? 'h-16 w-16 md:h-20 md:w-20' : 'h-12 w-12 md:h-14 md:w-14'}`} />
                                   </div>
                                 )}
@@ -231,7 +227,7 @@ export default function NationalExecutiveSection() {
                             >
                               <CardContent className="p-3 flex flex-col items-center text-center space-y-3">
                                 <div className="relative mb-2">
-                                  <div className="relative w-20 h-20 rounded-full ring-4 ring-orange-200 bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] overflow-hidden scale-105 translate-y-[-2px] transition-all duration-300 group-hover:scale-110 group-hover:-translate-y-1 group-hover:shadow-[0_12px_25px_rgba(249,115,22,0.35),0_0_0_4px_rgba(249,115,22,0.1)]">
+                                  <div className="relative w-20 h-20 rounded-full border border-orange-50 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden scale-105 translate-y-[-2px] transition-all duration-200 group-hover:scale-105 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
                                     {item.member?.photo_path ? (
                                       <div className="absolute inset-[-6px] rounded-full overflow-hidden group-hover:scale-[1.08] transition-transform duration-300">
                                         <Image
@@ -245,7 +241,7 @@ export default function NationalExecutiveSection() {
                                         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/25 via-transparent to-transparent pointer-events-none z-10"></div>
                                       </div>
                                     ) : (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-100 to-orange-200">
+                                      <div className="absolute inset-0 flex items-center justify-center bg-white">
                                         <UserRound className="h-10 w-10 text-orange-400" />
                                       </div>
                                     )}

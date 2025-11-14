@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Users, Building2, MapPin, Activity, Calendar, Image as ImageIcon, ShoppingBag, Phone } from 'lucide-react';
+import { useInstallPrompt } from '@/hooks/use-install-prompt';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -137,7 +138,8 @@ export default function Navbar() {
                 <li className="py-2"><Link href="/contact" onClick={() => setOpen(false)} className="block">Contact</Link></li>
               </ul>
             </nav>
-            <div className="px-6 pb-6">
+            <div className="px-6 pb-6 space-y-3">
+              <MobileInstallCTA onInstalled={() => setOpen(false)} />
               <Link href="/members/register" onClick={() => setOpen(false)}>
                 <Button className="w-full bg-orange-600 hover:bg-orange-700">JOIN NOW</Button>
               </Link>
@@ -146,5 +148,51 @@ export default function Navbar() {
         </div>
       )}
     </header>
+  );
+}
+
+function MobileInstallCTA({ onInstalled }: { onInstalled?: () => void }) {
+  const { promptEvent, isInstalled, consumePrompt } = useInstallPrompt();
+  const [error, setError] = useState<string | null>(null);
+
+  if (isInstalled) {
+    return (
+      <div className="rounded-xl border border-green-200 bg-green-50/80 px-4 py-3 text-sm text-green-800 shadow-sm">
+        App installed on this device. Jai Shri Ram! 🚩
+      </div>
+    );
+  }
+
+  const handleInstall = async () => {
+    if (!promptEvent) return;
+    setError(null);
+
+    await promptEvent.prompt();
+    const choiceResult = await promptEvent.userChoice;
+    consumePrompt(choiceResult.outcome);
+
+    if (choiceResult.outcome === 'accepted') {
+      onInstalled?.();
+    } else {
+      setError('Install was dismissed. You can trigger it again anytime.');
+    }
+  };
+
+  return (
+    <div>
+      <Button
+        className={`w-full ${promptEvent ? 'bg-orange-500 hover:bg-orange-600' : 'bg-orange-200 text-orange-600 cursor-not-allowed'}`}
+        onClick={handleInstall}
+        disabled={!promptEvent}
+      >
+        Install App
+      </Button>
+      {!promptEvent && (
+        <p className="mt-2 text-xs text-orange-700">
+          Browser shows this option after a few interactions.
+        </p>
+      )}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </div>
   );
 }
