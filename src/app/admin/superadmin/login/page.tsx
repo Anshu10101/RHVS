@@ -26,37 +26,30 @@ function SuperadminLoginContent() {
     try {
       await login(email, password);
       
-      // Wait a bit for AdminContext to update
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Wait for AdminContext to update and useEffect to handle redirect
+      // The useEffect above will redirect if user is superadmin
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Check currentUser from context instead of calling API again
-      // AdminContext.login() already calls /api/admin/me and sets currentUser
-      // We just need to verify the user type
-      if (currentUser) {
-        if (currentUser.type === 'superadmin') {
-          router.push('/admin/dashboard');
-        } else {
-          setError('Access denied. This is for superadmin only.');
-          // Clear the session
-          await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
-        }
-      } else {
-        // If currentUser is still null, try one more API call
-        const response = await fetch('/api/admin/me', { 
-          cache: 'no-store', 
-          credentials: 'include',
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.authenticated && data.user?.type === 'superadmin') {
-            router.push('/admin/dashboard');
-          } else {
+      // Check if user was set (useEffect handles redirect, but verify type here)
+      // Use a fresh check via API to avoid stale closure
+      const response = await fetch('/api/admin/me', { 
+        cache: 'no-store', 
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          if (data.user.type !== 'superadmin') {
             setError('Access denied. This is for superadmin only.');
+            await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
           }
+          // If superadmin, useEffect will handle redirect
         } else {
           setError('Login failed. Please check your credentials.');
         }
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (err: unknown) {
       console.error('Login error:', err);

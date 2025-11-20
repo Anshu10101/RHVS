@@ -63,6 +63,9 @@ export async function POST(req: NextRequest) {
       const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
                        req.nextUrl.protocol === 'https:';
       
+      // Clear any old cookie first (in case it has different attributes)
+      res.cookies.delete('admin_session');
+      
       // Use Next.js cookies API for more reliable cookie setting
       res.cookies.set('admin_session', token, {
         path: '/',
@@ -185,6 +188,9 @@ export async function POST(req: NextRequest) {
     // Detect if request is HTTPS (via reverse proxy headers or protocol)
     const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
                      req.nextUrl.protocol === 'https:';
+    
+    // Clear any old cookie first (in case it has different attributes)
+    res.cookies.delete('admin_session');
     
     // Use Next.js cookies API for more reliable cookie setting
     res.cookies.set('admin_session', token, {
