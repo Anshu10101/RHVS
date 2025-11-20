@@ -18,6 +18,10 @@ function SuperadminLoginContent() {
     
     try {
       await login(email, password);
+      
+      // Small delay to ensure session cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Check if user is actually a superadmin
       const response = await fetch('/api/admin/me', { 
         cache: 'no-store', 
@@ -26,12 +30,14 @@ function SuperadminLoginContent() {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.user?.type === 'superadmin') {
+        if (data.authenticated && data.user?.type === 'superadmin') {
           router.push('/admin/dashboard');
-        } else {
+        } else if (data.authenticated && data.user?.type !== 'superadmin') {
           setError('Access denied. This is for superadmin only.');
           // Clear the session
           await fetch('/api/admin/logout', { method: 'POST' });
+        } else {
+          setError('Login failed. Please check your credentials.');
         }
       } else {
         setError('Login failed. Please check your credentials.');

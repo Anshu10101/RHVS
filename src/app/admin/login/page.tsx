@@ -18,6 +18,10 @@ function DistrictAdminLoginContent() {
     
     try {
       await login(email, password);
+      
+      // Small delay to ensure session cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       // Check if user is actually a district admin
       const response = await fetch('/api/admin/me', { 
         cache: 'no-store', 
@@ -26,12 +30,14 @@ function DistrictAdminLoginContent() {
       
       if (response.ok) {
         const data = await response.json();
-        if (data.user?.type === 'district_admin') {
+        if (data.authenticated && data.user?.type === 'district_admin') {
           router.push('/admin/dashboard');
-        } else {
+        } else if (data.authenticated && data.user?.type !== 'district_admin') {
           setError('Access denied. This is for district admins only.');
           // Clear the session
           await fetch('/api/admin/logout', { method: 'POST' });
+        } else {
+          setError('Login failed. Please check your credentials.');
         }
       } else {
         setError('Login failed. Please check your credentials.');

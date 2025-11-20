@@ -30,13 +30,7 @@ export async function POST(req: NextRequest) {
       // Update last_login timestamp
       await executeQuery('UPDATE superadmin SET last_login = NOW() WHERE id = ?', [user.id]);
 
-      // Log the login activity
-      console.log('Logging superadmin login:', {
-        userId: user.id,
-        email: user.email,
-        ip: req.headers.get('x-forwarded-for') || 'unknown'
-      });
-      
+      // Log the login activity (silently, only log errors)
       try {
         await executeQuery(
           `INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
@@ -48,7 +42,6 @@ export async function POST(req: NextRequest) {
             req.headers.get('x-forwarded-for') || 'unknown'
           ]
         );
-        console.log('✅ Superadmin login logged successfully');
       } catch (logError) {
         console.error('❌ Failed to log superadmin login:', logError);
         // Don't fail the login if logging fails
@@ -75,12 +68,15 @@ export async function POST(req: NextRequest) {
         da.password_hash, 
         da.role, 
         da.district,
+        da.state,
         da.is_active,
-        da.expires_at
+        da.expires_at,
+        m.name as member_name
       FROM district_admins da
+      LEFT JOIN members m ON da.member_id = m.id
       WHERE LOWER(da.email) = LOWER(?) LIMIT 1`,
       [email]
-    ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string }>;
+    ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string; member_name: string | null }>;
 
     if (districtAdminRows.length === 0) {
       console.log('❌ District admin login failed: No admin found with email:', email);
@@ -148,26 +144,18 @@ export async function POST(req: NextRequest) {
       permissions: permissions
     });
     
-    // Log the login activity
-    console.log('Logging district admin login:', {
-      userId: districtAdmin.id,
-      email: districtAdmin.email,
-      district: districtAdmin.district,
-      ip: req.headers.get('x-forwarded-for') || 'unknown'
-    });
-    
+    // Log the login activity (silently, only log errors)
     try {
       await executeQuery(
         `INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
          VALUES (?, 'district_admin', ?, 'login', ?, ?)`,
         [
           String(districtAdmin.id),
-          districtAdmin.email,
+          (districtAdmin as any).member_name || districtAdmin.email,
           `District admin login: ${districtAdmin.email} (${districtAdmin.district})`,
           req.headers.get('x-forwarded-for') || 'unknown'
         ]
       );
-      console.log('✅ District admin login logged successfully');
     } catch (logError) {
       console.error('❌ Failed to log district admin login:', logError);
       // Don't fail the login if logging fails

@@ -4,10 +4,23 @@ import { executeQuery } from '@/lib/database';
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get('admin_session')?.value;
-  if (!token) return NextResponse.json({ authenticated: false }, { status: 200 });
+  if (!token) {
+    console.log('❌ /api/admin/me: No token found');
+    return NextResponse.json({ authenticated: false }, { status: 200 });
+  }
 
   const claims = await verifyAdminJwt(token);
-  if (!claims) return NextResponse.json({ authenticated: false }, { status: 200 });
+  if (!claims) {
+    console.log('❌ /api/admin/me: Invalid token');
+    return NextResponse.json({ authenticated: false }, { status: 200 });
+  }
+
+  console.log('✅ /api/admin/me: Token verified, claims:', { 
+    sub: claims.sub, 
+    type: claims.type, 
+    role: claims.role,
+    email: claims.email 
+  });
 
   // Handle different user types
   const userType = claims.type || 'superadmin';

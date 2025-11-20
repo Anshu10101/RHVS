@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: 'lh3.googleusercontent.com',
       }
     ],
+    // Disable image optimization cache to avoid permission issues
+    // Or set a custom cache directory with proper permissions
+    unoptimized: false,
+    // Use a custom cache directory if needed
+    // cacheDir: process.env.NEXT_IMAGE_CACHE_DIR || undefined,
   },
   eslint: {
     ignoreDuringBuilds: true,
