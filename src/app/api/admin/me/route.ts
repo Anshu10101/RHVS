@@ -3,33 +3,15 @@ import { verifyAdminJwt } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
 
 export async function GET(req: NextRequest) {
-  // Debug: log all cookies and request headers
-  const allCookies = req.cookies.getAll();
-  const cookieHeader = req.headers.get('cookie');
-  console.log('🔍 /api/admin/me: All cookies:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })));
-  console.log('🔍 /api/admin/me: Cookie header:', cookieHeader || 'none');
-  console.log('🔍 /api/admin/me: Request origin:', req.headers.get('origin') || 'none');
-  console.log('🔍 /api/admin/me: Request referer:', req.headers.get('referer') || 'none');
-  
   const token = req.cookies.get('admin_session')?.value;
   if (!token) {
-    console.log('❌ /api/admin/me: No token found. Available cookies:', allCookies.map(c => c.name));
-    console.log('❌ /api/admin/me: Raw cookie header:', cookieHeader);
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 
   const claims = await verifyAdminJwt(token);
   if (!claims) {
-    console.log('❌ /api/admin/me: Invalid token');
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
-
-  console.log('✅ /api/admin/me: Token verified, claims:', { 
-    sub: claims.sub, 
-    type: claims.type, 
-    role: claims.role,
-    email: claims.email 
-  });
 
   // Handle different user types
   const userType = claims.type || 'superadmin';

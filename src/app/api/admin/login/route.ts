@@ -59,18 +59,17 @@ export async function POST(req: NextRequest) {
         message: 'Logged in'
       });
       
+      // Detect if request is HTTPS (via reverse proxy headers or protocol)
+      const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
+                       req.nextUrl.protocol === 'https:';
+      
       // Use Next.js cookies API for more reliable cookie setting
       res.cookies.set('admin_session', token, {
         path: '/',
         httpOnly: true,
         sameSite: 'lax',
+        secure: isSecure, // Required for HTTPS
         maxAge: 60 * 60 * 8, // 8 hours
-      });
-      
-      console.log('✅ Setting cookie for superadmin login:', {
-        userId: user.id,
-        email: user.email,
-        hasToken: !!token
       });
       
       return res;
@@ -183,18 +182,17 @@ export async function POST(req: NextRequest) {
       message: 'Logged in'
     });
     
+    // Detect if request is HTTPS (via reverse proxy headers or protocol)
+    const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
+                     req.nextUrl.protocol === 'https:';
+    
     // Use Next.js cookies API for more reliable cookie setting
     res.cookies.set('admin_session', token, {
       path: '/',
       httpOnly: true,
       sameSite: 'lax',
+      secure: isSecure, // Required for HTTPS
       maxAge: 60 * 60 * 8, // 8 hours
-    });
-    
-    console.log('✅ Setting cookie for district admin login:', {
-      userId: districtAdmin.id,
-      email: districtAdmin.email,
-      hasToken: !!token
     });
     
     return res;
