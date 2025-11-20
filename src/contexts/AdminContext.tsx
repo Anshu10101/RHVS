@@ -85,9 +85,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         setState(prev => ({ ...prev, loading: true }));
-        const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+          setState(prev => ({ ...prev, currentUser: null, loading: false }));
+          return;
+        }
+        
+        const res = await fetch('/api/admin/me', { 
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         if (!res.ok) {
-          // 401 is expected when not logged in - silently handle it
+          // Token invalid, clear it
+          localStorage.removeItem('admin_token');
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
           return;
         }
@@ -107,9 +119,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           };
           setState(prev => ({ ...prev, currentUser: u, loading: false }));
         } else {
+          localStorage.removeItem('admin_token');
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
         }
       } catch {
+        localStorage.removeItem('admin_token');
         setState(prev => ({ ...prev, currentUser: null, loading: false }));
       }
     };
@@ -123,20 +137,20 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-        credentials: 'include', // Important: include credentials to receive cookies
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
       
-      // Wait longer to ensure cookie is set and browser has processed it
-      // The cookie is set in the response, but browser needs time to process it
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Store token in localStorage
+      if (data.token) {
+        localStorage.setItem('admin_token', data.token);
+      }
       
       // Login successful, now fetch the user data
       const me = await fetch('/api/admin/me', { 
-        cache: 'no-store', 
-        credentials: 'include',
+        cache: 'no-store',
         headers: {
+          'Authorization': `Bearer ${data.token}`,
           'Cache-Control': 'no-cache',
         }
       });
@@ -168,6 +182,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     try {
       await fetch('/api/admin/logout', { method: 'POST' });
     } finally {
+      localStorage.removeItem('admin_token');
       setState(prev => ({ ...prev, currentUser: null }));
       if (typeof window !== 'undefined') {
         window.location.href = '/admin/login';
@@ -327,7 +342,18 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const refreshData = async () => {
     try {
     setState(prev => ({ ...prev, loading: true }));
-      const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        setState(prev => ({ ...prev, loading: false }));
+        return;
+      }
+      
+      const res = await fetch('/api/admin/me', { 
+        cache: 'no-store',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (res.ok) {
         const data = await res.json();
         if (data?.authenticated && data.user) {

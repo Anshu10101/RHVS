@@ -1,8 +1,18 @@
 import { SignJWT, jwtVerify, JWTPayload } from 'jose';
+import { NextRequest } from 'next/server';
 
 const ADMIN_JWT_SECRET = process.env.ADMIN_JWT_SECRET || 'dev-admin-secret-change-me';
 const ADMIN_JWT_ISSUER = 'rhvs-admin';
 const ADMIN_JWT_AUDIENCE = 'rhvs-admin-app';
+
+// Helper to get token from Authorization header or cookie (for backward compatibility)
+export function getAdminToken(req: NextRequest): string | null {
+  const authHeader = req.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  return req.cookies.get('admin_session')?.value || null;
+}
 
 function getJwtKey(): Uint8Array {
   return new TextEncoder().encode(ADMIN_JWT_SECRET);

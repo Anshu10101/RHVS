@@ -12,7 +12,11 @@ export interface AdminScope {
 }
 
 export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
-  const token = req.cookies.get('admin_session')?.value || '';
+  // Get token from Authorization header or cookie (for backward compatibility)
+  const authHeader = req.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : req.cookies.get('admin_session')?.value || '';
   const claims = token ? await verifyAdminJwt(token) : null;
 
   const isSuperAdmin = !!claims && claims.type === 'superadmin';

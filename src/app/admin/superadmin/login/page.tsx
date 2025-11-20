@@ -32,9 +32,17 @@ function SuperadminLoginContent() {
       
       // Check if user was set (useEffect handles redirect, but verify type here)
       // Use a fresh check via API to avoid stale closure
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        setError('Login failed. Please check your credentials.');
+        return;
+      }
+      
       const response = await fetch('/api/admin/me', { 
-        cache: 'no-store', 
-        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.ok) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
-import { buildSessionCookie, signAdminJwt } from '@/lib/auth-jwt';
+import { signAdminJwt } from '@/lib/auth-jwt';
 import { verifyPassword } from '@/lib/password';
 
 export async function POST(req: NextRequest) {
@@ -54,28 +54,12 @@ export async function POST(req: NextRequest) {
         type: 'superadmin'
       });
       
-      const res = NextResponse.json({ 
+      // Return token in response - client will store in localStorage
+      return NextResponse.json({ 
         success: true, 
-        message: 'Logged in'
+        message: 'Logged in',
+        token // Send token in response
       });
-      
-      // Detect if request is HTTPS (via reverse proxy headers or protocol)
-      const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
-                       req.nextUrl.protocol === 'https:';
-      
-      // Clear any old cookie first (in case it has different attributes)
-      res.cookies.delete('admin_session');
-      
-      // Use Next.js cookies API for more reliable cookie setting
-      res.cookies.set('admin_session', token, {
-        path: '/',
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: isSecure, // Required for HTTPS
-        maxAge: 60 * 60 * 8, // 8 hours
-      });
-      
-      return res;
     }
 
     // If not superadmin, check if user is a district admin
@@ -180,28 +164,12 @@ export async function POST(req: NextRequest) {
       // Don't fail the login if logging fails
     }
     
-    const res = NextResponse.json({ 
+    // Return token in response - client will store in localStorage
+    return NextResponse.json({ 
       success: true, 
-      message: 'Logged in'
+      message: 'Logged in',
+      token // Send token in response
     });
-    
-    // Detect if request is HTTPS (via reverse proxy headers or protocol)
-    const isSecure = req.headers.get('x-forwarded-proto') === 'https' || 
-                     req.nextUrl.protocol === 'https:';
-    
-    // Clear any old cookie first (in case it has different attributes)
-    res.cookies.delete('admin_session');
-    
-    // Use Next.js cookies API for more reliable cookie setting
-    res.cookies.set('admin_session', token, {
-      path: '/',
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: isSecure, // Required for HTTPS
-      maxAge: 60 * 60 * 8, // 8 hours
-    });
-    
-    return res;
   } catch (e) {
     console.error('admin login error', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

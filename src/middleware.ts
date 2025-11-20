@@ -15,7 +15,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get('admin_session')?.value;
+  // Get token from Authorization header or cookie (for backward compatibility)
+  const authHeader = req.headers.get('authorization');
+  const token = authHeader?.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : req.cookies.get('admin_session')?.value;
+  
   if (!token) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin';
