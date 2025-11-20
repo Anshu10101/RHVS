@@ -3,9 +3,13 @@ import { verifyAdminJwt } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
 
 export async function GET(req: NextRequest) {
+  // Debug: log all cookies
+  const allCookies = req.cookies.getAll();
+  console.log('🔍 /api/admin/me: All cookies:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })));
+  
   const token = req.cookies.get('admin_session')?.value;
   if (!token) {
-    console.log('❌ /api/admin/me: No token found');
+    console.log('❌ /api/admin/me: No token found. Available cookies:', allCookies.map(c => c.name));
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 

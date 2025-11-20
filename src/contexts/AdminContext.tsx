@@ -128,13 +128,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
       
-      // Small delay to ensure cookie is set
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Wait longer to ensure cookie is set and browser has processed it
+      // The cookie is set in the response, but browser needs time to process it
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Login successful, now fetch the user data
       const me = await fetch('/api/admin/me', { 
         cache: 'no-store', 
-        credentials: 'include' 
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+        }
       });
       if (me.ok) {
         const m = await me.json();

@@ -1,16 +1,23 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/Admin/Login/LoginForm';
 import { useAdmin } from '@/contexts/AdminContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 
 function DistrictAdminLoginContent() {
-  const { login } = useAdmin();
+  const { login, currentUser } = useAdmin();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  // Redirect if already logged in as district admin
+  useEffect(() => {
+    if (currentUser && currentUser.type === 'district_admin') {
+      router.push('/admin/dashboard');
+    }
+  }, [currentUser, router]);
 
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
@@ -19,30 +26,39 @@ function DistrictAdminLoginContent() {
     try {
       await login(email, password);
       
-      // Small delay to ensure session cookie is set
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait a bit for AdminContext to update
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Check if user is actually a district admin
-      const response = await fetch('/api/admin/me', { 
-        cache: 'no-store', 
-        credentials: 'include' 
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.authenticated && data.user?.type === 'district_admin') {
+      // Check currentUser from context instead of calling API again
+      // AdminContext.login() already calls /api/admin/me and sets currentUser
+      if (currentUser) {
+        if (currentUser.type === 'district_admin') {
           router.push('/admin/dashboard');
-        } else if (data.authenticated && data.user?.type !== 'district_admin') {
+        } else {
           setError('Access denied. This is for district admins only.');
           // Clear the session
-          await fetch('/api/admin/logout', { method: 'POST' });
+          await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+        }
+      } else {
+        // If currentUser is still null, try one more API call
+        const response = await fetch('/api/admin/me', { 
+          cache: 'no-store', 
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.authenticated && data.user?.type === 'district_admin') {
+            router.push('/admin/dashboard');
+          } else {
+            setError('Access denied. This is for district admins only.');
+          }
         } else {
           setError('Login failed. Please check your credentials.');
         }
-      } else {
-        setError('Login failed. Please check your credentials.');
       }
     } catch (err: unknown) {
+      console.error('Login error:', err);
       setError((err as Error).message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);

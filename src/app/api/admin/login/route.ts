@@ -59,11 +59,20 @@ export async function POST(req: NextRequest) {
         userId: user.id,
         email: user.email,
         cookieLength: cookie.length,
-        hasToken: !!token
+        hasToken: !!token,
+        cookiePreview: cookie.substring(0, 50) + '...'
       });
       
-      const res = NextResponse.json({ success: true, message: 'Logged in' });
+      const res = NextResponse.json({ 
+        success: true, 
+        message: 'Logged in'
+      });
+      // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
       res.headers.append('Set-Cookie', cookie);
+      console.log('✅ Cookie header set, response headers:', {
+        hasSetCookie: res.headers.has('Set-Cookie'),
+        setCookieValue: res.headers.get('Set-Cookie')?.substring(0, 50) + '...'
+      });
       return res;
     }
 
@@ -174,11 +183,20 @@ export async function POST(req: NextRequest) {
       userId: districtAdmin.id,
       email: districtAdmin.email,
       cookieLength: cookie.length,
-      hasToken: !!token
+      hasToken: !!token,
+      cookiePreview: cookie.substring(0, 50) + '...'
     });
     
-    const res = NextResponse.json({ success: true, message: 'Logged in' });
+    const res = NextResponse.json({ 
+      success: true, 
+      message: 'Logged in'
+    });
+    // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
     res.headers.append('Set-Cookie', cookie);
+    console.log('✅ Cookie header set, response headers:', {
+      hasSetCookie: res.headers.has('Set-Cookie'),
+      setCookieValue: res.headers.get('Set-Cookie')?.substring(0, 50) + '...'
+    });
     return res;
   } catch (e) {
     console.error('admin login error', e);
