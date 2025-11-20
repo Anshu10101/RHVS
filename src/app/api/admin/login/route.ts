@@ -54,28 +54,25 @@ export async function POST(req: NextRequest) {
         type: 'superadmin'
       });
       
-      const cookie = buildSessionCookie(token);
-      console.log('✅ Setting cookie for superadmin login:', {
-        userId: user.id,
-        email: user.email,
-        cookieLength: cookie.length,
-        hasToken: !!token,
-        fullCookie: cookie // Log full cookie string for debugging
-      });
-      
       const res = NextResponse.json({ 
         success: true, 
         message: 'Logged in'
       });
-      // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
-      res.headers.append('Set-Cookie', cookie);
       
-      // Verify the cookie was actually set
-      const setCookieHeader = res.headers.get('Set-Cookie');
-      console.log('✅ Cookie header set, response headers:', {
-        hasSetCookie: res.headers.has('Set-Cookie'),
-        setCookieValue: setCookieHeader
+      // Use Next.js cookies API for more reliable cookie setting
+      res.cookies.set('admin_session', token, {
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 8, // 8 hours
       });
+      
+      console.log('✅ Setting cookie for superadmin login:', {
+        userId: user.id,
+        email: user.email,
+        hasToken: !!token
+      });
+      
       return res;
     }
 
@@ -181,28 +178,25 @@ export async function POST(req: NextRequest) {
       // Don't fail the login if logging fails
     }
     
-    const cookie = buildSessionCookie(token);
-    console.log('✅ Setting cookie for district admin login:', {
-      userId: districtAdmin.id,
-      email: districtAdmin.email,
-      cookieLength: cookie.length,
-      hasToken: !!token,
-      fullCookie: cookie // Log full cookie string for debugging
-    });
-    
     const res = NextResponse.json({ 
       success: true, 
       message: 'Logged in'
     });
-    // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
-    res.headers.append('Set-Cookie', cookie);
     
-    // Verify the cookie was actually set
-    const setCookieHeader = res.headers.get('Set-Cookie');
-    console.log('✅ Cookie header set, response headers:', {
-      hasSetCookie: res.headers.has('Set-Cookie'),
-      setCookieValue: setCookieHeader
+    // Use Next.js cookies API for more reliable cookie setting
+    res.cookies.set('admin_session', token, {
+      path: '/',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 8, // 8 hours
     });
+    
+    console.log('✅ Setting cookie for district admin login:', {
+      userId: districtAdmin.id,
+      email: districtAdmin.email,
+      hasToken: !!token
+    });
+    
     return res;
   } catch (e) {
     console.error('admin login error', e);
