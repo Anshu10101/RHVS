@@ -215,14 +215,22 @@ export async function POST(req: NextRequest) {
         }
     }
     
+    // Get superadmin name for logging
+    const superadminRows = await executeQuery(
+      'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
+      [claims.sub]
+    ) as Array<{ name: string | null; email: string }>;
+    const superadminName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+    
     // Log the action
     const logQuery = `
-      INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-      VALUES (?, 'superadmin', 'create_district_admin', ?, ?)
+      INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+      VALUES (?, 'superadmin', ?, 'create_district_admin', ?, ?)
     `;
     
     await executeQuery(logQuery, [
       claims.sub,
+      superadminName,
       `Appointed member ID ${memberId} as admin for ${district} district`,
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);

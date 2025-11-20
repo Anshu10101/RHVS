@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
 
     // First check if user is a superadmin
     const superadminRows = await executeQuery(
-      'SELECT id, email, password_hash, role, is_active FROM superadmin WHERE email = ? LIMIT 1',
+      'SELECT id, email, name, password_hash, role, is_active FROM superadmin WHERE email = ? LIMIT 1',
       [email]
-    ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean }>;
+    ) as Array<{ id: number; email: string; name: string | null; password_hash: string; role: string; is_active: boolean }>;
 
     if (superadminRows.length > 0) {
       const user = superadminRows[0];
@@ -39,10 +39,11 @@ export async function POST(req: NextRequest) {
       
       try {
         await executeQuery(
-          `INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-           VALUES (?, 'superadmin', 'login', ?, ?)`,
+          `INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+           VALUES (?, 'superadmin', ?, 'login', ?, ?)`,
           [
-            user.id,
+            String(user.id),
+            user.name || user.email,
             `Superadmin login: ${user.email}`,
             req.headers.get('x-forwarded-for') || 'unknown'
           ]
@@ -157,10 +158,11 @@ export async function POST(req: NextRequest) {
     
     try {
       await executeQuery(
-        `INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-         VALUES (?, 'district_admin', 'login', ?, ?)`,
+        `INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+         VALUES (?, 'district_admin', ?, 'login', ?, ?)`,
         [
-          districtAdmin.id,
+          String(districtAdmin.id),
+          districtAdmin.email,
           `District admin login: ${districtAdmin.email} (${districtAdmin.district})`,
           req.headers.get('x-forwarded-for') || 'unknown'
         ]

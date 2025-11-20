@@ -85,16 +85,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         setState(prev => ({ ...prev, loading: true }));
-        console.log('AdminContext: Fetching /api/admin/me');
         const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
-        console.log('AdminContext: /api/admin/me response:', res.status, res.ok);
         if (!res.ok) {
-          console.log('AdminContext: /api/admin/me failed, setting currentUser to null');
+          // 401 is expected when not logged in - silently handle it
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
           return;
         }
         const data = await res.json();
-        console.log('AdminContext: /api/admin/me data:', data);
         if (data?.authenticated && data.user) {
           const u: User = {
             id: String(data.user.id),
@@ -317,10 +314,35 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshData = async () => {
-    setState(prev => ({ ...prev, loading: true }));
-    // Mock refresh - replace with actual API calls
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setState(prev => ({ ...prev, loading: false }));
+    try {
+      setState(prev => ({ ...prev, loading: true }));
+      const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.authenticated && data.user) {
+          const u: User = {
+            id: String(data.user.id),
+            name: data.user.name || data.user.email,
+            email: data.user.email,
+            role: data.user.role,
+            type: data.user.type,
+            district: data.user.district,
+            state: data.user.state,
+            profilePhoto: data.user.profile_photo || data.user.profilePhoto || null,
+            permissions: data.user.permissions || [],
+            createdAt: new Date(data.user.created_at || Date.now()),
+          };
+          setState(prev => ({ ...prev, currentUser: u, loading: false }));
+        } else {
+          setState(prev => ({ ...prev, currentUser: null, loading: false }));
+        }
+      } else {
+        setState(prev => ({ ...prev, loading: false }));
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      setState(prev => ({ ...prev, loading: false }));
+    }
   };
 
   // Check permission expiry every 5 minutes for district admins

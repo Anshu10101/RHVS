@@ -46,14 +46,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       adminId
     ]);
     
+    // Get superadmin name for logging
+    const superadminRows = await executeQuery(
+      'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
+      [claims.sub]
+    ) as Array<{ name: string | null; email: string }>;
+    const superadminName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+    
     // Log the action
     const logQuery = `
-      INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-      VALUES (?, 'superadmin', 'update_district_admin', ?, ?)
+      INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+      VALUES (?, 'superadmin', ?, 'update_district_admin', ?, ?)
     `;
     
     await executeQuery(logQuery, [
       claims.sub,
+      superadminName,
       `Updated district admin ID ${adminId}`,
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);
@@ -144,14 +152,22 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     // Delete district admin
     await executeQuery('DELETE FROM district_admins WHERE id = ?', [adminId]);
     
+    // Get superadmin name for logging
+    const superadminRows = await executeQuery(
+      'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
+      [claims.sub]
+    ) as Array<{ name: string | null; email: string }>;
+    const superadminName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+    
     // Log the action
     const logQuery = `
-      INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-      VALUES (?, 'superadmin', 'delete_district_admin', ?, ?)
+      INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+      VALUES (?, 'superadmin', ?, 'delete_district_admin', ?, ?)
     `;
     
     await executeQuery(logQuery, [
       claims.sub,
+      superadminName,
       `Removed district admin ID ${adminId} (${check[0].email}) from ${check[0].district} district`,
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);

@@ -143,14 +143,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
     
+    // Get superadmin name for logging
+    const superadminRows = await executeQuery(
+      'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
+      [claims.sub]
+    ) as Array<{ name: string | null; email: string }>;
+    const superadminName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+    
     // Log the action
     const logQuery = `
-      INSERT INTO activity_logs (user_id, user_type, action, details, ip_address)
-      VALUES (?, 'superadmin', 'update_district_admin_permissions', ?, ?)
+      INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+      VALUES (?, 'superadmin', ?, 'update_district_admin_permissions', ?, ?)
     `;
     
     await executeQuery(logQuery, [
       claims.sub,
+      superadminName,
       `Updated permissions for district admin ID ${adminId}: ${permissions.join(', ')}`,
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);

@@ -172,18 +172,36 @@ export async function POST(req: NextRequest) {
     // Track content origin
     await trackContentOrigin('news', newsId, districtName, adminState, parseInt(claims.sub));
 
+    // Get user name for logging
+    let userName: string;
+    if (claims.type === 'superadmin') {
+      const superadminRows = await executeQuery(
+        'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
+        [claims.sub]
+      ) as Array<{ name: string | null; email: string }>;
+      userName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+    } else {
+      const districtAdminRows = await executeQuery(
+        'SELECT m.name, da.email FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ? LIMIT 1',
+        [claims.sub]
+      ) as Array<{ name: string; email: string }>;
+      userName = districtAdminRows[0]?.name || districtAdminRows[0]?.email || 'Unknown';
+    }
+
     // Log activity
     await executeQuery(
       `INSERT INTO activity_logs (
         user_id, 
         user_type, 
+        user_name,
         action, 
         details, 
         ip_address
-      ) VALUES (?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
       [
         claims.sub,
         claims.type === 'superadmin' ? 'superadmin' : 'district_admin',
+        userName,
         'create_news',
         `Created news item: ${title}`,
         req.headers.get('x-forwarded-for') || 'unknown'

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Lock, Mail, Calendar, Shield, MapPin, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Mail, Calendar, Shield, MapPin, Eye, EyeOff, Camera, Upload } from 'lucide-react';
 
 interface ProfileModalProps {
   open: boolean;
@@ -21,7 +21,7 @@ interface ProfileModalProps {
 }
 
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
-  const { currentUser } = useAdmin();
+  const { currentUser, refreshData } = useAdmin();
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -34,6 +34,8 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   });
 
   const [loading, setLoading] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   if (!currentUser) return null;
 
@@ -82,9 +84,85 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     }).format(date);
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (2MB max)
+    if (file.size > 2 * 1024 * 1024) {
+      alert('File size must be less than 2MB');
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to staging first
+    setUploadingPhoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const uploadResponse = await fetch('/api/upload/profile', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload photo');
+      }
+
+      const uploadData = await uploadResponse.json();
+
+      // Now save to superadmin profile - send file directly
+      const saveFormData = new FormData();
+      saveFormData.append('file', file);
+
+      const saveResponse = await fetch('/api/admin/profile/photo', {
+        method: 'POST',
+        body: saveFormData,
+      });
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json();
+        throw new Error(errorData.message || 'Failed to save profile photo');
+      }
+
+      // Refresh user data to get updated photo
+      if (refreshData) {
+        await refreshData();
+        // Force a small delay to ensure state updates
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Force reload to ensure image cache is cleared
+      window.location.reload();
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      alert('Failed to upload profile photo. Please try again.');
+      setPhotoPreview(null);
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      if (e.target) {
+        e.target.value = '';
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Profile & Settings</DialogTitle>
           <DialogDescription>
@@ -120,27 +198,63 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         {activeTab === 'profile' && (
           <div className="space-y-4">
             {/* Profile Photo */}
-            <div className="flex items-center space-x-4 pb-4 border-b border-gray-200">
-              {currentUser.profilePhoto ? (
-                <img
-                  src={currentUser.profilePhoto}
-                  alt="Profile"
-                  className="h-20 w-20 rounded-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="h-20 w-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold text-2xl">
-                  {currentUser.email?.[0]?.toUpperCase() || 'A'}
-                </div>
-              )}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">{currentUser.name}</h3>
-                <p className="text-sm text-gray-500">{currentUser.email}</p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pb-4 border-b border-gray-200">
+              <div className="relative group flex-shrink-0">
+                {photoPreview || currentUser.profilePhoto ? (
+                  <img
+                    src={photoPreview || currentUser.profilePhoto || ''}
+                    alt="Profile"
+                    className="h-20 w-20 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="h-20 w-20 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold text-2xl">
+                    {currentUser.email?.[0]?.toUpperCase() || 'A'}
+                  </div>
+                )}
+                {currentUser.type === 'superadmin' && (
+                  <>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                      id="profile-photo-upload"
+                      disabled={uploadingPhoto}
+                    />
+                    <label
+                      htmlFor="profile-photo-upload"
+                      className={`absolute inset-0 rounded-full bg-black bg-opacity-50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity ${
+                        uploadingPhoto ? 'opacity-100 cursor-not-allowed' : ''
+                      }`}
+                    >
+                      {uploadingPhoto ? (
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                      ) : (
+                        <Camera className="h-6 w-6 text-white" />
+                      )}
+                    </label>
+                  </>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-semibold text-gray-900 break-words">{currentUser.name}</h3>
+                <p className="text-sm text-gray-500 break-all">{currentUser.email}</p>
+                {currentUser.type === 'superadmin' && (
+                  <button
+                    onClick={() => document.getElementById('profile-photo-upload')?.click()}
+                    disabled={uploadingPhoto}
+                    className="mt-2 text-xs text-orange-600 hover:text-orange-700 flex items-center space-x-1 disabled:opacity-50"
+                  >
+                    <Upload className="h-3 w-3 flex-shrink-0" />
+                    <span>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</span>
+                  </button>
+                )}
               </div>
             </div>
 
             {/* User Details */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center space-x-2">
@@ -149,7 +263,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-900">{currentUser.email}</p>
+                  <p className="text-sm text-gray-900 break-all">{currentUser.email}</p>
                 </CardContent>
               </Card>
 
