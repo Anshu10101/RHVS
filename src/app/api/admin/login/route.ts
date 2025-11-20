@@ -54,8 +54,16 @@ export async function POST(req: NextRequest) {
         type: 'superadmin'
       });
       
+      const cookie = buildSessionCookie(token);
+      console.log('✅ Setting cookie for superadmin login:', {
+        userId: user.id,
+        email: user.email,
+        cookieLength: cookie.length,
+        hasToken: !!token
+      });
+      
       const res = NextResponse.json({ success: true, message: 'Logged in' });
-      res.headers.append('Set-Cookie', buildSessionCookie(token));
+      res.headers.append('Set-Cookie', cookie);
       return res;
     }
 
@@ -161,8 +169,16 @@ export async function POST(req: NextRequest) {
       // Don't fail the login if logging fails
     }
     
+    const cookie = buildSessionCookie(token);
+    console.log('✅ Setting cookie for district admin login:', {
+      userId: districtAdmin.id,
+      email: districtAdmin.email,
+      cookieLength: cookie.length,
+      hasToken: !!token
+    });
+    
     const res = NextResponse.json({ success: true, message: 'Logged in' });
-    res.headers.append('Set-Cookie', buildSessionCookie(token));
+    res.headers.append('Set-Cookie', cookie);
     return res;
   } catch (e) {
     console.error('admin login error', e);

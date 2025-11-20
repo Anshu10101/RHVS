@@ -123,12 +123,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // Important: include credentials to receive cookies
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
       
+      // Small delay to ensure cookie is set
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Login successful, now fetch the user data
-      const me = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
+      const me = await fetch('/api/admin/me', { 
+        cache: 'no-store', 
+        credentials: 'include' 
+      });
       if (me.ok) {
         const m = await me.json();
         if (m?.authenticated && m.user) {
@@ -315,7 +322,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const refreshData = async () => {
     try {
-      setState(prev => ({ ...prev, loading: true }));
+    setState(prev => ({ ...prev, loading: true }));
       const res = await fetch('/api/admin/me', { cache: 'no-store', credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
@@ -341,7 +348,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('Error refreshing data:', error);
-      setState(prev => ({ ...prev, loading: false }));
+    setState(prev => ({ ...prev, loading: false }));
     }
   };
 

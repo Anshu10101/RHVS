@@ -52,7 +52,7 @@ export function buildSessionCookie(token: string): string {
     `admin_session=${token}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Strict',
+    'SameSite=Lax', // Changed from Strict to Lax for better compatibility
     isProd ? 'Secure' : '',
     // 8 hours
     `Max-Age=${60 * 60 * 8}`,
