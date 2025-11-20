@@ -350,11 +350,18 @@ export class ContentService {
       const params: (string | number)[] = [];
       const conditions: string[] = [];
 
-      // Handle district admin scope restrictions
-      if (scope && !scope.unrestricted && (scope.district || scope.adminId)) {
-        conditions.push('(e.district = ? OR e.owner_admin_id = ?)');
-        params.push(scope.district || '');
-        params.push(scope.adminId || 0);
+      // Handle district admin scope restrictions - filter by district/state only
+      // This ensures continuity - new admins can see content created by previous admins
+      if (scope && !scope.unrestricted && scope.district) {
+        // Extract district name (before comma) for matching, as district field may contain multiple districts
+        const districtNameForMatch = scope.district.split(',')[0]?.trim() || scope.district;
+        conditions.push('(e.district = ? OR e.district LIKE ? OR SUBSTRING_INDEX(e.district, ",", 1) = ?)');
+        params.push(districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch);
+        // Also filter by state if available
+        if (scope.state) {
+          conditions.push('e.state = ?');
+          params.push(scope.state);
+        }
       }
 
       // Handle superadmin filters
@@ -449,10 +456,18 @@ export class ContentService {
       const params: (string | number)[] = [];
 
       const conditions = [];
-      if (scope && !scope.unrestricted && (scope.district || scope.adminId)) {
-        conditions.push('(g.district = ? OR g.owner_admin_id = ?)');
-        params.push(scope.district || '');
-        params.push(scope.adminId || 0);
+      // Filter by district/state only (not owner_admin_id)
+      // This ensures continuity - new admins can see content created by previous admins
+      if (scope && !scope.unrestricted && scope.district) {
+        // Extract district name (before comma) for matching, as district field may contain multiple districts
+        const districtNameForMatch = scope.district.split(',')[0]?.trim() || scope.district;
+        conditions.push('(g.district = ? OR g.district LIKE ? OR SUBSTRING_INDEX(g.district, ",", 1) = ?)');
+        params.push(districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch);
+        // Also filter by state if available
+        if (scope.state) {
+          conditions.push('g.state = ?');
+          params.push(scope.state);
+        }
       }
 
       if (eventId) {
@@ -585,11 +600,18 @@ export class ContentService {
       const params: (string | number | boolean)[] = [];
       const conditions = [];
 
-      // Scope filtering
-      if (scope && !scope.unrestricted && (scope.district || scope.adminId)) {
-        conditions.push('(p.district = ? OR p.owner_admin_id = ?)');
-        params.push(scope.district || '');
-        params.push(scope.adminId || 0);
+      // Scope filtering - filter by district/state only (not owner_admin_id)
+      // This ensures continuity - new admins can see content created by previous admins
+      if (scope && !scope.unrestricted && scope.district) {
+        // Extract district name (before comma) for matching, as district field may contain multiple districts
+        const districtNameForMatch = scope.district.split(',')[0]?.trim() || scope.district;
+        conditions.push('(p.district = ? OR p.district LIKE ? OR SUBSTRING_INDEX(p.district, ",", 1) = ?)');
+        params.push(districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch);
+        // Also filter by state if available
+        if (scope.state) {
+          conditions.push('p.state = ?');
+          params.push(scope.state);
+        }
       }
 
       // Additional filters
@@ -791,11 +813,12 @@ export class ContentService {
 
   static async getProducts(scope?: ContentScopeFilter): Promise<Product[]> {
     try {
+      // Use subquery to get unique content_origin per product (take first one if multiple exist)
       let sql = `
         SELECT DISTINCT 
                p.*,
                CASE 
-                 WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+                 WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
                  ELSE p.image_path
                END AS resolved_image_path,
                COALESCE(p.district_id, co.district_id) as district_id,
@@ -804,7 +827,16 @@ export class ContentService {
                COALESCE(p.district_id, co.district_id, d.district_name_english) as district,
                m.name AS added_by_name
         FROM products p
-        LEFT JOIN content_origin co ON co.content_type = 'product' AND co.content_id = p.id
+        LEFT JOIN (
+          SELECT 
+            content_id, 
+            MAX(district_id) as district_id, 
+            MAX(state_id) as state_id, 
+            MAX(added_by_admin_id) as added_by_admin_id
+          FROM content_origin
+          WHERE content_type = 'product'
+          GROUP BY content_id
+        ) co ON co.content_id = p.id
         LEFT JOIN district_admins da ON da.id = COALESCE(p.owner_admin_id, co.added_by_admin_id)
         LEFT JOIN members m ON m.id = da.member_id
         LEFT JOIN states s ON s.state_name_english = COALESCE(p.state_id, co.state_id)

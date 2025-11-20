@@ -14,8 +14,13 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
 
+    // Check if this is an admin panel request (via query param or referer)
+    const isAdminRequest = searchParams.get('admin') === 'true' || 
+                          request.headers.get('referer')?.includes('/admin/') ||
+                          request.headers.get('x-admin-context') === 'true';
+
     let query = `
-      SELECT n.*, 
+      SELECT DISTINCT n.*, 
              CASE 
                WHEN n.image_blob IS NOT NULL THEN CONCAT('/api/media/news/', n.id)
                ELSE n.image_path
@@ -26,6 +31,18 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
+    
+    // Only apply admin scoping if this is an admin panel request
+    // Public website should always show all published news
+    if (isAdminRequest) {
+      const scope = await getAdminScope(request);
+      // For district admins in admin panel, show ALL news for their district/state
+      // This ensures continuity - new admins can see content created by previous admins
+      if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+        query += ` AND n.district = ? AND n.state = ?`;
+        params.push(scope.districtName, scope.stateName);
+      }
+    }
 
     const id = searchParams.get('id');
     if (id) {
@@ -49,16 +66,58 @@ export async function GET(request: NextRequest) {
       query += ` AND is_published = TRUE`;
     }
 
+    // Get total count before pagination
+    // Build count query with same WHERE conditions
+    let countQuery = `SELECT COUNT(DISTINCT n.id) as total FROM news n WHERE 1=1`;
+    const countParams: (string | number)[] = [];
+    
+    // Apply same filters for count
+    if (isAdminRequest) {
+      const scope = await getAdminScope(request);
+      if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+        countQuery += ` AND n.district = ? AND n.state = ?`;
+        countParams.push(scope.districtName, scope.stateName);
+      }
+    }
+    
+    if (id) {
+      countQuery += ` AND n.id = ?`;
+      countParams.push(id);
+    } else if (type && type !== 'all') {
+      countQuery += ` AND news_type = ?`;
+      countParams.push(type);
+    }
+    
+    if (priority && priority !== 'all') {
+      countQuery += ` AND priority = ?`;
+      countParams.push(priority);
+    }
+    
+    if (featured === 'true') {
+      countQuery += ` AND is_featured = TRUE`;
+    }
+    
+    if (published !== 'false') {
+      countQuery += ` AND is_published = TRUE`;
+    }
+    
+    const [countRows] = await pool.execute(countQuery, countParams);
+    const total = Array.isArray(countRows) && countRows.length > 0 ? (countRows[0] as { total: number }).total : 0;
+
     query += ` ORDER BY published_at DESC, \`order\` ASC`;
 
-    if (limit) {
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = limit ? parseInt(limit) : 12; // Default 12 items per page
+    const pageOffset = offset ? parseInt(offset) : (page - 1) * pageSize;
+    const totalPages = Math.ceil(total / pageSize);
+
+    if (limit || page) {
       query += ` LIMIT ?`;
-      params.push(parseInt(limit));
+      params.push(pageSize);
       
-      if (offset) {
-        query += ` OFFSET ?`;
-        params.push(parseInt(offset));
-      }
+      query += ` OFFSET ?`;
+      params.push(pageOffset);
     }
 
     const [rows] = await pool.execute(query, params);
@@ -71,7 +130,16 @@ export async function GET(request: NextRequest) {
           };
         })
       : [];
-    return NextResponse.json({ success: true, data });
+    
+    return NextResponse.json({ 
+      success: true, 
+      data,
+      total,
+      page: page || 1,
+      pageSize,
+      totalPages,
+      hasMore: page < totalPages
+    });
   } catch (error) {
     console.error('Error fetching news:', error);
     return NextResponse.json(
@@ -273,6 +341,22 @@ export async function PUT(request: NextRequest) {
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     updateParams.push(safeValue(id));
 
+    // For district admins, ensure the news belongs to their district/state
+    // Allow editing any news in their district, not just ones they created
+    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+      const [ownershipRows] = await pool.execute(
+        `SELECT id FROM news WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
+        [id, scope.districtName, scope.stateName]
+      ) as any[];
+      
+      if (!Array.isArray(ownershipRows) || ownershipRows.length === 0) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'You can only edit news items that you created' 
+        }, { status: 403 });
+      }
+    }
+
     const updateSql = `UPDATE news SET ${updateFields.join(', ')} WHERE id = ?`;
     await pool.execute(updateSql, updateParams);
 
@@ -307,6 +391,22 @@ export async function DELETE(request: NextRequest) {
         { success: false, error: 'News ID is required' },
         { status: 400 }
       );
+    }
+
+    // For district admins, ensure the news belongs to their district/state
+    // Allow editing any news in their district, not just ones they created
+    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+      const [ownershipRows] = await pool.execute(
+        `SELECT id FROM news WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
+        [id, scope.districtName, scope.stateName]
+      ) as any[];
+      
+      if (!Array.isArray(ownershipRows) || ownershipRows.length === 0) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'You can only delete news items that you created' 
+        }, { status: 403 });
+      }
     }
 
     await pool.execute('DELETE FROM news WHERE id = ?', [id]);

@@ -42,6 +42,7 @@ export default function DepartmentsSection() {
   const router = useRouter();
   const [nationalDepartments, setNationalDepartments] = useState<Department[]>([]);
   const [stateDepartments, setStateDepartments] = useState<Department[]>([]);
+  const [stateMarqueeVersion, setStateMarqueeVersion] = useState(0);
   const [states, setStates] = useState<StateOption[]>([]);
   const [districts, setDistricts] = useState<DistrictOption[]>([]);
   const [selectedStateId, setSelectedStateId] = useState<string>("");
@@ -73,6 +74,25 @@ export default function DepartmentsSection() {
   const stateBottomRafRef = useRef<number | null>(null);
   const resumeTimerRef = useRef<number | null>(null as unknown as number);
   const stateResumeTimerRef = useRef<number | null>(null as unknown as number);
+
+  const resetStateMarqueeMotion = useCallback(() => {
+    setIsStateHoveringTop(false);
+    setIsStateHoveringBottom(false);
+    stateTouchingTopRef.current = false;
+    stateTouchingBottomRef.current = false;
+  }, []);
+
+  const bumpStateMarqueeVersion = useCallback(() => {
+    setStateMarqueeVersion((v) => v + 1);
+  }, []);
+
+  const applyStateDepartments = useCallback(
+    (items: Department[]) => {
+      setStateDepartments(items);
+      bumpStateMarqueeVersion();
+    },
+    [bumpStateMarqueeVersion]
+  );
 
   const fetchDepartmentsByLevel = useCallback(
     async (level: 'national' | 'state' | 'district', options?: { stateName?: string; districtName?: string }) => {
@@ -148,10 +168,12 @@ export default function DepartmentsSection() {
       setSelectedDistrictId("");
       setSelectedDistrictName("");
       setStateScope("state");
+      setShowAllState(false);
+      resetStateMarqueeMotion();
 
       if (!stateId) {
         setSelectedStateName("");
-        setStateDepartments([]);
+        applyStateDepartments([]);
         setDistricts([]);
         return;
       }
@@ -161,11 +183,11 @@ export default function DepartmentsSection() {
       setSelectedStateName(stateName);
       setLoadingStateLevel(true);
       const result = await fetchDepartmentsByLevel('state', { stateName });
-      setStateDepartments(result);
+      applyStateDepartments(result);
       setLoadingStateLevel(false);
       loadDistrictsForState(stateId);
     },
-    [states, fetchDepartmentsByLevel, loadDistrictsForState]
+    [states, fetchDepartmentsByLevel, loadDistrictsForState, applyStateDepartments]
   );
 
   const handleDistrictChange = useCallback(
@@ -175,15 +197,19 @@ export default function DepartmentsSection() {
       if (!selectedStateName) {
         setSelectedDistrictName("");
         setStateScope('state');
+        setShowAllState(false);
+        resetStateMarqueeMotion();
         return;
       }
 
       if (!districtId || districtId === 'all') {
         setSelectedDistrictName("");
         setStateScope('state');
+        setShowAllState(false);
+        resetStateMarqueeMotion();
         setLoadingStateLevel(true);
         const result = await fetchDepartmentsByLevel('state', { stateName: selectedStateName });
-        setStateDepartments(result);
+        applyStateDepartments(result);
         setLoadingStateLevel(false);
         return;
       }
@@ -198,10 +224,10 @@ export default function DepartmentsSection() {
         stateName: selectedStateName,
         districtName: district.name,
       });
-      setStateDepartments(result);
+      applyStateDepartments(result);
       setLoadingStateLevel(false);
     },
-    [districts, fetchDepartmentsByLevel, selectedStateName]
+    [districts, fetchDepartmentsByLevel, selectedStateName, applyStateDepartments]
   );
 
   const handleStateMarqueeScroll = useCallback(
@@ -302,7 +328,7 @@ export default function DepartmentsSection() {
           </p>
         </div>
 
-        <div className="relative h-28 w-28 sm:h-32 sm:w-32 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
+        <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
           {department.president?.photo_path ? (
             <div className="absolute inset-0 overflow-hidden bg-white">
               <Image
@@ -313,8 +339,8 @@ export default function DepartmentsSection() {
                 }
                 alt={department.president.name}
                 fill
-                sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, 160px"
-                className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                sizes="(max-width: 640px) 128px, (max-width: 768px) 144px, (max-width: 1024px) 160px, 176px"
+                className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                 quality={95}
               />
             </div>
@@ -322,7 +348,7 @@ export default function DepartmentsSection() {
             <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-orange-50 via-orange-100 to-orange-200">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-12 h-12 sm:w-14 sm:h-14 text-orange-400"
+                className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 text-orange-400"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -365,7 +391,7 @@ export default function DepartmentsSection() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [nationalDepartments.length]);
+  }, [nationalDepartments]);
 
   useEffect(() => {
     const el = stateTopFirstTrackRef.current;
@@ -377,7 +403,7 @@ export default function DepartmentsSection() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [stateDepartments.length]);
+  }, [stateDepartments, stateMarqueeVersion]);
 
   useEffect(() => {
     const el = stateBottomFirstTrackRef.current;
@@ -393,7 +419,7 @@ export default function DepartmentsSection() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [stateDepartments.length]);
+  }, [stateDepartments, stateMarqueeVersion]);
 
   useEffect(() => {
     if (showAllState) return;
@@ -402,7 +428,17 @@ export default function DepartmentsSection() {
     if (node && firstWidth > 0) {
       node.scrollLeft = firstWidth;
     }
-  }, [showAllState, stateDepartments.length]);
+  }, [showAllState, stateDepartments, stateMarqueeVersion]);
+
+  useEffect(() => {
+    resetStateMarqueeMotion();
+    if (stateTopScrollerRef.current) {
+      stateTopScrollerRef.current.scrollLeft = 0;
+    }
+    if (stateBottomScrollerRef.current) {
+      stateBottomScrollerRef.current.scrollLeft = stateBottomSequenceWidthRef.current || 0;
+    }
+  }, [stateMarqueeVersion, resetStateMarqueeMotion]);
 
   // RAF marquee loop for seamless wrap - auto-scroll on mobile and desktop
   useEffect(() => {
@@ -480,7 +516,7 @@ export default function DepartmentsSection() {
       if (stateTopRafRef.current) cancelAnimationFrame(stateTopRafRef.current);
       stateTopRafRef.current = null;
     };
-  }, [showAllState, isStateHoveringTop, stateDepartments.length]);
+  }, [showAllState, isStateHoveringTop, stateDepartments, stateMarqueeVersion]);
 
   useEffect(() => {
     if (showAllState || stateDepartments.length === 0) return;
@@ -515,7 +551,7 @@ export default function DepartmentsSection() {
       if (stateBottomRafRef.current) cancelAnimationFrame(stateBottomRafRef.current);
       stateBottomRafRef.current = null;
     };
-  }, [showAllState, isStateHoveringBottom, stateDepartments.length]);
+  }, [showAllState, isStateHoveringBottom, stateDepartments, stateMarqueeVersion]);
 
   if (loadingNational) {
     return (
@@ -666,7 +702,7 @@ export default function DepartmentsSection() {
                             src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
                             alt={department.president.name}
                             fill
-                            sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, 160px"
+                            sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, 176px"
                             className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                             quality={95}
                             priority={false}
@@ -734,7 +770,7 @@ export default function DepartmentsSection() {
                                 src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
                                 alt={department.president.name}
                                 fill
-                                sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, 160px"
+                                sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, 176px"
                                 className="object-contain transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                                 quality={95}
                                 priority={false}

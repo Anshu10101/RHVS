@@ -326,6 +326,262 @@ export async function sendTokenEmail(
   }
 }
 
+// Send admin assignment email to district admin
+export async function sendAdminAssignmentEmail(
+  to: string,
+  adminName: string,
+  districtName: string,
+  temporaryPassword: string,
+  loginUrl: string,
+  language: 'hi' | 'en' = 'hi'
+) {
+  try {
+    console.log('📧 sendAdminAssignmentEmail called with:', {
+      to,
+      adminName,
+      districtName,
+      language,
+      hasPassword: !!temporaryPassword,
+      loginUrl
+    });
+
+    // Validate email configuration
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('❌ Email configuration missing: EMAIL_USER or EMAIL_PASS not set');
+      return { success: false, error: 'Email configuration missing' };
+    }
+
+    const isHindi = language === 'hi';
+    const currentYear = new Date().getFullYear();
+
+    const subject = isHindi
+      ? `जिला प्रशासक नियुक्ति - ${districtName} | राष्ट्रीय हिन्दू वाहिनी संगठन`
+      : `District Admin Appointment - ${districtName} | Rashtriya Hindu Vahini Sangathan`;
+
+    const greeting = isHindi ? `प्रिय ${adminName} जी,` : `Dear ${adminName},`;
+
+    const mainMessage = isHindi
+      ? `
+        <p style="color:#7c2d12; line-height:1.7; margin:16px 0 0 0; text-align:left; font-size:15px;">
+          हार्दिक बधाई! आपको <strong>${districtName}</strong> जिले का प्रशासक (Admin) नियुक्त किया गया है। 
+          आपको अब RHVS के जिला प्रशासक पैनल तक पहुंच प्राप्त हो गई है।
+        </p>
+        <p style="color:#7c2d12; line-height:1.7; margin:16px 0 0 0; text-align:left; font-size:15px;">
+          आप अपने जिले के सदस्यों, सामग्री, और गतिविधियों का प्रबंधन कर सकते हैं। 
+          हम आपसे अपेक्षा करते हैं कि आप अपने जिम्मेदारियों का निर्वहन करेंगे और संगठन के उद्देश्यों को आगे बढ़ाएंगे।
+        </p>
+      `
+      : `
+        <p style="color:#7c2d12; line-height:1.7; margin:16px 0 0 0; text-align:left; font-size:15px;">
+          Congratulations! You have been appointed as the Administrator (Admin) for <strong>${districtName}</strong> district. 
+          You now have access to the RHVS District Admin Panel.
+        </p>
+        <p style="color:#7c2d12; line-height:1.7; margin:16px 0 0 0; text-align:left; font-size:15px;">
+          You can manage members, content, and activities for your district. 
+          We expect you to fulfill your responsibilities and advance the organization's objectives.
+        </p>
+      `;
+
+    const credentialsBlock = isHindi
+      ? `
+        <div style="background:#fff1e6; padding:20px; border-radius:12px; border-left:4px solid #f97316; margin:24px 0;">
+          <h3 style="margin:0 0 16px 0; color:#9a3412; font-size:18px;">🔐 लॉगिन क्रेडेंशियल्स</h3>
+          <div style="background:#ffffff; padding:16px; border-radius:8px; margin-bottom:12px;">
+            <p style="margin:0 0 8px 0; color:#9a3412; font-size:14px; font-weight:600;">ईमेल (Email):</p>
+            <p style="margin:0; color:#7c2d12; font-size:16px; font-family:monospace; word-break:break-all;">${to}</p>
+          </div>
+          <div style="background:#ffffff; padding:16px; border-radius:8px;">
+            <p style="margin:0 0 8px 0; color:#9a3412; font-size:14px; font-weight:600;">अस्थायी पासवर्ड (Temporary Password):</p>
+            <p style="margin:0; color:#7c2d12; font-size:18px; font-family:monospace; font-weight:700; letter-spacing:2px;">${temporaryPassword}</p>
+          </div>
+          <p style="margin:16px 0 0 0; color:#9a3412; font-size:13px; line-height:1.6;">
+            ⚠️ <strong>सुरक्षा सुझाव:</strong> कृपया पहली बार लॉगिन करने के बाद अपना पासवर्ड बदलें।
+          </p>
+        </div>
+      `
+      : `
+        <div style="background:#fff1e6; padding:20px; border-radius:12px; border-left:4px solid #f97316; margin:24px 0;">
+          <h3 style="margin:0 0 16px 0; color:#9a3412; font-size:18px;">🔐 Login Credentials</h3>
+          <div style="background:#ffffff; padding:16px; border-radius:8px; margin-bottom:12px;">
+            <p style="margin:0 0 8px 0; color:#9a3412; font-size:14px; font-weight:600;">Email:</p>
+            <p style="margin:0; color:#7c2d12; font-size:16px; font-family:monospace; word-break:break-all;">${to}</p>
+          </div>
+          <div style="background:#ffffff; padding:16px; border-radius:8px;">
+            <p style="margin:0 0 8px 0; color:#9a3412; font-size:14px; font-weight:600;">Temporary Password:</p>
+            <p style="margin:0; color:#7c2d12; font-size:18px; font-family:monospace; font-weight:700; letter-spacing:2px;">${temporaryPassword}</p>
+          </div>
+          <p style="margin:16px 0 0 0; color:#9a3412; font-size:13px; line-height:1.6;">
+            ⚠️ <strong>Security Tip:</strong> Please change your password after your first login.
+          </p>
+        </div>
+      `;
+
+    const permissionsNote = isHindi
+      ? `
+        <div style="background:#eef2ff; padding:16px; border-radius:10px; border:1px solid #c7d2fe; margin:20px 0;">
+          <p style="margin:0; color:#4338ca; font-size:14px; line-height:1.6;">
+            <strong>📋 अनुमति प्रबंधन:</strong> कृपया ध्यान दें कि सामग्री प्रबंधन (Content Management) जैसी कुछ सुविधाओं तक पहुंच के लिए विशिष्ट अनुमतियों की आवश्यकता होती है। 
+            यदि आपको किसी विशेष सुविधा तक पहुंच नहीं मिल रही है, तो कृपया सुपरएडमिन से संपर्क करें।
+          </p>
+        </div>
+      `
+      : `
+        <div style="background:#eef2ff; padding:16px; border-radius:10px; border:1px solid #c7d2fe; margin:20px 0;">
+          <p style="margin:0; color:#4338ca; font-size:14px; line-height:1.6;">
+            <strong>📋 Permission Management:</strong> Please note that access to certain features like Content Management requires specific permissions. 
+            If you don't have access to a particular feature, please contact the superadmin.
+          </p>
+        </div>
+      `;
+
+    const loginButton = isHindi
+      ? `
+        <div style="text-align:center; margin:28px 0;">
+          <a href="${loginUrl}" style="display:inline-block; background:linear-gradient(135deg,#f97316,#ea580c); color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:10px; font-weight:600; font-size:16px; box-shadow:0 4px 12px rgba(249,115,22,0.4);">
+            🚀 एडमिन पैनल में लॉगिन करें
+          </a>
+        </div>
+      `
+      : `
+        <div style="text-align:center; margin:28px 0;">
+          <a href="${loginUrl}" style="display:inline-block; background:linear-gradient(135deg,#f97316,#ea580c); color:#ffffff; padding:16px 32px; text-decoration:none; border-radius:10px; font-weight:600; font-size:16px; box-shadow:0 4px 12px rgba(249,115,22,0.4);">
+            🚀 Login to Admin Panel
+          </a>
+        </div>
+      `;
+
+    const passwordResetNote = isHindi
+      ? `
+        <div style="background:#fef3c7; padding:16px; border-radius:10px; border:1px solid #fbbf24; margin:20px 0;">
+          <p style="margin:0; color:#92400e; font-size:14px; line-height:1.6;">
+            <strong>💡 पासवर्ड रीसेट:</strong> आप अपने एडमिन पैनल के प्रोफाइल सेक्शन से कभी भी अपना पासवर्ड बदल सकते हैं। 
+            लॉगिन करने के बाद, प्रोफाइल सेटिंग्स में जाकर "पासवर्ड बदलें" विकल्प का उपयोग करें।
+          </p>
+        </div>
+      `
+      : `
+        <div style="background:#fef3c7; padding:16px; border-radius:10px; border:1px solid #fbbf24; margin:20px 0;">
+          <p style="margin:0; color:#92400e; font-size:14px; line-height:1.6;">
+            <strong>💡 Password Reset:</strong> You can change your password anytime from your admin panel's profile section. 
+            After logging in, go to profile settings and use the "Change Password" option.
+          </p>
+        </div>
+      `;
+
+    const footerText = isHindi
+      ? 'यह RHVS द्वारा भेजा गया स्वचालित संदेश है; कृपया इसका प्रत्यक्ष उत्तर न दें।'
+      : 'This is an automated message from RHVS; please do not reply directly.';
+
+    const html = `
+      <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif; max-width:640px; margin:0 auto; background:#fff7ed; padding:24px;">
+        <div style="background:linear-gradient(135deg,#f97316,#ea580c); border-radius:16px 16px 0 0; color:#fff; text-align:center; padding:24px 16px;">
+          <h1 style="margin:0; font-size:28px; letter-spacing:0.4px;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
+          <p style="margin:8px 0 0; font-size:16px; color:#fde68a; font-weight:600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
+        </div>
+        <div style="background:#ffffff; border:1px solid #fed7aa; border-top:none; padding:28px 24px; border-radius:0 0 16px 16px; box-shadow:0 15px 35px rgba(16,24,40,0.08);">
+          <p style="margin:0 0 12px; color:#111827; font-weight:600; font-size:16px;">${greeting}</p>
+          ${mainMessage}
+          ${credentialsBlock}
+          ${permissionsNote}
+          ${loginButton}
+          ${passwordResetNote}
+          <div style="margin-top:24px; background:#f3f4f6; border-radius:12px; padding:16px;">
+            <p style="margin:0; color:#374151; font-size:13px; line-height:1.6;">
+              ${isHindi 
+                ? 'यदि आपने यह अनुरोध नहीं किया है या आपको लगता है कि यह एक गलती है, तो कृपया तुरंत सुपरएडमिन से संपर्क करें।'
+                : 'If you did not request this or believe this is an error, please contact the superadmin immediately.'}
+            </p>
+          </div>
+          <p style="margin:20px 0 0; color:#9ca3af; font-size:12px;">${footerText}</p>
+          <p style="margin:6px 0 0; color:#9ca3af; font-size:12px;">© ${currentYear} राष्ट्रीय हिन्दू वाहिनी संगठन • All Rights Reserved</p>
+        </div>
+      </div>
+    `;
+
+    const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || 'admin@rashtriyahinduvahinisangathan.org';
+    
+    // Create plain text version for better deliverability
+    const plainText = isHindi
+      ? `
+राष्ट्रीय हिन्दू वाहिनी संगठन
+
+${greeting}
+
+हार्दिक बधाई! आपको ${districtName} जिले का प्रशासक (Admin) नियुक्त किया गया है। 
+आपको अब RHVS के जिला प्रशासक पैनल तक पहुंच प्राप्त हो गई है।
+
+🔐 लॉगिन क्रेडेंशियल्स:
+ईमेल: ${to}
+अस्थायी पासवर्ड: ${temporaryPassword}
+
+⚠️ सुरक्षा सुझाव: कृपया पहली बार लॉगिन करने के बाद अपना पासवर्ड बदलें।
+
+लॉगिन करें: ${loginUrl}
+
+© ${currentYear} राष्ट्रीय हिन्दू वाहिनी संगठन
+      `
+      : `
+Rashtriya Hindu Vahini Sangathan
+
+${greeting}
+
+Congratulations! You have been appointed as the Administrator (Admin) for ${districtName} district. 
+You now have access to the RHVS District Admin Panel.
+
+🔐 Login Credentials:
+Email: ${to}
+Temporary Password: ${temporaryPassword}
+
+⚠️ Security Tip: Please change your password after your first login.
+
+Login here: ${loginUrl}
+
+© ${currentYear} Rashtriya Hindu Vahini Sangathan
+      `;
+    
+    console.log('📧 Sending email via transporter:', {
+      from: fromEmail,
+      to,
+      subject,
+      hasHtml: !!html,
+      hasPlainText: !!plainText,
+      passwordIncluded: temporaryPassword ? 'Yes' : 'No'
+    });
+
+    const result = await transporter.sendMail({
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${fromEmail}>`,
+      to,
+      subject,
+      text: plainText.trim(),
+      html,
+    });
+    
+    console.log('✅ Admin assignment email sent successfully:', {
+      messageId: result.messageId,
+      response: result.response,
+      accepted: result.accepted,
+      rejected: result.rejected,
+      pending: result.pending
+    });
+    
+    if (result.rejected && result.rejected.length > 0) {
+      console.error('❌ Email was rejected by server:', result.rejected);
+    }
+    
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('❌ Failed to send admin assignment email:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
 // Send welcome email to new member with certificate and ID card
 export async function sendWelcomeEmail(
   to: string,

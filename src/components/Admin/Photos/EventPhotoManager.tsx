@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Camera, Upload, Plus, Search, Filter, Grid, List, Settings, Eye, EyeOff, Trash2, Edit3 } from 'lucide-react';
+import { Calendar, Camera, Upload, Plus, Search, Filter, Grid, List, Settings, Eye, EyeOff, Trash2, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PhotoEvent, PhotoGallery, Photo } from '@/lib/content';
 import { notifications } from '@/lib/notifications';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -937,7 +937,22 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
       {selectedPhoto && (
         <PhotoViewerModal 
           photo={selectedPhoto}
+          photos={photos}
           onClose={() => setSelectedPhoto(null)}
+          onNavigate={(direction) => {
+            if (!selectedPhoto) return;
+            const currentIndex = photos.findIndex(p => p.id === selectedPhoto.id);
+            if (currentIndex === -1) return;
+            
+            let newIndex: number;
+            if (direction === 'prev') {
+              newIndex = currentIndex > 0 ? currentIndex - 1 : photos.length - 1;
+            } else {
+              newIndex = currentIndex < photos.length - 1 ? currentIndex + 1 : 0;
+            }
+            
+            setSelectedPhoto(photos[newIndex]);
+          }}
         />
       )}
 
@@ -1764,26 +1779,114 @@ function PhotoUploadModal({
 }
 
 // Full Resolution Photo Viewer Modal
-function PhotoViewerModal({ photo, onClose }: { photo: Photo; onClose: () => void }) {
+function PhotoViewerModal({ photo, photos, onClose, onNavigate }: { photo: Photo; photos: Photo[]; onClose: () => void; onNavigate?: (direction: 'prev' | 'next') => void }) {
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && photos.length > 1 && onNavigate) {
+        onNavigate('prev');
+      } else if (e.key === 'ArrowRight' && photos.length > 1 && onNavigate) {
+        onNavigate('next');
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [photos.length, onNavigate, onClose]);
+
+  // Reset description expansion when photo changes
+  useEffect(() => {
+    setIsDescriptionExpanded(false);
+  }, [photo?.id]);
+
+  // Find current photo index
+  const currentIndex = photos.findIndex(p => p.id === photo.id);
+  const hasPrev = photos.length > 1;
+  const hasNext = photos.length > 1;
+
+  // Check if description is long enough to need truncation
+  const descriptionLines = photo?.description ? photo.description.split('\n').length : 0;
+  const descriptionLength = photo?.description?.length || 0;
+  const needsTruncation = descriptionLines > 2 || descriptionLength > 150;
+
+  const handlePrev = () => {
+    if (photos.length > 1 && onNavigate) {
+      onNavigate('prev');
+    }
+  };
+
+  const handleNext = () => {
+    if (photos.length > 1 && onNavigate) {
+      onNavigate('next');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-50" onClick={onClose}>
       <div className="relative w-full h-full">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 text-white hover:text-orange-400 transition-colors bg-black/50 rounded-full p-2"
+          className="absolute top-2 right-2 sm:top-4 sm:right-4 z-20 text-white hover:text-orange-400 transition-colors bg-black/50 rounded-full p-1.5 sm:p-2 hover:bg-black/70"
+          aria-label="Close"
         >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+
+        {/* Navigation buttons */}
+        {hasPrev && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePrev();
+            }}
+            className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 text-white hover:text-orange-400 transition-colors z-20 bg-black/50 rounded-full hover:bg-black/70 backdrop-blur-sm"
+            aria-label="Previous image"
+          >
+            <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
+          </button>
+        )}
+
+        {hasNext && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNext();
+            }}
+            className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 text-white hover:text-orange-400 transition-colors z-20 bg-black/50 rounded-full hover:bg-black/70 backdrop-blur-sm"
+            aria-label="Next image"
+          >
+            <ChevronRight size={20} className="sm:w-6 sm:h-6" />
+          </button>
+        )}
+
+        {/* Image counter */}
+        {photos.length > 1 && (
+          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-20 bg-black/50 text-white px-2 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm">
+            {currentIndex + 1} / {photos.length}
+          </div>
+        )}
         
         {/* Image container - full screen */}
-        <div className="w-full h-full flex items-center justify-center p-4" onClick={(e) => e.stopPropagation()}>
-          <div className="relative max-w-full max-h-full">
+        <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative inline-block max-w-full">
             <img
+              key={photo.id}
               src={photo.filePath}
               alt={photo.caption || photo.filename}
-              className="w-auto h-auto max-w-full max-h-full object-contain"
+              className="block transition-opacity duration-300"
+              style={{ 
+                maxWidth: '100%',
+                maxHeight: 'calc(100vh - 120px)',
+                width: 'auto',
+                height: 'auto',
+                objectFit: 'contain'
+              }}
               onError={(e) => {
                 console.error('Full resolution image failed to load:', photo.filePath);
                 (e.target as HTMLImageElement).style.display = 'none';
@@ -1794,17 +1897,34 @@ function PhotoViewerModal({ photo, onClose }: { photo: Photo; onClose: () => voi
         </div>
         
         {/* Photo Info overlay - positioned over image */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 sm:p-6">
           <div className="max-w-4xl mx-auto">
             <div className="text-white">
-              <h3 className="text-2xl font-bold mb-2">{photo.caption || photo.filename}</h3>
+              <h3 className="text-base sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-2">{photo.caption || photo.filename}</h3>
               {photo.description && (
-                <p className="text-gray-200 text-base mb-3 leading-relaxed">{photo.description}</p>
+                <div className="mb-2 sm:mb-3">
+                  <p className={`text-gray-200 text-xs sm:text-sm md:text-base leading-relaxed ${
+                    needsTruncation && !isDescriptionExpanded ? 'line-clamp-2 sm:line-clamp-3' : ''
+                  }`}>
+                    {photo.description}
+                  </p>
+                  {needsTruncation && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsDescriptionExpanded(!isDescriptionExpanded);
+                      }}
+                      className="mt-1 text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors"
+                    >
+                      {isDescriptionExpanded ? 'See less' : 'See more...'}
+                    </button>
+                  )}
+                </div>
               )}
               {photo.tags && photo.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {photo.tags.map((tag, index) => (
-                    <span key={index} className="px-3 py-1 bg-orange-600/90 text-white text-sm font-medium rounded-full">
+                    <span key={index} className="px-2 py-0.5 sm:px-3 sm:py-1 bg-orange-600/90 text-white text-[10px] sm:text-xs md:text-sm font-medium rounded-full">
                       {tag}
                     </span>
                   ))}

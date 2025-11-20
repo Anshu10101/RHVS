@@ -386,7 +386,7 @@ export default function AdminsManagementPage() {
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh Data
         </Button>
-        <Button onClick={() => setAddDialogOpen(true)} size="sm" className="w-full sm:w-auto">
+        <Button onClick={() => setAddDialogOpen(true)} size="sm" className="w-full sm:w-auto cursor-pointer">
           <UserPlus className="h-4 w-4 mr-2" />
           Appoint District Admin
         </Button>
@@ -801,7 +801,7 @@ export default function AdminsManagementPage() {
             }} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleAddAdmin} size="sm" className="w-full sm:w-auto">
+            <Button onClick={handleAddAdmin} size="sm" className="w-full sm:w-auto cursor-pointer">
               <Check className="h-4 w-4 mr-2" />
               Appoint Admin
             </Button>

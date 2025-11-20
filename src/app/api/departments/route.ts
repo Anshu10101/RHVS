@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
     
-    // Check if user is authenticated and is a superadmin
-    if (!scope.isSuperAdmin) {
+    // Check if user is authenticated and is a superadmin or district admin
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
 
     // Build the query based on filters
     // Exclude National Executive Department from regular list (it will be shown in separate tab)
+    // For district admins, always exclude National Executive Department
     let query = 'SELECT * FROM departments WHERE is_national_executive = FALSE';
     const params: any[] = [];
 

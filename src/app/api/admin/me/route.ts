@@ -22,10 +22,18 @@ export async function GET(req: NextRequest) {
     if (rows.length === 0) return NextResponse.json({ authenticated: false }, { status: 401 });
     
     const user = rows[0];
+    // Extract name from email (part before @) and capitalize it, or use email as fallback
+    const emailName = user.email.split('@')[0];
+    const displayName = emailName
+      .split(/[._-]/)
+      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+    
     return NextResponse.json({ 
       authenticated: true, 
       user: {
         ...user,
+        name: displayName, // Use formatted email name as display name
         type: 'superadmin',
         permissions: ['all']
       }

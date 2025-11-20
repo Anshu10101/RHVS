@@ -108,8 +108,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       [adminId]
     );
     
+    // Filter out seller permissions - they should NOT be stored in database
+    // Seller permissions are automatically implied by add_products (handled in admin-scope.ts)
+    const sellerPermissions = ['manage_sellers', 'add_sellers', 'edit_sellers', 'delete_sellers', 'view_sellers'];
+    const allPermissions = permissions.filter(p => !sellerPermissions.includes(p));
+
     // Then, add or update permissions
-    for (const permission of permissions) {
+    for (const permission of allPermissions) {
       // Check if permission already exists for this admin
       const checkPermQuery = `
         SELECT id FROM district_admin_permissions 

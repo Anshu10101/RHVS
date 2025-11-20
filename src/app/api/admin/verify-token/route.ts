@@ -138,28 +138,38 @@ export async function GET(request: NextRequest) {
           address: token.address,
           state: token.state,
           district: token.district,
+          aadhar_card_number: token.aadhar_card_number,
           aadharCardNumber: token.aadhar_card_number,
+          father_husband_name: token.father_husband_name,
           fatherHusbandName: token.father_husband_name,
+          mother_wife_name: token.mother_wife_name,
           motherWifeName: token.mother_wife_name,
+          registration_date: token.registration_date,
           registrationDate: token.registration_date,
-          existingMemberRegNumber: token.existing_member_reg_number,
           existing_member_reg_number: token.existing_member_reg_number,
+          existingMemberRegNumber: token.existing_member_reg_number,
+          profile_photo_path: token.resolved_profile_photo_path ?? token.profile_photo_path,
           profilePhotoPath: token.resolved_profile_photo_path ?? token.profile_photo_path,
+          signature_path: token.resolved_signature_path ?? token.signature_path,
           signaturePath: token.resolved_signature_path ?? token.signature_path,
           department: token.department,
           status: token.status,
+          created_at: token.created_at,
           createdAt: token.created_at,
-          expiresAt: token.expires_at,
+          expires_at: token.expires_at || null, // Ensure it's not undefined
+          expiresAt: token.expires_at || null,
+          verified_at: token.verified_at,
           verifiedAt: token.verified_at,
+          verified_by_admin_id: token.verified_by_admin_id,
           verifiedByAdminId: token.verified_by_admin_id,
           verifiedByAdminName: token.verified_by_admin_name,
           memberRegNumber: token.member_reg_number,
-          initiatedByName: token.initiated_by_name,
-          initiatedByEmail: token.initiated_by_email,
-          initiatedByPhone: token.initiated_by_phone,
           initiated_by_name: token.initiated_by_name,
+          initiatedByName: token.initiated_by_name,
           initiated_by_email: token.initiated_by_email,
+          initiatedByEmail: token.initiated_by_email,
           initiated_by_phone: token.initiated_by_phone,
+          initiatedByPhone: token.initiated_by_phone,
         })),
         pagination: {
           page,
@@ -244,6 +254,17 @@ export async function POST(request: NextRequest) {
     }
 
     const tokenData = tokens[0];
+    
+    // District admin can only verify/reject tokens from their district
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin && scope.districtName) {
+      if (tokenData.district !== scope.districtName) {
+        return NextResponse.json(
+          { success: false, message: 'You can only verify tokens from your district' },
+          { status: 403 }
+        );
+      }
+    }
+    
     const languagePreference = await getStateLanguagePreference({
       stateName: tokenData.state
     });
@@ -292,6 +313,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Insert new member
+      // For district admins, verified_by_admin_id should be NULL (FK only allows superadmin.id)
+      // District admins are tracked via verified_by_member_id
+      const verifiedByAdminId = scope.isSuperAdmin ? scope.adminId : null;
+      
       const insertMemberQuery = `
         INSERT INTO members (
           member_reg_number, name, email, phone, address, state, district, aadhar_card_number,
@@ -317,7 +342,7 @@ export async function POST(request: NextRequest) {
         tokenData.profile_photo_path,
         tokenData.signature_path,
         tokenData.department,
-        scope.adminId,
+        verifiedByAdminId,
         verifierId
       ]) as { insertId: number };
 
@@ -481,10 +506,15 @@ export async function POST(request: NextRequest) {
         let adminName = 'Unknown Admin';
         try {
           if (scope.isSuperAdmin) {
-            const adminQuery = 'SELECT name FROM superadmins WHERE id = ? LIMIT 1';
-            const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ name: string }>;
+            const adminQuery = 'SELECT email FROM superadmin WHERE id = ? LIMIT 1';
+            const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ email: string }>;
             if (adminResult.length > 0) {
-              adminName = adminResult[0].name;
+              // Format email as name (extract part before @ and format it)
+              const emailName = adminResult[0].email.split('@')[0];
+              adminName = emailName
+                .split(/[._-]/)
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ') || adminResult[0].email;
             }
           } else if (scope.isDistrictAdmin) {
             const adminQuery = `

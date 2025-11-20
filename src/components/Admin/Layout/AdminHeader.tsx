@@ -20,23 +20,33 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Close menu when clicking outside
+  // Handle hover for dropdown - keep menu open when hovering over trigger or menu
+  const handleMouseEnter = () => {
+    // Clear any pending close timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    setShowUserMenu(true);
+  };
+
+  const handleMouseLeave = () => {
+    // Add a small delay before closing to allow mouse to move to dropdown menu
+    timeoutRef.current = setTimeout(() => {
+      setShowUserMenu(false);
+    }, 150);
+  };
+
+  // Cleanup timeout on unmount
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-
-    if (showUserMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showUserMenu]);
+  }, []);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -55,11 +65,13 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         <div className="flex items-center space-x-3">
           {/* User avatar */}
           {currentUser && (
-          <div className="relative" ref={menuRef}>
-            <button
-              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100"
-              onClick={() => setShowUserMenu(!showUserMenu)}
-            >
+          <div 
+            className="relative" 
+            ref={menuRef}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
+            <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
               {currentUser.profilePhoto ? (
                 <img
                   src={currentUser.profilePhoto}
@@ -69,19 +81,27 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                 />
               ) : (
                 <div className="h-8 w-8 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center font-semibold">
-                  {currentUser.email?.[0]?.toUpperCase() || 'A'}
+                  {(currentUser.name?.[0] || currentUser.email?.[0] || 'A').toUpperCase()}
                 </div>
               )}
               <div className="hidden md:block text-left">
-                <div className="text-sm font-medium text-gray-900">{currentUser.email}</div>
-                <div className="text-xs text-gray-500">{currentUser.role?.toUpperCase()}</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {currentUser.name || currentUser.email || 'Admin'}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.role?.toUpperCase() || 'ADMIN'}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 text-gray-500" />
-            </button>
+            </div>
 
             {/* User dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+              <div 
+                className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+              >
                 <div className="py-1">
                   <button
                     onClick={() => {

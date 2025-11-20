@@ -143,14 +143,29 @@ export default function ProductDetailPage() {
         const res = await fetch('/api/content/store', { cache: 'no-store' });
         const data = await res.json();
         const all = Array.isArray(data?.products) ? data.products : [];
-        const sameCategory = all.filter((p: Record<string, unknown>) => String(p.category) === String(product.category) && String(p.id) !== String(product.id));
+        
+        // Deduplicate by product ID first (in case API returns duplicates)
+        const uniqueProducts = new Map<string, Record<string, unknown>>();
+        for (const p of all) {
+          const id = String(p.id);
+          if (!uniqueProducts.has(id)) {
+            uniqueProducts.set(id, p);
+          }
+        }
+        
+        const sameCategory = Array.from(uniqueProducts.values())
+          .filter((p: Record<string, unknown>) => 
+            String(p.category) === String(product.category) && 
+            String(p.id) !== String(product.id)
+          );
+        
         const mapped = sameCategory.slice(0, 12).map((p: Record<string, unknown>) => ({
           id: String(p.id),
-          name: p.name || 'Product',
-          imageUrl: p.imageUrl || p.image_url || p.image_path || '/product/p1.jpg',
+          name: String(p.name || 'Product'),
+          imageUrl: String(p.imageUrl || p.image_url || p.image_path || '/product/p1.jpg'),
           price: Number(p.price ?? 0),
           originalPrice: p.original_price != null ? Number(p.original_price) : undefined,
-          description: p.description || ''
+          description: String(p.description || '')
         }));
         setSimilarProducts(mapped);
       } catch (err) {

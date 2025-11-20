@@ -28,239 +28,14 @@ import {
   SheetFooter
 } from '@/components/ui/sheet';
 
-// Sample product data (fallback)
-const defaultProducts: Product[] = [
-  {
-    id: 1,
-    name: 'Sacred Rudraksha Mala',
-    nameHindi: 'पवित्र रुद्राक्ष माला',
-    description: 'Authentic Rudraksha mala with 108 beads, blessed by our spiritual gurus. Perfect for meditation and spiritual practices.',
-    price: 2500,
-    originalPrice: 3000,
-    category: 'Spiritual',
-    image: '/product/p1.jpg',
-    images: ['/product/p1.jpg', '/product/p2.jpg'],
-    features: [
-      '108 authentic Rudraksha beads',
-      'Blessed by spiritual gurus',
-      'Handcrafted with care',
-      'Comes with sacred thread',
-      'Perfect for meditation'
-    ],
-    tags: ['rudraksha', 'mala', 'meditation', 'spiritual'],
-    inStock: true,
-    rating: 4.8,
-    reviews: 124,
-    discount: 17,
-    isNew: true,
-    isFeatured: true
-  },
-  {
-    id: 2,
-    name: 'Tulsi Mala for Devotion',
-    nameHindi: 'भक्ति के लिए तुलसी माला',
-    description: 'Sacred Tulsi mala made from holy basil beads. Known for its purifying properties and connection to Lord Vishnu.',
-    price: 1800,
-    category: 'Spiritual',
-    image: '/product/p2.jpg',
-    images: ['/product/p2.jpg', '/product/p3.jpg'],
-    features: [
-      'Pure Tulsi beads',
-      'Sacred and purifying',
-      'Lightweight and comfortable',
-      'Traditional craftsmanship',
-      'Blessed for devotion'
-    ],
-    tags: ['tulsi', 'mala', 'devotion', 'vishnu'],
-    inStock: true,
-    rating: 4.6,
-    reviews: 89,
-    isFeatured: true
-  },
-  {
-    id: 3,
-    name: 'Sandalwood Incense Sticks',
-    nameHindi: 'चंदन की अगरबत्ती',
-    description: 'Premium sandalwood incense sticks for daily puja and meditation. Creates a peaceful and divine atmosphere.',
-    price: 450,
-    originalPrice: 600,
-    category: 'Puja Items',
-    image: '/product/p3.jpg',
-    images: ['/product/p3.jpg', '/product/p4.jpg'],
-    features: [
-      'Pure sandalwood fragrance',
-      'Long burning time',
-      'Non-toxic and safe',
-      'Pack of 100 sticks',
-      'Perfect for daily puja'
-    ],
-    tags: ['incense', 'sandalwood', 'puja', 'fragrance'],
-    inStock: true,
-    rating: 4.7,
-    reviews: 156,
-    discount: 25
-  },
-  {
-    id: 4,
-    name: 'Copper Puja Thali',
-    nameHindi: 'तांबे की पूजा थाली',
-    description: 'Traditional copper puja thali with intricate designs. Essential for Hindu rituals and ceremonies.',
-    price: 1200,
-    category: 'Puja Items',
-    image: '/product/p4.jpg',
-    images: ['/product/p4.jpg', '/product/p5.jpg'],
-    features: [
-      'Pure copper construction',
-      'Intricate traditional designs',
-      'Antimicrobial properties',
-      'Durable and long-lasting',
-      'Perfect for daily rituals'
-    ],
-    tags: ['copper', 'thali', 'puja', 'ritual'],
-    inStock: true,
-    rating: 4.5,
-    reviews: 78,
-    isNew: true
-  },
-  {
-    id: 5,
-    name: 'Sacred Ganga Jal',
-    nameHindi: 'पवित्र गंगा जल',
-    description: 'Blessed water from the holy Ganges river, collected during auspicious occasions and purified through traditional methods.',
-    price: 300,
-    category: 'Sacred Items',
-    image: '/product/p5.jpg',
-    images: ['/product/p5.jpg', '/product/p6.jpg'],
-    features: [
-      'Directly from Ganges',
-      'Blessed by priests',
-      'Purified traditionally',
-      'Sacred and holy',
-      'Used in rituals'
-    ],
-    tags: ['ganga', 'jal', 'holy', 'water'],
-    inStock: true,
-    rating: 4.9,
-    reviews: 203,
-    isFeatured: true
-  },
-  {
-    id: 6,
-    name: 'Saffron (Kesar) Powder',
-    nameHindi: 'केसर पाउडर',
-    description: 'Premium quality saffron powder from Kashmir, perfect for religious ceremonies and traditional cooking.',
-    price: 2500,
-    originalPrice: 3200,
-    category: 'Sacred Items',
-    image: '/product/p6.jpg',
-    images: ['/product/p6.jpg', '/product/p7.jpg'],
-    features: [
-      'Kashmiri saffron',
-      'Premium quality',
-      'Pure and authentic',
-      'Rich aroma and color',
-      'Used in rituals and cooking'
-    ],
-    tags: ['saffron', 'kesar', 'kashmir', 'premium'],
-    inStock: true,
-    rating: 4.8,
-    reviews: 67,
-    discount: 22
-  },
-  {
-    id: 7,
-    name: 'Brass Diya Set',
-    nameHindi: 'पीतल की दीया सेट',
-    description: 'Traditional brass diya set with 5 pieces, perfect for daily prayers and festive celebrations.',
-    price: 800,
-    category: 'Puja Items',
-    image: '/product/p7.jpg',
-    images: ['/product/p7.jpg', '/product/p8.jpg'],
-    features: [
-      'Pure brass construction',
-      'Set of 5 diyas',
-      'Traditional design',
-      'Easy to clean',
-      'Perfect for festivals'
-    ],
-    tags: ['brass', 'diya', 'festival', 'light'],
-    inStock: true,
-    rating: 4.4,
-    reviews: 92
-  },
-  {
-    id: 8,
-    name: 'Sacred Tulsi Plant',
-    nameHindi: 'पवित्र तुलसी का पौधा',
-    description: 'Live Tulsi plant in a traditional clay pot, considered sacred in Hindu culture and perfect for home worship.',
-    price: 350,
-    category: 'Sacred Plants',
-    image: '/product/p8.jpg',
-    images: ['/product/p8.jpg', '/product/p9.jpg'],
-    features: [
-      'Live healthy plant',
-      'Traditional clay pot',
-      'Sacred and blessed',
-      'Air purifying',
-      'Easy to maintain'
-    ],
-    tags: ['tulsi', 'plant', 'sacred', 'home'],
-    inStock: true,
-    rating: 4.6,
-    reviews: 45,
-    isNew: true
-  },
-  {
-    id: 9,
-    name: 'Silver Om Pendant',
-    nameHindi: 'चांदी का ॐ पेंडेंट',
-    description: 'Elegant silver Om pendant with traditional design, perfect for daily wear and spiritual connection.',
-    price: 1800,
-    originalPrice: 2200,
-    category: 'Jewelry',
-    image: '/product/p9.jpg',
-    images: ['/product/p9.jpg', '/product/p10.jpg'],
-    features: [
-      'Pure silver construction',
-      'Traditional Om design',
-      'Comes with chain',
-      'Blessed by priests',
-      'Perfect for daily wear'
-    ],
-    tags: ['silver', 'om', 'pendant', 'jewelry'],
-    inStock: true,
-    rating: 4.7,
-    reviews: 134,
-    discount: 18
-  },
-  {
-    id: 10,
-    name: 'Sacred Chakra Stones',
-    nameHindi: 'पवित्र चक्र पत्थर',
-    description: 'Set of 7 chakra stones for meditation and healing. Each stone represents a different energy center.',
-    price: 1500,
-    category: 'Meditation',
-    image: '/product/p10.jpg',
-    images: ['/product/p10.jpg', '/product/p1.jpg'],
-    features: [
-      'Set of 7 chakra stones',
-      'Natural healing crystals',
-      'Energy balancing',
-      'Meditation aid',
-      'Comes with guidebook'
-    ],
-    tags: ['chakra', 'stones', 'meditation', 'healing'],
-    inStock: false,
-    rating: 4.5,
-    reviews: 56
-  }
-];
+import { Loader2 } from 'lucide-react';
 
 export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
-  const [products, setProducts] = useState<Product[]>(defaultProducts);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>(defaultProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [categories, setCategories] = useState<string[]>([]);
   type StateOption = { id: string; name: string };
@@ -308,6 +83,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     const load = async () => {
+      setLoading(true);
       try {
         // load categories first
         const catRes = await fetch('/api/content/store/categories', { cache: 'no-store' });
@@ -354,9 +130,17 @@ export default function ProductsPage() {
           const minPrice = Math.min(...prices);
           const maxPrice = Math.max(...prices);
           setPriceRange([minPrice, maxPrice]);
+        } else {
+          // No products found
+          setProducts([]);
+          setFilteredProducts([]);
         }
-      } catch (_) {
-        // keep defaults on error
+      } catch (error) {
+        console.error('Error loading products:', error);
+        setProducts([]);
+        setFilteredProducts([]);
+      } finally {
+        setLoading(false);
       }
     };
     load();
@@ -510,13 +294,26 @@ export default function ProductsPage() {
     setPriceRange([value[0], value[1]]);
   };
 
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-orange-600 mx-auto mb-4" />
+          <p className="text-gray-600 text-lg font-medium">Loading products...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait while we fetch the latest products</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Modern Header with Search */}
       <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Sacred Products</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Products Store</h1>
             
             <div className="flex items-center gap-3">
               {/* Search Bar */}
@@ -1008,18 +805,26 @@ export default function ProductsPage() {
             )}
             
             {/* Empty State */}
-            {filteredProducts.length === 0 && (
-              <div className="text-center py-16">
-                <div className="mb-4 text-gray-400">
-                  <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M12 14h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-20">
+                <div className="mb-6 text-orange-200">
+                  <svg className="mx-auto h-24 w-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">No products found</h3>
-                <p className="text-gray-500 mb-4">Try adjusting your filters or search query</p>
-                <Button onClick={resetFilters} variant="outline" className="cursor-pointer">
-                  Reset Filters
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">No Products Available</h3>
+                <p className="text-gray-600 text-lg mb-2">We're currently updating our product catalog.</p>
+                <p className="text-gray-500 mb-6">Please check back soon for new products and items.</p>
+                {searchQuery || selectedCategories.length > 0 || selectedStateName !== 'All' || selectedDistrictName !== 'All' ? (
+                  <Button 
+                    variant="outline" 
+                    onClick={resetFilters}
+                    className="mt-4 cursor-pointer"
+                  >
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Clear All Filters
                 </Button>
+                ) : null}
               </div>
             )}
           </div>

@@ -13,6 +13,11 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
 
+    // Check if this is an admin panel request (via query param or referer)
+    const isAdminRequest = searchParams.get('admin') === 'true' || 
+                          request.headers.get('referer')?.includes('/admin/') ||
+                          request.headers.get('x-admin-context') === 'true';
+
     let query = `
       SELECT e.*, 
              CASE 
@@ -20,11 +25,38 @@ export async function GET(request: NextRequest) {
                ELSE e.image_path
              END AS resolved_image_path,
              COALESCE(e.district, 'All Districts') as district,
-             COALESCE(e.state, 'All States') as state
+             COALESCE(e.state, 'All States') as state,
+             COALESCE(
+               CASE 
+                 WHEN m2.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m2.id, '/profile')
+                 ELSE m2.profile_photo_path
+               END,
+               CASE 
+                 WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
+                 ELSE m.profile_photo_path
+               END
+             ) as creator_photo,
+             COALESCE(m2.name, m.name, 'Admin') as creator_name,
+             COALESCE(m2.email, m.email) as creator_email
       FROM events e
-      WHERE isVisible = TRUE 
+      LEFT JOIN district_admins da ON e.owner_admin_id = da.id
+      LEFT JOIN members m2 ON da.member_id = m2.id
+      LEFT JOIN members m ON e.created_by = m.email
+      WHERE e.isVisible = TRUE 
     `;
     const params: (string | number)[] = [];
+    
+    // Only apply admin scoping if this is an admin panel request
+    // Public website should always show all visible events
+    if (isAdminRequest) {
+      const scope = await getAdminScope(request);
+      // For district admins in admin panel, show ALL events for their district/state
+      // This ensures continuity - new admins can see content created by previous admins
+      if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+        query += ` AND e.district = ? AND e.state = ?`;
+        params.push(scope.districtName, scope.stateName);
+      }
+    }
 
     if (id) {
       query += ` AND id = ?`;
@@ -40,16 +72,51 @@ export async function GET(request: NextRequest) {
       query += ` AND event_date >= CURDATE()`;
     }
 
+    // Get total count before pagination
+    // Build count query with same WHERE conditions
+    let countQuery = `SELECT COUNT(*) as total FROM events e WHERE e.isVisible = TRUE`;
+    const countParams: (string | number)[] = [];
+    
+    // Apply same filters for count
+    if (isAdminRequest) {
+      const scope = await getAdminScope(request);
+      if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+        countQuery += ` AND e.district = ? AND e.state = ?`;
+        countParams.push(scope.districtName, scope.stateName);
+      }
+    }
+    
+    if (id) {
+      countQuery += ` AND e.id = ?`;
+      countParams.push(id);
+    }
+    
+    if (type && type !== 'all') {
+      countQuery += ` AND event_type = ?`;
+      countParams.push(type);
+    }
+    
+    if (upcoming === 'true') {
+      countQuery += ` AND event_date >= CURDATE()`;
+    }
+    
+    const [countRows] = await pool.execute(countQuery, countParams);
+    const total = Array.isArray(countRows) && countRows.length > 0 ? (countRows[0] as { total: number }).total : 0;
+
     query += ` ORDER BY event_date ASC, \`order\` ASC`;
 
-    if (limit) {
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = limit ? parseInt(limit) : 12; // Default 12 items per page
+    const pageOffset = offset ? parseInt(offset) : (page - 1) * pageSize;
+    const totalPages = Math.ceil(total / pageSize);
+
+    if (limit || page) {
       query += ` LIMIT ?`;
-      params.push(parseInt(limit));
+      params.push(pageSize);
       
-      if (offset) {
         query += ` OFFSET ?`;
-        params.push(parseInt(offset));
-      }
+      params.push(pageOffset);
     }
 
     const [rows] = await pool.execute(query, params);
@@ -62,7 +129,16 @@ export async function GET(request: NextRequest) {
           };
         })
       : [];
-    return NextResponse.json({ success: true, data });
+    
+    return NextResponse.json({ 
+      success: true, 
+      data,
+      total,
+      page: page || 1,
+      pageSize,
+      totalPages,
+      hasMore: page < totalPages
+    });
   } catch (error) {
     console.error('Error fetching events:', error);
     return NextResponse.json(
@@ -187,6 +263,13 @@ export async function POST(request: NextRequest) {
 // PUT - Update event
 export async function PUT(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { 
       id,
@@ -286,6 +369,22 @@ export async function PUT(request: NextRequest) {
     updateFields.push('updated_at = CURRENT_TIMESTAMP');
     updateParams.push(safeValue(id));
 
+    // For district admins, ensure the event belongs to their district/state
+    // Allow editing any event in their district, not just ones they created
+    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+      const [ownershipRows] = await pool.execute(
+        `SELECT id FROM events WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
+        [id, scope.districtName, scope.stateName]
+      ) as any[];
+      
+      if (!Array.isArray(ownershipRows) || ownershipRows.length === 0) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'You can only edit events that you created' 
+        }, { status: 403 });
+      }
+    }
+
     const updateSql = `UPDATE events SET ${updateFields.join(', ')} WHERE id = ?`;
     await pool.execute(updateSql, updateParams);
 
@@ -305,6 +404,13 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete event
 export async function DELETE(request: NextRequest) {
   try {
+    const scope = await getAdminScope(request);
+    
+    // Check permissions for district admins
+    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -313,6 +419,22 @@ export async function DELETE(request: NextRequest) {
         { success: false, error: 'Event ID is required' },
         { status: 400 }
       );
+    }
+
+    // For district admins, ensure the event belongs to their district/state
+    // Allow editing any event in their district, not just ones they created
+    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+      const [ownershipRows] = await pool.execute(
+        `SELECT id FROM events WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
+        [id, scope.districtName, scope.stateName]
+      ) as any[];
+      
+      if (!Array.isArray(ownershipRows) || ownershipRows.length === 0) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'You can only delete events that you created' 
+        }, { status: 403 });
+      }
     }
 
     await pool.execute('DELETE FROM events WHERE id = ?', [id]);

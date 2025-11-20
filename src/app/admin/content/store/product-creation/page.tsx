@@ -33,15 +33,33 @@ export default function ProductCreationPage() {
 	const [thumbUrl, setThumbUrl] = useState('');
 	const [supportingFiles, setSupportingFiles] = useState<File[]>([]);
 	const [supportingPreviews, setSupportingPreviews] = useState<string[]>([]);
+	const [existingSupportingUrls, setExistingSupportingUrls] = useState<string[]>([]);
 	const [saving, setSaving] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
 	const uploadImage = async (file: File, key: string) => {
+		// Log file info before upload
+		console.log('Uploading file:', {
+			name: file.name,
+			type: file.type,
+			size: file.size,
+			sizeKB: (file.size / 1024).toFixed(2),
+			sizeMB: (file.size / (1024 * 1024)).toFixed(2)
+		});
+		
 		const form = new FormData();
 		form.append('file', file);
 		form.append('productId', key);
 		const res = await fetch('/api/upload/store', { method: 'POST', credentials: 'include', body: form });
-		if (!res.ok) throw new Error('upload failed');
+		if (!res.ok) {
+			const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
+			const errorMessage = errorData.error || errorData.message || `Upload failed with status ${res.status}`;
+			console.error('Upload error:', errorMessage, errorData);
+			throw new Error(errorMessage);
+		}
 		const data = await res.json();
+		if (!data.success || !data.url) {
+			throw new Error(data.error || 'Upload succeeded but no URL returned');
+		}
 		return data.url as string;
 	};
 
@@ -103,7 +121,9 @@ export default function ProductCreationPage() {
             setThumbType('url');
             setThumbUrl(main);
           }
-          setSupportingPreviews(imgs.slice(1));
+          const supporting = imgs.slice(1);
+          setExistingSupportingUrls(supporting);
+          setSupportingPreviews(supporting);
         }
       } catch (e) {
         console.error('Failed to load product for edit', e);
@@ -113,9 +133,17 @@ export default function ProductCreationPage() {
 
 	const onPickSupporting = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(e.target.files || []);
-		const limited = [...supportingFiles, ...files].slice(0, 3);
+		// Merge existing URLs with new files, but limit total to 3
+		const existingCount = existingSupportingUrls.length;
+		const maxNew = Math.max(0, 3 - existingCount);
+		const newFiles = files.slice(0, maxNew);
+		const limited = [...supportingFiles, ...newFiles];
 		setSupportingFiles(limited);
-		setSupportingPreviews(limited.map(f => URL.createObjectURL(f)));
+		// Combine existing URL previews with new file previews
+		const newPreviews = newFiles.map(f => URL.createObjectURL(f));
+		setSupportingPreviews([...existingSupportingUrls, ...newPreviews]);
+		// Clear the input so same file can be selected again
+		e.target.value = '';
 	};
 
   const create = async () => {
@@ -123,29 +151,57 @@ export default function ProductCreationPage() {
 		setSaving('saving');
 		try {
 			let image_url = '';
-			// Upload thumbnail first if file
+			// Upload thumbnail first if file (with 1MB size validation)
 			if (thumbType === 'file' && thumbFile) {
+				const maxSize = 1 * 1024 * 1024; // 1MB
+				if (thumbFile.size > maxSize) {
+					const fileSizeMB = (thumbFile.size / (1024 * 1024)).toFixed(2);
+					throw new Error(`Main image is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+				}
 				image_url = await uploadImage(thumbFile, `new_thumb_${Date.now()}`);
 			} else if (thumbType === 'url' && thumbUrl) {
 				image_url = thumbUrl;
 			}
-			// Upload supporting (max 3)
+			// Upload supporting (max 3) - preserve existing URLs, upload new files
 			const gallery: string[] = [];
-			for (let i = 0; i < supportingFiles.length; i++) {
-				const url = await uploadImage(supportingFiles[i], `new_sup_${Date.now()}_${i}`);
+			// First add existing URLs that weren't replaced
+			for (let i = 0; i < existingSupportingUrls.length && gallery.length < 3; i++) {
+				gallery.push(existingSupportingUrls[i]);
+			}
+			// Then upload new files (with 1MB size validation)
+			for (let i = 0; i < supportingFiles.length && gallery.length < 3; i++) {
+				const file = supportingFiles[i];
+				const maxSize = 1 * 1024 * 1024; // 1MB
+				if (file.size > maxSize) {
+					const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+					throw new Error(`Supporting image "${file.name}" is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+				}
+				const url = await uploadImage(file, `${editId || 'new'}_sup_${Date.now()}_${i}`);
 				gallery.push(url);
 			}
-			// Ensure main first
-			const images = image_url ? [image_url, ...gallery] : gallery;
-      const body = {
+			// Ensure main first - when editing, always include existing images
+			let finalImages: string[] = [];
+			if (editId) {
+				// When editing: include main image (new or existing) + existing supporting + new supporting
+				const mainImg = image_url || thumbUrl || '';
+				if (mainImg) {
+					finalImages = [mainImg, ...gallery];
+				} else {
+					finalImages = gallery;
+				}
+			} else {
+				// When creating: just use what we have
+				finalImages = image_url ? [image_url, ...gallery] : gallery;
+			}
+			
+      const body: Record<string, unknown> = {
         name,
         description,
         price,
         original_price: originalPrice || price,
         category: category || 'default',
         seller_id: sellerId === 'none' ? null : sellerId || null,
-        image_url,
-        images,
+        image_url: image_url || thumbUrl || undefined,
         stock,
         is_featured: isFeatured,
         tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
@@ -153,17 +209,53 @@ export default function ProductCreationPage() {
         specifications: specs,
         isVisible
       };
+      
+      // Always include images array - it will preserve existing images if unchanged
+      body.images = finalImages;
+      
       const resp = await fetch('/api/admin/content/products', {
         method: editId ? 'PUT' : 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',
         body: JSON.stringify(editId ? { id: editId, ...body } : body)
 			});
-			if (!resp.ok) throw new Error('create failed');
+			
+			if (!resp.ok) {
+				const errorData = await resp.json().catch(() => ({ message: 'Unknown error' }));
+				const errorMessage = errorData.message || `Failed to ${editId ? 'update' : 'create'} product (${resp.status})`;
+				console.error('Product creation failed:', errorMessage, errorData);
+				throw new Error(errorMessage);
+			}
+			
 			setSaving('saved');
+			// Reload product data to get updated image URLs
+			if (editId) {
+				try {
+					const refreshRes = await fetch(`/api/products/${encodeURIComponent(editId)}`, { cache: 'no-store' });
+					if (refreshRes.ok) {
+						const refreshData = await refreshRes.json();
+						if (refreshData?.success && refreshData.product) {
+							const p = refreshData.product as Record<string, unknown>;
+							const imgs: string[] = Array.isArray(p.images) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+							const main = imgs[0] || '';
+							if (main) {
+								setThumbUrl(main);
+							}
+							const supporting = imgs.slice(1);
+							setExistingSupportingUrls(supporting);
+							setSupportingPreviews(supporting);
+							setSupportingFiles([]);
+						}
+					}
+				} catch (e) {
+					console.error('Failed to refresh product data', e);
+				}
+			}
 			setTimeout(() => router.push('/admin/content/store'), 800);
 		} catch (e) {
-			console.error(e);
+			console.error('Error creating/updating product:', e);
+			const errorMessage = e instanceof Error ? e.message : 'Failed to save product';
+			alert(errorMessage); // Show user-friendly error
 			setSaving('error');
 			setTimeout(() => setSaving('idle'), 2000);
 		}
@@ -260,19 +352,99 @@ export default function ProductCreationPage() {
 						<label className="flex items-center"><input type="radio" name="thumbType" checked={thumbType==='url'} onChange={()=>setThumbType('url')} className="mr-2"/>URL</label>
 					</div>
 					{thumbType==='file' ? (
-						<input type="file" accept="image/*" onChange={e=>setThumbFile(e.target.files?.[0]||null)} className="w-full p-2 border rounded" />
+						<div>
+							<input type="file" accept="image/*" onChange={e=>{
+								const file = e.target.files?.[0]||null;
+								if (file) {
+									const maxSize = 1 * 1024 * 1024; // 1MB
+									if (file.size > maxSize) {
+										const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+										alert(`File size must be less than 1MB. Your file is ${fileSizeMB}MB. Please compress or resize the image.`);
+										e.target.value = ''; // Clear the input
+										return;
+									}
+									setThumbFile(file);
+									const previewUrl = URL.createObjectURL(file);
+									setThumbUrl(previewUrl);
+								}
+							}} className="w-full p-2 border rounded" />
+							{thumbFile && thumbUrl && (
+								<div className="mt-2 relative inline-block">
+									<Image src={thumbUrl} width={100} height={100} alt="Thumbnail preview" className="w-24 h-24 object-cover rounded border" />
+								</div>
+							)}
+						</div>
 					) : (
+						<div>
 						<Input placeholder="https://..." value={thumbUrl} onChange={e=>setThumbUrl(e.target.value)} />
+							{thumbUrl && (
+								<div className="mt-2 relative inline-block">
+									<Image src={thumbUrl} width={100} height={100} alt="Thumbnail preview" className="w-24 h-24 object-cover rounded border" />
+								</div>
+							)}
+						</div>
 					)}
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Supporting Images (max 3)</label>
-					<input type="file" accept="image/*" multiple onChange={onPickSupporting} className="w-full p-2 border rounded" />
+					<label className="block text-sm font-medium mb-1">Supporting Images (max 3, 1MB each)</label>
+					<input type="file" accept="image/*" multiple onChange={(e)=>{
+						const files = Array.from(e.target.files || []);
+						const maxSize = 1 * 1024 * 1024; // 1MB
+						const validFiles = files.filter(file => {
+							if (file.size > maxSize) {
+								const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+								alert(`File "${file.name}" is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+								return false;
+							}
+							return true;
+						});
+						if (validFiles.length > 0) {
+							// Create a DataTransfer object to properly construct FileList
+							const dataTransfer = new DataTransfer();
+							validFiles.forEach(file => dataTransfer.items.add(file));
+							const syntheticEvent = {
+								...e,
+								target: {
+									...e.target,
+									files: dataTransfer.files,
+								},
+							} as React.ChangeEvent<HTMLInputElement>;
+							onPickSupporting(syntheticEvent);
+						} else {
+							e.target.value = ''; // Clear the input if all files were invalid
+						}
+					}} className="w-full p-2 border rounded" />
 					{supportingPreviews.length>0 && (
 						<div className="flex gap-2 mt-2 flex-wrap">
-							{supportingPreviews.map((u,i)=>(
-								<Image key={i} src={u} width={64} height={64} alt={`Supporting image ${i+1}`} className="w-16 h-16 object-cover rounded border" />
-							))}
+							{supportingPreviews.map((u,i)=>{
+								const isExisting = i < existingSupportingUrls.length;
+								return (
+									<div key={i} className="relative group">
+										<Image src={u} width={64} height={64} alt={`Supporting image ${i+1}`} className="w-16 h-16 object-cover rounded border" />
+										<button
+											type="button"
+											onClick={() => {
+												if (isExisting) {
+													// Remove from existing URLs
+													const newExisting = existingSupportingUrls.filter((_, idx) => idx !== i);
+													setExistingSupportingUrls(newExisting);
+													setSupportingPreviews(newExisting.concat(supportingPreviews.slice(existingSupportingUrls.length)));
+												} else {
+													// Remove from new files
+													const fileIndex = i - existingSupportingUrls.length;
+													const newFiles = supportingFiles.filter((_, idx) => idx !== fileIndex);
+													setSupportingFiles(newFiles);
+													setSupportingPreviews([...existingSupportingUrls, ...newFiles.map(f => URL.createObjectURL(f))]);
+												}
+											}}
+											className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+											title="Remove image"
+										>
+											×
+										</button>
+									</div>
+								);
+							})}
 						</div>
 					)}
 				</div>

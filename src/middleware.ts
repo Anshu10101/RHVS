@@ -36,13 +36,22 @@ export async function middleware(req: NextRequest) {
   // Superadmin-only routes
   const superAdminOnlyRoutes = [
     '/admin/members/admins',
-    '/admin/members/tokens',
     '/admin/members/pending',
     '/admin/departments',
     '/admin/logs',
     '/admin/settings',
     '/admin/permissions'
   ];
+  
+  // Allow district admins to access token verification (they can only see their district's tokens)
+  if (pathname === '/admin/members/tokens' && isDistrictAdmin) {
+    return NextResponse.next();
+  }
+
+  // Allow district admins to access assign members page (they can only assign at district level)
+  if (pathname === '/admin/departments/assign' && isDistrictAdmin) {
+    return NextResponse.next();
+  }
 
   // Check if trying to access superadmin-only route
   if (superAdminOnlyRoutes.some(route => pathname.startsWith(route)) && !isSuperAdmin) {

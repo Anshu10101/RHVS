@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
 import { hashPassword } from '@/lib/password';
+import { sendAdminAssignmentEmail } from '@/lib/email';
 
 // Get all district admins
 export async function GET(req: NextRequest) {
@@ -104,8 +105,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // Check if member exists
-    const memberCheckQuery = 'SELECT id, email FROM members WHERE id = ?';
+    // Check if member exists and get name
+    const memberCheckQuery = 'SELECT id, email, name FROM members WHERE id = ?';
     const memberCheck = await executeQuery(memberCheckQuery, [memberId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (!memberCheck.length) {
@@ -126,8 +127,28 @@ export async function POST(req: NextRequest) {
       );
     }
     
+    // Store plain text password for email (before hashing)
+    const temporaryPassword = password;
+    
     // Hash password
     const passwordHash = await hashPassword(password);
+    
+    if (!passwordHash) {
+      console.error('❌ Failed to hash password for district admin');
+      return NextResponse.json(
+        { success: false, message: 'Failed to process password' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('🔐 Creating district admin:', {
+      memberId,
+      email: memberCheck[0].email,
+      district,
+      state,
+      passwordHashLength: passwordHash.length,
+      hasPasswordHash: !!passwordHash
+    });
     
     // Insert district admin
     const insertQuery = `
@@ -149,14 +170,49 @@ export async function POST(req: NextRequest) {
     
     const adminId = result.insertId;
     
-    // Add permissions if provided
-    if (permissions && permissions.length > 0) {
-      for (const permission of permissions) {
+    console.log('✅ District admin created with ID:', adminId);
+    
+    // Add default permanent permissions for all district admins
+    // These are always granted and never expire
+    const defaultPermanentPermissions = [
+      'verify_tokens',                    // Can verify tokens for their district
+      'view_members',                     // Can view all members
+      'add_members',                      // Can add new members
+      'assign_members_to_departments'     // Can assign members to department posts
+    ];
+    
+    // Combine default permissions with any provided permissions (avoid duplicates)
+    // Note: seller permissions are NOT stored - they are automatically implied by add_products in admin-scope.ts
+    const allPermissions = [...new Set([...defaultPermanentPermissions, ...(permissions || [])])];
+    
+    // Filter out seller permissions if they were provided - they should not be stored
+    // Seller permissions are automatically granted when add_products is present (handled in admin-scope.ts)
+    const sellerPermissions = ['manage_sellers', 'add_sellers', 'edit_sellers', 'delete_sellers', 'view_sellers'];
+    const finalPermissions = allPermissions.filter(p => !sellerPermissions.includes(p));
+    
+    // Add all permissions (check if exists first to avoid duplicates)
+    for (const permission of finalPermissions) {
+        // First, deactivate any existing expired or inactive permissions for this admin+permission
         await executeQuery(
-          'INSERT INTO district_admin_permissions (district_admin_id, permission, granted_by) VALUES (?, ?, ?)',
-          [adminId, permission, claims.sub]
+          'UPDATE district_admin_permissions SET is_active = 0 WHERE district_admin_id = ? AND permission = ? AND (is_active = 0 OR expires_at < NOW())',
+          [adminId, permission]
         );
-      }
+        
+        // Check if there's already an active permission
+        const existing = await executeQuery(
+          'SELECT id FROM district_admin_permissions WHERE district_admin_id = ? AND permission = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())',
+          [adminId, permission]
+        ) as Array<{ id: number }>;
+        
+        // Only insert if no active permission exists
+        // Default permissions are permanent (expires_at = NULL)
+        const isDefaultPermission = defaultPermanentPermissions.includes(permission);
+        if (existing.length === 0) {
+          await executeQuery(
+            'INSERT INTO district_admin_permissions (district_admin_id, permission, granted_by, is_active, expires_at) VALUES (?, ?, ?, 1, ?)',
+            [adminId, permission, claims.sub, isDefaultPermission ? null : null]
+        );
+        }
     }
     
     // Log the action
@@ -170,6 +226,57 @@ export async function POST(req: NextRequest) {
       `Appointed member ID ${memberId} as admin for ${district} district`,
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);
+    
+    // Get state language preference for email
+    let language: 'hi' | 'en' = 'hi';
+    
+    try {
+      // Get state language preference
+      const stateQuery = 'SELECT language_pref FROM states WHERE state_name_english = ? LIMIT 1';
+      const stateResult = await executeQuery(stateQuery, [state]) as Array<{ language_pref: number | null }>;
+      if (stateResult.length > 0) {
+        language = stateResult[0].language_pref === 0 ? 'en' : 'hi';
+      }
+    } catch (error) {
+      console.warn('Error fetching state language preference for email:', error);
+      // Continue with default (Hindi)
+    }
+    
+    // Send admin assignment email
+    try {
+      // Use production login URL
+      const loginUrl = 'https://rashtriyahinduvahinisangathan.in/admin/login';
+      
+      console.log('📧 Attempting to send admin assignment email:', {
+        email: memberCheck[0].email,
+        name: memberCheck[0].name || 'Admin',
+        district,
+        language
+      });
+      
+      const emailResult = await sendAdminAssignmentEmail(
+        memberCheck[0].email,
+        memberCheck[0].name || 'Admin',
+        district, // Use district name as-is from database
+        temporaryPassword, // temporary password (plain text)
+        loginUrl,
+        language
+      );
+      
+      if (emailResult.success) {
+        console.log('✅ Admin assignment email sent successfully:', emailResult.messageId);
+      } else {
+        console.error('❌ Failed to send admin assignment email:', emailResult.error);
+        // Don't fail the admin creation if email fails
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending admin assignment email:', emailError);
+      // Log the full error stack
+      if (emailError instanceof Error) {
+        console.error('Error stack:', emailError.stack);
+      }
+      // Don't fail the admin creation if email fails
+    }
     
     // Return the newly created admin
     const newAdmin = {

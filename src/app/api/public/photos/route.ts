@@ -46,13 +46,24 @@ export async function GET(request: NextRequest) {
       // This would need to be implemented in ContentService.getPhotos to support eventType filtering
     }
 
+    // Pagination parameters
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('limit') || '24'); // Default 24 images per page
+    const offset = (page - 1) * pageSize;
+
     const photos = await ContentService.getPhotos(scope, filters);
     
-    // Transform photos for public gallery format
-    const galleryImages = photos
+    // Get total count before pagination
+    const totalPhotos = photos.length;
+    const totalPages = Math.ceil(totalPhotos / pageSize);
+    
+    // Apply pagination
+    const paginatedPhotos = photos
       .filter(photo => photo.filePath) // Only photos with valid file paths
-      .slice(0, limit ? parseInt(limit) : undefined) // Apply limit if specified
-      .map((photo, index) => ({
+      .slice(offset, offset + pageSize);
+    
+    // Transform photos for public gallery format
+    const galleryImages = paginatedPhotos.map((photo, index) => ({
         id: index + 1,
         src: photo.filePath,
         alt: photo.caption || photo.filename || 'Gallery Image',
@@ -76,7 +87,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       images: galleryImages,
-      total: photos.length
+      total: totalPhotos,
+      page: page,
+      pageSize: pageSize,
+      totalPages: totalPages,
+      hasMore: page < totalPages
     });
 
   } catch (error) {

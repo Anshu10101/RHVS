@@ -29,9 +29,17 @@ export async function GET(
     
     const scope = await getAdminScope(request);
     
-    // Check if user is authenticated and is a superadmin
-    if (!scope.isSuperAdmin) {
+    // Check if user is authenticated and is a superadmin or district admin
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // For district admins, check permission
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      const { ensurePermission } = await import('@/lib/admin-scope');
+      if (!ensurePermission(scope, 'assign_members_to_departments')) {
+        return NextResponse.json({ error: 'Permission denied. You do not have permission to assign members to departments.' }, { status: 403 });
+      }
     }
 
     const departmentId = parseInt(params.id);

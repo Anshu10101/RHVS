@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     // If not superadmin, check if user is a district admin
+    // Use LOWER() for case-insensitive email matching
     const districtAdminRows = await executeQuery(
       `SELECT 
         da.id, 
@@ -76,31 +77,51 @@ export async function POST(req: NextRequest) {
         da.is_active,
         da.expires_at
       FROM district_admins da
-      WHERE da.email = ? LIMIT 1`,
+      WHERE LOWER(da.email) = LOWER(?) LIMIT 1`,
       [email]
     ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string }>;
 
     if (districtAdminRows.length === 0) {
+      console.log('❌ District admin login failed: No admin found with email:', email);
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
 
     const districtAdmin = districtAdminRows[0];
     
+    console.log('🔍 District admin found:', {
+      id: districtAdmin.id,
+      email: districtAdmin.email,
+      is_active: districtAdmin.is_active,
+      expires_at: districtAdmin.expires_at,
+      has_password_hash: !!districtAdmin.password_hash
+    });
+    
     // Check if admin account is active
     if (!districtAdmin.is_active) {
+      console.log('❌ District admin login failed: Account disabled for email:', email);
       return NextResponse.json({ success: false, message: 'Account disabled' }, { status: 403 });
     }
     
     // Check if admin account has expired
     if (districtAdmin.expires_at && new Date(districtAdmin.expires_at) < new Date()) {
+      console.log('❌ District admin login failed: Account expired for email:', email);
       return NextResponse.json({ success: false, message: 'Account expired' }, { status: 403 });
+    }
+
+    // Check if password hash exists
+    if (!districtAdmin.password_hash) {
+      console.log('❌ District admin login failed: No password hash found for email:', email);
+      return NextResponse.json({ success: false, message: 'Account configuration error. Please contact administrator.' }, { status: 500 });
     }
 
     // Verify password
     const valid = await verifyPassword(password, districtAdmin.password_hash);
     if (!valid) {
+      console.log('❌ District admin login failed: Invalid password for email:', email);
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
+    
+    console.log('✅ District admin password verified successfully for email:', email);
 
     // Update last_login timestamp
     await executeQuery('UPDATE district_admins SET last_login = NOW() WHERE id = ?', [districtAdmin.id]);

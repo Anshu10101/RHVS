@@ -173,7 +173,7 @@ const navigationItems = [
     name: 'Departments',
     href: '/admin/departments',
     icon: Building2,
-    roles: ['superadmin'],
+    roles: ['superadmin', 'district_admin'],
     children: [
       {
         name: 'Create Department',
@@ -191,7 +191,7 @@ const navigationItems = [
         name: 'Assign Members',
         href: '/admin/departments/assign',
         icon: UserCheck,
-        roles: ['superadmin'],
+        permission: 'assign_members_to_departments', // District admins need this permission, superadmins have it by default
       },
     ],
   },
@@ -236,13 +236,24 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const { currentUser, hasPermission, logout } = useAdmin();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
 
-  // Auto-expand Members section for district admins
+  // Auto-expand Members and Departments sections for district admins (only once on mount)
   useEffect(() => {
-    if (currentUser?.type === 'district_admin' && !expandedItems.includes('Members')) {
-      setExpandedItems(prev => [...prev, 'Members']);
+    if (currentUser?.type === 'district_admin' && !hasAutoExpanded) {
+      setExpandedItems(prev => {
+        const newItems = [...prev];
+        if (!newItems.includes('Members')) {
+          newItems.push('Members');
     }
-  }, [currentUser, expandedItems]); // Include expandedItems in dependency array
+        if (!newItems.includes('Departments')) {
+          newItems.push('Departments');
+        }
+        return newItems;
+      });
+      setHasAutoExpanded(true);
+    }
+  }, [currentUser, hasAutoExpanded]);
 
   if (!currentUser) {
     return null;
@@ -281,6 +292,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     if (currentUser.type === 'district_admin') {
       // Always show Members section for district admins
       if (item.name === 'Members') {
+        return true;
+      }
+      
+      // Always show Departments section for district admins (they can assign members)
+      if (item.name === 'Departments') {
         return true;
       }
       
@@ -358,11 +374,20 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           {currentUser && (
             <div className="px-6 py-4 border-b border-gray-200">
               <div className="flex items-center space-x-3">
+                {currentUser.profilePhoto ? (
+                  <img
+                    src={currentUser.profilePhoto}
+                    alt="Profile"
+                    className="h-10 w-10 rounded-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
                 <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center">
                   <span className="text-orange-600 font-semibold text-sm">
-                    {currentUser.name.charAt(0).toUpperCase()}
+                      {(currentUser.name?.[0] || currentUser.email?.[0] || 'A').toUpperCase()}
                   </span>
                 </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {currentUser.name}
@@ -446,17 +471,21 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         }
                         // For district admin, check permissions and show relevant items
                         else if (currentUser?.type === 'district_admin') {
-                          // Superadmin-only items
-                          if (child.roles && child.roles.includes('superadmin')) {
+                          // Items with permissions - check permission first (this overrides roles)
+                          if (child.permission) {
+                            canAccess = hasPermission(child.permission);
+                          }
+                          // Superadmin-only items (only if no permission is specified)
+                          else if (child.roles && child.roles.includes('superadmin')) {
                             canAccess = false;
+                          }
+                          // Token Verification is always available for district admins (they can verify their district's tokens)
+                          else if (child.href === '/admin/members/tokens') {
+                            canAccess = true;
                           }
                           // For Members section children, show them for district admins
                           else if (item.name === 'Members') {
                             canAccess = true; // Always show member management options for district admins
-                          }
-                          // Items with permissions
-                          else if (child.permission) {
-                            canAccess = hasPermission(child.permission);
                           }
                           // Default permission check
                           else {

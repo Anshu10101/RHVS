@@ -377,10 +377,15 @@ export async function POST(request: NextRequest) {
       let adminName = 'Unknown Admin';
       try {
         if (scope.isSuperAdmin) {
-          const adminQuery = 'SELECT name FROM superadmins WHERE id = ? LIMIT 1';
-          const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ name: string }>;
+          const adminQuery = 'SELECT email FROM superadmin WHERE id = ? LIMIT 1';
+          const adminResult = await executeQuery(adminQuery, [scope.adminId]) as Array<{ email: string }>;
           if (adminResult.length > 0) {
-            adminName = adminResult[0].name;
+            // Extract name from email (part before @) and capitalize it
+            const emailName = adminResult[0].email.split('@')[0];
+            adminName = emailName
+              .split(/[._-]/)
+              .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+              .join(' ');
           }
         } else if (scope.isDistrictAdmin) {
           const adminQuery = `

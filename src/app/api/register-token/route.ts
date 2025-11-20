@@ -142,12 +142,52 @@ export async function POST(request: NextRequest) {
       }
 
       // Check if email already exists in members table
-      const existingMemberQuery = 'SELECT id FROM members WHERE email = ?';
-      const existingMembers = await executeQuery(existingMemberQuery, [email]) as Array<{ id: number }>;
+      const existingMemberQuery = `
+        SELECT id, name, email, district, state, member_reg_number, registration_date, created_at, profile_photo_path 
+        FROM members 
+        WHERE email = ?
+      `;
+      const existingMembers = await executeQuery(existingMemberQuery, [email]) as Array<{ 
+        id: number; 
+        name: string; 
+        email: string;
+        district: string | null;
+        state: string | null;
+        member_reg_number: string | null;
+        registration_date: string | null;
+        created_at: string;
+        profile_photo_path: string | null;
+      }>;
       
       if (existingMembers.length > 0) {
+        const existingMember = existingMembers[0];
+        // Construct profile photo URL
+        let profilePhotoUrl = null;
+        if (existingMember.profile_photo_path) {
+          if (existingMember.profile_photo_path.startsWith('/api/media/')) {
+            profilePhotoUrl = existingMember.profile_photo_path;
+          } else if (existingMember.profile_photo_path.startsWith('http')) {
+            profilePhotoUrl = existingMember.profile_photo_path;
+          } else {
+            profilePhotoUrl = `/api/media/members/${existingMember.id}/profile`;
+          }
+        }
+        
         return NextResponse.json(
-          { success: false, message: 'Email already registered as a member' },
+          { 
+            success: false, 
+            message: `This email is already registered as a member${existingMember.district ? ` in ${existingMember.district} district` : ''}. If you need to change your district, please contact your district admin.`,
+            code: 'EMAIL_ALREADY_REGISTERED',
+            memberDetails: {
+              name: existingMember.name,
+              email: existingMember.email,
+              district: existingMember.district,
+              state: existingMember.state,
+              memberRegNumber: existingMember.member_reg_number,
+              registrationDate: existingMember.registration_date || existingMember.created_at,
+              profilePhotoUrl: profilePhotoUrl,
+            }
+          },
           { status: 400 }
         );
       }
@@ -218,7 +258,11 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      const expiresAt = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 days
+      // Calculate expiry date: 10 days from now
+      const expiresAtDate = new Date();
+      expiresAtDate.setDate(expiresAtDate.getDate() + 10);
+      // Format as MySQL DATETIME: YYYY-MM-DD HH:MM:SS
+      const expiresAt = expiresAtDate.toISOString().slice(0, 19).replace('T', ' ');
 
       // Insert registration token
       const insertTokenQuery = `

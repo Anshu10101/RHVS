@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { Users, Building2, MapPin, Activity, Calendar, Image as ImageIcon, ShoppingBag, Phone } from 'lucide-react';
+import { Users, Building2, MapPin, Calendar, Image as ImageIcon, ShoppingBag, Phone, Newspaper } from 'lucide-react';
 import { useInstallPrompt } from '@/hooks/use-install-prompt';
 
 export default function Navbar() {
@@ -61,9 +61,9 @@ export default function Navbar() {
               <span>Offices</span>
             </Link>
             <div className="h-4 w-px bg-orange-200"></div>
-            <Link href="/activities" className="flex items-center gap-2 hover:text-orange-600 transition-colors">
-              <Activity size={16} />
-              <span>Activities</span>
+            <Link href="/news" className="flex items-center gap-2 hover:text-orange-600 transition-colors">
+              <Newspaper size={16} />
+              <span>News</span>
             </Link>
             <div className="h-4 w-px bg-orange-200"></div>
             <Link href="/events" className="flex items-center gap-2 hover:text-orange-600 transition-colors">
@@ -131,7 +131,7 @@ export default function Navbar() {
                 <li className="py-2"><Link href="/about" onClick={() => setOpen(false)} className="block">About</Link></li>
                 <li className="py-2"><Link href="/karya-samiti" onClick={() => setOpen(false)} className="block">Committee</Link></li>
                 <li className="py-2"><Link href="/offices" onClick={() => setOpen(false)} className="block">Offices</Link></li>
-                <li className="py-2"><Link href="/activities" onClick={() => setOpen(false)} className="block">Our Activities</Link></li>
+                <li className="py-2"><Link href="/news" onClick={() => setOpen(false)} className="block">News</Link></li>
                 <li className="py-2"><Link href="/events" onClick={() => setOpen(false)} className="block">Events</Link></li>
                 <li className="py-2"><Link href="/gallery" onClick={() => setOpen(false)} className="block">Gallery</Link></li>
                 <li className="py-2"><Link href="/products" onClick={() => setOpen(false)} className="block">Products</Link></li>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService, PhotoGallery } from '@/lib/content';
 import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { getAdminScope } from '@/lib/admin-scope';
 import { executeQuery } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
@@ -18,10 +19,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('eventId');
 
-    // Build scope based on user type
-    const scope = claims.type === 'district_admin' 
-      ? { district: claims.district, adminId: parseInt(claims.sub), unrestricted: false }
-      : { unrestricted: true };
+    // Build scope using getAdminScope to get accurate district/state
+    const adminScope = await getAdminScope(request);
+    const scope = adminScope.isSuperAdmin
+      ? { unrestricted: true }
+      : { district: adminScope.districtName || '', state: adminScope.stateName || '', unrestricted: false };
     
     const galleries = await ContentService.getPhotoGalleries(scope, eventId || undefined);
 

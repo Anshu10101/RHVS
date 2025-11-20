@@ -124,7 +124,8 @@ async function serveDirectBlob(
     return null;
   }
   const headers = buildHeaders(mime, size, name || `${cacheKey}.bin`);
-  headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+  // Use shorter cache with revalidation to allow updates to be seen
+  headers['Cache-Control'] = 'public, max-age=3600, must-revalidate';
   const payload = toBlob(blob);
   return new NextResponse(payload, { status: 200, headers });
 }

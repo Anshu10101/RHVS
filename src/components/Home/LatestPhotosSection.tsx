@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ImageIcon } from "lucide-react";
 
 type GalleryImage = {
   id: number;
@@ -44,21 +45,24 @@ export default function LatestPhotosSection() {
   return (
     <section className="py-16 bg-orange-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-8 md:mb-12">
-          <h3 className="uppercase font-bold mb-2 text-orange-700">Latest from the Gallery</h3>
-          <h2 className="text-3xl md:text-4xl font-bold mb-3 text-orange-800">गैलरी की ताज़ा झलकियाँ</h2>
-          <p className="max-w-2xl mx-auto text-gray-700">
-            हाल की गतिविधियों और आयोजनों से चुनी हुई तस्वीरें।
-          </p>
-          <div className="mt-5">
-            <Link
-              href="/gallery"
-              aria-label="View all photos"
-              className="inline-flex items-center rounded-full bg-orange-600 text-white px-5 py-2 text-sm font-medium hover:bg-orange-700 transition-colors shadow"
-            >
-              View all
-            </Link>
+        <div className="relative flex items-center justify-between md:justify-center mb-8 md:mb-12">
+          <div className="md:text-center">
+            <div className="flex items-center justify-start md:justify-center gap-2 mb-3">
+              <ImageIcon className="h-6 w-6 text-orange-500" />
+              <p className="text-sm uppercase tracking-widest text-orange-600 font-semibold">Latest from the Gallery</p>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3 text-orange-800">गैलरी की ताज़ा झलकियाँ</h2>
+            <p className="max-w-2xl mx-auto text-gray-700">
+              हाल की गतिविधियों और आयोजनों से चुनी हुई तस्वीरें।
+            </p>
           </div>
+          <Link
+            href="/gallery"
+            aria-label="View all photos"
+            className="absolute right-0 text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
+          >
+            View All / सभी देखें →
+          </Link>
         </div>
 
         {/* Grid */}

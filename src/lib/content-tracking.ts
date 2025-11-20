@@ -53,8 +53,8 @@ export async function getContentOrigin(
         da.member_id,
         m.name as added_by_name
       FROM content_origin co
-      JOIN district_admins da ON co.added_by_admin_id = da.id
-      JOIN members m ON da.member_id = m.id
+      LEFT JOIN district_admins da ON co.added_by_admin_id = da.id
+      LEFT JOIN members m ON da.member_id = m.id
       WHERE co.content_type = ? AND co.content_id = ?
       LIMIT 1`,
       [contentType, contentId]
@@ -62,8 +62,8 @@ export async function getContentOrigin(
       district_id: string;
       state_id: string;
       added_at: string;
-      member_id: number;
-      added_by_name: string;
+      member_id: number | null;
+      added_by_name: string | null;
     }>;
     
     return result.length > 0 ? result[0] : null;
@@ -95,8 +95,8 @@ export async function getContentByDistrict(
         m.name as added_by_name
       FROM ${contentType} c
       JOIN content_origin co ON c.id = co.content_id AND co.content_type = ?
-      JOIN district_admins da ON co.added_by_admin_id = da.id
-      JOIN members m ON da.member_id = m.id
+      LEFT JOIN district_admins da ON co.added_by_admin_id = da.id
+      LEFT JOIN members m ON da.member_id = m.id
       WHERE co.district_id = ?
     `;
     
@@ -140,15 +140,18 @@ export async function enrichContentWithDistrictInfo(
         co.added_at,
         m.name as added_by_name
       FROM content_origin co
-      JOIN district_admins da ON co.added_by_admin_id = da.id
-      JOIN members m ON da.member_id = m.id
+      LEFT JOIN district_admins da ON co.added_by_admin_id = da.id
+      LEFT JOIN members m ON da.member_id = m.id
       WHERE co.content_type = ? AND co.content_id IN (?)`,
       [contentType, contentIds]
-    ) as Array<{ content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string }>;
+    ) as Array<{ content_id: number; district_id: string; state_id: string; added_by_name: string | null; added_at: string }>;
     
     // Create a map for quick lookup
-    const originsMap = origins.reduce((map: { [key: string]: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string } }, origin: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string }) => {
-      map[origin.content_id] = origin;
+    const originsMap = origins.reduce((map: { [key: string]: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string } }, origin: { content_id: number; district_id: string; state_id: string; added_by_name: string | null; added_at: string }) => {
+      map[origin.content_id] = {
+        ...origin,
+        added_by_name: origin.added_by_name || ''
+      };
       return map;
     }, {} as { [key: string]: { content_id: number; district_id: string; state_id: string; added_by_name: string; added_at: string } });
     

@@ -8,8 +8,11 @@ export async function GET(request: NextRequest) {
     const scope = await getAdminScope(request);
     
     // Check if user is authenticated and is a superadmin
+    // District admins should not access this endpoint at all
     if (!scope.isSuperAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ 
+        error: 'Forbidden. National Executive Department is restricted to superadmins only.' 
+      }, { status: 403 });
     }
 
     // Get the department marked as National Executive

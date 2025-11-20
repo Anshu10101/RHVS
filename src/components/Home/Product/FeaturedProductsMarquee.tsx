@@ -44,7 +44,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
   };
 
   return (
-    <div className="bg-gradient-to-br from-orange-50 via-amber-50 to-orange-50 border-y border-orange-200 py-6 overflow-hidden relative">
+    <div className="bg-orange-50 border-t border-orange-200 py-6 pb-8 overflow-visible relative">
       {/* Navigation Buttons */}
       <button
         onClick={() => scroll('left')}
@@ -86,31 +86,31 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
               )}
 
               {/* Product Image */}
-              <div className="relative w-full h-64 overflow-hidden rounded-t-xl bg-white">
+              <div className="relative w-full h-48 sm:h-56 md:h-64 overflow-hidden rounded-t-xl bg-white">
                 <Image
                   src={product.image}
                   alt={product.name}
                   fill
-                  className="object-contain group-hover:scale-105 transition-transform duration-500 p-3 bg-white"
-                  sizes="320px"
+                  className="object-contain group-hover:scale-105 transition-transform duration-500 p-2 sm:p-3 bg-white"
+                  sizes="(max-width: 640px) 180px, (max-width: 768px) 240px, 320px"
                 />
               </div>
 
               {/* Product Info */}
-              <div className="p-3 bg-white">
-                <h3 className="font-semibold text-gray-900 text-sm mb-0.5 line-clamp-1">
+              <div className="p-2 sm:p-3 pb-2.5 sm:pb-3 bg-white rounded-b-xl">
+                <h3 className="font-semibold text-gray-900 text-xs sm:text-sm mb-0.5 line-clamp-1">
                   {product.name}
                 </h3>
-                <p className="text-[10px] text-gray-500 mb-2 line-clamp-1">{product.nameHindi}</p>
+                <p className="text-[9px] sm:text-[10px] text-gray-500 mb-1.5 sm:mb-2 line-clamp-1">{product.nameHindi}</p>
                 
                 {/* Price Section */}
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="text-xl font-bold text-orange-600">₹{product.price}</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 mb-1.5 sm:mb-2">
+                  <span className="text-base sm:text-lg md:text-xl font-bold text-orange-600">₹{product.price}</span>
                   {product.originalPrice && (
                     <>
-                      <span className="text-xs text-gray-400 line-through">₹{product.originalPrice}</span>
+                      <span className="text-[10px] sm:text-xs text-gray-400 line-through">₹{product.originalPrice}</span>
                       {product.discount && (
-                        <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">
+                        <span className="text-[9px] sm:text-[10px] bg-green-100 text-green-700 px-1 sm:px-1.5 py-0.5 rounded font-semibold">
                           {product.discount}% OFF
                         </span>
                       )}
@@ -120,7 +120,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
 
                 {/* Stock Status */}
                 <div className="flex items-center">
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded ${product.inStock ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                     {product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                   </span>
                 </div>
@@ -134,8 +134,9 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
         .marquee-wrapper {
           width: 100%;
           overflow-x: auto;
-          overflow-y: hidden;
+          overflow-y: visible;
           padding: 0 3.5rem;
+          padding-bottom: 0.5rem;
           scroll-behavior: smooth;
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -150,6 +151,12 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           gap: 1.5rem;
           animation: marqueeScroll 16s linear infinite;
           will-change: transform;
+        }
+
+        @media (max-width: 640px) {
+          .marquee-content {
+            animation: marqueeScroll 8s linear infinite;
+          }
         }
 
         .marquee-wrapper:hover .marquee-content {
@@ -223,33 +230,42 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           }
 
           .marquee-content {
-            animation: marqueeScroll 12s linear infinite;
+            animation: marqueeScroll 10s linear infinite;
             gap: 1rem;
           }
 
           .marquee-card {
-            width: 280px;
+            width: 260px;
           }
         }
 
         @media (max-width: 640px) {
           .marquee-wrapper {
-            padding: 0 2rem;
+            padding: 0 1.5rem;
+          }
+
+          .marquee-content {
+            animation: marqueeScroll 8s linear infinite;
+            gap: 0.75rem;
+          }
+
+          .marquee-card {
+            width: 200px;
           }
         }
 
         @media (max-width: 480px) {
           .marquee-wrapper {
-            padding: 0 1.5rem;
+            padding: 0 1rem;
           }
 
           .marquee-card {
-            width: 240px;
+            width: 180px;
           }
 
           .marquee-content {
-            gap: 0.85rem;
-            animation: marqueeScroll 11s linear infinite;
+            gap: 0.65rem;
+            animation: marqueeScroll 7s linear infinite;
           }
         }
       `}</style>

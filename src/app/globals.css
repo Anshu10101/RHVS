@@ -316,14 +316,15 @@ html[data-lang="en"] body {
   bottom: 0;
   pointer-events: none;
   display: none;
+  width: 7vw;
+  max-width: 110px;
+  min-width: 56px;
+  z-index: 1;
 }
 
 @media (min-width: 1024px) {
   .hero-side-gradient {
     display: block;
-    width: 7vw;
-    max-width: 110px;
-    min-width: 56px;
   }
 }
 
@@ -374,7 +375,7 @@ html[data-lang="en"] body {
   position: absolute;
   left: 0;
   right: 0;
-  height: clamp(14px, 3.5vw, 40px);
+  height: clamp(24px, 4vw, 40px);
   background-image: url('/img-border-design.png');
   background-repeat: repeat-x;
   background-position: center;
@@ -386,9 +387,22 @@ html[data-lang="en"] body {
 .hero-border-top { top: 0; transform: translateY(-4px); }
 .hero-border-bottom { bottom: 0; transform: translateY(4px) rotate(180deg); }
 
+/* 3D Profile Image Effect */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.translate-z-12 {
+  transform: translateZ(12px);
+}
+
+.translate-z-16 {
+  transform: translateZ(16px);
+}
+
 /* Frame helper that reserves space for border strips */
 .hero-image-frame {
-  --hero-border-h: clamp(14px, 3.5vw, 40px);
+  --hero-border-h: clamp(24px, 4vw, 40px);
 }
 
 .hero-image-content {

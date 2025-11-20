@@ -28,6 +28,18 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
     ) as Array<{ district: string; state: string }>;
     // Load active permissions from DB for district admin
     try {
+      // First, automatically deactivate any expired permissions (cleanup)
+      await executeQuery(
+        `UPDATE district_admin_permissions 
+         SET is_active = 0 
+         WHERE district_admin_id = ? 
+         AND is_active = 1 
+         AND expires_at IS NOT NULL 
+         AND expires_at < NOW()`,
+        [adminId]
+      );
+      
+      // Then fetch active permissions
       const permRows = await executeQuery(
         `SELECT permission FROM district_admin_permissions WHERE district_admin_id = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY permission`,
         [adminId]
@@ -39,11 +51,18 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
     }
 
     // Imply edit/delete from add_products within district scope
+    // Also grant full seller management permissions when add_products is granted
     const effective = new Set<string>(permissions);
     if (effective.has('add_products')) {
       effective.add('edit_products');
       effective.add('delete_products');
       effective.add('edit_store');
+      // Grant all seller management permissions
+      effective.add('manage_sellers');
+      effective.add('add_sellers');
+      effective.add('edit_sellers');
+      effective.add('delete_sellers');
+      effective.add('view_sellers');
     }
     permissions = Array.from(effective);
     if (rows.length) {

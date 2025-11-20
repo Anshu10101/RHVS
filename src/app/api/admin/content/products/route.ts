@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         SELECT DISTINCT
           p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
           CASE 
-            WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+            WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
             ELSE p.image_path
           END AS image_url,
           p.isVisible, p.is_featured, p.stock, p.tags,
@@ -40,8 +40,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: true, data: rows });
     }
 
-    // District admin must have any product permission
-    if (!ensurePermission(scope, ['edit_store','add_products','edit_products','delete_products'])) {
+    // If admin has add_products permission, they can view and manage all products
+    if (!ensurePermission(scope, 'add_products')) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
@@ -64,29 +64,38 @@ export async function GET(req: NextRequest) {
       isDistrictAdmin: scope.isDistrictAdmin
     });
     
-    // CRITICAL: For district admins, we ONLY show products where owner_admin_id matches exactly
-    // This prevents cross-district leakage that was happening with other matching approaches
-
+    // For district admins, show ALL products for their district/state
+    // This ensures continuity - new admins can see content created by previous admins
+    // Filter by district and state from products table or content_origin table
+    // Extract district name (before comma) for matching, as district field may contain multiple districts
+    const districtNameForMatch = scope.districtName?.split(',')[0]?.trim() || scope.districtName;
     const rows = await executeQuery(`
       SELECT DISTINCT
         p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
         CASE 
-          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
           ELSE p.image_path
         END AS image_url,
         p.isVisible, p.is_featured, p.stock, p.tags,
         p.district_id, p.state_id, p.added_by, p.owner_admin_id,
         p.created_at, p.updated_at, p.updated_by,
+        COALESCE(p.district, p.district_id, co.district_id) AS district,
+        COALESCE(p.state, p.state_id, co.state_id) AS state,
         co.district_id AS origin_district_id, co.state_id AS origin_state_id, m.name AS added_by_name,
         s.name AS seller_name, s.contact_phone AS seller_phone, s.whatsapp_number AS seller_whatsapp, s.email AS seller_email
       FROM products p
       LEFT JOIN content_origin co ON co.content_type = 'product' AND co.content_id = p.id
-      LEFT JOIN district_admins da ON da.id = co.added_by_admin_id
+      LEFT JOIN district_admins da ON da.id = p.owner_admin_id
       LEFT JOIN members m ON m.id = da.member_id
       LEFT JOIN sellers s ON s.id = p.seller_id
-      WHERE p.owner_admin_id = ?
+      WHERE (
+        (COALESCE(p.district, p.district_id, co.district_id) = ? OR 
+         COALESCE(p.district, p.district_id, co.district_id) LIKE ? OR
+         SUBSTRING_INDEX(COALESCE(p.district, p.district_id, co.district_id), ',', 1) = ?)
+        AND COALESCE(p.state, p.state_id, co.state_id) = ?
+      )
       ORDER BY p.created_at DESC
-    `, [scope.adminId]) as Array<Record<string, unknown>>;
+    `, [districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch, scope.stateName]) as Array<Record<string, unknown>>;
     
     console.log(`Found ${rows.length} products for district admin:`, {
       districtName: scope.districtName,
@@ -117,8 +126,25 @@ export async function POST(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
 
-    if (scope.isSuperAdmin === false && !ensurePermission(scope, ['add_products','edit_store'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+    console.log('Product creation - Admin scope:', {
+      isSuperAdmin: scope.isSuperAdmin,
+      isDistrictAdmin: scope.isDistrictAdmin,
+      adminId: scope.adminId,
+      permissions: scope.permissions,
+      hasAddProducts: scope.permissions.includes('add_products')
+    });
+
+    // If admin has add_products permission, they can do everything with products
+    if (scope.isSuperAdmin === false && !ensurePermission(scope, 'add_products')) {
+      console.log('❌ Permission denied for product creation:', {
+        adminId: scope.adminId,
+        currentPermissions: scope.permissions,
+        requiredPermission: 'add_products'
+      });
+      return NextResponse.json({ 
+        success: false, 
+        message: 'You do not have permission to manage products. Please contact superadmin to grant "add_products" permission.' 
+      }, { status: 403 });
     }
 
     const { 
@@ -392,25 +418,30 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Product ID is required' }, { status: 400 });
     }
 
-    if (scope.isSuperAdmin === false && !ensurePermission(scope, ['edit_products','edit_store','add_products'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+    // If admin has add_products permission, they can do everything with products
+    if (scope.isSuperAdmin === false && !ensurePermission(scope, 'add_products')) {
+      return NextResponse.json({ success: false, message: 'You do not have permission to edit products. Please contact superadmin to grant "add_products" permission.' }, { status: 403 });
     }
 
-    // For district admins, ensure ownership
+    // For district admins, ensure the product belongs to their district/state
+    // Allow editing any product in their district, not just ones they created
     if (!scope.isSuperAdmin) {
+      const districtNameForMatch = scope.districtName?.split(',')[0]?.trim() || scope.districtName;
       const ownershipCheck = await executeQuery(
         `SELECT p.id FROM products p
          LEFT JOIN content_origin co ON co.content_type = 'product' AND co.content_id = p.id
          WHERE p.id = ? AND (
-           (p.district_id = ? AND p.state_id = ? AND p.owner_admin_id = ?) OR
-           (co.district_id = ? AND co.state_id = ? AND co.added_by_admin_id = ?)
+           (COALESCE(p.district, p.district_id, co.district_id) = ? OR 
+            COALESCE(p.district, p.district_id, co.district_id) LIKE ? OR
+            SUBSTRING_INDEX(COALESCE(p.district, p.district_id, co.district_id), ',', 1) = ?)
+           AND COALESCE(p.state, p.state_id, co.state_id) = ?
          )
          LIMIT 1`,
-        [id, scope.districtName, scope.stateName, scope.adminId, scope.districtName, scope.stateName, scope.adminId]
+        [id, districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch, scope.stateName]
       ) as Array<Record<string, unknown>>;
       
       if (!ownershipCheck.length) {
-        return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+        return NextResponse.json({ success: false, message: 'You can only edit products from your district' }, { status: 403 });
       }
     }
 
@@ -466,6 +497,7 @@ export async function PUT(req: NextRequest) {
 
     if (resolvedImageAsset) {
       if (resolvedImageAsset.blob) {
+        // New blob uploaded - replace old blob and set new path
         updateFields.push('image_blob = ?');
         updateParams.push(resolvedImageAsset.blob);
         updateFields.push('image_mime = ?');
@@ -478,16 +510,23 @@ export async function PUT(req: NextRequest) {
         updateParams.push(resolvedImageAsset.originalName);
         updateFields.push('image_path = ?');
         updateParams.push(`/api/media/products/${id}`);
-      } else {
+      } else if (resolvedImageAsset.url) {
+        // URL provided - clear blob fields and set URL path
         updateFields.push('image_path = ?');
-        updateParams.push(resolvedImageAsset.url || null);
-        if (!resolvedImageAsset.url) {
+        updateParams.push(resolvedImageAsset.url);
+        updateFields.push('image_blob = NULL');
+        updateFields.push('image_mime = NULL');
+        updateFields.push('image_hash = NULL');
+        updateFields.push('image_size = NULL');
+        updateFields.push('image_original_name = NULL');
+      } else {
+        // Empty/null - clear everything
+        updateFields.push('image_path = NULL');
           updateFields.push('image_blob = NULL');
           updateFields.push('image_mime = NULL');
           updateFields.push('image_hash = NULL');
           updateFields.push('image_size = NULL');
           updateFields.push('image_original_name = NULL');
-        }
       }
     }
 
@@ -500,12 +539,67 @@ export async function PUT(req: NextRequest) {
     await executeQuery(updateSql, updateParams);
 
     // Save gallery images if provided
-    if (Array.isArray(images) && images.length > 0) {
-      const galleryAssets: ResolvedAsset[] = [];
-      for (let i = 0; i < images.length; i++) {
+    // Only update gallery images if images array is explicitly provided
+    // If images is undefined, preserve existing images
+    if (images !== undefined) {
+      // First, fetch existing images from database
+      const existingImageRows = await executeQuery(
+        `SELECT id, image_blob, image_mime, image_hash, image_size, image_original_name, image_url, sort_order
+         FROM product_images 
+         WHERE product_id = ?
+         ORDER BY is_primary DESC, sort_order ASC`,
+        [id]
+      ) as Array<{
+        id: number;
+        image_blob: Buffer | null;
+        image_mime: string | null;
+        image_hash: string | null;
+        image_size: number | null;
+        image_original_name: string | null;
+        image_url: string | null;
+        sort_order: number;
+      }>;
+      
+      // Create a map of existing image URLs/IDs to their database records
+      const existingImageMap = new Map<string, typeof existingImageRows[0]>();
+      for (const row of existingImageRows) {
+        const mediaUrl = `/api/media/product-images/${row.id}`;
+        existingImageMap.set(mediaUrl, row);
+        if (row.image_url) {
+          existingImageMap.set(row.image_url, row);
+        }
+      }
+      
+      // Process new images array
+      const imagesToKeep = new Set<number>(); // Track which existing image IDs to keep
+      const imagesToInsert: Array<{ asset: ResolvedAsset; sortOrder: number }> = [];
+      let firstImageId: number | null = null; // Track the first image ID (for is_primary)
+      
+      if (Array.isArray(images)) {
+        for (let i = 0; i < images.length && i < 6; i++) {
         const value = images[i];
         if (value === null || value === undefined || value === '') continue;
 
+          // Check if it's an existing product image URL
+          if (typeof value === 'string' && value.startsWith('/api/media/product-images/')) {
+            const existingRow = existingImageMap.get(value);
+            if (existingRow) {
+              // This is an existing image - keep it, just update sort_order if needed
+              imagesToKeep.add(existingRow.id);
+              if (i === 0) {
+                firstImageId = existingRow.id; // First image should be primary
+              }
+              if (existingRow.sort_order !== i) {
+                await executeQuery(
+                  'UPDATE product_images SET sort_order = ? WHERE id = ?',
+                  [i, existingRow.id]
+                );
+              }
+              continue; // Skip adding to insert list
+            }
+          }
+          
+          // This is a new image or changed image - resolve it
         let asset: ResolvedAsset | undefined = undefined;
         if (typeof value === 'string' && stagedCache.has(value)) {
           asset = stagedCache.get(value);
@@ -524,14 +618,26 @@ export async function PUT(req: NextRequest) {
         }
 
         if (asset && (asset.url || asset.blob)) {
-          galleryAssets.push(asset);
+            imagesToInsert.push({ asset, sortOrder: i });
         }
       }
+      }
 
+      // Delete images that are no longer in the list
+      if (imagesToKeep.size > 0) {
+        const keepIds = Array.from(imagesToKeep);
+        const placeholders = keepIds.map(() => '?').join(',');
+        await executeQuery(
+          `DELETE FROM product_images WHERE product_id = ? AND id NOT IN (${placeholders})`,
+          [id, ...keepIds]
+        );
+      } else {
+        // No existing images to keep, delete all
       await executeQuery('DELETE FROM product_images WHERE product_id = ?', [id]);
+      }
 
-      for (let i = 0; i < galleryAssets.length && i < 6; i++) {
-        const asset = galleryAssets[i];
+      // Insert new images
+      for (const { asset, sortOrder } of imagesToInsert) {
         const insertImage = await executeQuery(
           `
             INSERT INTO product_images (
@@ -554,8 +660,8 @@ export async function PUT(req: NextRequest) {
             asset.hash,
             asset.size,
             asset.originalName,
-            i === 0 ? 1 : 0,
-            i
+            0, // Will set primary after all inserts
+            sortOrder
           ]
         );
 
@@ -567,8 +673,27 @@ export async function PUT(req: NextRequest) {
             [imageMediaUrl, imageId]
         );
         }
+        
+        // Track first inserted image if no existing image is first
+        if (sortOrder === 0 && !firstImageId && imageId != null) {
+          firstImageId = imageId;
       }
     }
+      
+      // Update is_primary flag for the first image
+      if (firstImageId) {
+        // Set first image as primary and unset all others
+        await executeQuery(
+          'UPDATE product_images SET is_primary = 0 WHERE product_id = ?',
+          [id]
+        );
+        await executeQuery(
+          'UPDATE product_images SET is_primary = 1 WHERE id = ?',
+          [firstImageId]
+        );
+      }
+    }
+    // If images is undefined, do nothing - preserve existing gallery images
 
     return NextResponse.json({ success: true, message: 'Product updated successfully' });
   } catch (e) {
@@ -610,22 +735,29 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    if (!ensurePermission(scope, ['delete_products','edit_store','edit_products','add_products'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+    // If admin has add_products permission, they can do everything with products (including delete)
+    if (!ensurePermission(scope, 'add_products')) {
+      return NextResponse.json({ success: false, message: 'You do not have permission to delete products. Please contact superadmin to grant "add_products" permission.' }, { status: 403 });
     }
 
-    // Ensure ownership - check both direct product fields and content_origin
+    // Ensure the product belongs to their district/state
+    // Allow deleting any product in their district, not just ones they created
+    if (!scope.isSuperAdmin) {
+      const districtNameForMatch = scope.districtName?.split(',')[0]?.trim() || scope.districtName;
     const rows = await executeQuery(
       `SELECT p.id FROM products p
        LEFT JOIN content_origin co ON co.content_type = 'product' AND co.content_id = p.id
        WHERE p.id = ? AND (
-         (p.district_id = ? AND p.state_id = ? AND p.owner_admin_id = ?) OR
-         (co.district_id = ? AND co.state_id = ? AND co.added_by_admin_id = ?)
+           (COALESCE(p.district, p.district_id, co.district_id) = ? OR 
+            COALESCE(p.district, p.district_id, co.district_id) LIKE ? OR
+            SUBSTRING_INDEX(COALESCE(p.district, p.district_id, co.district_id), ',', 1) = ?)
+           AND COALESCE(p.state, p.state_id, co.state_id) = ?
        )
        LIMIT 1`,
-      [id, scope.districtName, scope.stateName, scope.adminId, scope.districtName, scope.stateName, scope.adminId]
+        [id, districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch, scope.stateName]
     ) as Array<{ id: number }>;
-    if (!rows.length) return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
+      if (!rows.length) return NextResponse.json({ success: false, message: 'You can only delete products from your district' }, { status: 403 });
+    }
 
     await executeQuery('DELETE FROM products WHERE id = ?', [id]);
     await executeQuery('DELETE FROM product_images WHERE product_id = ?', [id]);

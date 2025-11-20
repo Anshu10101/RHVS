@@ -117,6 +117,14 @@ export function TokenVerification() {
       const data = await response.json();
 
       if (data.success) {
+        // Debug: Log first token to check date format
+        if (data.data.tokens.length > 0) {
+          console.log('Sample token data:', {
+            expires_at: data.data.tokens[0].expires_at,
+            created_at: data.data.tokens[0].created_at,
+            expiresAt: data.data.tokens[0].expiresAt
+          });
+        }
         setTokens(data.data.tokens);
         setTotalPages(data.data.pagination.totalPages);
       } else {
@@ -209,8 +217,53 @@ export function TokenVerification() {
     }
   };
 
-  const isTokenExpired = (expiresAt: string) => {
-    return new Date(expiresAt) < new Date();
+  const isTokenExpired = (expiresAt: string | null | undefined) => {
+    if (!expiresAt) return true;
+    try {
+      // Handle MySQL datetime format (YYYY-MM-DD HH:MM:SS) by converting to ISO format
+      let dateStr = expiresAt;
+      if (typeof dateStr === 'string' && dateStr.includes(' ') && !dateStr.includes('T')) {
+        // MySQL datetime format: convert to ISO
+        dateStr = dateStr.replace(' ', 'T');
+      }
+      const expiryDate = new Date(dateStr);
+      if (isNaN(expiryDate.getTime())) {
+        console.warn('Invalid expiry date:', expiresAt);
+        return true;
+      }
+      return expiryDate < new Date();
+    } catch (error) {
+      console.error('Error checking token expiry:', expiresAt, error);
+      return true;
+    }
+  };
+
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      console.warn('formatDate received null/undefined:', dateString);
+      return 'N/A';
+    }
+    try {
+      // Handle MySQL datetime format (YYYY-MM-DD HH:MM:SS) by converting to ISO format
+      let dateStr = dateString;
+      if (typeof dateStr === 'string' && dateStr.includes(' ') && !dateStr.includes('T')) {
+        // MySQL datetime format: convert to ISO
+        dateStr = dateStr.replace(' ', 'T');
+      }
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date parsed:', dateString, '->', dateStr);
+        return 'Invalid Date';
+      }
+      return date.toLocaleDateString('en-IN', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      console.error('Error formatting date:', dateString, error);
+      return 'Invalid Date';
+    }
   };
 
   // Download certificate for verified tokens
@@ -442,11 +495,16 @@ export function TokenVerification() {
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(token.status)}
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {new Date(token.expires_at).toLocaleDateString()}
+                        <div className="font-medium">Expires: {formatDate(token.expires_at)}</div>
+                        {token.created_at && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Issued: {formatDate(token.created_at)}
                       </div>
-                      <div className={`text-xs sm:text-sm ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
+                        )}
+                      </div>
+                      <div className={`text-xs sm:text-sm mt-1 font-medium ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-green-600'}`}>
                         {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
                       </div>
                     </td>
@@ -571,7 +629,7 @@ export function TokenVerification() {
                       <div>
                         <p className="text-xs text-gray-500 mb-1">Expires</p>
                         <p className="text-sm text-gray-900">
-                          {new Date(token.expires_at).toLocaleDateString()}
+                          {formatDate(token.expires_at)}
                         </p>
                         <p className={`text-xs ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
                           {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
@@ -812,9 +870,14 @@ export function TokenVerification() {
                     <div>
                       <span className="text-sm font-medium text-gray-600">Expires:</span>
                       <p className={`text-sm ${isTokenExpired(selectedToken.expires_at) ? 'text-red-500 font-semibold' : 'text-gray-900'}`}>
-                        {new Date(selectedToken.expires_at).toLocaleDateString()}
+                        {formatDate(selectedToken.expires_at)}
                         {isTokenExpired(selectedToken.expires_at) && ' (Expired)'}
                       </p>
+                      {selectedToken.created_at && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Issued: {formatDate(selectedToken.created_at)}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <span className="text-sm font-medium text-gray-600">Existing Member ID:</span>

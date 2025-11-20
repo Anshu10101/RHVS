@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Sparkles, Lock } from 'lucide-react';
+import { Upload, User, Mail, Phone, MapPin, Calendar as CalendarIcon, Users, Shield, CheckCircle, ArrowRight, Camera, Lock } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SearchableSelect } from '@/components/ui/searchable-select';
@@ -18,7 +18,6 @@ import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/hooks/use-toast';
-import Image from 'next/image';
 import { useAdmin } from '@/contexts/AdminContext';
 
 const memberSchema = z.object({
@@ -434,22 +433,15 @@ export default function AdminAddMemberPage() {
   // Loading skeleton component
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 py-8 relative overflow-hidden">
-        <div className="container mx-auto px-4 max-w-6xl relative z-10">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-300 to-orange-400 rounded-full mb-6 shadow-lg animate-pulse">
-              <User className="h-10 w-10 text-orange-200" />
-            </div>
-            <div className="h-12 bg-gradient-to-r from-orange-300 to-orange-400 rounded-xl mb-4 animate-pulse max-w-md mx-auto"></div>
-            <div className="h-6 bg-orange-200 rounded-lg animate-pulse max-w-2xl mx-auto"></div>
+      <div className="min-h-screen bg-white py-4 sm:py-6 md:py-8">
+        <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="h-6 sm:h-8 bg-slate-200 rounded-lg mb-2 animate-pulse max-w-xs mx-auto"></div>
+            <div className="h-4 sm:h-5 bg-slate-200 rounded-lg animate-pulse max-w-md mx-auto"></div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <div className="h-96 bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl animate-pulse"></div>
-            </div>
-            <div className="lg:col-span-2">
-              <div className="h-[600px] bg-white/60 backdrop-blur-sm rounded-2xl shadow-xl animate-pulse"></div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[360px,1fr] gap-4 sm:gap-6 md:gap-8">
+            <div className="h-48 bg-white rounded-xl sm:rounded-2xl border border-slate-100 shadow-sm animate-pulse"></div>
+            <div className="h-[600px] bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-sm animate-pulse"></div>
           </div>
         </div>
       </div>
@@ -457,247 +449,149 @@ export default function AdminAddMemberPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100 py-8 relative overflow-hidden animate-in fade-in-0 duration-1000">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-40">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fed7aa' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
-      </div>
-      
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 max-w-6xl relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8 sm:mb-12 animate-in slide-in-from-top-4 duration-700">
-          <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full mb-4 sm:mb-6 shadow-2xl hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-orange-700 rounded-full animate-pulse opacity-75 group-hover:opacity-100"></div>
-            <User className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white relative z-10 group-hover:scale-110 transition-transform duration-300" />
-            <div className="absolute -top-1 -right-1 w-6 h-6 sm:w-8 sm:h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
-              <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-orange-800" />
-            </div>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-orange-800 via-orange-600 to-orange-800 bg-clip-text text-transparent mb-4 sm:mb-6 animate-in slide-in-from-top-2 duration-700 delay-200">
-            Add New Member
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-orange-700 max-w-4xl mx-auto leading-relaxed animate-in slide-in-from-bottom-4 duration-700 delay-400 px-2">
-            Direct member registration by admin
-            <br className="hidden md:block" />
-            <span className="text-orange-600 font-medium">Bypass OTP verification for direct office registration</span>
-          </p>
-        </div>
+    <div className="min-h-screen bg-white text-slate-900">
+      <div className="container mx-auto px-3 sm:px-4 max-w-6xl py-4 sm:py-6 md:py-10">
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[360px,1fr] gap-4 sm:gap-6 md:gap-8">
           {/* Admin Info Card */}
-          <Card className="lg:col-span-1 shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-left-8 duration-700 delay-600 hover:-translate-y-2">
-            <CardHeader className="bg-gradient-to-br from-orange-50 to-orange-100 border-b border-orange-200/50 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200/30 to-transparent rounded-full -translate-y-16 translate-x-16"></div>
-              <CardTitle className="flex items-center gap-3 text-orange-800 text-xl relative z-10">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                Admin Registration
-              </CardTitle>
-              <CardDescription className="text-orange-600 text-base relative z-10">
-                Direct member registration by admin
-                <br />
-                <span className="text-sm text-orange-500">
-                  {currentUser?.role === 'superadmin' ? 'Superadmin verification (RHVS000000)' : 'District admin verification'}
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <div className="p-1 bg-green-500 rounded-full flex-shrink-0">
-                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                  <span className="text-xs sm:text-sm text-green-700 font-medium">
-                    {currentUser?.role === 'superadmin' 
-                      ? 'Superadmin verification (RHVS000000 reference)' 
-                      : 'District admin verification (auto-referenced)'
-                    }
-                  </span>
-                </div>
-                
-                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <div className="p-1 bg-blue-500 rounded-full flex-shrink-0">
-                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                  <span className="text-xs sm:text-sm text-blue-700 font-medium">Member will receive welcome email</span>
-                </div>
-
-                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-purple-50 border border-purple-200 rounded-xl">
-                  <div className="p-1 bg-purple-500 rounded-full flex-shrink-0">
-                    <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                  <span className="text-xs sm:text-sm text-purple-700 font-medium">Certificate will be generated</span>
-                </div>
-
-                {currentUser?.type === 'district_admin' && (
-                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-xl">
-                    <div className="p-1 bg-gray-500 rounded-full flex-shrink-0">
-                      <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-700 font-medium">
-                      <div>Location locked to your district</div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        {adminStateName && adminDistrictName 
-                          ? `State: ${adminStateName}, District: ${adminDistrictName}` 
-                          : 'State & District auto-set and cannot be changed'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+         
 
           {/* Main Registration Form */}
-          <Card className="lg:col-span-2 shadow-xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-2xl transition-all duration-500 animate-in slide-in-from-right-8 duration-700 delay-800 hover:-translate-y-2">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100 border-b border-orange-200/50 relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-orange-200/20 to-transparent rounded-full -translate-y-20 -translate-x-20"></div>
-              <CardTitle className="flex items-center gap-3 text-orange-800 text-2xl relative z-10">
-                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                  <User className="h-6 w-6 text-white" />
+          <Card className="rounded-2xl sm:rounded-3xl border border-slate-100 shadow-lg bg-white">
+            <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-white to-orange-50/40 rounded-t-2xl sm:rounded-t-3xl p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 sm:gap-3 text-slate-900 text-lg sm:text-xl md:text-2xl">
+                <div className="p-2 sm:p-3 bg-orange-500/15 rounded-lg sm:rounded-xl text-orange-600">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-orange-500" />
                 </div>
-                Member Information
-                <ArrowRight className="h-5 w-5 text-orange-500 ml-auto animate-pulse" />
+                <span className="flex-1">Member Information</span>
               </CardTitle>
-              <CardDescription className="text-orange-600 text-base relative z-10">
+              <CardDescription className="text-slate-500 text-xs sm:text-sm mt-1">
                 Please provide accurate information for direct registration
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+            <CardContent className="p-4 sm:p-6 md:p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 sm:space-y-6">
-                  {/* Profile Photo Upload */}
-                  <div className="space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-300">
-                    <Label className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
-                      <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                      Profile Photo
-                    </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-orange-50/50 to-orange-100/30 rounded-xl sm:rounded-2xl border border-orange-200/50">
-                      <div className="relative group">
-                        <div className="relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105">
-                          {profilePhoto ? (
-                            <Image
-                              src={URL.createObjectURL(profilePhoto)}
-                              alt="Profile preview"
-                              fill
-                              className="object-cover hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <User className="h-16 w-16 text-orange-400 group-hover:scale-110 transition-transform duration-300" />
+                  {/* Profile & Signature Uploads */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <div className="space-y-3 sm:space-y-4">
+                      <Label className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                        <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+                        Profile Photo
+                      </Label>
+                      <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
+                        <div className="relative group">
+                          <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {profilePhoto ? (
+                              <img
+                                src={URL.createObjectURL(profilePhoto)}
+                                alt="Profile preview"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <User className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-slate-300" />
+                            )}
+                          </div>
+                          {profilePhoto && (
+                            <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center shadow">
+                              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                            </div>
                           )}
                         </div>
-                        {profilePhoto && (
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <CheckCircle className="h-4 w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePhotoUpload}
-                          className="hidden"
-                          id="profile-photo"
-                        />
-                        <Label
-                          htmlFor="profile-photo"
-                          className="cursor-pointer inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform text-xs sm:text-sm"
-                        >
-                          <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
-                          <span className="whitespace-nowrap">{profilePhoto ? 'Change Photo' : 'Upload Photo'}</span>
-                        </Label>
-                        <p className="text-xs sm:text-sm text-orange-600 mt-2 sm:mt-3 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2">
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full inline-block"></span>
-                          <span className="text-center sm:text-left">JPG, PNG up to 500KB • Passport size recommended • Required</span>
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full inline-block"></span>
-                        </p>
+                        <div className="flex-1 w-full text-center space-y-2 sm:space-y-3">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePhotoUpload}
+                            className="hidden"
+                            id="profile-photo"
+                          />
+                          <Label
+                            htmlFor="profile-photo"
+                            className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
+                          >
+                            <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            {profilePhoto ? 'Change Photo' : 'Upload Photo'}
+                          </Label>
+                          <p className="text-xs sm:text-sm text-slate-500 px-2">
+                            Up to 500KB • Passport-size photo on white background
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Signature Upload */}
-                  <div className="space-y-3 sm:space-y-4 animate-in slide-in-from-bottom-4 duration-500 delay-400">
-                    <Label className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 sm:h-4 sm:w-4">
-                        <path d="M4 22h16"></path>
-                        <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
-                        <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
-                      </svg>
-                      Member Signature
-                    </Label>
-                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-gradient-to-br from-blue-50/50 to-blue-100/30 rounded-xl sm:rounded-2xl border border-blue-200/50">
-                      <div className="relative group">
-                        <div className="relative w-28 h-16 sm:w-32 sm:h-18 lg:w-36 lg:h-20 rounded-xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center overflow-hidden shadow-2xl border-4 border-white hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105">
-                          {signature ? (
-                            <Image
-                              src={URL.createObjectURL(signature)}
-                              alt="Signature preview"
-                              fill
-                              className="object-contain hover:scale-110 transition-transform duration-300"
-                            />
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                              <path d="M4 22h16"></path>
-                              <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
-                              <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
-                            </svg>
+
+                    <div className="space-y-3 sm:space-y-4">
+                      <Label className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500">
+                          <path d="M4 22h16"></path>
+                          <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                          <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                        </svg>
+                        Member Signature
+                      </Label>
+                      <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
+                        <div className="relative group">
+                          <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {signature ? (
+                              <img
+                                src={URL.createObjectURL(signature)}
+                                alt="Signature preview"
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300">
+                                <path d="M4 22h16"></path>
+                                <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                                <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                              </svg>
+                            )}
+                          </div>
+                          {signature && (
+                            <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center shadow">
+                              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+                            </div>
                           )}
                         </div>
-                        {signature && (
-                          <div className="absolute -top-2 -right-2 w-6 h-6 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                            <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 text-center sm:text-left">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleSignatureUpload}
-                          className="hidden"
-                          id="signature-upload"
-                        />
-                        <Label
-                          htmlFor="signature-upload"
-                          className="cursor-pointer inline-flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 transform text-xs sm:text-sm"
-                        >
-                          <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
-                          <span className="whitespace-nowrap">{signature ? 'Change Signature' : 'Upload Signature'}</span>
-                        </Label>
-                        <p className="text-xs sm:text-sm text-blue-600 mt-2 sm:mt-3 font-medium flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2">
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full inline-block"></span>
-                          <span className="text-center sm:text-left">JPG, PNG up to 100KB • Clear signature on white background • Required</span>
-                          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400 rounded-full inline-block"></span>
-                        </p>
+                        <div className="flex-1 w-full text-center space-y-2 sm:space-y-3">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleSignatureUpload}
+                            className="hidden"
+                            id="signature-upload"
+                          />
+                          <Label
+                            htmlFor="signature-upload"
+                            className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-blue-200 text-blue-600 font-semibold bg-white hover:bg-blue-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
+                          >
+                            <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            {signature ? 'Change Signature' : 'Upload Signature'}
+                          </Label>
+                          <p className="text-xs sm:text-sm text-slate-500 px-2">
+                            Up to 100KB • Clear signature on white background
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Name and Email */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
-                            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             Full Name *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                placeholder="Enter full name"
-                                {...field}
-                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              placeholder="Enter full name"
+                              {...field}
+                              className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -709,20 +603,17 @@ export default function AdminAddMemberPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             Email Address *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                type="email"
-                                placeholder="Enter email address"
-                                {...field}
-                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              type="email"
+                              placeholder="Enter email address"
+                              {...field}
+                              className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -731,26 +622,23 @@ export default function AdminAddMemberPage() {
                   </div>
 
                   {/* Phone and Registration Date */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <Phone className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             Phone Number *
                           </FormLabel>
                           <FormControl>
-                            <div className="relative group">
-                              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                              <Input
-                                type="tel"
-                                placeholder="Enter phone number"
-                                {...field}
-                                className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                              />
-                            </div>
+                            <Input
+                              type="tel"
+                              placeholder="Enter phone number"
+                              {...field}
+                              className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -762,8 +650,8 @@ export default function AdminAddMemberPage() {
                       name="registrationDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <CalendarIcon className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             Registration Date *
                           </FormLabel>
                           <Popover>
@@ -771,14 +659,14 @@ export default function AdminAddMemberPage() {
                               <FormControl>
                                 <Button
                                   variant="outline"
-                                  className="w-full justify-start text-left font-normal border-2 border-orange-200 hover:border-orange-400 h-12 sm:h-14 text-sm rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium cursor-pointer"
+                                  className="w-full justify-start text-left font-normal border border-slate-200 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base px-3 sm:px-4"
                                 >
-                                  <CalendarIcon className="mr-3 h-4 w-4 text-orange-400" />
-                                  {field.value ? format(field.value, "PPP") : "Select date"}
+                                  <CalendarIcon className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+                                  <span className="truncate">{field.value ? format(field.value, "PPP") : "Select date"}</span>
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 shadow-2xl border-0 rounded-2xl bg-white/95 backdrop-blur-sm" align="start">
+                            <PopoverContent className="w-auto p-0 shadow-lg border border-slate-200 rounded-xl sm:rounded-2xl bg-white" align="start">
                               <CalendarComponent
                                 mode="single"
                                 selected={field.value}
@@ -790,7 +678,7 @@ export default function AdminAddMemberPage() {
                                 captionLayout="dropdown"
                                 fromYear={1900}
                                 toYear={new Date().getFullYear() + 10}
-                                className="rounded-2xl border-0"
+                                className="rounded-2xl"
                               />
                             </PopoverContent>
                           </Popover>
@@ -805,20 +693,17 @@ export default function AdminAddMemberPage() {
                     control={form.control}
                     name="address"
                     render={({ field }) => (
-                      <FormItem className="animate-in slide-in-from-bottom-4 duration-500 delay-900">
-                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                          <MapPin className="h-4 w-4" />
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                           Address *
                         </FormLabel>
                         <FormControl>
-                          <div className="relative group">
-                            <MapPin className="absolute left-3 top-3 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                            <Textarea
-                              placeholder="Enter complete address"
-                              className="min-h-[100px] sm:min-h-[140px] pl-9 sm:pl-10 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg resize-none font-medium p-3 sm:p-4"
-                              {...field}
-                            />
-                          </div>
+                          <Textarea
+                            placeholder="Enter complete address"
+                            className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white resize-none font-medium p-3 sm:p-4 text-sm sm:text-base"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -826,26 +711,26 @@ export default function AdminAddMemberPage() {
                   />
 
                   {/* State and District */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500 delay-1000">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                     <FormField
                       control={form.control}
                       name="stateId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             State *
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
-                              <div className="w-full h-12 sm:h-14 text-sm border border-gray-200 rounded-xl sm:rounded-2xl bg-gray-50/50 flex items-center px-3 sm:px-4 relative">
-                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 mr-2 sm:mr-3 flex-shrink-0" />
-                                <span className="text-gray-800 font-medium truncate">
+                              <div className="w-full h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center px-3 sm:px-4">
+                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 mr-2 sm:mr-3 flex-shrink-0" />
+                                <span className="text-slate-800 font-medium truncate text-sm sm:text-base">
                                   {adminStateName || 'Loading...'}
                                 </span>
                                 <div className="ml-auto flex items-center flex-shrink-0">
-                                  <Lock className="h-3 w-3 text-gray-400 mr-1" />
-                                  <span className="text-xs text-gray-500 font-medium">Locked</span>
+                                  <Lock className="h-3 w-3 text-slate-400 mr-1" />
+                                  <span className="text-xs text-slate-500 font-medium hidden sm:inline">Locked</span>
                                 </div>
                               </div>
                             ) : (
@@ -857,17 +742,12 @@ export default function AdminAddMemberPage() {
                                 value={field.value}
                                 onValueChange={(value) => {
                                   field.onChange(value);
-                                  form.setValue('districtId', ''); // Reset district when state changes
-                                  // if (value) {
-                                  //   fetchDistricts(value);
-                                  // } else {
-                                  //   setDistricts([]);
-                                  // }
+                                  form.setValue('districtId', '');
                                 }}
                                 placeholder="Search or select state..."
                                 searchPlaceholder="Type state name..."
                                 emptyText="No states found."
-                                className="w-full"
+                                className="w-full text-sm sm:text-base"
                               />
                             )}
                           </FormControl>
@@ -881,20 +761,20 @@ export default function AdminAddMemberPage() {
                       name="districtId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                            <MapPin className="h-4 w-4" />
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             District *
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
-                              <div className="w-full h-12 sm:h-14 text-sm border border-gray-200 rounded-xl sm:rounded-2xl bg-gray-50/50 flex items-center px-3 sm:px-4 relative">
-                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-500 mr-2 sm:mr-3 flex-shrink-0" />
-                                <span className="text-gray-800 font-medium truncate">
+                              <div className="w-full h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center px-3 sm:px-4">
+                                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-slate-500 mr-2 sm:mr-3 flex-shrink-0" />
+                                <span className="text-slate-800 font-medium truncate text-sm sm:text-base">
                                   {adminDistrictName || 'Loading...'}
                                 </span>
                                 <div className="ml-auto flex items-center flex-shrink-0">
-                                  <Lock className="h-3 w-3 text-gray-400 mr-1" />
-                                  <span className="text-xs text-gray-500 font-medium">Locked</span>
+                                  <Lock className="h-3 w-3 text-slate-400 mr-1" />
+                                  <span className="text-xs text-slate-500 font-medium hidden sm:inline">Locked</span>
                                 </div>
                               </div>
                             ) : (
@@ -906,7 +786,7 @@ export default function AdminAddMemberPage() {
                                 searchPlaceholder="Type district name..."
                                 emptyText="No districts found."
                                 disabled={!form.watch('stateId')}
-                                className="w-full"
+                                className="w-full text-sm sm:text-base"
                                 maxHeight={250}
                                 debounceMs={300}
                               />
@@ -923,21 +803,18 @@ export default function AdminAddMemberPage() {
                     control={form.control}
                     name="aadharCardNumber"
                     render={({ field }) => (
-                      <FormItem className="animate-in slide-in-from-bottom-4 duration-500 delay-1100">
-                        <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
+                      <FormItem>
+                        <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                          <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                           Aadhar Card Number *
                         </FormLabel>
                         <FormControl>
-                          <div className="relative group">
-                            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                            <Input
-                              placeholder="Enter 12-digit Aadhar card number"
-                              maxLength={12}
-                              className="pl-9 sm:pl-10 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium p-3 sm:p-4"
-                              {...field}
-                            />
-                          </div>
+                          <Input
+                            placeholder="Enter 12-digit Aadhar card number"
+                            maxLength={12}
+                            className="h-11 sm:h-12 border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white px-3 sm:px-4 text-sm sm:text-base"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -945,14 +822,11 @@ export default function AdminAddMemberPage() {
                   />
 
                   {/* Family Information */}
-                  <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8 bg-gradient-to-r from-orange-50/60 to-orange-100/40 rounded-2xl sm:rounded-3xl border border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1100 hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-orange-800 flex items-center gap-2 sm:gap-3">
-                      <div className="p-2 sm:p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg sm:rounded-xl shadow-lg flex-shrink-0">
-                        <Users className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
-                      </div>
-                      <span>Family Information</span>
-                      <div className="flex-1 h-0.5 bg-gradient-to-r from-orange-300 to-transparent rounded-full ml-2 sm:ml-4"></div>
-                    </h3>
+                  <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 md:p-8 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-900 uppercase tracking-wide">Family Information</h3>
+                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 sm:px-3 py-1 rounded-full">Required</span>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <FormField
@@ -960,19 +834,16 @@ export default function AdminAddMemberPage() {
                         name="fatherHusbandName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                              <User className="h-4 w-4" />
+                            <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                               Father/Husband Name *
                             </FormLabel>
                             <FormControl>
-                              <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                                <Input
-                                  placeholder="Enter father or husband name"
-                                  {...field}
-                                  className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                                />
-                              </div>
+                              <Input
+                                placeholder="Enter father or husband name"
+                                {...field}
+                                className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -984,19 +855,16 @@ export default function AdminAddMemberPage() {
                         name="motherWifeName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-orange-700 font-semibold text-sm uppercase tracking-wide flex items-center gap-2">
-                              <User className="h-4 w-4" />
+                            <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                               Mother/Wife Name *
                             </FormLabel>
                             <FormControl>
-                              <div className="relative group">
-                                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-orange-400 group-focus-within:text-orange-600 transition-colors duration-200" />
-                                <Input
-                                  placeholder="Enter mother or wife name"
-                                  {...field}
-                                  className="pl-9 sm:pl-10 h-12 sm:h-14 text-sm border-2 border-orange-200 focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 rounded-xl sm:rounded-2xl bg-white/50 backdrop-blur-sm hover:bg-white/70 transition-all duration-200 hover:shadow-lg font-medium"
-                                />
-                              </div>
+                              <Input
+                                placeholder="Enter mother or wife name"
+                                {...field}
+                                className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1005,47 +873,47 @@ export default function AdminAddMemberPage() {
                     </div>
                   </div>
 
-
                   {/* Fee Paid Checkbox */}
                   <FormField
                     control={form.control}
                     name="feePaid"
                     render={({ field }) => (
-                      <FormItem className="flex items-center gap-3">
-                        <input
-                          id="feePaid"
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={(e) => field.onChange(e.target.checked)}
-                          className="h-5 w-5 rounded-md border-orange-300 text-orange-600 focus:ring-orange-500"
-                        />
-                        <FormLabel htmlFor="feePaid" className="text-orange-800 font-semibold">
-                          Membership fee has been paid
-                        </FormLabel>
+                      <FormItem>
+                        <Label
+                          htmlFor="feePaid"
+                          className="flex items-center gap-2 sm:gap-3 bg-white border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 cursor-pointer select-none"
+                        >
+                          <input
+                            id="feePaid"
+                            type="checkbox"
+                            checked={field.value}
+                            onChange={(e) => field.onChange(e.target.checked)}
+                            className="h-4 w-4 sm:h-5 sm:w-5 rounded-md border-slate-300 text-orange-600 focus:ring-orange-500"
+                          />
+                          <span className="text-slate-800 font-semibold text-sm sm:text-base">I have paid the membership fee</span>
+                        </Label>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
                   {/* Submit Button */}
-                  <div className="pt-4 sm:pt-6 lg:pt-8 border-t border-orange-200/50 animate-in slide-in-from-bottom-4 duration-500 delay-1300">
+                  <div className="pt-4 sm:pt-6 md:pt-8 border-t border-slate-200">
                     <div className="space-y-4 sm:space-y-6">
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-full bg-gradient-to-r from-orange-600 via-orange-700 to-orange-800 hover:from-orange-700 hover:via-orange-800 hover:to-orange-900 text-white py-4 sm:py-5 text-base sm:text-lg lg:text-xl font-bold rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-orange-500/25 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-2xl group relative overflow-hidden cursor-pointer"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl sm:rounded-2xl shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                         {isSubmitting ? (
-                          <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-                            <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 border-3 sm:border-4 border-white border-t-transparent rounded-full animate-spin" />
-                            <span className="text-sm sm:text-base lg:text-lg">Registering Member...</span>
+                          <div className="flex items-center justify-center gap-2 sm:gap-3">
+                            <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 sm:border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
+                            <span>Registering member…</span>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-                            <User className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 group-hover:scale-110 transition-transform duration-300" />
-                            <span className="text-sm sm:text-base lg:text-lg">Register New Member</span>
-                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 group-hover:translate-x-2 transition-transform duration-300" />
+                          <div className="flex items-center justify-center gap-2 sm:gap-3">
+                            <span>Register new member</span>
+                            <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                         )}
                       </Button>

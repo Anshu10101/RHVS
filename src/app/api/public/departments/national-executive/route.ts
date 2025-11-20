@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     const department = deptResult[0];
 
     // Get all hierarchy members ordered by position_order
+    // Return ALL members assigned to each post, not just the first one
     const membersQuery = `
       SELECT 
         dp.id as post_id,
@@ -44,27 +45,18 @@ export async function GET(request: NextRequest) {
           ELSE m.profile_photo_path
         END AS profile_photo_path,
         m.member_reg_number,
-        m.email as member_email
+        m.email as member_email,
+        dm.assigned_at
       FROM department_posts dp
       LEFT JOIN department_members dm ON dp.id = dm.post_id 
         AND dm.department_id = ?
         AND dm.level = 'national'
-        AND dm.id = (
-          SELECT dm2.id
-          FROM department_members dm2
-          WHERE dm2.department_id = ?
-            AND dm2.post_id = dp.id
-            AND dm2.level = 'national'
-          ORDER BY dm2.assigned_at ASC
-          LIMIT 1
-        )
       LEFT JOIN members m ON dm.member_id = m.id AND m.status = 'verified'
       WHERE dp.department_id = ?
-      ORDER BY dp.position_order ASC
+      ORDER BY dp.position_order ASC, dm.assigned_at ASC
     `;
 
     const membersResult = await executeQuery(membersQuery, [
-      department.id,
       department.id,
       department.id
     ]) as Array<{
@@ -77,9 +69,10 @@ export async function GET(request: NextRequest) {
       profile_photo_path: string | null;
       member_reg_number: string | null;
       member_email: string | null;
+      assigned_at: string | null;
     }>;
 
-    // Format the members
+    // Format the members - include ALL members for each post
     const members = membersResult.map(member => ({
       post: {
         id: member.post_id,

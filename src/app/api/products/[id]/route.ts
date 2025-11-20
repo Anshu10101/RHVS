@@ -21,7 +21,7 @@ export async function GET(
       SELECT DISTINCT
         p.id, p.name, p.description, p.price, p.original_price, p.category, p.seller_id,
         CASE 
-          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id)
+          WHEN p.image_blob IS NOT NULL THEN CONCAT('/api/media/products/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
           ELSE p.image_path
         END AS image_url,
         p.isVisible, p.is_featured, p.stock, p.tags,

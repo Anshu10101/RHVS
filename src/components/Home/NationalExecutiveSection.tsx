@@ -117,10 +117,9 @@ export default function NationalExecutiveSection() {
         <div className="max-w-5xl mx-auto">
           <div className="space-y-6">
             {groupedDisplay.map((group, groupIndex) => {
-              const isTopTier = group.post.position_order <= 2;
               const isFirst = group.post.position_order === 1;
-              const heroEntry = isTopTier ? group.entries[0] : null;
-              const regularEntries = isTopTier ? group.entries.slice(1) : group.entries;
+              const heroEntry = isFirst && group.entries.length > 0 ? group.entries[0] : null;
+              const regularEntries = isFirst && group.entries.length > 0 ? group.entries.slice(1) : group.entries;
 
               return (
                 <div key={group.post.id} className="space-y-4">
@@ -147,7 +146,7 @@ export default function NationalExecutiveSection() {
                     <p className="text-xs md:text-sm text-orange-700/80 mt-1">{group.post.name_en}</p>
                   </div>
 
-                  {/* Highlighted hero card for top tiers */}
+                  {/* National President - Special Hero Card */}
                   {heroEntry && (
                     <div className="flex justify-center mt-6">
                       <Card className={`group relative border border-orange-100 ${
@@ -213,52 +212,64 @@ export default function NationalExecutiveSection() {
                     </div>
                   )}
 
-                  {/* Grid of members (limited to 6 per row) */}
+                  {/* Grid of all other members - max 6 per row, centered and fills from center */}
                   {regularEntries.length > 0 && (
                     <div className="mt-4">
-                      <div className="flex flex-wrap justify-center gap-3 md:gap-4 mx-auto max-w-5xl">
-                        {regularEntries.map((item, idx) => (
-                          <div
-                            key={`${group.post.id}-${idx}-${item.member?.id ?? 'vacant'}`}
-                            className="basis-[48%] sm:basis-[45%] md:basis-[30%] lg:basis-[22%] xl:basis-[18%] 2xl:basis-[16%] max-w-[190px] flex"
-                          >
+                      <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mx-auto max-w-5xl">
+                        {regularEntries.map((item, idx) => {
+                          // Responsive width that automatically wraps when more than 6 on desktop
+                          // Mobile: 3 per row, Tablet: 4 per row, Desktop: 6 per row max
+                          // When more than 6, they automatically wrap to next row
+                          const getCardWidth = () => {
+                            // Use flex-basis with max-width to ensure wrapping
+                            // Mobile: ~33.33% (3 per row), Tablet: ~25% (4 per row), Desktop: ~16.66% (6 per row)
+                            return 'flex-[0_0_calc(33.333%-0.5rem)] sm:flex-[0_0_calc(25%-0.75rem)] md:flex-[0_0_calc(20%-0.8rem)] lg:flex-[0_0_calc(16.666%-0.83rem)] min-w-[100px] max-w-[140px] sm:max-w-[160px] md:max-w-[180px]';
+                          };
+
+                          return (
                             <Card
-                              className="group relative flex-1 border border-orange-100 bg-gradient-to-br from-white to-[#fff9f5] shadow-[8px_8px_20px_rgba(221,135,72,0.12),-8px_-8px_20px_rgba(255,255,255,0.95)] hover:-translate-y-1 hover:shadow-[10px_10px_26px_rgba(221,135,72,0.18),-10px_-10px_26px_rgba(255,255,255,0.95)] transition-all duration-300"
+                              key={`${group.post.id}-${idx}-${item.member?.id ?? 'vacant'}`}
+                              className={`group relative ${getCardWidth()} border border-orange-100 bg-gradient-to-br from-white to-[#fff9f5] shadow-[8px_8px_20px_rgba(221,135,72,0.12),-8px_-8px_20px_rgba(255,255,255,0.95)] hover:-translate-y-1 hover:shadow-[10px_10px_26px_rgba(221,135,72,0.18),-10px_-10px_26px_rgba(255,255,255,0.95)] transition-all duration-300 overflow-visible`}
                             >
-                              <CardContent className="p-3 flex flex-col items-center text-center space-y-3">
-                                <div className="relative mb-2">
-                                  <div className="relative w-20 h-20 rounded-full border border-orange-50 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden scale-105 translate-y-[-2px] transition-all duration-200 group-hover:scale-105 group-hover:shadow-[0_6px_16px_rgba(0,0,0,0.12)]">
+                              <CardContent className="p-2 sm:p-3 flex flex-col items-center text-center">
+                                {/* Photo with 3D effect - same as National President */}
+                                <div className="relative mb-2 sm:mb-3 -mt-2 md:-mt-4">
+                                  <div className="relative rounded-full border border-orange-50 bg-white w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 transition-all duration-200 group-hover:scale-105 scale-105 translate-y-[-2px] shadow-[0_4px_15px_rgba(0,0,0,0.08)] group-hover:shadow-[0_6px_18px_rgba(0,0,0,0.12)]">
                                     {item.member?.photo_path ? (
-                                      <div className="absolute inset-[-6px] rounded-full overflow-hidden group-hover:scale-[1.08] transition-transform duration-300">
+                                      <div className="absolute inset-[-4px] sm:inset-[-6px] md:inset-[-8px] rounded-full overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                         <Image
                                           src={item.member.photo_path.startsWith('/') ? item.member.photo_path : `/${item.member.photo_path}`}
                                           alt={item.member.name || 'Member'}
                                           fill
                                           className="object-cover"
-                                          sizes="80px"
+                                          sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
                                           quality={90}
                                         />
-                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/25 via-transparent to-transparent pointer-events-none z-10"></div>
+                                        {/* Inner glow effect on photo - same as National President */}
+                                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none z-10"></div>
                                       </div>
                                     ) : (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-white">
-                                        <UserRound className="h-10 w-10 text-orange-400" />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-white rounded-full overflow-hidden">
+                                        <UserRound className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 text-orange-400" />
                                       </div>
                                     )}
                                   </div>
                                 </div>
+                                {/* Member Info */}
                                 {item.member ? (
-                                  <p className="font-semibold text-gray-900 text-sm">{item.member.name}</p>
+                                  <h3 className="font-black text-gray-900 text-xs sm:text-sm md:text-base mt-1 leading-tight">
+                                    {item.member.name}
+                                  </h3>
                                 ) : (
-                                  <div>
-                                    <p className="font-semibold text-gray-500 text-sm">Position Vacant</p>
-                                    <p className="text-[11px] text-gray-400">Awaiting appointment</p>
+                                  <div className="text-center">
+                                    <p className="font-semibold text-gray-500 text-[10px] sm:text-xs md:text-sm mb-0.5">Position Vacant</p>
+                                    <p className="text-gray-400 text-[9px] sm:text-[10px]">Awaiting appointment</p>
                                   </div>
                                 )}
                               </CardContent>
                             </Card>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -84,8 +84,10 @@ export interface GalleryGridProps {
 
 export interface ImageModalProps {
   image: GalleryImage | null;
+  images: GalleryImage[];
   isOpen: boolean;
   onClose: () => void;
   favorites: number[];
   onToggleFavorite: (id: number) => void;
+  onNavigate?: (direction: 'prev' | 'next') => void;
 }

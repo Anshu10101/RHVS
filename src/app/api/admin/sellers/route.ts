@@ -58,7 +58,9 @@ export async function GET(req: NextRequest) {
         }, { status: 403 });
       }
 
-      // District admin sees only their district's sellers
+      // District admin sees sellers from their district:
+      // 1. added_by_admin_id matches current admin, OR
+      // 2. added_by_admin_id is NULL but district/state matches (orphaned sellers from previous admin)
       const rows = await executeQuery(`
         SELECT 
           s.id, s.name, s.business_name, s.contact_phone, s.whatsapp_number,
@@ -71,7 +73,7 @@ export async function GET(req: NextRequest) {
           FROM products 
           GROUP BY seller_id
         ) p ON p.seller_id = s.id
-        WHERE s.district = ? AND s.state = ? AND s.added_by_admin_id = ?
+        WHERE s.district = ? AND s.state = ? AND (s.added_by_admin_id = ? OR s.added_by_admin_id IS NULL)
         ORDER BY s.created_at DESC
       `, [scope.districtName, scope.stateName, scope.adminId]);
       

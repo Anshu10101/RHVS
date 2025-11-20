@@ -11,14 +11,23 @@ export default function ServiceWorkerProvider() {
       return;
     }
 
+    // Skip service worker in dev mode to avoid caching issues
+    if (process.env.NODE_ENV === 'development') {
+      // Unregister any existing service workers to clear dev cache
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.unregister();
+        });
+      });
+      return;
+    }
+
     const register = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js', {
           scope: '/',
         });
-        if (process.env.NODE_ENV === 'development') {
-          console.info('SW registered', registration);
-        }
+        console.info('SW registered', registration);
       } catch (error) {
         console.error('SW registration failed', error);
       }

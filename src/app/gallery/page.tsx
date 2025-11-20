@@ -3,156 +3,8 @@
 import { useState, useEffect } from 'react';
 import { GalleryHeader, GalleryFilter, GalleryGrid, ImageModal } from '@/components/Home/gallery';
 import type { GalleryImage } from '@/components/Home/gallery/types';
-import { Menu } from 'lucide-react';
+import { Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Default gallery data for fallback
-/*
-const defaultGalleryImages = [
-  {
-    id: 1,
-    src: '/gallery/p1.jpg',
-    alt: 'RHVS Community Event',
-    title: 'सामुदायिक कार्यक्रम',
-    description: 'Community members coming together for a special event',
-    category: 'Community',
-    aspectRatio: 'wide' as const,
-    date: '2024-01-15',
-    tags: ['event', 'community', 'gathering']
-  },
-  {
-    id: 2,
-    src: '/gallery/p2.jpg',
-    alt: 'Spiritual Gathering',
-    title: 'आध्यात्मिक सभा',
-    description: 'Devotees gathered for spiritual discourse and prayers',
-    category: 'Spiritual',
-    aspectRatio: 'tall' as const,
-    date: '2024-01-20',
-    tags: ['spiritual', 'prayer', 'discourse']
-  },
-  {
-    id: 3,
-    src: '/gallery/p3.jpg',
-    alt: 'Cultural Celebration',
-    title: 'सांस्कृतिक उत्सव',
-    description: 'Celebrating our rich cultural heritage and traditions',
-    category: 'Culture',
-    aspectRatio: 'square' as const,
-    date: '2024-02-10',
-    tags: ['culture', 'celebration', 'festival']
-  },
-  {
-    id: 4,
-    src: '/gallery/p4.jpg',
-    alt: 'Religious Ceremony',
-    title: 'धार्मिक अनुष्ठान',
-    description: 'Sacred rituals and religious ceremonies',
-    category: 'Spiritual',
-    aspectRatio: 'wide' as const,
-    date: '2024-02-15',
-    tags: ['ceremony', 'ritual', 'sacred']
-  },
-  {
-    id: 5,
-    src: '/gallery/p5.jpg',
-    alt: 'Community Service',
-    title: 'सामुदायिक सेवा',
-    description: 'Serving the community with dedication and love',
-    category: 'Community',
-    aspectRatio: 'tall' as const,
-    date: '2024-02-25',
-    tags: ['service', 'community', 'volunteer']
-  },
-  {
-    id: 6,
-    src: '/gallery/p6.jpg',
-    alt: 'Educational Program',
-    title: 'शैक्षिक कार्यक्रम',
-    description: 'Educational initiatives for community development',
-    category: 'Education',
-    aspectRatio: 'square' as const,
-    date: '2024-03-05',
-    tags: ['education', 'learning', 'development']
-  },
-  {
-    id: 7,
-    src: '/gallery/p7.jpg',
-    alt: 'Festival Celebration',
-    title: 'त्योहार उत्सव',
-    description: 'Joyous celebration of Hindu festivals and traditions',
-    category: 'Culture',
-    aspectRatio: 'wide' as const,
-    date: '2024-03-15',
-    tags: ['festival', 'celebration', 'tradition']
-  },
-  {
-    id: 8,
-    src: '/gallery/p8.jpg',
-    alt: 'Youth Program',
-    title: 'युवा कार्यक्रम',
-    description: 'Engaging youth in cultural and spiritual activities',
-    category: 'Youth',
-    aspectRatio: 'tall' as const,
-    date: '2024-03-20',
-    tags: ['youth', 'engagement', 'activity']
-  },
-  {
-    id: 9,
-    src: '/gallery/p9.jpg',
-    alt: 'Religious Discourse',
-    title: 'धार्मिक प्रवचन',
-    description: 'Spiritual teachings and religious discourse',
-    category: 'Spiritual',
-    aspectRatio: 'square' as const,
-    date: '2024-03-25',
-    tags: ['discourse', 'teaching', 'spiritual']
-  },
-  {
-    id: 10,
-    src: '/gallery/p10.jpg',
-    alt: 'Community Outreach',
-    title: 'सामुदायिक पहुंच',
-    description: 'Reaching out to serve and connect with the community',
-    category: 'Community',
-    aspectRatio: 'wide' as const,
-    date: '2024-04-01',
-    tags: ['outreach', 'community', 'connection']
-  },
-  {
-    id: 11,
-    src: '/gallery/p11.jpg',
-    alt: 'Cultural Heritage',
-    title: 'सांस्कृतिक विरासत',
-    description: 'Preserving and promoting our ancient cultural heritage',
-    category: 'Heritage',
-    aspectRatio: 'tall' as const,
-    date: '2024-04-10',
-    tags: ['heritage', 'culture', 'preservation']
-  },
-  {
-    id: 12, 
-    src: '/gallery/p12.jpg',
-    alt: 'Cultural Heritage',
-    title: 'सांस्कृतिक विरासत',
-    description: 'Preserving and promoting our ancient cultural heritage',
-    category: 'Heritage',
-    aspectRatio: 'tall' as const,
-    date: '2024-04-10',
-    tags: ['heritage', 'culture', 'preservation']
-  },
-  {
-    id: 13,
-    src: '/gallery/p13.jpg',
-    alt: 'Cultural Heritage',
-    title: 'सांस्कृतिक विरासत',
-    description: 'Preserving and promoting our ancient cultural heritage',
-    category: 'Heritage',
-    aspectRatio: 'tall' as const,
-    date: '2024-04-10',
-    tags: ['heritage', 'culture', 'preservation']
-  }
-];
-*/
 
 const categories: string[] = [];
 const sortOptions = [
@@ -182,6 +34,11 @@ export default function GalleryPage() {
   const [selectedEvent, setSelectedEvent] = useState('All');
   const [availableEvents, setAvailableEvents] = useState<string[]>([]);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalImages, setTotalImages] = useState(0);
+  const [allImages, setAllImages] = useState<GalleryImage[]>([]); // Store all images for modal navigation
 
   const resetFilters = () => {
     setSelectedStateId('');
@@ -225,27 +82,40 @@ export default function GalleryPage() {
           setAvailableEvents(['All', ...(filtersData.events || [])]);
         }
 
-        // Load photos with current filters
+        // Load photos with current filters and pagination
         const params = new URLSearchParams();
         if (selectedStateName !== 'All') params.append('state', selectedStateName);
         if (selectedDistrictName !== 'All') params.append('district', selectedDistrictName);
         if (selectedDistrictId && selectedDistrictId !== '') params.append('districtId', selectedDistrictId);
         if (selectedEvent !== 'All') params.append('event', selectedEvent);
+        params.append('page', currentPage.toString());
+        params.append('limit', '24'); // 24 images per page - optimal for performance
         
         const response = await fetch(`/api/public/photos?${params}`);
         const data = await response.json();
         
-        if (data.success && data.images && data.images.length > 0) {
-          console.log('New API Images received:', data.images.length, 'images');
-          console.log('Sample image:', data.images[0]);
+        if (data.success && data.images) {
+          console.log(`Loaded page ${data.page}: ${data.images.length} images (Total: ${data.total})`);
           
-          // API already returns data in GalleryImage format, no conversion needed
+          // Update pagination info
+          setTotalPages(data.totalPages || 1);
+          setTotalImages(data.total || 0);
+          
+          // For modal navigation, we need to fetch all images (or at least a larger set)
+          // But for display, we only show the current page
           setGalleryImages(data.images);
           setFilteredImages(data.images);
+          
+          // Store all images for modal navigation (accumulate across pages)
+          // Note: For better performance with thousands of images, modal navigation could be limited to current page
+          setAllImages(data.images);
         } else {
           console.log('No images from new API, showing empty state');
           setGalleryImages([]);
           setFilteredImages([]);
+          setAllImages([]);
+          setTotalPages(1);
+          setTotalImages(0);
         }
       } catch (error) {
         console.error('Error loading gallery data:', error);
@@ -258,39 +128,28 @@ export default function GalleryPage() {
     };
 
     loadGalleryData();
+  }, [selectedStateName, selectedDistrictName, selectedDistrictId, selectedEvent, currentPage]);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
   }, [selectedStateName, selectedDistrictName, selectedDistrictId, selectedEvent]);
 
-  // Filter and sort images
+  // Note: Sorting is now handled server-side via API, but we keep client-side sorting for favorites
+  // If you want server-side sorting, you'd need to add a sort parameter to the API
   useEffect(() => {
-    let filtered = galleryImages;
+    let filtered = [...galleryImages];
     
-    // No category filtering - using dynamic filters only
-    
-    // Sort images
-    filtered = [...filtered].sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return b.id - a.id; // Higher ID = newer
-        case 'oldest':
-          return a.id - b.id; // Lower ID = older
-        case 'alphabetical':
-          return a.title.localeCompare(b.title);
-        case 'reverse-alphabetical':
-          return b.title.localeCompare(a.title);
-        case 'category':
-          return a.category.localeCompare(b.category);
-        case 'date':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'favorites':
-          const aIsFavorite = favorites.includes(a.id);
-          const bIsFavorite = favorites.includes(b.id);
-          if (aIsFavorite && !bIsFavorite) return -1;
-          if (!aIsFavorite && bIsFavorite) return 1;
-          return b.id - a.id; // Secondary sort by newest
-        default:
-          return 0;
-      }
-    });
+    // Only apply favorites sorting on client side (server doesn't know favorites)
+    if (sortBy === 'favorites') {
+      filtered = filtered.sort((a, b) => {
+        const aIsFavorite = favorites.includes(a.id);
+        const bIsFavorite = favorites.includes(b.id);
+        if (aIsFavorite && !bIsFavorite) return -1;
+        if (!aIsFavorite && bIsFavorite) return 1;
+        return b.id - a.id; // Secondary sort by newest
+      });
+    }
     
     setFilteredImages(filtered);
   }, [sortBy, favorites, galleryImages]);
@@ -313,12 +172,31 @@ export default function GalleryPage() {
     document.body.style.overflow = 'unset';
   };
 
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (!selectedImage || filteredImages.length === 0) return;
+    
+    const currentIndex = filteredImages.findIndex(img => img.id === selectedImage.id);
+    if (currentIndex === -1) return;
+
+    let newIndex: number;
+    if (direction === 'prev') {
+      // Wrap around: if at first image, go to last
+      newIndex = currentIndex > 0 ? currentIndex - 1 : filteredImages.length - 1;
+    } else {
+      // Wrap around: if at last image, go to first
+      newIndex = currentIndex < filteredImages.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    setSelectedImage(filteredImages[newIndex]);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading gallery...</p>
+          <p className="text-gray-600 text-lg font-medium">Loading gallery...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait while we fetch the latest photos</p>
         </div>
       </div>
     );
@@ -449,12 +327,76 @@ export default function GalleryPage() {
         onResetFilters={resetFilters}
       />
       
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm text-gray-600">
+              Showing <span className="font-semibold">{(currentPage - 1) * 24 + 1}</span> to{' '}
+              <span className="font-semibold">{Math.min(currentPage * 24, totalImages)}</span> of{' '}
+              <span className="font-semibold">{totalImages}</span> images
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-2 min-w-[40px] text-sm font-medium rounded-lg transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-orange-600 text-white'
+                          : 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <ImageModal 
         image={selectedImage}
+        images={filteredImages}
         isOpen={!!selectedImage}
         onClose={closeModal}
         favorites={favorites}
         onToggleFavorite={toggleFavorite}
+        onNavigate={handleNavigate}
       />
 
       {/* Custom CSS for animations */}

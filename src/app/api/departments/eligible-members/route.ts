@@ -7,18 +7,76 @@ export async function GET(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
     
-    // Check if user is authenticated and is a superadmin
-    if (!scope.isSuperAdmin) {
+    // Check if user is authenticated and is a superadmin or district admin
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // For district admins, check permission
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      const { ensurePermission } = await import('@/lib/admin-scope');
+      if (!ensurePermission(scope, 'assign_members_to_departments')) {
+        return NextResponse.json({ 
+          error: 'Permission denied. You do not have permission to assign members to departments.' 
+        }, { status: 403 });
+      }
     }
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
-    const level = searchParams.get('level');
-    const state = searchParams.get('state');
-    const district = searchParams.get('district');
+    let level = searchParams.get('level');
+    let state = searchParams.get('state');
+    let district = searchParams.get('district');
     const departmentId = searchParams.get('departmentId');
     const search = searchParams.get('search');
+    
+    // For district admins, block National Executive Department
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin && departmentId) {
+      const nationalExecDept = await executeQuery(
+        'SELECT id FROM departments WHERE is_national_executive = 1 LIMIT 1'
+      ) as Array<{ id: number }>;
+      
+      if (nationalExecDept.length > 0 && parseInt(departmentId) === nationalExecDept[0].id) {
+        return NextResponse.json({ 
+          error: 'Access denied. National Executive Department assignments are restricted to superadmins only.' 
+        }, { status: 403 });
+      }
+    }
+
+    // For district admins, enforce level-specific restrictions
+    if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
+      // Get state from district admin's member record
+      let adminState: string | null = null;
+      if (scope.adminId) {
+        const adminStateResult = await executeQuery(
+          'SELECT m.state FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ?',
+          [scope.adminId]
+        ) as Array<{ state: string }>;
+        if (adminStateResult.length > 0 && adminStateResult[0].state) {
+          adminState = adminStateResult[0].state;
+        }
+      }
+      
+      if (level === 'district') {
+        // Must be their district
+        if (scope.districtName) {
+          district = scope.districtName;
+        }
+        if (adminState) {
+          state = adminState;
+        }
+      } else if (level === 'state') {
+        // Must be their state
+        if (adminState) {
+          state = adminState;
+        }
+        district = null; // District must be null for state level
+      } else if (level === 'national') {
+        // National level is allowed (but not National Executive, which is already blocked above)
+        state = null;
+        district = null;
+      }
+    }
 
     // Validate required parameters
     if (!level) {

@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  compress: true,
+  poweredByHeader: false,
+  generateEtags: true,
 };
 
 export default nextConfig;

@@ -1,29 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, Sparkles, ExternalLink, FileText } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, ExternalLink, ArrowRight } from 'lucide-react';
 
 export default function Footer() {
-  const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
-  const developerMenuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!showDeveloperMenu) {
-      return;
-    }
-    const handler = (event: MouseEvent | TouchEvent) => {
-      if (developerMenuRef.current && !developerMenuRef.current.contains(event.target as Node)) {
-        setShowDeveloperMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    document.addEventListener('touchstart', handler);
-    return () => {
-      document.removeEventListener('mousedown', handler);
-      document.removeEventListener('touchstart', handler);
-    };
-  }, [showDeveloperMenu]);
 
   return (
     <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50">
@@ -75,6 +55,11 @@ export default function Footer() {
               <li>
                 <Link href="/offices" className="text-orange-700/70 hover:text-orange-600 transition-colors">
                   कार्यालय का गठन
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/login" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                  प्रशासन पैनल
                 </Link>
               </li>
             </ul>
@@ -152,54 +137,21 @@ export default function Footer() {
                 <Code2 className="h-3.5 w-3.5" />
               </span>
               <span className="text-sm text-orange-900 font-semibold">
-                Designed & Engineered by{' '}
-                <span
-                  ref={developerMenuRef}
-                  className="relative inline-flex"
-                  onMouseEnter={() => setShowDeveloperMenu(true)}
-                  onMouseLeave={() => setShowDeveloperMenu(false)}
+                Developed by{' '}
+                <Link
+                  href="/developer"
+                  className="group relative inline-flex items-center gap-1 underline decoration-orange-300/70 underline-offset-4 hover:text-orange-800 transition-colors"
                 >
-                  <button
-                    type="button"
-                    className="underline decoration-orange-300/70 underline-offset-4 cursor-pointer focus:outline-none"
-                    onClick={() => setShowDeveloperMenu((current) => !current)}
-                    aria-haspopup="true"
-                    aria-expanded={showDeveloperMenu}
-                  >
-                    Anshul Yadav
-                  </button>
-                  <div
-                    className={`absolute left-1/2 top-full z-20 -translate-x-1/2 pt-2 ${
-                      showDeveloperMenu ? 'block' : 'hidden'
-                    }`}
-                  >
-                    <div className="rounded-xl border border-orange-200/60 bg-white/90 backdrop-blur-sm shadow-md p-2 w-48">
-                      <a
-                        href="https://anshulydv-portfolio.vercel.app/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
-                        onClick={() => setShowDeveloperMenu(false)}
-                      >
-                        <ExternalLink className="h-4 w-4 text-orange-600" />
-                        <span>View Portfolio</span>
-                      </a>
-                      <a
-                        href="https://drive.google.com/file/d/1k63R0OBhgFRWNO_OQndMvtEFx2BJLEth/view?usp=drive_link"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-orange-900 hover:bg-orange-50"
-                        onClick={() => setShowDeveloperMenu(false)}
-                      >
-                        <FileText className="h-4 w-4 text-orange-600" />
-                        <span>View Certificate</span>
-                      </a>
-                    </div>
-                  </div>
-                </span>
+                  <span>Anshul Yadav</span>
+                  {/* Mobile: Always visible icon */}
+                  <ExternalLink className="w-3.5 h-3.5 sm:hidden text-orange-600/70 group-hover:text-orange-600 transition-colors" />
+                  {/* Desktop: Tooltip on hover */}
+                  <span className="hidden sm:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-orange-900 text-white text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    View Developer Page
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-orange-900"></span>
+                  </span>
+                </Link>
               </span>
-              <span className="mx-1 text-orange-300">•</span>
-              <span className="text-xs text-orange-700/80">Developer</span>
             </div>
           </div>
         </div>

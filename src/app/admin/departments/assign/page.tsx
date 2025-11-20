@@ -64,7 +64,7 @@ type DepartmentMember = {
 export default function AssignMembersPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { currentUser } = useAdmin();
+  const { currentUser, hasPermission } = useAdmin();
   
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -92,13 +92,48 @@ export default function AssignMembersPage() {
   const [selectedMembers, setSelectedMembers] = useState<Member[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
+  const [activeTab, setActiveTab] = useState('select');
 
-  // Check if user is superadmin
+  // Check if user is superadmin or district admin with permission
   useEffect(() => {
-    if (currentUser && currentUser.type !== 'superadmin') {
-      router.push('/admin');
+    if (!currentUser) return;
+    
+    if (currentUser.type === 'superadmin') {
+      return; // Superadmin has full access
     }
-  }, [currentUser, router]);
+    
+    if (currentUser.type === 'district_admin') {
+      // Check if district admin has the required permission
+      if (!hasPermission('assign_members_to_departments')) {
+      router.push('/admin');
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to assign members to departments.',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+    
+    // Not authorized
+    router.push('/admin');
+  }, [currentUser, router, toast, hasPermission]);
+
+  // Auto-set default values for district admins (but allow them to change)
+  useEffect(() => {
+    if (currentUser?.type === 'district_admin' && currentUser.district && currentUser.state) {
+      // Default to district level, but don't force it - allow them to choose
+      if (!selectedLevel) {
+      setSelectedLevel('district');
+      }
+      if (!selectedState) {
+      setSelectedState(currentUser.state);
+      }
+      if (!selectedDistrict && selectedLevel === 'district') {
+      setSelectedDistrict(currentUser.district);
+    }
+    }
+  }, [currentUser, selectedLevel, selectedState, selectedDistrict]);
 
   // Fetch states when component mounts
   useEffect(() => {
@@ -140,6 +175,7 @@ export default function AssignMembersPage() {
   }, [selectedState]);
 
   // Fetch all departments (no level filtering - level is chosen when assigning)
+  // For district admins, filter out National Executive department
   useEffect(() => {
     const fetchDepartments = async () => {
       setIsLoading(true);
@@ -149,7 +185,19 @@ export default function AssignMembersPage() {
         const data = await response.json();
         
         if (data.departments) {
-          setDepartments(data.departments);
+          let depts = data.departments;
+          
+          // For district admins, filter out National Executive department
+          if (currentUser?.type === 'district_admin') {
+            // Filter out any department marked as national executive (check directly in the data)
+            // We don't need to call the API - just filter based on is_national_executive flag if available
+            // Or we can query the database directly, but for now, just skip the API call
+            // The departments list should already exclude national executive if the API filters it
+            // If not, we'll filter client-side by checking if any dept has is_national_executive flag
+            depts = depts.filter((d: Department) => !(d as any).is_national_executive);
+          }
+          
+          setDepartments(depts);
         }
       } catch (error) {
         console.error('Error fetching departments:', error);
@@ -164,10 +212,18 @@ export default function AssignMembersPage() {
     };
 
     fetchDepartments();
-  }, [toast]);
+  }, [toast, currentUser]);
 
-  // Fetch National Executive Department and its data
+  // Fetch National Executive Department and its data (only for superadmins)
   useEffect(() => {
+    // District admins should not see National Executive Department
+    if (currentUser?.type === 'district_admin') {
+      setNationalExecutiveDept(null);
+      setNationalExecutivePosts([]);
+      setNationalExecutiveMembers([]);
+      return;
+    }
+
     const fetchNationalExecutive = async () => {
       setIsLoadingNationalExecutive(true);
       try {
@@ -208,7 +264,7 @@ export default function AssignMembersPage() {
     };
 
     fetchNationalExecutive();
-  }, [toast]);
+  }, [toast, currentUser]);
 
   // Fetch posts and department members when department/level changes
   useEffect(() => {
@@ -222,8 +278,18 @@ export default function AssignMembersPage() {
         const postsResponse = await fetch(`/api/departments/${selectedDepartment.id}/posts`);
         const postsData = await postsResponse.json();
         
-        if (postsData.posts) {
+        if (postsData.error) {
+          console.error('Error fetching posts:', postsData.error);
+          toast({
+            title: 'Error',
+            description: postsData.error || 'Failed to load posts',
+            variant: 'destructive',
+          });
+          setPosts([]);
+        } else if (postsData.posts) {
           setPosts(postsData.posts);
+        } else {
+          setPosts([]);
         }
 
         // Guard until required filters chosen
@@ -471,9 +537,11 @@ export default function AssignMembersPage() {
     }
   };
 
-  if (!currentUser || currentUser.type !== 'superadmin') {
+  if (!currentUser || (currentUser.type !== 'superadmin' && currentUser.type !== 'district_admin')) {
     return null;
   }
+
+  const isDistrictAdmin = currentUser.type === 'district_admin';
 
   return (
     <>
@@ -490,15 +558,17 @@ export default function AssignMembersPage() {
           </Button>
         </div>
         
-        <Tabs defaultValue="select" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="select">1. Select Department</TabsTrigger>
+            {!isDistrictAdmin && (
             <TabsTrigger value="national-executive">National Executive Department</TabsTrigger>
-            {selectedDepartment && (
+            )}
+            {selectedDepartment && !isDistrictAdmin && (
               <TabsTrigger value="level">2. Select Level</TabsTrigger>
             )}
-            {selectedDepartment && selectedLevel && (
-              <TabsTrigger value="assign">3. Assign Members</TabsTrigger>
+            {selectedDepartment && (selectedLevel || isDistrictAdmin) && (
+              <TabsTrigger value="assign">{isDistrictAdmin ? '2. Assign Members' : '3. Assign Members'}</TabsTrigger>
             )}
           </TabsList>
           
@@ -521,10 +591,12 @@ export default function AssignMembersPage() {
               }`}>
                 2
               </div>
-              <span className={selectedLevel ? 'text-orange-600 font-medium' : ''}>
-                Select Level
+              <span className={selectedLevel || isDistrictAdmin ? 'text-orange-600 font-medium' : ''}>
+                {isDistrictAdmin ? 'Ready to Assign' : 'Select Level'}
               </span>
             </div>
+            {!isDistrictAdmin && (
+              <>
             <div className="w-8 h-px bg-gray-300"></div>
             <div className="flex items-center space-x-2">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
@@ -536,6 +608,8 @@ export default function AssignMembersPage() {
                 Assign Members
               </span>
             </div>
+              </>
+            )}
           </div>
           
           <TabsContent value="select" className="space-y-6">
@@ -567,7 +641,14 @@ export default function AssignMembersPage() {
                         className={`cursor-pointer hover:shadow-md transition-shadow ${
                           selectedDepartment?.id === department.id ? 'ring-2 ring-orange-500' : ''
                         }`}
-                        onClick={() => setSelectedDepartment(department)}
+                        onClick={() => {
+                          setSelectedDepartment(department);
+                          // For district admins, automatically set level to district and go to assign tab
+                          if (isDistrictAdmin) {
+                            setSelectedLevel('district');
+                            setActiveTab('assign');
+                          }
+                        }}
                       >
                         <CardContent className="p-4">
                           <h3 className="font-semibold text-lg">{department.name_en}</h3>
@@ -777,7 +858,10 @@ export default function AssignMembersPage() {
                 <CardHeader>
                   <CardTitle>Select Assignment Level</CardTitle>
                   <p className="text-sm text-gray-500">
-                    Choose the level for assigning members to <strong>{selectedDepartment.name_en}</strong>
+                    {isDistrictAdmin 
+                      ? `Assign members to <strong>${selectedDepartment.name_en}</strong> at district level`
+                      : `Choose the level for assigning members to <strong>${selectedDepartment.name_en}</strong>`
+                    }
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -795,6 +879,7 @@ export default function AssignMembersPage() {
                             setSelectedDistrict('');
                           }
                         }}
+                        disabled={isDistrictAdmin}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select level" />
@@ -805,6 +890,11 @@ export default function AssignMembersPage() {
                           <SelectItem value="district">District Level</SelectItem>
                         </SelectContent>
                       </Select>
+                      {isDistrictAdmin && (
+                        <p className="text-xs text-gray-500">
+                          District admins can only assign members at district level
+                        </p>
+                      )}
                     </div>
                     
                     {selectedLevel !== 'national' && (
@@ -816,6 +906,7 @@ export default function AssignMembersPage() {
                             setSelectedState(value);
                             setSelectedDistrict('');
                           }}
+                          disabled={isDistrictAdmin}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select state" />
@@ -828,6 +919,11 @@ export default function AssignMembersPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {isDistrictAdmin && (
+                          <p className="text-xs text-gray-500">
+                            Locked to your assigned state
+                          </p>
+                        )}
                       </div>
                     )}
                     
@@ -837,7 +933,7 @@ export default function AssignMembersPage() {
                         <Select
                           value={selectedDistrict}
                           onValueChange={setSelectedDistrict}
-                          disabled={!selectedState}
+                          disabled={!selectedState || isDistrictAdmin}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select district" />
@@ -850,6 +946,11 @@ export default function AssignMembersPage() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {isDistrictAdmin && (
+                          <p className="text-xs text-gray-500">
+                            Locked to your assigned district
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -887,12 +988,15 @@ export default function AssignMembersPage() {
                   <h3 className="font-medium text-blue-800 mb-2">📋 Assignment Configuration</h3>
                   <p className="text-sm text-blue-700">
                     <strong>Department:</strong> {selectedDepartment.name_en} • 
-                    <strong> Level:</strong> {selectedLevel}
-                    {selectedLevel === 'state' && selectedState && ` • State: ${selectedState}`}
-                    {selectedLevel === 'district' && selectedState && selectedDistrict && ` • State: ${selectedState} • District: ${selectedDistrict}`}
+                    <strong> Level:</strong> {isDistrictAdmin ? 'district' : selectedLevel}
+                    {isDistrictAdmin && currentUser?.state && currentUser?.district && (
+                      ` • State: ${currentUser.state} • District: ${currentUser.district}`
+                    )}
+                    {!isDistrictAdmin && selectedLevel === 'state' && selectedState && ` • State: ${selectedState}`}
+                    {!isDistrictAdmin && selectedLevel === 'district' && selectedState && selectedDistrict && ` • State: ${selectedState} • District: ${selectedDistrict}`}
                   </p>
                   <p className="text-xs text-blue-600 mt-1">
-                    All members assigned will be assigned at this level. Click "Assign Members" on any post to select members.
+                    All members assigned will be assigned at {isDistrictAdmin ? 'district' : selectedLevel} level. Click "Assign Members" on any post to select members.
                   </p>
                 </div>
                 
@@ -908,7 +1012,21 @@ export default function AssignMembersPage() {
                       </div>
                     ) : posts.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">No posts found in this department</p>
+                        <div className="mb-4">
+                          <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <p className="text-gray-600 font-medium mb-2">No posts found in this department</p>
+                        {isDistrictAdmin ? (
+                          <p className="text-sm text-gray-500">
+                            Please contact the superadmin to create posts for this department.
+                          </p>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-500 mb-4">
+                              You need to create posts for this department before assigning members.
+                            </p>
                         <Button 
                           variant="outline" 
                           className="mt-4"
@@ -916,6 +1034,8 @@ export default function AssignMembersPage() {
                         >
                           Create Posts
                         </Button>
+                          </>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-4">

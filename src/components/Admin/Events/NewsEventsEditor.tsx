@@ -131,8 +131,8 @@ export default function NewsEventsEditor() {
     setLoading(true);
     try {
       const [newsRes, eventsRes] = await Promise.all([
-        fetch('/api/content/news'),
-        fetch('/api/content/events')
+        fetch('/api/content/news?admin=true'),
+        fetch('/api/content/events?admin=true')
       ]);
 
       if (newsRes.ok) {
@@ -187,13 +187,25 @@ export default function NewsEventsEditor() {
 
     try {
       const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
-      const data = activeTab === 'news' 
-        ? { ...newsForm, created_by: currentUser.name }
-        : { ...eventForm, created_by: currentUser.name };
+      let data: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+      
+      if (activeTab === 'news') {
+        data = { ...newsForm, created_by: currentUser.name };
+      } else {
+        // For events, ensure dates are properly formatted and empty strings become null
+        data = {
+          ...eventForm,
+          created_by: currentUser.name,
+          event_date: eventForm.event_date?.trim() || null,
+          event_time: eventForm.event_time?.trim() || null,
+          end_date: eventForm.end_date?.trim() || null,
+          end_time: eventForm.end_time?.trim() || null,
+        };
+      }
 
       const method = editingItem ? 'PUT' : 'POST';
       if (editingItem) {
-        (data as any).id = editingItem.id; // eslint-disable-line @typescript-eslint/no-explicit-any
+        data.id = editingItem.id;
       }
 
       const response = await fetch(url, {
@@ -313,13 +325,48 @@ export default function NewsEventsEditor() {
       });
     } else {
       const eventItem = item as Event;
+      
+      // Format dates for HTML date input (YYYY-MM-DD format)
+      const formatDateForInput = (dateStr?: string): string => {
+        if (!dateStr) return '';
+        try {
+          const date = new Date(dateStr);
+          if (isNaN(date.getTime())) return '';
+          // Get YYYY-MM-DD format
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        } catch {
+          // If it's already in YYYY-MM-DD format, return as is
+          if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return dateStr;
+          }
+          return '';
+        }
+      };
+      
+      // Format time for HTML time input (HH:mm format)
+      const formatTimeForInput = (timeStr?: string): string => {
+        if (!timeStr) return '';
+        // If already in HH:mm format, return as is
+        if (timeStr.match(/^\d{2}:\d{2}$/)) {
+          return timeStr;
+        }
+        // If in HH:mm:ss format, extract HH:mm
+        if (timeStr.match(/^\d{2}:\d{2}:\d{2}/)) {
+          return timeStr.substring(0, 5);
+        }
+        return timeStr;
+      };
+      
       setEventForm({
         title: eventItem.title,
         description: eventItem.description,
-        event_date: eventItem.event_date,
-        event_time: eventItem.event_time || '',
-        end_date: eventItem.end_date || '',
-        end_time: eventItem.end_time || '',
+        event_date: formatDateForInput(eventItem.event_date),
+        event_time: formatTimeForInput(eventItem.event_time),
+        end_date: formatDateForInput(eventItem.end_date),
+        end_time: formatTimeForInput(eventItem.end_time),
         location: eventItem.location || '',
         address: eventItem.address || '',
         image_path: eventItem.image_path || '',

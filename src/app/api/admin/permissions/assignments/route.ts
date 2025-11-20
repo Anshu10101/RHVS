@@ -116,8 +116,13 @@ export async function POST(req: NextRequest) {
     ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
     const grantedBy = superadmin[0]?.id || 1;
 
+    // Filter out seller permissions - they should NOT be stored in database
+    // Seller permissions are automatically implied by add_products (handled in admin-scope.ts)
+    const sellerPermissions = ['manage_sellers', 'add_sellers', 'edit_sellers', 'delete_sellers', 'view_sellers'];
+    const allPermissions = permissions.filter(p => !sellerPermissions.includes(p));
+
     // Insert permission assignments
-    const insertPromises = permissions.map(async (permission) => {
+    const insertPromises = allPermissions.map(async (permission) => {
       // First, deactivate any existing assignment for this permission
       await executeQuery(
         'UPDATE district_admin_permission_assignments SET is_active = false WHERE district_admin_id = ? AND permission_key = ?',
@@ -135,7 +140,7 @@ export async function POST(req: NextRequest) {
     await Promise.all(insertPromises);
 
     // Log the assignment in history
-    const historyPromises = permissions.map(async (permission) => {
+    const historyPromises = allPermissions.map(async (permission) => {
       return executeQuery(`
         INSERT INTO permission_assignment_history 
         (district_admin_id, permission_key, action, granted_by, expires_at, notes)
@@ -147,7 +152,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ 
       message: 'Permissions assigned successfully',
-      assigned_permissions: permissions 
+      assigned_permissions: allPermissions 
     });
   } catch (error) {
     console.error('Error assigning permissions:', error);
