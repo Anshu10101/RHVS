@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         cookieLength: cookie.length,
         hasToken: !!token,
-        cookiePreview: cookie.substring(0, 50) + '...'
+        fullCookie: cookie // Log full cookie string for debugging
       });
       
       const res = NextResponse.json({ 
@@ -69,9 +69,12 @@ export async function POST(req: NextRequest) {
       });
       // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
       res.headers.append('Set-Cookie', cookie);
+      
+      // Verify the cookie was actually set
+      const setCookieHeader = res.headers.get('Set-Cookie');
       console.log('✅ Cookie header set, response headers:', {
         hasSetCookie: res.headers.has('Set-Cookie'),
-        setCookieValue: res.headers.get('Set-Cookie')?.substring(0, 50) + '...'
+        setCookieValue: setCookieHeader
       });
       return res;
     }
@@ -184,7 +187,7 @@ export async function POST(req: NextRequest) {
       email: districtAdmin.email,
       cookieLength: cookie.length,
       hasToken: !!token,
-      cookiePreview: cookie.substring(0, 50) + '...'
+      fullCookie: cookie // Log full cookie string for debugging
     });
     
     const res = NextResponse.json({ 
@@ -193,9 +196,12 @@ export async function POST(req: NextRequest) {
     });
     // Append Set-Cookie header (Next.js handles multiple Set-Cookie headers)
     res.headers.append('Set-Cookie', cookie);
+    
+    // Verify the cookie was actually set
+    const setCookieHeader = res.headers.get('Set-Cookie');
     console.log('✅ Cookie header set, response headers:', {
       hasSetCookie: res.headers.has('Set-Cookie'),
-      setCookieValue: res.headers.get('Set-Cookie')?.substring(0, 50) + '...'
+      setCookieValue: setCookieHeader
     });
     return res;
   } catch (e) {

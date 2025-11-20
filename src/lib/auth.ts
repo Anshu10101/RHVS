@@ -47,16 +47,14 @@ export async function verifyAdminJwt(token: string): Promise<AdminJwtClaims | nu
 }
 
 export function buildSessionCookie(token: string): string {
-  const isProd = process.env.NODE_ENV === 'production';
   const attrs = [
     `admin_session=${token}`,
     'Path=/',
     'HttpOnly',
-    'SameSite=Lax', // Changed from Strict to Lax for better compatibility
-    isProd ? 'Secure' : '',
+    'SameSite=Lax',
     // 8 hours
     `Max-Age=${60 * 60 * 8}`,
-  ].filter(Boolean);
+  ];
   return attrs.join('; ');
 }
 
