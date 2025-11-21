@@ -59,7 +59,10 @@ export function AboutPageEditor() {
   useEffect(() => {
     const loadAboutSections = async () => {
       try {
-        const response = await fetch('/api/content/about');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/content/about', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const result = await response.json();
         
         if (result.success && result.data.length > 0) {
@@ -232,9 +235,11 @@ export function AboutPageEditor() {
     setSaveStatus('saving');
     
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/content/about', {
         method: 'POST',
         headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

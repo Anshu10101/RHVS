@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }

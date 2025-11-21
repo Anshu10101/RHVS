@@ -105,7 +105,10 @@ export function ContactPageEditor() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/content/contact');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/content/contact', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (response.ok) {
         const data = await response.json();
         setContactInfo(data.data.contactInfo || []);
@@ -130,9 +133,13 @@ export function ContactPageEditor() {
         updatedBy: currentUser.name
       };
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/content/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 
@@ -157,9 +164,13 @@ export function ContactPageEditor() {
         updatedBy: currentUser.name
       };
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/content/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 
@@ -182,9 +193,13 @@ export function ContactPageEditor() {
         updatedBy: currentUser?.name || 'admin'
       };
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/content/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 
@@ -206,9 +221,13 @@ export function ContactPageEditor() {
         updatedBy: currentUser?.name || 'admin'
       };
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/content/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 

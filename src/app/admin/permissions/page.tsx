@@ -61,10 +61,12 @@ export default function PermissionManagementPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
       const [assignmentsRes, allAssignmentsRes, statsRes] = await Promise.all([
-        fetch('/api/admin/permissions/assignments'), // Active assignments only
-        fetch('/api/admin/permissions/assignments?all=true'), // All assignments for history
-        fetch('/api/admin/permissions/stats')
+        fetch('/api/admin/permissions/assignments', { headers }), // Active assignments only
+        fetch('/api/admin/permissions/assignments?all=true', { headers }), // All assignments for history
+        fetch('/api/admin/permissions/stats', { headers })
       ]);
 
       let activeAssignments: PermissionAssignment[] = [];

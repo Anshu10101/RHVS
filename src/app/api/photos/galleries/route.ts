@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService, PhotoGallery } from '@/lib/content';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { getAdminScope } from '@/lib/admin-scope';
 import { executeQuery } from '@/lib/database';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

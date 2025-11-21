@@ -159,7 +159,10 @@ export function MemberManagement() {
       });
 
       console.log('MemberManagement: Fetching members with params:', params.toString());
-      const response = await fetch(`/api/admin/members?${params}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/members?${params}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       console.log('MemberManagement: Response status:', response.status, response.ok);
       const data = await response.json();
       console.log('MemberManagement: Response data:', data);
@@ -180,7 +183,10 @@ export function MemberManagement() {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/members/stats');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/members/stats', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -207,7 +213,10 @@ export function MemberManagement() {
   // Fetch departments
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/admin/members/departments');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/members/departments', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setDepartments(data.data);

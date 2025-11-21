@@ -82,7 +82,10 @@ export default function StoreSellersPage() {
   const fetchSellers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/sellers');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/sellers', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const result = await response.json();
       
       if (result.success) {
@@ -105,7 +108,10 @@ export default function StoreSellersPage() {
   // Load states for superadmin location filters
   const loadStates = async () => {
     try {
-      const response = await fetch('/api/states');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/states', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setStateOptions(data.data || []);
@@ -123,7 +129,10 @@ export default function StoreSellersPage() {
     }
     
     try {
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/districts?stateId=${stateId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setDistrictOptions(data.data || []);
@@ -149,9 +158,13 @@ export default function StoreSellersPage() {
       
       if (editingSeller) {
         // Update existing seller
+        const token = localStorage.getItem('admin_token');
         const response = await fetch(`/api/admin/sellers/${editingSeller}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify(editingSellerData)
         });
         
@@ -165,9 +178,13 @@ export default function StoreSellersPage() {
         }
       } else {
         // Create new seller
+        const token = localStorage.getItem('admin_token');
         const response = await fetch('/api/admin/sellers', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify(newSellerData)
         });
         
@@ -204,8 +221,10 @@ export default function StoreSellersPage() {
     if (!confirm('Are you sure you want to delete this seller?')) return;
     
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/sellers/${sellerId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       
       const result = await response.json();

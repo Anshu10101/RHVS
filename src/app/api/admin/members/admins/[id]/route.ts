@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 
 // Update a district admin
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const token = req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -119,7 +119,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const token = req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }

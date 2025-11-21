@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { join } from 'path';
 import { promises as fs } from 'fs';
+import { ensureHttps } from '@/lib/secure-url';
 
 interface TokenProfileRow {
   profile_photo_blob: Buffer | null;
@@ -62,7 +63,11 @@ export async function GET(
     }
 
     if (record.profile_photo_path.startsWith('http://') || record.profile_photo_path.startsWith('https://')) {
-      return NextResponse.redirect(record.profile_photo_path, { status: 302 });
+      // Convert HTTP to HTTPS to prevent mixed content warnings
+      const secureUrl = ensureHttps(record.profile_photo_path);
+      if (secureUrl) {
+        return NextResponse.redirect(secureUrl, { status: 302 });
+      }
     }
   }
 

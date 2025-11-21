@@ -184,7 +184,10 @@ export default function ProductStoreEditor() {
   // Define loadCategories before it's used
   const loadCategories = useCallback(async () => {
     try {
-      const response = await fetch('/api/content/store/categories');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/content/store/categories', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         const categoriesData = data.categories || [];
@@ -216,7 +219,11 @@ export default function ProductStoreEditor() {
   const loadProducts = async () => {
     try {
       // use admin-scoped API so district admins only see their own, superadmin sees all
-      const response = await fetch('/api/admin/content/products', { cache: 'no-store', credentials: 'include' });
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/content/products', { 
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         const items = (data.data || []).map((row: Record<string, unknown>) => ({
@@ -493,10 +500,13 @@ export default function ProductStoreEditor() {
         uploadedImages = [newProductImageUrl];
       }
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/admin/content/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           name: newProductData.name,
           description: newProductData.description || '',
@@ -587,10 +597,13 @@ export default function ProductStoreEditor() {
 
   const saveProduct = async (product: Product, images?: string[]) => {
     try {
+      const token = localStorage.getItem('admin_token');
       const resp = await fetch('/api/admin/content/products', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           id: product.id,
           name: product.name,
@@ -916,10 +929,13 @@ export default function ProductStoreEditor() {
       for (const [id, updates] of Object.entries(pendingCategoryUpdates)) {
         const current = categories.find(c => c.id === id);
         if (!current) continue;
+        const token = localStorage.getItem('admin_token');
         await fetch('/api/admin/content/categories', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({
             id,
             name: updates.name ?? current.name,
@@ -931,10 +947,13 @@ export default function ProductStoreEditor() {
 
       // Creates
       for (const cat of pendingCategoryCreates) {
+        const token = localStorage.getItem('admin_token');
         await fetch('/api/admin/content/categories', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({
             id: cat.id,
             name: cat.name,
@@ -948,10 +967,13 @@ export default function ProductStoreEditor() {
       // Create any locally-added products (id starts with 'product_') via admin API
       const newProducts = products.filter(p => String(p.id).startsWith('product_'));
       for (const p of newProducts) {
+        const token = localStorage.getItem('admin_token');
         const resp = await fetch('/api/admin/content/products', {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
           body: JSON.stringify({
             name: p.name,
             price: p.price,

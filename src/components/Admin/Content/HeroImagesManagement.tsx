@@ -71,7 +71,10 @@ export function HeroImagesManagement() {
 
   const fetchImages = async () => {
     try {
-      const response = await fetch('/api/hero-images');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/hero-images', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (response.ok) {
         const data = await response.json();
         setImages(data.images || []);
@@ -85,7 +88,10 @@ export function HeroImagesManagement() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch('/api/hero-images/settings');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/hero-images/settings', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (response.ok) {
         const data = await response.json();
         setSettings(data.settings || settings);
@@ -114,8 +120,10 @@ export function HeroImagesManagement() {
     formData.append('display_order', String(editingImage.display_order || images.length));
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/hero-images', {
         method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData
       });
 
@@ -139,9 +147,13 @@ export function HeroImagesManagement() {
     if (!editingImage) return;
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images/${editingImage.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(editingImage)
       });
 
@@ -163,8 +175,10 @@ export function HeroImagesManagement() {
     if (!confirm('Are you sure you want to delete this image?')) return;
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       if (response.ok) {
@@ -182,9 +196,13 @@ export function HeroImagesManagement() {
 
   const handleUpdateSettings = async () => {
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/hero-images/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ settings })
       });
 
@@ -220,9 +238,13 @@ export function HeroImagesManagement() {
 
     // Update in database
     try {
+      const token = localStorage.getItem('admin_token');
       await fetch(`/api/hero-images/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ display_order: newImages[currentIndex].display_order })
       });
     } catch (error) {

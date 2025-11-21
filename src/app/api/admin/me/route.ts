@@ -9,14 +9,25 @@ export async function GET(req: NextRequest) {
     ? authHeader.substring(7) 
     : req.cookies.get('admin_session')?.value;
   
+  console.log('🔍 /api/admin/me called:', {
+    hasAuthHeader: !!authHeader,
+    authHeaderPrefix: authHeader?.substring(0, 20),
+    hasToken: !!token,
+    tokenLength: token?.length
+  });
+  
   if (!token) {
+    console.log('❌ /api/admin/me: No token found');
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
 
   const claims = await verifyAdminJwt(token);
   if (!claims) {
+    console.log('❌ /api/admin/me: Token verification failed');
     return NextResponse.json({ authenticated: false }, { status: 200 });
   }
+  
+  console.log('✅ /api/admin/me: Token verified, user type:', claims.type);
 
   // Handle different user types
   const userType = claims.type || 'superadmin';

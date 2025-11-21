@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
 import { ContentService } from '@/lib/content';
 
@@ -11,7 +11,7 @@ export async function DELETE(
     console.log('DELETE /api/photos/events/[id] called');
     
     // Verify admin authentication
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     console.log('Token exists:', !!token);
     if (!token) {
       console.log('No token found, returning 401');
@@ -83,7 +83,7 @@ export async function PUT(
 ) {
   try {
     // Verify admin authentication
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     if (!token) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }

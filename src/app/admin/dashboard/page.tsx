@@ -38,27 +38,43 @@ function AdminDashboardContent() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const { getToken, clearToken } = await import('@/lib/secure-storage');
+        const token = getToken();
+        if (!token) {
+          router.push('/admin/login');
+          setLoading(false);
+          return;
+        }
+        
         const response = await fetch('/api/admin/me', { 
           cache: 'no-store', 
-          credentials: 'include' 
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
         
         if (!response.ok) {
+          clearToken();
           router.push('/admin/login');
           return;
         }
         
         const data = await response.json();
         if (!data.authenticated || !data.user) {
+          clearToken();
           router.push('/admin/login');
           return;
         }
 
         // If district admin, fetch their permissions
         if (data.user.type === 'district_admin') {
+          const { getToken: getToken2 } = await import('@/lib/secure-storage');
+          const token2 = getToken2();
           const permissionsResponse = await fetch('/api/admin/permissions/my', {
             cache: 'no-store',
-            credentials: 'include'
+            headers: token2 ? {
+              'Authorization': `Bearer ${token2}`
+            } : {}
           });
           
           if (permissionsResponse.ok) {
@@ -68,6 +84,8 @@ function AdminDashboardContent() {
         }
       } catch (error) {
         console.error('Auth check failed:', error);
+        const { clearToken } = await import('@/lib/secure-storage');
+        clearToken();
         router.push('/admin/login');
       } finally {
         setLoading(false);

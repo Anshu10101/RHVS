@@ -130,9 +130,11 @@ export default function NewsEventsEditor() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('admin_token');
+      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
       const [newsRes, eventsRes] = await Promise.all([
-        fetch('/api/content/news?admin=true'),
-        fetch('/api/content/events?admin=true')
+        fetch('/api/content/news?admin=true', { headers }),
+        fetch('/api/content/events?admin=true', { headers })
       ]);
 
       if (newsRes.ok) {
@@ -208,9 +210,13 @@ export default function NewsEventsEditor() {
         data.id = editingItem.id;
       }
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(data),
       });
 

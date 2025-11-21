@@ -6,71 +6,81 @@ const PROTECTED_PREFIX = '/admin';
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  if (!pathname.startsWith(PROTECTED_PREFIX)) {
-    return NextResponse.next();
-  }
+  // Create response
+  const response = NextResponse.next();
 
-  // Allow the login pages to be accessed without a session
-  if (pathname === '/admin/login' || pathname === '/admin/superadmin/login' || pathname.startsWith('/admin/verify')) {
-    return NextResponse.next();
-  }
-
-  // Get token from Authorization header or cookie (for backward compatibility)
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : req.cookies.get('admin_session')?.value;
+  // Add security headers for all requests
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   
+  // Content Security Policy - strict policy to prevent XSS and mixed content
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-eval needed for Next.js
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https: blob:", // Only HTTPS images, no HTTP
+    "font-src 'self' data: https:", // Only HTTPS fonts, no HTTP
+    "connect-src 'self' https:", // Only HTTPS connections, no HTTP
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "upgrade-insecure-requests", // Force upgrade HTTP to HTTPS
+  ].join('; ');
+  
+  response.headers.set('Content-Security-Policy', csp);
+
+  if (!pathname.startsWith(PROTECTED_PREFIX)) {
+    return response;
+  }
+
+  // Allow login pages and landing page - they handle auth client-side
+  if (pathname === '/admin' || pathname === '/admin/login' || pathname === '/admin/superadmin/login' || pathname.startsWith('/admin/verify')) {
+    return response;
+  }
+
+  // For API routes, check Authorization header
+  if (pathname.startsWith('/api/admin')) {
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : req.cookies.get('admin_session')?.value;
+    
   if (!token) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/admin';
-    return NextResponse.redirect(url);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const claims = await verifyAdminJwt(token);
   if (!claims) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/admin';
-    return NextResponse.redirect(url);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check if user has access to the requested path
+    // Check route permissions for API routes
   const isSuperAdmin = claims.type === 'superadmin';
   const isDistrictAdmin = claims.type === 'district_admin';
 
-  // Superadmin-only routes
   const superAdminOnlyRoutes = [
-    '/admin/members/admins',
-    '/admin/members/pending',
-    '/admin/departments',
-    '/admin/logs',
-    '/admin/settings',
-    '/admin/permissions'
-  ];
-  
-  // Allow district admins to access token verification (they can only see their district's tokens)
-  if (pathname === '/admin/members/tokens' && isDistrictAdmin) {
-    return NextResponse.next();
-  }
-
-  // Allow district admins to access assign members page (they can only assign at district level)
-  if (pathname === '/admin/departments/assign' && isDistrictAdmin) {
-    return NextResponse.next();
-  }
-
-  // Check if trying to access superadmin-only route
+      '/api/admin/members/admins',
+      '/api/admin/members/pending',
+      '/api/admin/departments',
+      '/api/admin/logs',
+      '/api/admin/settings',
+      '/api/admin/permissions'
+    ];
+    
   if (superAdminOnlyRoutes.some(route => pathname.startsWith(route)) && !isSuperAdmin) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/admin/unauthorized';
-    return NextResponse.redirect(url);
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // District admins: let page/API enforce fine-grained permissions (no hard block here)
-  if (isDistrictAdmin) {
     return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // For page navigations (not API routes), allow through
+  // Pages will check auth client-side using localStorage
+  // This is necessary because middleware can't read localStorage
+  return response;
 }
 
 export const config = {

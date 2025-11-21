@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { join } from 'path';
 import { promises as fs } from 'fs';
+import { ensureHttps } from '@/lib/secure-url';
 
 interface HeroImageRow {
   image_blob: Buffer | null;
@@ -115,7 +116,11 @@ async function serveFromPath(
 
   // External URLs or other paths – issue redirect
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return NextResponse.redirect(path, { status: 302 });
+    // Convert HTTP to HTTPS to prevent mixed content warnings
+    const secureUrl = ensureHttps(path);
+    if (secureUrl) {
+      return NextResponse.redirect(secureUrl, { status: 302 });
+    }
   }
 
   return null;

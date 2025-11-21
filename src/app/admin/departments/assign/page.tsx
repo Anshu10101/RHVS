@@ -139,7 +139,10 @@ export default function AssignMembersPage() {
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const response = await fetch('/api/locations?type=states');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/locations?type=states', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         if (data.states) {
           setStates(data.states);
@@ -161,7 +164,10 @@ export default function AssignMembersPage() {
       }
 
       try {
-        const response = await fetch(`/api/locations?type=districts&state=${encodeURIComponent(selectedState)}`);
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`/api/locations?type=districts&state=${encodeURIComponent(selectedState)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         if (data.districts) {
           setDistricts(data.districts);
@@ -181,7 +187,10 @@ export default function AssignMembersPage() {
       setIsLoading(true);
 
       try {
-        const response = await fetch('/api/departments');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/departments', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         if (data.departments) {
@@ -227,21 +236,30 @@ export default function AssignMembersPage() {
     const fetchNationalExecutive = async () => {
       setIsLoadingNationalExecutive(true);
       try {
-        const response = await fetch('/api/departments/national-executive');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/departments/national-executive', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         if (data.success && data.department) {
           setNationalExecutiveDept(data.department);
           
           // Fetch posts for National Executive Department
-          const postsResponse = await fetch(`/api/departments/${data.department.id}/posts`);
+          const token2 = localStorage.getItem('admin_token');
+          const postsResponse = await fetch(`/api/departments/${data.department.id}/posts`, {
+            headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+          });
           const postsData = await postsResponse.json();
           if (postsData.posts) {
             setNationalExecutivePosts(postsData.posts);
           }
 
           // Fetch members for National Executive Department (national level only)
-          const membersResponse = await fetch(`/api/departments/${data.department.id}/members?level=national`);
+          const token3 = localStorage.getItem('admin_token');
+          const membersResponse = await fetch(`/api/departments/${data.department.id}/members?level=national`, {
+            headers: token3 ? { 'Authorization': `Bearer ${token3}` } : {}
+          });
           const membersData = await membersResponse.json();
           if (membersData.members) {
             setNationalExecutiveMembers(membersData.members);
@@ -275,7 +293,10 @@ export default function AssignMembersPage() {
       
       try {
         // Fetch posts (ensures latest structure)
-        const postsResponse = await fetch(`/api/departments/${selectedDepartment.id}/posts`);
+        const token = localStorage.getItem('admin_token');
+        const postsResponse = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const postsData = await postsResponse.json();
         
         if (postsData.error) {
@@ -312,7 +333,10 @@ export default function AssignMembersPage() {
           params.set('district', selectedDistrict);
         }
 
-        const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members?${params.toString()}`);
+        const token2 = localStorage.getItem('admin_token');
+        const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members?${params.toString()}`, {
+          headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+        });
         const membersData = await membersResponse.json();
         
         if (membersData.members) {
@@ -371,7 +395,10 @@ export default function AssignMembersPage() {
         }
 
         console.log('Fetching eligible members with URL:', url);
-        const response = await fetch(url);
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(url, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         console.log('Eligible members response:', data);
@@ -415,10 +442,12 @@ export default function AssignMembersPage() {
       // Assign all selected members to the post
       const assignments = await Promise.all(
         selectedMembers.map(async (member) => {
+          const token = localStorage.getItem('admin_token');
           const response = await fetch(`/api/departments/${selectedDepartment.id}/members`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             },
             body: JSON.stringify({
               post_id: selectedPost.id,
@@ -459,7 +488,10 @@ export default function AssignMembersPage() {
 
       // If assigning to National Executive Department, refresh its members list
       if (selectedDepartment && nationalExecutiveDept && selectedDepartment.id === nationalExecutiveDept.id) {
-        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+        const token2 = localStorage.getItem('admin_token');
+        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`, {
+          headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+        });
         const membersData = await membersResponse.json();
         if (membersData.members) {
           setNationalExecutiveMembers(membersData.members);
@@ -499,8 +531,10 @@ export default function AssignMembersPage() {
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${selectedDepartment.id}/members/${assignmentId}`, {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       const data = await response.json();
@@ -514,7 +548,10 @@ export default function AssignMembersPage() {
 
       // If removing from National Executive Department, refresh its members list
       if (selectedDepartment && nationalExecutiveDept && selectedDepartment.id === nationalExecutiveDept.id) {
-        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+        const token2 = localStorage.getItem('admin_token');
+        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`, {
+          headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+        });
         const membersData = await membersResponse.json();
         if (membersData.members) {
           setNationalExecutiveMembers(membersData.members);
@@ -796,8 +833,10 @@ export default function AssignMembersPage() {
 
                                             setIsLoading(true);
                                             try {
+                                              const token = localStorage.getItem('admin_token');
                                               const response = await fetch(`/api/departments/${nationalExecutiveDept.id}/members/${assignment.id}`, {
                                                 method: 'DELETE',
+                                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                               });
 
                                               const data = await response.json();
@@ -807,7 +846,10 @@ export default function AssignMembersPage() {
                                               }
 
                                               // Refresh National Executive members after removal
-                                              const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`);
+                                              const token2 = localStorage.getItem('admin_token');
+        const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national`, {
+          headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+        });
                                               const membersData = await membersResponse.json();
                                               if (membersData.members) {
                                                 setNationalExecutiveMembers(membersData.members);

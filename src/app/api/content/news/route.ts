@@ -39,8 +39,10 @@ export async function GET(request: NextRequest) {
       // For district admins in admin panel, show ALL news for their district/state
       // This ensures continuity - new admins can see content created by previous admins
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
-        query += ` AND n.district = ? AND n.state = ?`;
-        params.push(scope.districtName, scope.stateName);
+        // Use LIKE to handle district names that might include comma-separated values
+        // e.g., "District Name, State" should match "District Name"
+        query += ` AND (n.district = ? OR n.district LIKE ?) AND n.state = ?`;
+        params.push(scope.districtName, `${scope.districtName}%`, scope.stateName);
       }
     }
 
@@ -75,8 +77,9 @@ export async function GET(request: NextRequest) {
     if (isAdminRequest) {
       const scope = await getAdminScope(request);
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
-        countQuery += ` AND n.district = ? AND n.state = ?`;
-        countParams.push(scope.districtName, scope.stateName);
+        // Use LIKE to handle district names that might include comma-separated values
+        countQuery += ` AND (n.district = ? OR n.district LIKE ?) AND n.state = ?`;
+        countParams.push(scope.districtName, `${scope.districtName}%`, scope.stateName);
       }
     }
     

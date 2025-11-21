@@ -53,8 +53,9 @@ export async function GET(request: NextRequest) {
       // For district admins in admin panel, show ALL events for their district/state
       // This ensures continuity - new admins can see content created by previous admins
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
-        query += ` AND e.district = ? AND e.state = ?`;
-        params.push(scope.districtName, scope.stateName);
+        // Use LIKE to handle district names that might include comma-separated values
+        query += ` AND (e.district = ? OR e.district LIKE ?) AND e.state = ?`;
+        params.push(scope.districtName, `${scope.districtName}%`, scope.stateName);
       }
     }
 
@@ -81,8 +82,9 @@ export async function GET(request: NextRequest) {
     if (isAdminRequest) {
       const scope = await getAdminScope(request);
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
-        countQuery += ` AND e.district = ? AND e.state = ?`;
-        countParams.push(scope.districtName, scope.stateName);
+        // Use LIKE to handle district names that might include comma-separated values
+        countQuery += ` AND (e.district = ? OR e.district LIKE ?) AND e.state = ?`;
+        countParams.push(scope.districtName, `${scope.districtName}%`, scope.stateName);
       }
     }
     

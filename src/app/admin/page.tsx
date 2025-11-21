@@ -17,9 +17,18 @@ function AdminLandingContent() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const { getToken } = await import('@/lib/secure-storage');
+        const token = getToken();
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        
         const response = await fetch('/api/admin/me', { 
-          cache: 'no-store', 
-          credentials: 'include' 
+          cache: 'no-store',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
         
         if (response.ok) {

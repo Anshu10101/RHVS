@@ -49,7 +49,10 @@ export default function PermissionHistoryPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const allAssignmentsRes = await fetch('/api/admin/permissions/assignments?all=true');
+      const token = localStorage.getItem('admin_token');
+      const allAssignmentsRes = await fetch('/api/admin/permissions/assignments?all=true', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (allAssignmentsRes.ok) {
         const allAssignmentsData = await allAssignmentsRes.json();

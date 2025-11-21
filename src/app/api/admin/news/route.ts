@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { trackContentOrigin, enrichContentWithDistrictInfo } from '@/lib/content-tracking';
 
 // GET all news items
 export async function GET(req: NextRequest) {
   try {
-    const token = req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -101,7 +101,7 @@ export async function GET(req: NextRequest) {
 // POST create a new news item
 export async function POST(req: NextRequest) {
   try {
-    const token = req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }

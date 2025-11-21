@@ -172,8 +172,8 @@ export default function HeroSection() {
           if (!img.image_path) return false;
           // Keep images that use API routes or external URLs
           // Exclude legacy /uploads/ paths that may not exist
+          // Only allow HTTPS or relative paths (no HTTP to prevent mixed content)
           return img.image_path.startsWith('/api/') || 
-                 img.image_path.startsWith('http://') || 
                  img.image_path.startsWith('https://');
         });
         setHeroImages(validImages);

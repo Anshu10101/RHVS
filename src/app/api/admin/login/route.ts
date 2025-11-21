@@ -55,6 +55,13 @@ export async function POST(req: NextRequest) {
       });
       
       // Return token in response - client will store in localStorage
+      console.log('✅ Superadmin login successful, returning token:', {
+        userId: user.id,
+        email: user.email,
+        hasToken: !!token,
+        tokenLength: token?.length
+      });
+      
       return NextResponse.json({ 
         success: true, 
         message: 'Logged in',
@@ -165,10 +172,18 @@ export async function POST(req: NextRequest) {
     }
     
     // Return token in response - client will store in localStorage
+    console.log('✅ District admin login successful, returning token:', {
+      userId: districtAdmin.id,
+      email: districtAdmin.email,
+      hasToken: !!token,
+      tokenLength: token?.length
+    });
+    
     return NextResponse.json({ 
       success: true, 
       message: 'Logged in',
-      token // Send token in response
+      token, // Send token in response
+      expiresIn: 8 * 60 * 60 // 8 hours in seconds
     });
   } catch (e) {
     console.error('admin login error', e);

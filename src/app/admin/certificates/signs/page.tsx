@@ -132,7 +132,10 @@ export default function AddSignPage() {
 
   const fetchExistingSignatures = async () => {
     try {
-      const response = await fetch(`/api/admin/certificates/signatures?type=${certificateType}&_t=${Date.now()}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/certificates/signatures?type=${certificateType}&_t=${Date.now()}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         // Add cache-busting timestamp to signature paths
@@ -160,7 +163,10 @@ export default function AddSignPage() {
   const fetchOtherTypeSignatures = async () => {
     try {
       const otherType = certificateType === 'membership' ? 'appointment' : 'membership';
-      const response = await fetch(`/api/admin/certificates/signatures?type=${otherType}&_t=${Date.now()}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/certificates/signatures?type=${otherType}&_t=${Date.now()}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setOtherTypeSignatures(data.signatures);
@@ -177,7 +183,10 @@ export default function AddSignPage() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/departments');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/departments', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.departments) {
         setDepartments(data.departments);
@@ -189,7 +198,10 @@ export default function AddSignPage() {
 
   const fetchMembers = async (deptId: string) => {
     try {
-      const response = await fetch(`/api/admin/certificates/signatures/members?department_id=${deptId}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/certificates/signatures/members?department_id=${deptId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setMembers(data.members);
@@ -310,8 +322,10 @@ export default function AddSignPage() {
         formData.append('post_id', selectedMember.postId.toString());
       }
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/admin/certificates/signatures', {
         method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
 
@@ -354,7 +368,10 @@ export default function AddSignPage() {
   const handleEditSignature = async (signature: Signature) => {
     try {
       // Fetch full signature details
-      const response = await fetch(`/api/admin/certificates/signatures/${signature.id}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/certificates/signatures/${signature.id}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
 
       if (!response.ok || !data.success) {
@@ -448,8 +465,10 @@ export default function AddSignPage() {
         formData.append('signature', editSignatureFile);
       }
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/certificates/signatures/${editingSignature.id}`, {
         method: 'PUT',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
 
@@ -503,8 +522,10 @@ export default function AddSignPage() {
     }
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/certificates/signatures/${signatureId}`, {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       const data = await response.json();

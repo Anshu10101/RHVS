@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { ContentService, PhotoCreateInput } from '@/lib/content';
 import { executeQuery } from '@/lib/database';
 import { createHash } from 'crypto';
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

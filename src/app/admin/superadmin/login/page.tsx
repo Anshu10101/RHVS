@@ -7,17 +7,10 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { AdminProvider } from '@/contexts/AdminContext';
 
 function SuperadminLoginContent() {
-  const { login, currentUser } = useAdmin();
+  const { login } = useAdmin();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-
-  // Redirect if already logged in as superadmin
-  useEffect(() => {
-    if (currentUser && currentUser.type === 'superadmin') {
-      router.push('/admin/dashboard');
-    }
-  }, [currentUser, router]);
 
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
@@ -26,15 +19,15 @@ function SuperadminLoginContent() {
     try {
       await login(email, password);
       
-      // Wait for AdminContext to update and useEffect to handle redirect
-      // The useEffect above will redirect if user is superadmin
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait a bit for token to be stored
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Check if user was set (useEffect handles redirect, but verify type here)
-      // Use a fresh check via API to avoid stale closure
-      const token = localStorage.getItem('admin_token');
+      // Verify login and user type
+      const { getToken, clearToken } = await import('@/lib/secure-storage');
+      const token = getToken();
       if (!token) {
         setError('Login failed. Please check your credentials.');
+        setLoading(false);
         return;
       }
       
@@ -50,19 +43,23 @@ function SuperadminLoginContent() {
         if (data.authenticated && data.user) {
           if (data.user.type !== 'superadmin') {
             setError('Access denied. This is for superadmin only.');
-            await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' });
+            clearToken();
+            setLoading(false);
+            return;
           }
-          // If superadmin, useEffect will handle redirect
+          // Success - redirect to dashboard using full page navigation
+          window.location.href = '/admin/dashboard';
         } else {
           setError('Login failed. Please check your credentials.');
+          setLoading(false);
         }
       } else {
         setError('Login failed. Please check your credentials.');
+        setLoading(false);
       }
     } catch (err: unknown) {
       console.error('Login error:', err);
       setError((err as Error).message || 'Login failed. Please try again.');
-    } finally {
       setLoading(false);
     }
   };

@@ -97,7 +97,10 @@ export default function AssignPermissionsPage() {
     try {
       console.log('Loading states...');
       // Fetch states using the standard API
-      const statesResponse = await fetch('/api/states');
+      const token = localStorage.getItem('admin_token');
+      const statesResponse = await fetch('/api/states', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const statesData = await statesResponse.json();
       console.log('States response:', statesData);
       if (statesData.success) {
@@ -117,7 +120,10 @@ export default function AssignPermissionsPage() {
 
     try {
       console.log('Loading districts for state:', stateId);
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/districts?stateId=${stateId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       console.log('Districts response:', data);
       if (data.success) {
@@ -134,7 +140,11 @@ export default function AssignPermissionsPage() {
 
   const revokePermission = async (adminId: number | string, permission: string) => {
     try {
-      const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${adminId}&permission=${permission}` , { method: 'DELETE' });
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${adminId}&permission=${permission}`, { 
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         toast.success(`Revoked ${permission}`);
         fetchData();
@@ -149,7 +159,11 @@ export default function AssignPermissionsPage() {
 
   const revokeAll = async (adminId: number | string) => {
     try {
-      const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${adminId}`, { method: 'DELETE' });
+      const token = localStorage.getItem('admin_token');
+      const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${adminId}`, { 
+        method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       if (res.ok) {
         toast.success('All permissions revoked');
         fetchData();
@@ -171,9 +185,11 @@ export default function AssignPermissionsPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('admin_token');
+      const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
       const [adminsRes, permissionsRes] = await Promise.all([
-        fetch('/api/admin/members/admins'),
-        fetch('/api/admin/permissions')
+        fetch('/api/admin/members/admins', { headers }),
+        fetch('/api/admin/permissions', { headers })
       ]);
 
        if (adminsRes.ok) {
@@ -230,10 +246,12 @@ export default function AssignPermissionsPage() {
         ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/admin/permissions/assign', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           district_admin_id: parseInt(selectedAdmin),
@@ -540,7 +558,11 @@ export default function AssignPermissionsPage() {
                                 onClick={async () => {
                                   if (!selectedAdmin) return;
                                   try {
-                                    const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}&permission=${permission.key}`, { method: 'DELETE' });
+                                    const token = localStorage.getItem('admin_token');
+                                    const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}&permission=${permission.key}`, { 
+                                      method: 'DELETE',
+                                      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                                    });
                                     if (res.ok) {
                                       toast.success('Permission revoked');
                                       setSelectedPermissions(prev => prev.filter(p => p !== permission.key));
@@ -640,7 +662,11 @@ export default function AssignPermissionsPage() {
                     disabled={!selectedAdmin}
                     onClick={async () => {
                       try {
-                        const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}`, { method: 'DELETE' });
+                        const token = localStorage.getItem('admin_token');
+                        const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}`, { 
+                          method: 'DELETE',
+                          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        });
                         if (res.ok) {
                           toast.success('All permissions revoked');
                           setSelectedPermissions([]);

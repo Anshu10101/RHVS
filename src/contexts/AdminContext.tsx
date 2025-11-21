@@ -85,10 +85,37 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const load = async () => {
       try {
         setState(prev => ({ ...prev, loading: true }));
-        const token = localStorage.getItem('admin_token');
+        // Use secure storage utility
+        const { getToken, shouldRefreshToken } = await import('@/lib/secure-storage');
+        let token = getToken();
+        
         if (!token) {
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
           return;
+        }
+        
+        // Check if token needs refresh
+        if (shouldRefreshToken()) {
+          // Token is close to expiry, try to refresh
+          try {
+            const refreshRes = await fetch('/api/admin/refresh', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            
+            if (refreshRes.ok) {
+              const refreshData = await refreshRes.json();
+              if (refreshData.token) {
+                const { storeToken } = await import('@/lib/secure-storage');
+                storeToken(refreshData.token, refreshData.expiresIn || 8 * 60 * 60);
+                token = refreshData.token;
+              }
+            }
+          } catch (refreshError) {
+            console.warn('Token refresh failed, using existing token:', refreshError);
+          }
         }
         
         const res = await fetch('/api/admin/me', { 
@@ -99,7 +126,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) {
           // Token invalid, clear it
-          localStorage.removeItem('admin_token');
+          const { clearToken } = await import('@/lib/secure-storage');
+          clearToken();
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
           return;
         }
@@ -119,11 +147,13 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           };
           setState(prev => ({ ...prev, currentUser: u, loading: false }));
         } else {
-          localStorage.removeItem('admin_token');
+          const { clearToken } = await import('@/lib/secure-storage');
+          clearToken();
           setState(prev => ({ ...prev, currentUser: null, loading: false }));
         }
       } catch {
-        localStorage.removeItem('admin_token');
+        const { clearToken } = await import('@/lib/secure-storage');
+        clearToken();
         setState(prev => ({ ...prev, currentUser: null, loading: false }));
       }
     };
@@ -139,12 +169,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
+      console.log('🔍 Login response:', { success: data.success, hasToken: !!data.token, tokenLength: data.token?.length });
+      
       if (!res.ok || !data.success) throw new Error(data.message || 'Login failed');
       
-      // Store token in localStorage
-      if (data.token) {
-        localStorage.setItem('admin_token', data.token);
+      if (!data.token) {
+        console.error('❌ No token in login response!');
+        throw new Error('Login failed: No token received');
       }
+      
+      // Store token securely with expiry tracking
+      const { storeToken } = await import('@/lib/secure-storage');
+      storeToken(data.token, data.expiresIn || 8 * 60 * 60);
+      console.log('✅ Token stored securely');
       
       // Login successful, now fetch the user data
       const me = await fetch('/api/admin/me', { 
@@ -154,6 +191,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           'Cache-Control': 'no-cache',
         }
       });
+      
+      console.log('🔍 /api/admin/me response:', { ok: me.ok, status: me.status });
       if (me.ok) {
         const m = await me.json();
         if (m?.authenticated && m.user) {
@@ -180,9 +219,19 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await fetch('/api/admin/logout', { method: 'POST' });
+      const { getToken } = await import('@/lib/secure-storage');
+      const token = getToken();
+      if (token) {
+        await fetch('/api/admin/logout', { 
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
     } finally {
-      localStorage.removeItem('admin_token');
+      const { clearToken } = await import('@/lib/secure-storage');
+      clearToken();
       setState(prev => ({ ...prev, currentUser: null }));
       if (typeof window !== 'undefined') {
         window.location.href = '/admin/login';

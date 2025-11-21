@@ -43,10 +43,12 @@ export default function CreateDepartmentPage() {
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/departments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name_en: nameEn,

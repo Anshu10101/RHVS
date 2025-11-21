@@ -73,14 +73,19 @@ export function TokenVerification() {
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
 
-  // Helper function to validate and normalize image URL
+  // Helper function to validate and normalize image URL (ensures HTTPS)
   const getValidImageUrl = (url: string | undefined | null): string | null => {
     if (!url || url.trim() === '') return null;
     
     const trimmedUrl = url.trim();
     
-    // If it's already a valid absolute URL, return as is
-    if (trimmedUrl.startsWith('http')) {
+    // Convert HTTP to HTTPS to prevent mixed content warnings
+    if (trimmedUrl.startsWith('http://')) {
+      return trimmedUrl.replace('http://', 'https://');
+    }
+    
+    // HTTPS URLs are fine
+    if (trimmedUrl.startsWith('https://')) {
       return trimmedUrl;
     }
     
@@ -113,7 +118,10 @@ export function TokenVerification() {
         status: selectedStatus === 'all' ? '' : selectedStatus,
       });
 
-      const response = await fetch(`/api/admin/verify-token?${params}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/verify-token?${params}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -174,9 +182,13 @@ export function TokenVerification() {
         }
       }
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/admin/verify-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ 
           token: dbToken, 
           action, 
@@ -275,7 +287,10 @@ export function TokenVerification() {
       console.log('🔍 Downloading certificate for token:', token.email);
       
       // Get member details from the verified token
-      const response = await fetch(`/api/admin/members?search=${token.email}&status=verified`);
+      const authToken = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/admin/members?search=${token.email}&status=verified`, {
+        headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {}
+      });
       const data = await response.json();
       
       console.log('📊 Member search result:', data);
@@ -285,7 +300,10 @@ export function TokenVerification() {
         console.log('👤 Found member:', member.member_reg_number);
         
         // Get certificate details
-        const certResponse = await fetch(`/api/admin/certificates/${member.id}`);
+        const authToken2 = localStorage.getItem('admin_token');
+        const certResponse = await fetch(`/api/admin/certificates/${member.id}`, {
+          headers: authToken2 ? { 'Authorization': `Bearer ${authToken2}` } : {}
+        });
         const certData = await certResponse.json();
         
         console.log('📜 Certificate data:', certData);

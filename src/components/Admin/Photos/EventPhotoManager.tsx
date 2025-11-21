@@ -100,9 +100,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         for (const photoId of photoIds) {
           console.log('Deleting photo:', photoId);
           
+          const token = localStorage.getItem('admin_token');
           const response = await fetch(`/api/photos/${photoId}`, {
             method: 'DELETE',
-            credentials: 'include'
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
           });
           
           const responseData = await response.json();
@@ -165,8 +166,9 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
       }
       
       console.log('Loading events with URL:', url);
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(url, {
-        credentials: 'include'
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
       if (data.success) {
@@ -188,7 +190,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     try {
       console.log('Loading states...');
       // Fetch states using the standard API
-      const statesResponse = await fetch('/api/states');
+      const token = localStorage.getItem('admin_token');
+      const statesResponse = await fetch('/api/states', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const statesData = await statesResponse.json();
       console.log('States response:', statesData);
       if (statesData.success) {
@@ -215,7 +220,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
 
     try {
       console.log('Loading districts for state:', stateId);
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/districts?stateId=${stateId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       console.log('Districts response:', data);
       if (data.success) {
@@ -248,8 +256,9 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
 
   const loadGalleries = useCallback(async (eventId: string) => {
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/photos/galleries?eventId=${eventId}`, {
-        credentials: 'include'
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
       if (data.success) {
@@ -277,8 +286,9 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
       console.log('Loading photos with filters:', filters);
       console.log('Request URL:', `/api/photos?${params}`);
 
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/photos?${params}`, {
-        credentials: 'include'
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       
       console.log('Response status:', response.status);
@@ -314,10 +324,12 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
 
   const createEvent = async (eventData: Record<string, unknown>) => {
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/photos/events', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         credentials: 'include',
         body: JSON.stringify(eventData)
@@ -345,10 +357,12 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         return;
       }
       
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/photos/events/${id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         credentials: 'include',
         body: JSON.stringify(eventData)
@@ -389,9 +403,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
       // Remove any trailing slashes that might be in the eventId
       const cleanEventId = eventId.replace(/\/$/, '');
       console.log('Sending DELETE request to:', `/api/photos/events/${cleanEventId}`);
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/photos/events/${cleanEventId}`, {
         method: 'DELETE',
-        credentials: 'include'
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       console.log('Response status:', response.status);
@@ -432,9 +447,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
 
     try {
       console.log('Sending DELETE request to:', `/api/photos/${photoId}`);
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/photos/${photoId}`, {
         method: 'DELETE',
-        credentials: 'include'
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       console.log('Response status:', response.status);
@@ -1613,9 +1629,10 @@ function PhotoUploadModal({
       }
 
       try {
+        const token = localStorage.getItem('admin_token');
         const response = await fetch('/api/photos/upload', {
           method: 'POST',
-          credentials: 'include',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           body: formData
         });
 

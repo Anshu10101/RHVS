@@ -84,7 +84,10 @@ export default function ManageDepartmentsPage() {
       setIsLoading(true);
 
       try {
-        const response = await fetch('/api/departments');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/departments', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         if (data.departments) {
@@ -111,7 +114,10 @@ export default function ManageDepartmentsPage() {
     const fetchNationalExecutive = async () => {
       setIsLoadingNationalExecutive(true);
       try {
-        const response = await fetch('/api/departments/national-executive');
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch('/api/departments/national-executive', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         if (data.success && data.department) {
@@ -175,10 +181,12 @@ export default function ManageDepartmentsPage() {
     setIsEditingDepartment(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${editingDepartment.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name_en: editDeptNameEn,
@@ -238,7 +246,10 @@ export default function ManageDepartmentsPage() {
       setIsLoading(true);
       
       try {
-        const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`);
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         const data = await response.json();
         
         if (data.posts) {
@@ -274,10 +285,12 @@ export default function ManageDepartmentsPage() {
     setIsAddingPost(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name_en: newPostNameEn,
@@ -337,10 +350,12 @@ export default function ManageDepartmentsPage() {
     setIsEditingPost(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${selectedDepartment?.id}/posts/${editingPost.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name_en: editPostNameEn,
@@ -394,8 +409,10 @@ export default function ManageDepartmentsPage() {
     setIsLoading(true);
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${selectedDepartment.id}/posts/${post.id}`, {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       const data = await response.json();
@@ -426,10 +443,12 @@ export default function ManageDepartmentsPage() {
   const handleSetNationalExecutive = async (departmentId: number) => {
     setIsSettingNationalExecutive(true);
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/departments/national-executive', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ department_id: departmentId }),
       });
@@ -447,7 +466,10 @@ export default function ManageDepartmentsPage() {
       }
 
       // Refresh departments list (the selected one will be removed from regular list)
-      const deptResponse = await fetch('/api/departments');
+      const token2 = localStorage.getItem('admin_token');
+      const deptResponse = await fetch('/api/departments', {
+        headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+      });
       const deptData = await deptResponse.json();
       if (deptData.departments) {
         setDepartments(deptData.departments);
@@ -477,8 +499,10 @@ export default function ManageDepartmentsPage() {
 
     setIsSettingNationalExecutive(true);
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/departments/national-executive', {
         method: 'DELETE',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
       const data = await response.json();
@@ -490,7 +514,10 @@ export default function ManageDepartmentsPage() {
       setNationalExecutiveDept(null);
 
       // Refresh departments list
-      const deptResponse = await fetch('/api/departments');
+      const token2 = localStorage.getItem('admin_token');
+      const deptResponse = await fetch('/api/departments', {
+        headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+      });
       const deptData = await deptResponse.json();
       if (deptData.departments) {
         setDepartments(deptData.departments);
@@ -551,10 +578,12 @@ export default function ManageDepartmentsPage() {
     
     // Send the update to the server
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(reorderedPosts.map(post => ({
           id: post.id,
@@ -585,7 +614,10 @@ export default function ManageDepartmentsPage() {
       });
       
       // If there was an error, fetch the posts again to reset the order
-      const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`);
+      const token2 = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
+        headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+      });
       const data = await response.json();
       
       if (data.posts) {

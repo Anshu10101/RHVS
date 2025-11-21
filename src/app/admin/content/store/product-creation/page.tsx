@@ -49,7 +49,12 @@ export default function ProductCreationPage() {
 		const form = new FormData();
 		form.append('file', file);
 		form.append('productId', key);
-		const res = await fetch('/api/upload/store', { method: 'POST', credentials: 'include', body: form });
+		const token = localStorage.getItem('admin_token');
+		const res = await fetch('/api/upload/store', { 
+      method: 'POST', 
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      body: form 
+    });
 		if (!res.ok) {
 			const errorData = await res.json().catch(() => ({ error: 'Unknown error' }));
 			const errorMessage = errorData.error || errorData.message || `Upload failed with status ${res.status}`;
@@ -67,15 +72,22 @@ export default function ProductCreationPage() {
 		(async () => {
 			try {
 				// Load categories
-				const res = await fetch('/api/content/store/categories', { cache: 'no-store' });
+				const token = localStorage.getItem('admin_token');
+				const res = await fetch('/api/content/store/categories', { 
+					cache: 'no-store',
+					headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
 				const data = await res.json();
 				if (data?.success && Array.isArray(data.categories)) {
 					setCategories(data.categories.map((c: { id: number; name: string }) => ({ id: String(c.id), name: c.name })));
 					if (!category && data.categories.length) setCategory(String(data.categories[0].id));
 				}
 				
-				// Load sellers
-				const sellersRes = await fetch('/api/admin/sellers', { cache: 'no-store' });
+				// Load sellers (reuse token from above)
+				const sellersRes = await fetch('/api/admin/sellers', { 
+					cache: 'no-store',
+					headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+				});
 				const sellersData = await sellersRes.json();
 				if (sellersData?.success && Array.isArray(sellersData.data)) {
 					setSellers(sellersData.data.map((s: { id: number; name: string; business_name: string; district: string; state: string }) => ({ 
@@ -97,7 +109,11 @@ export default function ProductCreationPage() {
     if (!editId) return;
     (async () => {
       try {
-        const res = await fetch(`/api/products/${encodeURIComponent(editId)}`, { cache: 'no-store' });
+        const token = localStorage.getItem('admin_token');
+        const res = await fetch(`/api/products/${encodeURIComponent(editId)}`, { 
+          cache: 'no-store',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (data?.success && data.product) {
@@ -213,10 +229,13 @@ export default function ProductCreationPage() {
       // Always include images array - it will preserve existing images if unchanged
       body.images = finalImages;
       
+      const token = localStorage.getItem('admin_token');
       const resp = await fetch('/api/admin/content/products', {
         method: editId ? 'PUT' : 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
+				headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(editId ? { id: editId, ...body } : body)
 			});
 			
@@ -231,7 +250,11 @@ export default function ProductCreationPage() {
 			// Reload product data to get updated image URLs
 			if (editId) {
 				try {
-					const refreshRes = await fetch(`/api/products/${encodeURIComponent(editId)}`, { cache: 'no-store' });
+					const token = localStorage.getItem('admin_token');
+					const refreshRes = await fetch(`/api/products/${encodeURIComponent(editId)}`, { 
+            cache: 'no-store',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+          });
 					if (refreshRes.ok) {
 						const refreshData = await refreshRes.json();
 						if (refreshData?.success && refreshData.product) {

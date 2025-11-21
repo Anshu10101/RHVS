@@ -147,8 +147,11 @@ export default function AdminsManagementPage() {
   const fetchData = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem('admin_token');
+        const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+        
         // Fetch members
-        const membersRes = await fetch('/api/admin/members');
+        const membersRes = await fetch('/api/admin/members', { headers });
         if (membersRes.ok) {
           const data = await membersRes.json();
           const membersList = data.data?.members || data.members || [];
@@ -157,7 +160,7 @@ export default function AdminsManagementPage() {
         }
         
         // Fetch district admins
-        const adminsRes = await fetch('/api/admin/members/admins');
+        const adminsRes = await fetch('/api/admin/members/admins', { headers });
         if (adminsRes.ok) {
           const data = await adminsRes.json();
           const adminsList = data.admins || [];

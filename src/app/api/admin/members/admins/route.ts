@@ -8,7 +8,10 @@ import { sendAdminAssignmentEmail } from '@/lib/email';
 export async function GET(req: NextRequest) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const token = req.cookies.get('admin_session')?.value;
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : req.cookies.get('admin_session')?.value;
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -84,7 +87,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const token = req.cookies.get('admin_session')?.value;
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : req.cookies.get('admin_session')?.value;
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
