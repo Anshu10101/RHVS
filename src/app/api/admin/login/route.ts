@@ -54,19 +54,32 @@ export async function POST(req: NextRequest) {
         type: 'superadmin'
       });
       
-      // Return token in response - client will store in localStorage
-      console.log('✅ Superadmin login successful, returning token:', {
-        userId: user.id,
-        email: user.email,
-        hasToken: !!token,
-        tokenLength: token?.length
-      });
-      
-      return NextResponse.json({ 
+      // Create response with token
+      const response = NextResponse.json({ 
         success: true, 
         message: 'Logged in',
         token // Send token in response
       });
+      
+      // CRITICAL: Force clear old admin_session cookie completely
+      // Next.js cookies.delete() may not work reliably, so we manually set expired cookies
+      const isProd = process.env.NODE_ENV === 'production';
+      const expiresDate = new Date(0).toUTCString();
+      
+      // Delete using Next.js method
+      response.cookies.delete('admin_session');
+      
+      // Manually set expired cookies with all possible SameSite values to ensure clearing
+      // This is more reliable than relying on cookies.delete()
+      const cookieBase = `admin_session=; Path=/; Expires=${expiresDate}; HttpOnly; Max-Age=0`;
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Lax${isProd ? '; Secure' : ''}`);
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Strict${isProd ? '; Secure' : ''}`);
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=None${isProd ? '; Secure' : ''}`);
+      
+      // Also set for root path explicitly
+      response.headers.append('Set-Cookie', `admin_session=; Path=/admin; Expires=${expiresDate}; HttpOnly; Max-Age=0; SameSite=Lax${isProd ? '; Secure' : ''}`);
+      
+      return response;
     }
 
     // If not superadmin, check if user is a district admin
@@ -89,46 +102,32 @@ export async function POST(req: NextRequest) {
     ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string; member_name: string | null }>;
 
     if (districtAdminRows.length === 0) {
-      console.log('❌ District admin login failed: No admin found with email:', email);
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
 
     const districtAdmin = districtAdminRows[0];
     
-    console.log('🔍 District admin found:', {
-      id: districtAdmin.id,
-      email: districtAdmin.email,
-      is_active: districtAdmin.is_active,
-      expires_at: districtAdmin.expires_at,
-      has_password_hash: !!districtAdmin.password_hash
-    });
-    
     // Check if admin account is active
     if (!districtAdmin.is_active) {
-      console.log('❌ District admin login failed: Account disabled for email:', email);
       return NextResponse.json({ success: false, message: 'Account disabled' }, { status: 403 });
     }
     
     // Check if admin account has expired
     if (districtAdmin.expires_at && new Date(districtAdmin.expires_at) < new Date()) {
-      console.log('❌ District admin login failed: Account expired for email:', email);
       return NextResponse.json({ success: false, message: 'Account expired' }, { status: 403 });
     }
 
     // Check if password hash exists
     if (!districtAdmin.password_hash) {
-      console.log('❌ District admin login failed: No password hash found for email:', email);
+      console.error('District admin login error: No password hash found for email:', email);
       return NextResponse.json({ success: false, message: 'Account configuration error. Please contact administrator.' }, { status: 500 });
     }
 
     // Verify password
     const valid = await verifyPassword(password, districtAdmin.password_hash);
     if (!valid) {
-      console.log('❌ District admin login failed: Invalid password for email:', email);
       return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
     }
-    
-    console.log('✅ District admin password verified successfully for email:', email);
 
     // Update last_login timestamp
     await executeQuery('UPDATE district_admins SET last_login = NOW() WHERE id = ?', [districtAdmin.id]);
@@ -171,20 +170,33 @@ export async function POST(req: NextRequest) {
       // Don't fail the login if logging fails
     }
     
-    // Return token in response - client will store in localStorage
-    console.log('✅ District admin login successful, returning token:', {
-      userId: districtAdmin.id,
-      email: districtAdmin.email,
-      hasToken: !!token,
-      tokenLength: token?.length
-    });
-    
-    return NextResponse.json({ 
+    // Create response with token
+    const response = NextResponse.json({ 
       success: true, 
       message: 'Logged in',
       token, // Send token in response
       expiresIn: 8 * 60 * 60 // 8 hours in seconds
     });
+    
+    // CRITICAL: Force clear old admin_session cookie completely
+    // Next.js cookies.delete() may not work reliably, so we manually set expired cookies
+    const isProd = process.env.NODE_ENV === 'production';
+    const expiresDate = new Date(0).toUTCString();
+    
+    // Delete using Next.js method
+    response.cookies.delete('admin_session');
+    
+    // Manually set expired cookies with all possible SameSite values to ensure clearing
+    // This is more reliable than relying on cookies.delete()
+    const cookieBase = `admin_session=; Path=/; Expires=${expiresDate}; HttpOnly; Max-Age=0`;
+    response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Lax${isProd ? '; Secure' : ''}`);
+    response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Strict${isProd ? '; Secure' : ''}`);
+    response.headers.append('Set-Cookie', `${cookieBase}; SameSite=None${isProd ? '; Secure' : ''}`);
+    
+    // Also set for root path explicitly
+    response.headers.append('Set-Cookie', `admin_session=; Path=/admin; Expires=${expiresDate}; HttpOnly; Max-Age=0; SameSite=Lax${isProd ? '; Secure' : ''}`);
+    
+    return response;
   } catch (e) {
     console.error('admin login error', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

@@ -97,7 +97,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
               </div>
 
               {/* Product Info */}
-              <div className="p-2 sm:p-3 pb-2.5 sm:pb-3 bg-white rounded-b-xl">
+              <div className="p-2 sm:p-3 pb-3 sm:pb-4 bg-white rounded-b-xl">
                 <h3 className="font-semibold text-gray-900 text-xs sm:text-sm mb-0.5 line-clamp-1">
                   {product.name}
                 </h3>
@@ -136,7 +136,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           overflow-x: auto;
           overflow-y: visible;
           padding: 0 3.5rem;
-          padding-bottom: 0.5rem;
+          padding-bottom: 1rem;
           scroll-behavior: smooth;
           scrollbar-width: none;
           -ms-overflow-style: none;

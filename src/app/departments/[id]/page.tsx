@@ -19,7 +19,16 @@ async function getHierarchy(id: string, query: HierarchyQuery = {}) {
   if (query.district) searchParams.set('district', query.district);
   const qs = searchParams.toString();
 
-  const res = await fetch(`${base}/api/public/departments/${id}/hierarchy${qs ? `?${qs}` : ''}`, { cache: 'no-store' });
+  // Add cache-busting timestamp to ensure fresh data
+  const cacheBuster = `_t=${Date.now()}`;
+  const finalQs = qs ? `${qs}&${cacheBuster}` : cacheBuster;
+  const res = await fetch(`${base}/api/public/departments/${id}/hierarchy?${finalQs}`, { 
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+    }
+  });
   if (!res.ok) return null;
   const json = await res.json();
   return json?.data ?? null;

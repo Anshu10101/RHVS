@@ -132,9 +132,10 @@ export default function NewsEventsEditor() {
     try {
       const token = localStorage.getItem('admin_token');
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const timestamp = Date.now();
       const [newsRes, eventsRes] = await Promise.all([
-        fetch('/api/content/news?admin=true', { headers }),
-        fetch('/api/content/events?admin=true', { headers })
+        fetch(`/api/content/news?admin=true&_t=${timestamp}`, { cache: 'no-store', headers }),
+        fetch(`/api/content/events?admin=true&_t=${timestamp}`, { cache: 'no-store', headers })
       ]);
 
       if (newsRes.ok) {
@@ -211,8 +212,11 @@ export default function NewsEventsEditor() {
       }
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(url, {
+      // Add cache-busting timestamp to URL
+      const urlWithCache = `${url}?_t=${Date.now()}`;
+      const response = await fetch(urlWithCache, {
         method,
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -236,7 +240,13 @@ export default function NewsEventsEditor() {
 
     try {
       const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
-      const response = await fetch(`${url}?id=${id}`, { method: 'DELETE' });
+      const token = localStorage.getItem('admin_token');
+      // Add cache-busting timestamp
+      const response = await fetch(`${url}?id=${id}&_t=${Date.now()}`, { 
+        method: 'DELETE',
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
 
       if (response.ok) {
         await fetchData();
@@ -255,8 +265,11 @@ export default function NewsEventsEditor() {
       formData.append('file', file);
       formData.append('type', activeTab);
 
-      const response = await fetch('/api/upload/content', {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/upload/content?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
 
@@ -312,17 +325,48 @@ export default function NewsEventsEditor() {
     });
   };
 
-  const startEdit = (item: News | Event) => {
-    setEditingItem(item);
+  const startEdit = async (item: News | Event) => {
+    // Fetch fresh data for the item being edited to avoid stale data
+    let itemToUse = item;
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+      const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
+      const response = await fetch(`${url}?id=${item.id}&admin=true&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Use fresh data if available, otherwise fall back to item from list
+        const freshItem = (activeTab === 'news' 
+          ? data.data?.find((n: News) => n.id === item.id)
+          : data.data?.find((e: Event) => e.id === item.id));
+        
+        if (freshItem) {
+          itemToUse = freshItem;
+        }
+      }
+    } catch (error) {
+      // If fetch fails, use item from list
+      console.error('Failed to fetch fresh item data:', error);
+    }
+    
+    setEditingItem(itemToUse);
     setIsCreating(false);
     
     if (activeTab === 'news') {
-      const newsItem = item as News;
+      const newsItem = itemToUse as News;
+      const timestamp = Date.now();
       setNewsForm({
         title: newsItem.title,
         content: newsItem.content,
         excerpt: newsItem.excerpt || '',
-        image_path: newsItem.image_path || '',
+        // Add cache-busting to image URL if it's a relative path
+        image_path: newsItem.image_path ? 
+          (newsItem.image_path.startsWith('/') ? `${newsItem.image_path}${newsItem.image_path.includes('?') ? '&' : '?'}_t=${timestamp}` : newsItem.image_path) 
+          : '',
         news_type: newsItem.news_type,
         priority: newsItem.priority,
         is_featured: newsItem.is_featured,
@@ -330,7 +374,7 @@ export default function NewsEventsEditor() {
         order: newsItem.order,
       });
     } else {
-      const eventItem = item as Event;
+      const eventItem = itemToUse as Event;
       
       // Format dates for HTML date input (YYYY-MM-DD format)
       const formatDateForInput = (dateStr?: string): string => {
@@ -366,6 +410,7 @@ export default function NewsEventsEditor() {
         return timeStr;
       };
       
+      const timestamp = Date.now();
       setEventForm({
         title: eventItem.title,
         description: eventItem.description,
@@ -375,7 +420,10 @@ export default function NewsEventsEditor() {
         end_time: formatTimeForInput(eventItem.end_time),
         location: eventItem.location || '',
         address: eventItem.address || '',
-        image_path: eventItem.image_path || '',
+        // Add cache-busting to image URL if it's a relative path
+        image_path: eventItem.image_path ? 
+          (eventItem.image_path.startsWith('/') ? `${eventItem.image_path}${eventItem.image_path.includes('?') ? '&' : '?'}_t=${timestamp}` : eventItem.image_path) 
+          : '',
         registration_required: eventItem.registration_required,
         registration_url: eventItem.registration_url || '',
         max_participants: eventItem.max_participants || 0,

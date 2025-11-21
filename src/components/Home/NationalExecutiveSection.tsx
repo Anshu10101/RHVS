@@ -41,7 +41,14 @@ export default function NationalExecutiveSection() {
   useEffect(() => {
     const loadNationalExecutive = async () => {
       try {
-        const response = await fetch('/api/public/departments/national-executive', { cache: 'no-store' });
+        // Use cache-busting timestamp to ensure fresh data
+        const response = await fetch(`/api/public/departments/national-executive?_t=${Date.now()}`, { 
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         const data = await response.json();
         
         if (data?.success) {
@@ -58,6 +65,18 @@ export default function NationalExecutiveSection() {
     };
 
     loadNationalExecutive();
+
+    // Reload when page becomes visible (e.g., after navigating back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadNationalExecutive();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Don't render if no department is set
@@ -289,11 +308,11 @@ export default function NationalExecutiveSection() {
 
           {/* Expand/Collapse Button */}
           {remainingTiers.length > 0 && (
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-6 px-4">
               <Button
                 onClick={() => setShowAll(!showAll)}
                 variant="outline"
-                className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 font-semibold px-6 py-2"
+                className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 font-semibold px-4 sm:px-6 py-2 w-full sm:w-auto"
               >
                 {showAll ? (
                   <>

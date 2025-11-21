@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Schema for creating a department (level is determined when assigning members)
 const createDepartmentSchema = z.object({
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     // Execute the query
     const departments = await executeQuery(query, params) as any[];
 
-    return NextResponse.json({ departments });
+    return noCacheJsonResponse({ departments });
   } catch (error) {
     console.error('Error fetching departments:', error);
     return NextResponse.json({ error: 'Failed to fetch departments' }, { status: 500 });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function ProductCreationPage() {
 	const router = useRouter();
-  // detect edit mode via URL ?id=
-  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-  const editId = search?.get('id') || '';
+  const searchParams = useSearchParams();
+  // detect edit mode via URL ?id= - use searchParams to detect URL changes
+  const editId = searchParams?.get('id') || '';
 	const [name, setName] = useState('');
 	const [description, setDescription] = useState('');
 	const [price, setPrice] = useState<number>(0);
@@ -73,7 +73,7 @@ export default function ProductCreationPage() {
 			try {
 				// Load categories
 				const token = localStorage.getItem('admin_token');
-				const res = await fetch('/api/content/store/categories', { 
+				const res = await fetch(`/api/content/store/categories?_t=${Date.now()}`, { 
 					cache: 'no-store',
 					headers: token ? { 'Authorization': `Bearer ${token}` } : {}
 				});
@@ -84,7 +84,7 @@ export default function ProductCreationPage() {
 				}
 				
 				// Load sellers (reuse token from above)
-				const sellersRes = await fetch('/api/admin/sellers', { 
+				const sellersRes = await fetch(`/api/admin/sellers?_t=${Date.now()}`, { 
 					cache: 'no-store',
 					headers: token ? { 'Authorization': `Bearer ${token}` } : {}
 				});
@@ -104,13 +104,36 @@ export default function ProductCreationPage() {
 		})();
 	}, [category]);
 
-  // Load existing product in edit mode
+  // Load existing product in edit mode - reload whenever editId or URL changes
   useEffect(() => {
-    if (!editId) return;
+    if (!editId) {
+      // Reset form when not in edit mode
+      setName('');
+      setDescription('');
+      setPrice(0);
+      setOriginalPrice(0);
+      setCategory('');
+      setSellerId('');
+      setStock(10);
+      setIsVisible(true);
+      setIsFeatured(false);
+      setTagsInput('');
+      setFeatures(['']);
+      setSpecs({});
+      setThumbType('file');
+      setThumbFile(null);
+      setThumbUrl('');
+      setSupportingFiles([]);
+      setSupportingPreviews([]);
+      setExistingSupportingUrls([]);
+      return;
+    }
     (async () => {
       try {
         const token = localStorage.getItem('admin_token');
-        const res = await fetch(`/api/products/${encodeURIComponent(editId)}`, { 
+        // Always use fresh timestamp to bypass cache
+        const timestamp = Date.now();
+        const res = await fetch(`/api/products/${encodeURIComponent(editId)}?_t=${timestamp}`, { 
           cache: 'no-store',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
@@ -130,22 +153,51 @@ export default function ProductCreationPage() {
           setTagsInput(Array.isArray(p.tags) ? p.tags.join(', ') : '');
           setFeatures(Array.isArray(p.features) ? p.features : ['']);
           setSpecs((p.specifications as Record<string, string>) || {});
-          // images
+          // images - always reload fresh with cache-busting
           const imgs: string[] = Array.isArray(p.images) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
           const main = imgs[0] || '';
           if (main) {
             setThumbType('url');
-            setThumbUrl(main);
+            // Strip any existing cache-busting params before storing
+            let cleanMain = main;
+            try {
+              const isAbsolute = main.startsWith('http://') || main.startsWith('https://');
+              const urlObj = isAbsolute ? new URL(main) : new URL(main, window.location.origin);
+              urlObj.searchParams.delete('_t');
+              urlObj.searchParams.delete('v');
+              // Preserve original format (relative or absolute)
+              cleanMain = isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+            } catch {
+              // If URL parsing fails, use original (remove query params as fallback)
+              cleanMain = main.split('?')[0];
+            }
+            setThumbUrl(cleanMain); // Store clean URL without cache-busting
+          } else {
+            setThumbType('file');
+            setThumbUrl('');
           }
-          const supporting = imgs.slice(1);
+          const supporting = imgs.slice(1).map(url => {
+            // Strip cache-busting params from supporting images too
+            try {
+              const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+              const urlObj = isAbsolute ? new URL(url) : new URL(url, window.location.origin);
+              urlObj.searchParams.delete('_t');
+              urlObj.searchParams.delete('v');
+              // Preserve original format (relative or absolute)
+              return isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+            } catch {
+              return url.split('?')[0]; // At least remove query params
+            }
+          });
           setExistingSupportingUrls(supporting);
           setSupportingPreviews(supporting);
+          setSupportingFiles([]); // Clear any pending file uploads
         }
       } catch (e) {
         console.error('Failed to load product for edit', e);
       }
     })();
-  }, [editId]);
+  }, [editId, searchParams?.toString()]); // Reload when editId or search params change
 
 	const onPickSupporting = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const files = Array.from(e.target.files || []);
@@ -162,7 +214,7 @@ export default function ProductCreationPage() {
 		e.target.value = '';
 	};
 
-  const create = async () => {
+	const create = async () => {
 		if (!name || !price) return;
 		setSaving('saving');
 		try {
@@ -176,13 +228,37 @@ export default function ProductCreationPage() {
 				}
 				image_url = await uploadImage(thumbFile, `new_thumb_${Date.now()}`);
 			} else if (thumbType === 'url' && thumbUrl) {
-				image_url = thumbUrl;
+				// Strip cache-busting query parameters before saving
+				try {
+					const isAbsolute = thumbUrl.startsWith('http://') || thumbUrl.startsWith('https://');
+					const urlObj = isAbsolute ? new URL(thumbUrl) : new URL(thumbUrl, window.location.origin);
+					urlObj.searchParams.delete('_t');
+					urlObj.searchParams.delete('v');
+					// Preserve original format (relative or absolute)
+					image_url = isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+				} catch {
+					// If URL parsing fails, use original URL (shouldn't happen, but safe fallback)
+					image_url = thumbUrl.split('?')[0]; // At least remove query params
+				}
 			}
 			// Upload supporting (max 3) - preserve existing URLs, upload new files
 			const gallery: string[] = [];
-			// First add existing URLs that weren't replaced
+			// First add existing URLs that weren't replaced (strip cache-busting params)
 			for (let i = 0; i < existingSupportingUrls.length && gallery.length < 3; i++) {
-				gallery.push(existingSupportingUrls[i]);
+				let cleanUrl = existingSupportingUrls[i];
+				// Strip cache-busting query parameters
+				try {
+					const isAbsolute = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://');
+					const urlObj = isAbsolute ? new URL(cleanUrl) : new URL(cleanUrl, window.location.origin);
+					urlObj.searchParams.delete('_t');
+					urlObj.searchParams.delete('v');
+					// Preserve original format (relative or absolute)
+					cleanUrl = isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+				} catch {
+					// If URL parsing fails, use original URL
+					cleanUrl = existingSupportingUrls[i].split('?')[0]; // At least remove query params
+				}
+				gallery.push(cleanUrl);
 			}
 			// Then upload new files (with 1MB size validation)
 			for (let i = 0; i < supportingFiles.length && gallery.length < 3; i++) {
@@ -230,8 +306,9 @@ export default function ProductCreationPage() {
       body.images = finalImages;
       
       const token = localStorage.getItem('admin_token');
-      const resp = await fetch('/api/admin/content/products', {
+      const resp = await fetch(`/api/admin/content/products?_t=${Date.now()}`, {
         method: editId ? 'PUT' : 'POST',
+        cache: 'no-store',
 				headers: { 
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -251,7 +328,7 @@ export default function ProductCreationPage() {
 			if (editId) {
 				try {
 					const token = localStorage.getItem('admin_token');
-					const refreshRes = await fetch(`/api/products/${encodeURIComponent(editId)}`, { 
+					const refreshRes = await fetch(`/api/products/${encodeURIComponent(editId)}?_t=${Date.now()}`, { 
             cache: 'no-store',
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
           });
@@ -262,9 +339,34 @@ export default function ProductCreationPage() {
 							const imgs: string[] = Array.isArray(p.images) ? p.images : (p.imageUrl ? [p.imageUrl] : []);
 							const main = imgs[0] || '';
 							if (main) {
-								setThumbUrl(main);
+								// Strip cache-busting params before storing
+								let cleanMain = main;
+								try {
+									const isAbsolute = main.startsWith('http://') || main.startsWith('https://');
+									const urlObj = isAbsolute ? new URL(main) : new URL(main, window.location.origin);
+									urlObj.searchParams.delete('_t');
+									urlObj.searchParams.delete('v');
+									// Preserve original format (relative or absolute)
+									cleanMain = isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+								} catch {
+									cleanMain = main.split('?')[0]; // At least remove query params
+								}
+								setThumbUrl(cleanMain);
+								setThumbType('url');
 							}
-							const supporting = imgs.slice(1);
+							const supporting = imgs.slice(1).map(url => {
+								// Strip cache-busting params
+								try {
+									const isAbsolute = url.startsWith('http://') || url.startsWith('https://');
+									const urlObj = isAbsolute ? new URL(url) : new URL(url, window.location.origin);
+									urlObj.searchParams.delete('_t');
+									urlObj.searchParams.delete('v');
+									// Preserve original format (relative or absolute)
+									return isAbsolute ? urlObj.toString() : urlObj.pathname + (urlObj.search ? urlObj.search : '');
+								} catch {
+									return url.split('?')[0]; // At least remove query params
+								}
+							});
 							setExistingSupportingUrls(supporting);
 							setSupportingPreviews(supporting);
 							setSupportingFiles([]);

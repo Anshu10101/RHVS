@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { getAdminScope } from '@/lib/admin-scope';
 
 // GET - Fetch single member by ID
 export async function GET(
@@ -8,6 +9,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check admin authentication
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
     const { id: memberId } = await params;
 
     const memberQuery = `
@@ -86,6 +97,27 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check admin authentication and permissions
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
+    // Check if admin has permission to manage members
+    if (!scope.isSuperAdmin) {
+      // For district admins, check permissions
+      if (!scope.permissions.includes('manage_members') && !scope.permissions.includes('edit_members')) {
+        return NextResponse.json(
+          { success: false, error: 'Insufficient permissions to update members' },
+          { status: 403 }
+        );
+      }
+    }
+
     const { id: memberId } = await params;
     const body = await request.json();
     const {
@@ -237,6 +269,27 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check admin authentication and permissions
+    const scope = await getAdminScope(request);
+    
+    if (!scope.isSuperAdmin && !scope.isDistrictAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+
+    // Check if admin has permission to manage members
+    if (!scope.isSuperAdmin) {
+      // For district admins, check permissions
+      if (!scope.permissions.includes('manage_members') && !scope.permissions.includes('delete_members')) {
+        return NextResponse.json(
+          { success: false, error: 'Insufficient permissions to delete members' },
+          { status: 403 }
+        );
+      }
+    }
+
     const { id: memberId } = await params;
 
     // Check if member exists

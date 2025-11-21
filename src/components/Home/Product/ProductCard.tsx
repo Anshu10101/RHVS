@@ -22,7 +22,7 @@ export default function ProductCard({
 
   return (
     <div
-      className="group relative bg-white border border-gray-100 hover:border-gray-200 rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer"
+      className="group relative bg-white border border-gray-100 hover:border-gray-200 rounded-lg hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer h-full flex flex-col"
       onClick={() => onProductClick(product)}
     >
       {/* Product Image - Larger like Myntra */}
@@ -54,7 +54,7 @@ export default function ProductCard({
       </div>
 
       {/* Product Info - Minimal and clean */}
-      <div className="p-4">
+      <div className="p-4 pb-4 sm:pb-5 flex flex-col flex-1">
         {/* Brand/Category */}
         <div className="mb-2">
           <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-orange-50 text-orange-700 rounded-full text-xs font-medium">

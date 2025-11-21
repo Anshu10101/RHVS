@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch events
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     let query = `
       SELECT e.*, 
              CASE 
-               WHEN e.image_blob IS NOT NULL THEN CONCAT('/api/media/events/', e.id)
+               WHEN e.image_blob IS NOT NULL THEN CONCAT('/api/media/events/', e.id, '?v=', UNIX_TIMESTAMP(e.updated_at))
                ELSE e.image_path
              END AS resolved_image_path,
              COALESCE(e.district, 'All Districts') as district,
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (id) {
-      query += ` AND id = ?`;
+      query += ` AND e.id = ?`;
       params.push(id);
     }
 
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
         })
       : [];
     
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       data,
       total,

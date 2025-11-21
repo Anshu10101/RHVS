@@ -16,7 +16,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+// Ensure non-www URL is used (www redirects to non-www)
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+const siteUrl = baseUrl.replace(/^https?:\/\/(www\.)?/, 'https://'); // Remove www if present
 const logoUrl = `${siteUrl}/rhvs_logo.png`;
 
 export const metadata: Metadata = {
@@ -101,7 +103,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "/",
+    canonical: siteUrl, // Use full non-www URL for canonical
     languages: {
       "hi": "/", // Primary language: Hindi
       "hi-IN": "/", // Hindi (India)
@@ -120,7 +122,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+  // Use the same non-www URL as defined above
   const logoUrl = `${siteUrl}/rhvs_logo.png`;
 
   const organizationSchema = {

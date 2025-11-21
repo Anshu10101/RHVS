@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
 
 export interface AdminScope {
@@ -13,10 +13,7 @@ export interface AdminScope {
 
 export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
   // Get token from Authorization header or cookie (for backward compatibility)
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : req.cookies.get('admin_session')?.value || '';
+  const token = getAdminToken(req);
   const claims = token ? await verifyAdminJwt(token) : null;
 
   const isSuperAdmin = !!claims && claims.type === 'superadmin';

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Schema for assigning a member to a post
 const assignMemberSchema = z.object({
@@ -142,7 +143,7 @@ export async function GET(
       ORDER BY dp.position_order ASC
     `, queryParams) as any[];
 
-    return NextResponse.json({ members });
+    return noCacheJsonResponse({ members });
   } catch (error) {
     console.error('Error fetching department members:', error);
     return NextResponse.json({ error: 'Failed to fetch department members' }, { status: 500 });
@@ -542,7 +543,7 @@ export async function POST(
       // Don't fail the assignment if certificate generation fails
     }
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       assignment_id: result.insertId,
       message: 'Member assigned to post successfully'

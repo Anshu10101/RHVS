@@ -3,6 +3,7 @@ import pool from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { createHash } from 'crypto';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch all active hero images
 export async function GET(request: NextRequest) {
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
         })
       : [];
     
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       images
     });
@@ -189,7 +190,8 @@ export async function POST(request: NextRequest) {
         title,
         description,
         displayOrder,
-          scope.adminId,
+        // Only set added_by for district admins (superadmins are not in district_admins table)
+        (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
         null,
         null,
         imageBuffer,

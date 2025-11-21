@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, Star, ArrowLeft, Share2, Eye, User, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -40,41 +40,60 @@ export default function NewsArticlePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchNews = async () => {
-      try {
-        setLoading(true);
+  const fetchNews = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use timestamp for cache-busting
+      const timestamp = Date.now();
+      
+      // Fetch the specific news article
+      const response = await fetch(`/api/content/news?id=${params.id}&_t=${timestamp}`, { cache: 'no-store' });
+      const data = await response.json();
+      
+      if (data.success && data.data.length > 0) {
+        setNews(data.data[0]);
         
-        // Fetch the specific news article
-        const response = await fetch(`/api/content/news?id=${params.id}`);
-        const data = await response.json();
+        // Fetch related news (same type, excluding current)
+        const relatedResponse = await fetch(`/api/content/news?type=${data.data[0].news_type}&limit=4&_t=${timestamp}`, { cache: 'no-store' });
+        const relatedData = await relatedResponse.json();
         
-        if (data.success && data.data.length > 0) {
-          setNews(data.data[0]);
-          
-          // Fetch related news (same type, excluding current)
-          const relatedResponse = await fetch(`/api/content/news?type=${data.data[0].news_type}&limit=4`);
-          const relatedData = await relatedResponse.json();
-          
-          if (relatedData.success) {
-            const filteredRelated = relatedData.data.filter((item: News) => item.id !== params.id);
-            setRelatedNews(filteredRelated.slice(0, 3));
-          }
-        } else {
-          setError('समाचार नहीं मिला');
+        if (relatedData.success) {
+          const filteredRelated = relatedData.data.filter((item: News) => item.id !== params.id);
+          setRelatedNews(filteredRelated.slice(0, 3));
         }
-      } catch (err) {
-        console.error('Error fetching news:', err);
-        setError('समाचार लोड करने में त्रुटि');
-      } finally {
-        setLoading(false);
+      } else {
+        setError('समाचार नहीं मिला');
       }
-    };
+    } catch (err) {
+      console.error('Error fetching news:', err);
+      setError('समाचार लोड करने में त्रुटि');
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id]);
 
+  useEffect(() => {
     if (params.id) {
       fetchNews();
     }
-  }, [params.id]);
+  }, [params.id, fetchNews]);
+
+  // Reload news when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && params.id) {
+        // Reload news when page becomes visible
+        fetchNews();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [params.id, fetchNews]);
 
   const handleShare = async () => {
     if (!news) return;

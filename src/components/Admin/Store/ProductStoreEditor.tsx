@@ -185,7 +185,7 @@ export default function ProductStoreEditor() {
   const loadCategories = useCallback(async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/store/categories', {
+      const response = await fetch(`/api/content/store/categories?_t=${Date.now()}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -220,7 +220,7 @@ export default function ProductStoreEditor() {
     try {
       // use admin-scoped API so district admins only see their own, superadmin sees all
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/admin/content/products', { 
+      const response = await fetch(`/api/admin/content/products?_t=${Date.now()}`, { 
         cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -260,7 +260,7 @@ export default function ProductStoreEditor() {
   const loadSellers = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/admin/sellers', {
+      const response = await fetch(`/api/admin/sellers?_t=${Date.now()}`, {
         cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
@@ -505,7 +505,7 @@ export default function ProductStoreEditor() {
       }
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/admin/content/products', {
+      const response = await fetch(`/api/admin/content/products?_t=${Date.now()}`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -602,7 +602,7 @@ export default function ProductStoreEditor() {
   const saveProduct = async (product: Product, images?: string[]) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const resp = await fetch('/api/admin/content/products', {
+      const resp = await fetch(`/api/admin/content/products?_t=${Date.now()}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -641,7 +641,8 @@ export default function ProductStoreEditor() {
 
   const startEditingProduct = (productId: string) => {
     // Navigate to the dedicated edit page (reuse creation page in edit mode)
-    router.push(`/admin/content/store/product-creation?id=${encodeURIComponent(productId)}`);
+    // Add timestamp to force page reload and fresh data fetch
+    router.push(`/admin/content/store/product-creation?id=${encodeURIComponent(productId)}&_t=${Date.now()}`);
   };
 
   const startEditingCategory = (categoryId: string) => {
@@ -923,7 +924,7 @@ export default function ProductStoreEditor() {
       // 1) Persist category changes (creates, updates, deletes)
       // Deletes first to avoid FK conflicts when renaming/creating with same ids
       for (const id of Array.from(pendingCategoryDeletes)) {
-        await fetch(`/api/admin/content/categories?id=${encodeURIComponent(id)}`, {
+        await fetch(`/api/admin/content/categories?id=${encodeURIComponent(id)}&_t=${Date.now()}`, {
           method: 'DELETE',
           credentials: 'include'
         });
@@ -934,7 +935,7 @@ export default function ProductStoreEditor() {
         const current = categories.find(c => c.id === id);
         if (!current) continue;
         const token = localStorage.getItem('admin_token');
-        await fetch('/api/admin/content/categories', {
+        await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -952,7 +953,7 @@ export default function ProductStoreEditor() {
       // Creates
       for (const cat of pendingCategoryCreates) {
         const token = localStorage.getItem('admin_token');
-        await fetch('/api/admin/content/categories', {
+        await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -972,7 +973,7 @@ export default function ProductStoreEditor() {
       const newProducts = products.filter(p => String(p.id).startsWith('product_'));
       for (const p of newProducts) {
         const token = localStorage.getItem('admin_token');
-        const resp = await fetch('/api/admin/content/products', {
+        const resp = await fetch(`/api/admin/content/products?_t=${Date.now()}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',

@@ -118,11 +118,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        const res = await fetch('/api/admin/me', { 
+        const res = await fetch(`/api/admin/me?_t=${Date.now()}`, { 
+          method: 'GET',
           cache: 'no-store',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+          credentials: 'omit' // Don't send cookies - only use Authorization header
         });
         if (!res.ok) {
           // Token invalid, clear it
@@ -163,10 +167,25 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     try {
+      // CRITICAL: Clear old token and user data BEFORE attempting new login
+      const { clearToken } = await import('@/lib/secure-storage');
+      clearToken();
+      setState(prev => ({ ...prev, currentUser: null }));
+      
+      // Clear any old cookies on client side before login (though httpOnly cookies can't be cleared from JS)
+      // This is just for cleanup of any non-httpOnly cookies
+      document.cookie = 'admin_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+      document.cookie = 'admin_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
+      document.cookie = 'admin_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      
       const res = await fetch('/api/admin/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          // Don't send any Authorization header - we want a fresh login
+        },
         body: JSON.stringify({ email, password }),
+        cache: 'no-store', // Ensure no caching
       });
       const data = await res.json();
       console.log('🔍 Login response:', { success: data.success, hasToken: !!data.token, tokenLength: data.token?.length });
@@ -183,13 +202,22 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       storeToken(data.token, data.expiresIn || 8 * 60 * 60);
       console.log('✅ Token stored securely');
       
-      // Login successful, now fetch the user data
-      const me = await fetch('/api/admin/me', { 
+      // CRITICAL: Wait a brief moment to ensure token is stored before fetching user data
+      // This prevents race conditions where the old token might still be used
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Login successful, now fetch the user data with the NEW token
+      // Use cache-busting timestamp to ensure fresh data
+      // CRITICAL: Use credentials: 'omit' to prevent sending old cookies
+      const me = await fetch(`/api/admin/me?_t=${Date.now()}`, { 
+        method: 'GET',
         cache: 'no-store',
         headers: {
           'Authorization': `Bearer ${data.token}`,
-          'Cache-Control': 'no-cache',
-        }
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        credentials: 'omit' // Don't send cookies - only use Authorization header
       });
       
       console.log('🔍 /api/admin/me response:', { ok: me.ok, status: me.status });
@@ -397,11 +425,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      const res = await fetch('/api/admin/me', { 
+      const res = await fetch(`/api/admin/me?_t=${Date.now()}`, { 
+        method: 'GET',
         cache: 'no-store',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        credentials: 'omit' // Don't send cookies - only use Authorization header
       });
       if (res.ok) {
         const data = await res.json();

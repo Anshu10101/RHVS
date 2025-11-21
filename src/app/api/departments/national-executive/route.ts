@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Get the current National Executive Department
 export async function GET(request: NextRequest) {
@@ -34,14 +35,14 @@ export async function GET(request: NextRequest) {
     }>;
 
     if (result.length === 0) {
-      return NextResponse.json({
-        success: true,
-        department: null,
-        message: 'No National Executive Department set'
-      });
+    return noCacheJsonResponse({
+      success: true,
+      department: null,
+      message: 'No National Executive Department set'
+    });
     }
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       department: result[0]
     });

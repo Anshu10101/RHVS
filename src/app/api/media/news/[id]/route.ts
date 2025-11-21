@@ -62,7 +62,8 @@ function buildHeaders(
 ): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': mime || 'application/octet-stream',
-    'Content-Disposition': `inline; filename="${encodeURIComponent(name || 'asset.bin')}"`
+    'Content-Disposition': `inline; filename="${encodeURIComponent(name || 'asset.bin')}"`,
+    'Cache-Control': 'public, max-age=3600, must-revalidate'
   };
   if (size) {
     headers['Content-Length'] = size.toString();
@@ -81,7 +82,8 @@ async function serveDirectBlob(
     return null;
   }
   const headers = buildHeaders(mime, size, name || `${cacheKey}.bin`);
-  headers['Cache-Control'] = 'public, max-age=31536000, immutable';
+  // Use must-revalidate instead of immutable to allow cache invalidation when image is updated
+  headers['Cache-Control'] = 'public, max-age=3600, must-revalidate';
   const payload = toBlob(blob);
   return new NextResponse(payload, { status: 200, headers });
 }
@@ -100,7 +102,7 @@ async function serveFromPath(
       const buffer = await fs.readFile(absolutePath);
       const stat = await fs.stat(absolutePath);
       const headers = buildHeaders(meta.mime, stat.size, meta.originalName);
-      headers['Cache-Control'] = 'public, max-age=86400';
+      headers['Cache-Control'] = 'public, max-age=3600, must-revalidate';
       const payload = toBlob(buffer);
       return new NextResponse(payload, { status: 200, headers });
     } catch {

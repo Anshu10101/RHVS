@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
     const tags = Array.from(allTags).sort();
     const events = Array.isArray(eventsResult) ? eventsResult.map((row: { event_name: string }) => row.event_name) : [];
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       states,
       districts,

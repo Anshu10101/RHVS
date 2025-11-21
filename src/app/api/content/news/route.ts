@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch news
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
     let query = `
       SELECT DISTINCT n.*, 
              CASE 
-               WHEN n.image_blob IS NOT NULL THEN CONCAT('/api/media/news/', n.id)
+               WHEN n.image_blob IS NOT NULL THEN CONCAT('/api/media/news/', n.id, '?v=', UNIX_TIMESTAMP(n.updated_at))
                ELSE n.image_path
              END AS resolved_image_path,
              COALESCE(n.district, 'All Districts') as district,
@@ -134,7 +135,7 @@ export async function GET(request: NextRequest) {
         })
       : [];
     
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       data,
       total,

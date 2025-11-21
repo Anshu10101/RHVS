@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     }>;
 
     if (deptResult.length === 0) {
-      return NextResponse.json({
+      return noCacheJsonResponse({
         success: true,
         department: null,
         members: []
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       } : null
     }));
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       department: {
         id: department.id,
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching National Executive Department:', error);
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: false,
       error: 'Failed to fetch National Executive Department',
       department: null,

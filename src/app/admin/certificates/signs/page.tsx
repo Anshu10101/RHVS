@@ -134,6 +134,7 @@ export default function AddSignPage() {
     try {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/certificates/signatures?type=${certificateType}&_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -165,6 +166,7 @@ export default function AddSignPage() {
       const otherType = certificateType === 'membership' ? 'appointment' : 'membership';
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/certificates/signatures?type=${otherType}&_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -184,7 +186,8 @@ export default function AddSignPage() {
   const fetchDepartments = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/departments', {
+      const response = await fetch(`/api/departments?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -199,7 +202,8 @@ export default function AddSignPage() {
   const fetchMembers = async (deptId: string) => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/admin/certificates/signatures/members?department_id=${deptId}`, {
+      const response = await fetch(`/api/admin/certificates/signatures/members?department_id=${deptId}&_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();

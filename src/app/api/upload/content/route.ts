@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { createHash } from 'crypto';
 import { createStagedBlob } from '@/lib/blob-storage';
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('admin_session')?.value;
+    const token = getAdminToken(request);
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ContentService, PhotoEvent } from '@/lib/content';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
     
     const events = await ContentService.getPhotoEvents(scope);
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       events
     });

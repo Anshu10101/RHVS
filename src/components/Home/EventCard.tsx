@@ -146,17 +146,17 @@ export default function EventCard({ event, onClick }: EventCardProps) {
             {getEventTypeLabel(event.event_type)}
           </span>
           
-          {(event.district || event.state) && (
+          {((event.district && event.district !== 'All Districts') || (event.state && event.state !== 'All States')) && (
             <div className="flex items-center gap-1 sm:gap-2">
-              {event.district && (
+              {event.district && event.district !== 'All Districts' && (
                 <span className="inline-flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-[10px] sm:text-xs font-medium">
-                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  <span className="hidden xs:inline">{event.district}</span>
+                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                  <span>{event.district}</span>
                 </span>
               )}
-              {event.state && (
+              {event.state && event.state !== 'All States' && (
                 <span className="inline-flex items-center px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-[10px] sm:text-xs font-medium">
-                  <span className="hidden xs:inline">{event.state}</span>
+                  <span>{event.state}</span>
                 </span>
               )}
             </div>

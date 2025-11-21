@@ -79,33 +79,34 @@ export default function ManageDepartmentsPage() {
   }, [currentUser, router]);
 
   // Fetch all departments
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      setIsLoading(true);
+  const fetchDepartments = async () => {
+    setIsLoading(true);
 
-      try {
+    try {
         const token = localStorage.getItem('admin_token');
-        const response = await fetch('/api/departments', {
+        const response = await fetch(`/api/departments?_t=${Date.now()}`, {
+          cache: 'no-store',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-        const data = await response.json();
-        
-        if (data.departments) {
-          setDepartments(data.departments);
-          setFilteredDepartments(data.departments);
-        }
-      } catch (error) {
-        console.error('Error fetching departments:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load departments',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
+      const data = await response.json();
+      
+      if (data.departments) {
+        setDepartments(data.departments);
+        setFilteredDepartments(data.departments);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load departments',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchDepartments();
   }, [toast]);
 
@@ -115,7 +116,8 @@ export default function ManageDepartmentsPage() {
       setIsLoadingNationalExecutive(true);
       try {
         const token = localStorage.getItem('admin_token');
-        const response = await fetch('/api/departments/national-executive', {
+        const response = await fetch(`/api/departments/national-executive?_t=${Date.now()}`, {
+          cache: 'no-store',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const data = await response.json();
@@ -216,6 +218,9 @@ export default function ManageDepartmentsPage() {
         } : null);
       }
 
+      // Refresh departments list
+      await fetchDepartments();
+
       // Close dialog and reset form
       setIsEditDepartmentDialogOpen(false);
       setEditingDepartment(null);
@@ -239,34 +244,35 @@ export default function ManageDepartmentsPage() {
   };
 
   // Fetch posts when department is selected
-  useEffect(() => {
-    const fetchPosts = async () => {
-      if (!selectedDepartment) return;
-      
-      setIsLoading(true);
-      
-      try {
-        const token = localStorage.getItem('admin_token');
-        const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
+  const fetchPosts = async () => {
+    if (!selectedDepartment) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const token = localStorage.getItem('admin_token');
+        const response = await fetch(`/api/departments/${selectedDepartment.id}/posts?_t=${Date.now()}`, {
+          cache: 'no-store',
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-        const data = await response.json();
-        
-        if (data.posts) {
-          setPosts(data.posts);
-        }
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load department posts',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
+      const data = await response.json();
+      
+      if (data.posts) {
+        setPosts(data.posts);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load department posts',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPosts();
   }, [selectedDepartment, toast]);
 
@@ -304,15 +310,8 @@ export default function ManageDepartmentsPage() {
         throw new Error(data.error || 'Failed to create post');
       }
 
-      // Add the new post to the list
-      setPosts(prevPosts => [...prevPosts, {
-        id: data.post_id,
-        department_id: selectedDepartment.id,
-        name_en: newPostNameEn,
-        name_hi: newPostNameHi,
-        position_order: data.position_order,
-        created_at: new Date().toISOString(),
-      }]);
+      // Refresh posts list
+      await fetchPosts();
 
       // Close dialog and reset form
       setIsNewPostDialogOpen(false);
@@ -369,12 +368,8 @@ export default function ManageDepartmentsPage() {
         throw new Error(data.error || 'Failed to update post');
       }
 
-      // Update the post in the list
-      setPosts(prevPosts => prevPosts.map(post => 
-        post.id === editingPost.id 
-          ? { ...post, name_en: editPostNameEn, name_hi: editPostNameHi } 
-          : post
-      ));
+      // Refresh posts list
+      await fetchPosts();
 
       // Close dialog and reset form
       setIsEditPostDialogOpen(false);
@@ -421,8 +416,8 @@ export default function ManageDepartmentsPage() {
         throw new Error(data.error || 'Failed to delete post');
       }
 
-      // Remove the post from the list
-      setPosts(prevPosts => prevPosts.filter(p => p.id !== post.id));
+      // Refresh posts list
+      await fetchPosts();
 
       toast({
         title: 'Success',
@@ -467,7 +462,8 @@ export default function ManageDepartmentsPage() {
 
       // Refresh departments list (the selected one will be removed from regular list)
       const token2 = localStorage.getItem('admin_token');
-      const deptResponse = await fetch('/api/departments', {
+      const deptResponse = await fetch(`/api/departments?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
       });
       const deptData = await deptResponse.json();
@@ -515,7 +511,8 @@ export default function ManageDepartmentsPage() {
 
       // Refresh departments list
       const token2 = localStorage.getItem('admin_token');
-      const deptResponse = await fetch('/api/departments', {
+      const deptResponse = await fetch(`/api/departments?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
       });
       const deptData = await deptResponse.json();
@@ -615,7 +612,8 @@ export default function ManageDepartmentsPage() {
       
       // If there was an error, fetch the posts again to reset the order
       const token2 = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/departments/${selectedDepartment.id}/posts`, {
+      const response = await fetch(`/api/departments/${selectedDepartment.id}/posts?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
       });
       const data = await response.json();

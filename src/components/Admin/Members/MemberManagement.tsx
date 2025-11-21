@@ -155,12 +155,14 @@ export function MemberManagement() {
         district: selectedDistrict === 'all' ? '' : selectedDistrict,
         department: selectedDepartment === 'all' ? '' : selectedDepartment,
         sortBy: 'created_at',
-        sortOrder: 'DESC'
+        sortOrder: 'DESC',
+        _t: Date.now().toString() // Cache-busting
       });
 
       console.log('MemberManagement: Fetching members with params:', params.toString());
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/members?${params}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       console.log('MemberManagement: Response status:', response.status, response.ok);
@@ -184,7 +186,8 @@ export function MemberManagement() {
   const fetchStats = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/admin/members/stats', {
+      const response = await fetch(`/api/admin/members/stats?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -214,7 +217,7 @@ export function MemberManagement() {
   const fetchDepartments = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/admin/members/departments', {
+      const response = await fetch(`/api/admin/members/departments?_t=${Date.now()}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
@@ -305,9 +308,13 @@ export function MemberManagement() {
     };
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/members/${editingMember.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(updateData),
       });
 
@@ -330,8 +337,12 @@ export function MemberManagement() {
     if (!confirm('Are you sure you want to delete this member?')) return;
 
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/members/${memberId}`, {
         method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
       });
 
       const data = await response.json();
@@ -349,9 +360,13 @@ export function MemberManagement() {
 
   const handleStatusChange = async (memberId: number, status: 'pending' | 'verified' | 'rejected') => {
     try {
+      const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/members/${memberId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ status }),
       });
 

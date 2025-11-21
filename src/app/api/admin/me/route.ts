@@ -1,33 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { executeQuery } from '@/lib/database';
 
 export async function GET(req: NextRequest) {
-  // Get token from Authorization header or cookie (for backward compatibility)
-  const authHeader = req.headers.get('authorization');
-  const token = authHeader?.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : req.cookies.get('admin_session')?.value;
-  
-  console.log('🔍 /api/admin/me called:', {
-    hasAuthHeader: !!authHeader,
-    authHeaderPrefix: authHeader?.substring(0, 20),
-    hasToken: !!token,
-    tokenLength: token?.length
-  });
+  // CRITICAL: Always prefer Authorization header over cookie to avoid stale sessions
+  // This ensures that when a new login happens, the new token is used, not the old cookie
+  const token = getAdminToken(req);
   
   if (!token) {
-    console.log('❌ /api/admin/me: No token found');
-    return NextResponse.json({ authenticated: false }, { status: 200 });
+    return NextResponse.json({ authenticated: false }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   }
 
   const claims = await verifyAdminJwt(token);
   if (!claims) {
-    console.log('❌ /api/admin/me: Token verification failed');
-    return NextResponse.json({ authenticated: false }, { status: 200 });
+    return NextResponse.json({ authenticated: false }, { 
+      status: 200,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   }
-  
-  console.log('✅ /api/admin/me: Token verified, user type:', claims.type);
 
   // Handle different user types
   const userType = claims.type || 'superadmin';
@@ -83,6 +84,12 @@ export async function GET(req: NextRequest) {
         profile_photo: profilePhoto,
         type: 'superadmin',
         permissions: ['all']
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       }
     });
   } 
@@ -148,7 +155,13 @@ export async function GET(req: NextRequest) {
       }))
     };
     
-    return NextResponse.json({ authenticated: true, user });
+    return NextResponse.json({ authenticated: true, user }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   }
   
   // Invalid user type

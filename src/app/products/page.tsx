@@ -81,70 +81,89 @@ export default function ProductsPage() {
     } as Product & { detailId?: string };
   };
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        // load categories first
-        const catRes = await fetch('/api/content/store/categories', { cache: 'no-store' });
-        const catData = await catRes.json();
-        if (catData?.success && Array.isArray(catData.categories)) {
-          const map: Record<string, string> = {};
-          for (const c of catData.categories as Array<{id: string | number, name: string}>) {
-            map[String(c.id)] = c.name;
-          }
-          setCategoryMap(map);
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      // Use timestamp for cache-busting
+      const timestamp = Date.now();
+      
+      // load categories first
+      const catRes = await fetch(`/api/content/store/categories?_t=${timestamp}`, { cache: 'no-store' });
+      const catData = await catRes.json();
+      if (catData?.success && Array.isArray(catData.categories)) {
+        const map: Record<string, string> = {};
+        for (const c of catData.categories as Array<{id: string | number, name: string}>) {
+          map[String(c.id)] = c.name;
         }
+        setCategoryMap(map);
+      }
 
-        // load states for filters
-        const statesRes = await fetch('/api/states', { cache: 'no-store' });
-        const statesData = await statesRes.json();
-        if (statesData?.success && Array.isArray(statesData.data)) {
-          const opts: StateOption[] = statesData.data.map((s: { id: string | number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
-          setStateOptions(opts);
-        }
+      // load states for filters
+      const statesRes = await fetch(`/api/states?_t=${timestamp}`, { cache: 'no-store' });
+      const statesData = await statesRes.json();
+      if (statesData?.success && Array.isArray(statesData.data)) {
+        const opts: StateOption[] = statesData.data.map((s: { id: string | number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
+        setStateOptions(opts);
+      }
 
-        // then load products
-        const res = await fetch('/api/content/store', { cache: 'no-store' });
-        const data = await res.json();
-        if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
-          const mapped = data.products.map((p: Record<string, unknown>, i: number) => {
-            const base = transformDbProduct(p, i);
-            const categoryName = (catData?.categories ? (catData.categories.reduce((acc: Record<string, string>, c: {id: string | number, name: string}) => { acc[String(c.id)] = c.name; return acc; }, {} as Record<string,string>))[String(p.category)] : undefined) || base.category;
-            return { ...base, category: categoryName, detailId: String(p.id) };
-          });
-          // Remove duplicates based on product ID
-          const uniqueProducts = mapped.filter((product: Product, index: number, self: Product[]) => 
-            index === self.findIndex((p: Product) => p.id === product.id)
-          );
-          setProducts(uniqueProducts);
-          setFilteredProducts(uniqueProducts);
-          
-          // Extract unique categories
-          const uniqueCategories = Array.from(new Set(uniqueProducts.map((p: Product) => p.category))) as string[];
-          setCategories(uniqueCategories);
-          // Note: districts are populated dynamically via API when a state is picked
-          
-          // Set price range based on products
-          const prices = uniqueProducts.map((p: Product) => p.price);
-          const minPrice = Math.min(...prices);
-          const maxPrice = Math.max(...prices);
-          setPriceRange([minPrice, maxPrice]);
-        } else {
-          // No products found
-          setProducts([]);
-          setFilteredProducts([]);
-        }
-      } catch (error) {
-        console.error('Error loading products:', error);
+      // then load products
+      const res = await fetch(`/api/content/store?_t=${timestamp}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (data?.success && Array.isArray(data.products) && data.products.length > 0) {
+        const mapped = data.products.map((p: Record<string, unknown>, i: number) => {
+          const base = transformDbProduct(p, i);
+          const categoryName = (catData?.categories ? (catData.categories.reduce((acc: Record<string, string>, c: {id: string | number, name: string}) => { acc[String(c.id)] = c.name; return acc; }, {} as Record<string,string>))[String(p.category)] : undefined) || base.category;
+          return { ...base, category: categoryName, detailId: String(p.id) };
+        });
+        // Remove duplicates based on product ID
+        const uniqueProducts = mapped.filter((product: Product, index: number, self: Product[]) => 
+          index === self.findIndex((p: Product) => p.id === product.id)
+        );
+        setProducts(uniqueProducts);
+        setFilteredProducts(uniqueProducts);
+        
+        // Extract unique categories
+        const uniqueCategories = Array.from(new Set(uniqueProducts.map((p: Product) => p.category))) as string[];
+        setCategories(uniqueCategories);
+        // Note: districts are populated dynamically via API when a state is picked
+        
+        // Set price range based on products
+        const prices = uniqueProducts.map((p: Product) => p.price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        setPriceRange([minPrice, maxPrice]);
+      } else {
+        // No products found
         setProducts([]);
         setFilteredProducts([]);
-      } finally {
-        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+      setProducts([]);
+      setFilteredProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reload products when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reload products when page becomes visible
+        loadProducts();
       }
     };
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
   
   // Apply filters when filter criteria change
@@ -231,7 +250,7 @@ export default function ProductsPage() {
       // Fire and forget enrich; add after enrichment for consistency
       (async () => {
         try {
-          const res = await fetch(`/api/products/${encodeURIComponent(idForDetail)}`, { cache: 'no-store' });
+          const res = await fetch(`/api/products/${encodeURIComponent(idForDetail)}?_t=${Date.now()}`, { cache: 'no-store' });
           if (res.ok) {
             const data = await res.json();
             const dp = data?.product || {};
@@ -397,7 +416,7 @@ export default function ProductsPage() {
                               const name = opt?.name || 'All';
                               setSelectedStateName(name);
                               if (actualId) {
-                                const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
+                                const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { cache: 'no-store' });
                                 const data = await res.json();
                                 if (data?.success && Array.isArray(data.data)) {
                                   const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
@@ -591,7 +610,7 @@ export default function ProductsPage() {
                             const name = opt?.name || 'All';
                             setSelectedStateName(name);
                             if (actualId) {
-                              const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: 'no-store' });
+                              const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { cache: 'no-store' });
                               const data = await res.json();
                               if (data?.success && Array.isArray(data.data)) {
                                 const dOpts = data.data.map((d: { id: string | number; name: string }) => ({ id: String(d.id), name: String(d.name) })) as DistrictOption[];
@@ -726,10 +745,11 @@ export default function ProductsPage() {
             </div>
             
             {/* Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4 sm:pb-6">
               {currentProducts.map((product, index) => (
                 <div
                   key={product.id}
+                  className="mb-2 sm:mb-0"
                   style={{
                     animationDelay: `${index * 50}ms`,
                     animationName: 'fadeInUp',

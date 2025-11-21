@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch member statistics
 export async function GET(request: NextRequest) {
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
     const verificationResult = await executeQuery(verificationQuery, queryParams) as Array<{ total_verified: number; verified_by_members: number; verified_by_admin: number }>;
     const verificationStats = verificationResult[0];
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       data: {
         total: totalMembers,

@@ -151,7 +151,7 @@ export default function AdminsManagementPage() {
         const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
         
         // Fetch members
-        const membersRes = await fetch('/api/admin/members', { headers });
+        const membersRes = await fetch('/api/admin/members', { cache: 'no-store', headers });
         if (membersRes.ok) {
           const data = await membersRes.json();
           const membersList = data.data?.members || data.members || [];
@@ -160,7 +160,7 @@ export default function AdminsManagementPage() {
         }
         
         // Fetch district admins
-        const adminsRes = await fetch('/api/admin/members/admins', { headers });
+        const adminsRes = await fetch('/api/admin/members/admins', { cache: 'no-store', headers });
         if (adminsRes.ok) {
           const data = await adminsRes.json();
           const adminsList = data.admins || [];
@@ -252,10 +252,12 @@ export default function AdminsManagementPage() {
     }
     
     try {
+      const token = localStorage.getItem('admin_token');
       const res = await fetch('/api/admin/members/admins', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           memberId: selectedMember.id,
@@ -286,12 +288,24 @@ export default function AdminsManagementPage() {
     if (!confirm('Are you sure you want to remove this district admin?')) return;
     
     try {
+      const token = localStorage.getItem('admin_token');
       const res = await fetch(`/api/admin/members/admins/${id}`, {
         method: 'DELETE',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
       });
       
       if (res.ok) {
-        setDistrictAdmins(prev => prev.filter(admin => admin.id !== id));
+        // Refresh admins list
+        const token = localStorage.getItem('admin_token');
+        const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const adminsRes = await fetch('/api/admin/members/admins', { cache: 'no-store', headers });
+        if (adminsRes.ok) {
+          const adminsData = await adminsRes.json();
+          setDistrictAdmins(adminsData.admins || []);
+          setFilteredDistrictAdmins(adminsData.admins || []);
+        }
         toast.success('District admin removed successfully');
       } else {
         const error = await res.json();

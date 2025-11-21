@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Schema for creating a post
 const createPostSchema = z.object({
@@ -61,7 +62,7 @@ export async function GET(
       [departmentId]
     ) as any[];
 
-    return NextResponse.json({ posts });
+    return noCacheJsonResponse({ posts });
   } catch (error) {
     console.error('Error fetching department posts:', error);
     return NextResponse.json({ error: 'Failed to fetch department posts' }, { status: 500 });

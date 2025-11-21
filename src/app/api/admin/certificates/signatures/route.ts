@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { createHash } from 'crypto';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch all certificate signatures
 export async function GET(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     const signatures = await executeQuery(query, params) as any[];
 
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true,
       signatures: signatures.map(sig => ({
         id: sig.id,

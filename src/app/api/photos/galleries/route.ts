@@ -3,6 +3,7 @@ import { ContentService, PhotoGallery } from '@/lib/content';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { getAdminScope } from '@/lib/admin-scope';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
     
     const galleries = await ContentService.getPhotoGalleries(scope, eventId || undefined);
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       galleries
     });

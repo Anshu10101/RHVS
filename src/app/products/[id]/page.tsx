@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -97,50 +97,71 @@ export default function ProductDetailPage() {
     el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    // load categories for mapping id -> name
-    (async () => {
+  const loadProduct = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Use timestamp for cache-busting
+      const timestamp = Date.now();
+      
+      // load categories for mapping id -> name
       try {
-        const res = await fetch('/api/content/store/categories', { cache: 'no-store' });
-        const data = await res.json();
-        if (data?.success && Array.isArray(data.categories)) {
+        const catRes = await fetch(`/api/content/store/categories?_t=${timestamp}`, { cache: 'no-store' });
+        const catData = await catRes.json();
+        if (catData?.success && Array.isArray(catData.categories)) {
           const map: Record<string, string> = {};
-          for (const c of data.categories) {
+          for (const c of catData.categories) {
             map[String(c.id)] = c.name;
           }
           setCategoryMap(map);
         }
       } catch {}
-    })();
-    const loadProduct = async () => {
-      try {
-        const response = await fetch(`/api/products/${params.id}`);
-        const data = await response.json();
-        
-        if (data.success && data.product) {
-          setProduct(data.product);
-        } else {
-          setError('Product not found');
-        }
-      } catch (err) {
-        setError('Failed to load product');
-        console.error('Error loading product:', err);
-      } finally {
-        setLoading(false);
+      
+      // Load product with cache-busting
+      const response = await fetch(`/api/products/${params.id}?_t=${timestamp}`, { cache: 'no-store' });
+      const data = await response.json();
+      
+      if (data.success && data.product) {
+        setProduct(data.product);
+      } else {
+        setError('Product not found');
       }
-    };
+    } catch (err) {
+      setError('Failed to load product');
+      console.error('Error loading product:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [params.id]);
 
+  useEffect(() => {
     if (params.id) {
       loadProduct();
     }
-  }, [params.id]);
+  }, [params.id, loadProduct]);
+
+  // Reload product when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && params.id) {
+        // Reload product when page becomes visible
+        loadProduct();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [params.id, loadProduct]);
 
   // Load similar products from the same category, excluding current item
   useEffect(() => {
     if (!product || !product.category) return;
     (async () => {
       try {
-        const res = await fetch('/api/content/store', { cache: 'no-store' });
+        const res = await fetch(`/api/content/store?_t=${Date.now()}`, { cache: 'no-store' });
         const data = await res.json();
         const all = Array.isArray(data?.products) ? data.products : [];
         

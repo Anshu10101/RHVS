@@ -118,8 +118,12 @@ export function TokenVerification() {
         status: selectedStatus === 'all' ? '' : selectedStatus,
       });
 
+      // Add cache-busting timestamp
+      params.append('_t', Date.now().toString());
+      
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/verify-token?${params}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();

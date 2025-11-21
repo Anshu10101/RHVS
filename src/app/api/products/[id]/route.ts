@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +8,6 @@ export async function GET(
 ) {
   try {
     const { id: productId } = await context.params;
-    console.log('Fetching product with ID:', productId);
 
     if (!productId) {
       return NextResponse.json({ 
@@ -42,10 +42,6 @@ export async function GET(
     `, [productId]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     if (!productRows || productRows.length === 0) {
-      console.log('No product found with ID:', productId);
-      // Let's check what products exist
-      const allProducts = await executeQuery('SELECT id, name FROM products LIMIT 5') as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-      console.log('Available products:', allProducts);
       return NextResponse.json({ 
         success: false, 
         error: 'Product not found' 
@@ -101,7 +97,7 @@ export async function GET(
       seller_delivery_info: product.seller_delivery_info
     };
 
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       product: transformedProduct 
     });

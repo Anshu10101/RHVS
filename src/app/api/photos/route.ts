@@ -4,6 +4,7 @@ import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { getAdminScope } from '@/lib/admin-scope';
 import { executeQuery } from '@/lib/database';
 import { createHash } from 'crypto';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     const photos = await ContentService.getPhotos(scope, filters);
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       photos
     });

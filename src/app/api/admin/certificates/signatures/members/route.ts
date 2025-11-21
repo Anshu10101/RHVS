@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch members who have appointments in departments
 export async function GET(request: NextRequest) {
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     const members = await executeQuery(query, params) as any[];
 
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true,
       members: members.map(m => ({
         id: m.id,

@@ -1,7 +1,9 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+  // Ensure non-www URL is used (www redirects to non-www)
+  const baseUrlRaw = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+  const baseUrl = baseUrlRaw.replace(/^https?:\/\/(www\.)?/, 'https://'); // Remove www if present
   const currentDate = new Date();
 
   const routes: MetadataRoute.Sitemap = [

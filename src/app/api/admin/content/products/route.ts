@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET: list products (scoped)
 export async function GET(req: NextRequest) {

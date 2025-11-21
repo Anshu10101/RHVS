@@ -87,7 +87,7 @@ export default function AdminAddMemberPage() {
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const response = await fetch('/api/states');
+        const response = await fetch('/api/states', { cache: 'no-store' });
         const data = await response.json();
         if (data.success) {
           setStates(data.data);
@@ -361,10 +361,12 @@ export default function AdminAddMemberPage() {
       }
 
       // Register the member directly (bypass OTP/token verification)
+      const token = localStorage.getItem('admin_token');
       const registerResponse = await fetch('/api/admin/members/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
           name: data.name,

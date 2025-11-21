@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import {
   Calendar,
   ChevronLeft,
@@ -78,38 +78,54 @@ export default function NewsPage() {
   const featuredInitializedRef = useRef<boolean>(false);
   const [featuredIsScrolling, setFeaturedIsScrolling] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [statesRes, newsRes] = await Promise.all([
-          fetch("/api/states", { cache: "no-store" }),
-          fetch(`/api/content/news?page=${currentPage}&limit=12`),
-        ]);
-        const statesData = await statesRes.json();
-        if (statesData?.success && Array.isArray(statesData.data)) {
-          const opts = statesData.data.map((s: { id: string | number; name: string }) => ({
-            id: String(s.id),
-            name: String(s.name),
-          }));
-          setStateOptions(opts);
-        }
+  const loadNews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const timestamp = Date.now();
+      const [statesRes, newsRes] = await Promise.all([
+        fetch(`/api/states?_t=${timestamp}`, { cache: "no-store" }),
+        fetch(`/api/content/news?page=${currentPage}&limit=12&_t=${timestamp}`, { cache: "no-store" }),
+      ]);
+      const statesData = await statesRes.json();
+      if (statesData?.success && Array.isArray(statesData.data)) {
+        const opts = statesData.data.map((s: { id: string | number; name: string }) => ({
+          id: String(s.id),
+          name: String(s.name),
+        }));
+        setStateOptions(opts);
+      }
 
-        const newsData = await newsRes.json();
-        if (newsData?.success && Array.isArray(newsData.data)) {
-          setNews(newsData.data);
-          setTotalPages(newsData.totalPages || 1);
-          setTotalNews(newsData.total || 0);
-        }
-      } catch (error) {
-        console.error("Failed to load news:", error);
-      } finally {
-        setLoading(false);
+      const newsData = await newsRes.json();
+      if (newsData?.success && Array.isArray(newsData.data)) {
+        setNews(newsData.data);
+        setTotalPages(newsData.totalPages || 1);
+        setTotalNews(newsData.total || 0);
+      }
+    } catch (error) {
+      console.error("Failed to load news:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    loadNews();
+  }, [loadNews]);
+
+  // Reload news when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reload news when page becomes visible
+        loadNews();
       }
     };
 
-    load();
-  }, [currentPage]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadNews]);
   
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -400,7 +416,7 @@ export default function NewsPage() {
 
                       if (actualId) {
                         try {
-                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: "no-store" });
+                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { cache: "no-store" });
                           const data = await res.json();
                           if (data?.success && Array.isArray(data.data)) {
                             const districts = data.data.map((d: { id: string | number; name: string }) => ({

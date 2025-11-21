@@ -154,7 +154,12 @@ export default function CertificatesPage() {
 
   const fetchMembers = async () => {
     try {
-      const response = await fetch('/api/admin/members?limit=1000');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/members?limit=1000', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
       const data = await response.json();
       if (data.data?.members) {
         setMembers(data.data.members);

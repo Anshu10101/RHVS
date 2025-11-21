@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -175,7 +176,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Members fetched:', members.length, 'Total:', total);
     
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       data: {
         members,

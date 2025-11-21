@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Calendar, CalendarDays, Clock, ExternalLink, MapPin, Search, Users, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Noto_Serif_Devanagari } from "next/font/google";
@@ -61,36 +61,53 @@ export default function EventsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
 
+  const loadEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const timestamp = Date.now();
+      const [statesRes, eventsRes] = await Promise.all([
+        fetch(`/api/states?_t=${timestamp}`, { cache: "no-store" }),
+        fetch(`/api/content/events?page=${currentPage}&limit=12&_t=${timestamp}`, { cache: "no-store" }),
+      ]);
+      const statesData = await statesRes.json();
+      if (statesData?.success && Array.isArray(statesData.data)) {
+        const opts = statesData.data.map((s: { id: string | number; name: string }) => ({
+          id: String(s.id),
+          name: String(s.name),
+        }));
+        setStateOptions(opts);
+      }
+      const eventsData = await eventsRes.json();
+      if (eventsData?.success && Array.isArray(eventsData.data)) {
+        setEvents(eventsData.data);
+        setTotalPages(eventsData.totalPages || 1);
+        setTotalEvents(eventsData.total || 0);
+      }
+    } catch (error) {
+      console.error("Failed to load events:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage]);
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [statesRes, eventsRes] = await Promise.all([
-          fetch("/api/states", { cache: "no-store" }),
-          fetch(`/api/content/events?page=${currentPage}&limit=12`),
-        ]);
-        const statesData = await statesRes.json();
-        if (statesData?.success && Array.isArray(statesData.data)) {
-          const opts = statesData.data.map((s: { id: string | number; name: string }) => ({
-            id: String(s.id),
-            name: String(s.name),
-          }));
-          setStateOptions(opts);
-        }
-        const eventsData = await eventsRes.json();
-        if (eventsData?.success && Array.isArray(eventsData.data)) {
-          setEvents(eventsData.data);
-          setTotalPages(eventsData.totalPages || 1);
-          setTotalEvents(eventsData.total || 0);
-        }
-      } catch (error) {
-        console.error("Failed to load events:", error);
-      } finally {
-        setLoading(false);
+    loadEvents();
+  }, [loadEvents]);
+
+  // Reload events when page becomes visible (user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reload events when page becomes visible
+        loadEvents();
       }
     };
-    load();
-  }, [currentPage]);
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadEvents]);
   
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -233,7 +250,7 @@ export default function EventsPage() {
                       setSelectedStateName(stateName);
                       if (actualId) {
                         try {
-                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: "no-store" });
+                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { cache: "no-store" });
                           const data = await res.json();
                           if (data?.success && Array.isArray(data.data)) {
                             const dOpts = data.data.map((d: { id: string | number; name: string }) => ({

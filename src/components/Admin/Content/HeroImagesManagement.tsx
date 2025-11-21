@@ -72,7 +72,8 @@ export function HeroImagesManagement() {
   const fetchImages = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/hero-images', {
+      const response = await fetch(`/api/hero-images?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (response.ok) {
@@ -89,7 +90,8 @@ export function HeroImagesManagement() {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/hero-images/settings', {
+      const response = await fetch(`/api/hero-images/settings?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (response.ok) {
@@ -121,7 +123,7 @@ export function HeroImagesManagement() {
 
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/hero-images', {
+      const response = await fetch(`/api/hero-images?_t=${Date.now()}`, {
         method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData
@@ -148,7 +150,7 @@ export function HeroImagesManagement() {
 
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/hero-images/${editingImage.id}`, {
+      const response = await fetch(`/api/hero-images/${editingImage.id}?_t=${Date.now()}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -197,7 +199,7 @@ export function HeroImagesManagement() {
   const handleUpdateSettings = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/hero-images/settings', {
+      const response = await fetch(`/api/hero-images/settings?_t=${Date.now()}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

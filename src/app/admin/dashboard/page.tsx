@@ -46,11 +46,15 @@ function AdminDashboardContent() {
           return;
         }
         
-        const response = await fetch('/api/admin/me', { 
+        const response = await fetch(`/api/admin/me?_t=${Date.now()}`, { 
+          method: 'GET',
           cache: 'no-store', 
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+          credentials: 'omit' // Don't send cookies - only use Authorization header
         });
         
         if (!response.ok) {

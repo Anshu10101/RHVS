@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -103,10 +104,10 @@ export async function GET(
       }))
     };
 
-    return NextResponse.json({ success: true, data: result });
+    return noCacheJsonResponse({ success: true, data: result });
   } catch (error) {
     console.error('Error fetching department hierarchy:', error);
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: false, 
       error: 'Failed to fetch department hierarchy' 
     }, { status: 500 });

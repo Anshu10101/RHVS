@@ -40,27 +40,10 @@ export async function DELETE(
       [photoId]
     );
 
-    // Update event photo count if this photo belonged to an event
-    if (photo.event_id) {
-      // Count remaining photos for this event
-      const countResult = await executeQuery(
-        'SELECT COUNT(*) as count FROM photos WHERE event_id = ?',
-        [photo.event_id]
-      ) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-      
-      const newCount = countResult && countResult.length > 0 ? countResult[0].count : 0;
-      
-      // Update the event's photo count (assuming there's a photo_count field in events table)
-      // Note: This might need to be adjusted based on your actual database schema
-      try {
-        await executeQuery(
-          'UPDATE events SET photo_count = ? WHERE id = ?',
-          [newCount, photo.event_id]
-        );
-      } catch (updateError) {
-        console.log('Could not update event photo count (field might not exist):', updateError);
-      }
-    }
+    // Update photo_events photo count if this photo belonged to a photo event
+    // Note: The 'events' table doesn't have photo_count, but 'photo_events' table might
+    // We'll skip this update since photo counts can be calculated on-the-fly
+    // If you need photo counts, add a photo_count column to photo_events table or calculate dynamically
 
     // Delete physical files
     try {

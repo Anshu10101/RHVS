@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { trackContentOrigin, enrichContentWithDistrictInfo } from '@/lib/content-tracking';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET all news items
 export async function GET(req: NextRequest) {
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
     // Enrich news items with district information
     const enrichedNews = await enrichContentWithDistrictInfo(newsResult as any[], 'news'); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       news: enrichedNews,
       pagination: {

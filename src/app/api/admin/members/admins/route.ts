@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
-import { verifyAdminJwt } from '@/lib/auth-jwt';
+import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
 import { hashPassword } from '@/lib/password';
 import { sendAdminAssignmentEmail } from '@/lib/email';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Get all district admins
 export async function GET(req: NextRequest) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -73,7 +71,7 @@ export async function GET(req: NextRequest) {
       permissions: admin.permissions || []
     }));
     
-    return NextResponse.json({ success: true, admins: mappedAdmins });
+    return noCacheJsonResponse({ success: true, admins: mappedAdmins });
   } catch (error) {
     console.error('Error fetching district admins:', error);
     return NextResponse.json(
@@ -87,10 +85,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     // Verify admin is authenticated and is a superadmin
-    const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : req.cookies.get('admin_session')?.value;
+    const token = getAdminToken(req);
     if (!token) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }

@@ -8,10 +8,14 @@ export async function middleware(req: NextRequest) {
   const hostname = req.headers.get('host') || '';
 
   // Redirect www to non-www (SSL certificate is for non-www domain)
+  // This must happen for ALL routes, not just admin routes
   if (hostname.startsWith('www.')) {
     const nonWwwHost = hostname.replace(/^www\./, '');
     const url = req.nextUrl.clone();
+    // Preserve protocol (https)
+    url.protocol = 'https:';
     url.host = nonWwwHost;
+    // Preserve pathname and search params
     return NextResponse.redirect(url, 301); // Permanent redirect
   }
 
@@ -52,19 +56,26 @@ export async function middleware(req: NextRequest) {
 
   // For API routes, check Authorization header
   if (pathname.startsWith('/api/admin')) {
+    // CRITICAL: Always prefer Authorization header over cookie to avoid stale sessions
+    // Only use cookie if no Authorization header is present
     const authHeader = req.headers.get('authorization');
-    const token = authHeader?.startsWith('Bearer ') 
+    let token = authHeader?.startsWith('Bearer ') 
       ? authHeader.substring(7) 
-      : req.cookies.get('admin_session')?.value;
+      : null;
     
-  if (!token) {
+    // Only fall back to cookie if no Authorization header
+    if (!token) {
+      token = req.cookies.get('admin_session')?.value || null;
+    }
+    
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+    }
 
-  const claims = await verifyAdminJwt(token);
-  if (!claims) {
+    const claims = await verifyAdminJwt(token);
+    if (!claims) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+    }
 
     // Check route permissions for API routes
   const isSuperAdmin = claims.type === 'superadmin';
@@ -93,7 +104,18 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  // Match all routes to handle www redirect for entire site
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public files (public folder)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)).*)',
+  ],
 };
 
 
