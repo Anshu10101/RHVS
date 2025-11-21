@@ -259,7 +259,11 @@ export default function ProductStoreEditor() {
 
   const loadSellers = async () => {
     try {
-      const response = await fetch('/api/admin/sellers');
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/sellers', {
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       const data = await response.json();
       if (data.success) {
         setSellers(data.data || []);

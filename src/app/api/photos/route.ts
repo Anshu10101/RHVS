@@ -168,7 +168,8 @@ export async function POST(request: NextRequest) {
       sortOrder: sortOrder || 0,
       district: district || undefined,
       state: state || undefined,
-      ownerAdminId: parseInt(claims.sub),
+      // Only set ownerAdminId for district admins (superadmins are not in district_admins table)
+      ownerAdminId: userType === 'district_admin' ? parseInt(claims.sub) : undefined,
       createdBy
     };
 

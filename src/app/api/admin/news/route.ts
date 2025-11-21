@@ -169,8 +169,10 @@ export async function POST(req: NextRequest) {
 
     const newsId = insertResult.insertId;
 
-    // Track content origin
-    await trackContentOrigin('news', newsId, districtName, adminState, parseInt(claims.sub));
+    // Track content origin (only for district admins - superadmins are not in district_admins table)
+    if (claims.type === 'district_admin' && adminResult.length > 0) {
+      await trackContentOrigin('news', newsId, districtName, adminState, parseInt(claims.sub));
+    }
 
     // Get user name for logging
     let userName: string;

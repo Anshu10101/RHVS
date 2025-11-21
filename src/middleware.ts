@@ -5,6 +5,15 @@ const PROTECTED_PREFIX = '/admin';
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const hostname = req.headers.get('host') || '';
+
+  // Redirect www to non-www (SSL certificate is for non-www domain)
+  if (hostname.startsWith('www.')) {
+    const nonWwwHost = hostname.replace(/^www\./, '');
+    const url = req.nextUrl.clone();
+    url.host = nonWwwHost;
+    return NextResponse.redirect(url, 301); // Permanent redirect
+  }
 
   // Create response
   const response = NextResponse.next();

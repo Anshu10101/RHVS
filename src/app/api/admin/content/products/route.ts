@@ -250,7 +250,8 @@ export async function POST(req: NextRequest) {
         scope.districtName || null,
         scope.stateName || null,
         scope.adminId || null,
-        scope.adminId || null,
+        // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
+        (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
         scope.adminId ? scope.adminId.toString() : 'admin'
       ];
 
@@ -297,7 +298,8 @@ export async function POST(req: NextRequest) {
         scope.districtName || null,
         scope.stateName || null,
         scope.adminId || null,
-        scope.adminId || null,
+        // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
+        (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
         scope.adminId ? scope.adminId.toString() : 'admin'
       ];
 

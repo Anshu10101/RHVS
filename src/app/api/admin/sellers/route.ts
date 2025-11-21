@@ -148,7 +148,8 @@ export async function POST(req: NextRequest) {
       // Superadmin can specify district/state or use defaults
       sellerDistrict = district || 'Default District';
       sellerState = state || 'Default State';
-      addedByAdminId = scope.adminId || 1; // Use adminId or default to 1
+      // Only set added_by_admin_id for district admins (superadmins are not in district_admins table)
+      addedByAdminId = null;
     } else {
       // District admin uses their assigned district/state
       sellerDistrict = scope.districtName;

@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     const district = searchParams.get('district');
     
-    console.log('Photo events API - Received filters:', { state, district });
-    
     // Build scope based on user type
     let scope: Record<string, unknown> = {};
     
@@ -40,8 +38,6 @@ export async function GET(request: NextRequest) {
       if (state) scope.state = state;
       if (district) scope.district = district;
     }
-    
-    console.log('Photo events API - Final scope:', scope);
     
     const events = await ContentService.getPhotoEvents(scope);
 
@@ -115,7 +111,8 @@ export async function POST(request: NextRequest) {
       isPublic: isPublic !== false,
       district: finalDistrict || undefined,
       state: finalState || undefined,
-      ownerAdminId: parseInt(claims.sub),
+      // Only set ownerAdminId for district admins (superadmins are not in district_admins table)
+      ownerAdminId: userType === 'district_admin' ? parseInt(claims.sub) : undefined,
       createdBy
     };
 

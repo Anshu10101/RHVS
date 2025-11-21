@@ -369,13 +369,11 @@ export class ContentService {
         if (scope.state) {
           conditions.push('e.state = ?');
           params.push(scope.state);
-          console.log('ContentService - Adding state filter:', scope.state);
         }
         
         if (scope.district) {
           conditions.push('e.district = ?');
           params.push(scope.district);
-          console.log('ContentService - Adding district filter:', scope.district);
         }
       }
 
@@ -385,9 +383,6 @@ export class ContentService {
       }
 
       sql += ' GROUP BY e.id ORDER BY e.event_date DESC, e.created_at DESC';
-
-      console.log('ContentService - Final SQL:', sql);
-      console.log('ContentService - Params:', params);
 
       const [rows] = await pool.execute(sql, params);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

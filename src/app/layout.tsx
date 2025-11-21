@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     default: "राष्ट्रीय हिंदू वाहिनी संगठन - Rashtriya Hindu Vahini Sangathan",
     template: "%s | राष्ट्रीय हिंदू वाहिनी संगठन"
   },
-  description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट | Official website of Rashtriya Hindu Vahini Sangathan dedicated to serving and uniting the Hindu community. Join us in preserving Sanatan Dharma and Hindu culture.",
+  description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित। सनातन धर्म और हिंदू संस्कृति के संरक्षण में हमारे साथ जुड़ें।",
   keywords: [
     "Rashtriya Hindu Vahini Sangathan",
     "RHVS",
@@ -68,12 +68,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "hi_IN",
-    alternateLocale: ["en_IN"],
+    locale: "hi_IN", // Primary locale: Hindi (India)
+    alternateLocale: ["en_IN", "hi", "en"], // Alternate locales
     url: "/",
     siteName: "राष्ट्रीय हिंदू वाहिनी संगठन",
     title: "राष्ट्रीय हिंदू वाहिनी संगठन - Rashtriya Hindu Vahini Sangathan",
-    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट | Official website of Rashtriya Hindu Vahini Sangathan dedicated to serving and uniting the Hindu community. Join us in preserving Sanatan Dharma and Hindu culture.",
+    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित। सनातन धर्म और हिंदू संस्कृति के संरक्षण में हमारे साथ जुड़ें।",
     images: [
       {
         url: logoUrl,
@@ -86,7 +86,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "राष्ट्रीय हिंदू वाहिनी संगठन - Rashtriya Hindu Vahini Sangathan",
-    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट | Official website of Rashtriya Hindu Vahini Sangathan dedicated to serving and uniting the Hindu community.",
+    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित।",
     images: [logoUrl],
   },
   robots: {
@@ -103,8 +103,10 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
     languages: {
-      "en": "/",
-      "hi": "/",
+      "hi": "/", // Primary language: Hindi
+      "hi-IN": "/", // Hindi (India)
+      "en": "/", // English (secondary)
+      "en-IN": "/", // English (India)
     },
   },
 };
@@ -128,7 +130,7 @@ export default function RootLayout({
     "alternateName": ["Rashtriya Hindu Vahini Sangathan", "RHVS"],
     "url": siteUrl,
     "logo": logoUrl,
-    "description": "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट | Official website of Rashtriya Hindu Vahini Sangathan dedicated to serving and uniting the Hindu community. Join us in preserving Sanatan Dharma and Hindu culture.",
+    "description": "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित। सनातन धर्म और हिंदू संस्कृति के संरक्षण में हमारे साथ जुड़ें।",
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "General Inquiry",
