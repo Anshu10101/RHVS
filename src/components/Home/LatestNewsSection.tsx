@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Newspaper, Share2, Calendar, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Noto_Serif_Devanagari } from 'next/font/google';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 type NewsItem = {
   id: number | string;
@@ -56,24 +62,42 @@ export default function LatestNewsSection() {
     }
   };
 
-  useEffect(() => {
+  const loadNews = useCallback(async () => {
     let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/content/news?limit=10", { cache: "no-store" });
-        const data = await res.json();
-        if (!mounted) return;
-        if (data?.success) setNews(data.data || []);
-      } catch (e) {
-        console.error("Failed to load news", e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+    try {
+      const res = await fetch(`/api/content/news?limit=10&_t=${Date.now()}`, { 
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      const data = await res.json();
+      if (!mounted) return;
+      if (data?.success) setNews(data.data || []);
+    } catch (e) {
+      console.error("Failed to load news", e);
+    } finally {
+      if (mounted) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadNews();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadNews();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadNews]);
 
   // measure first track width for seamless wrap
   useEffect(() => {
@@ -217,18 +241,23 @@ export default function LatestNewsSection() {
   return (
     <section className="py-14 bg-white">
       <div className="container mx-auto px-4">
-        <div className="relative flex items-center justify-between md:justify-center mb-8">
-          <div className="md:text-center">
-            <div className="flex items-center justify-start md:justify-center gap-2 mb-3">
-              <Newspaper className="h-6 w-6 text-orange-500" />
-              <p className="text-sm uppercase tracking-widest text-orange-600 font-semibold">Latest Updates</p>
+        <div className="relative mb-8">
+          <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
+              <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
+                Latest Updates
+              </span>
+              <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-black text-orange-900 mb-2">
+            <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
               नवीनतम समाचार
             </h2>
-            <p className="text-gray-600 text-sm md:text-base">Stay informed with the latest news and updates</p>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              Stay informed with the latest news and updates
+            </p>
           </div>
-          <Link href="/news" className="absolute right-0 text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
+          <Link href="/news" className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
             सभी देखें →
           </Link>
         </div>

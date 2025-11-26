@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -224,7 +225,7 @@ export async function GET(request: NextRequest) {
 
         const formattedDbDepartments = Array.from(departmentMap.values());
 
-        return NextResponse.json({
+        return noCacheJsonResponse({
           success: true,
           departments: formattedDbDepartments
         });
@@ -234,7 +235,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return fallback departments if database query fails or level filters missing data
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       departments: defaultDepartments
     });
@@ -254,7 +255,7 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       departments: fallbackDepartments
     });

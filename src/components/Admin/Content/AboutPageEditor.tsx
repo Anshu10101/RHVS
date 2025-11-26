@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,18 +56,24 @@ export function AboutPageEditor() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
 
   // Load about page content from API
-  useEffect(() => {
-    const loadAboutSections = async () => {
-      try {
-        const token = localStorage.getItem('admin_token');
-        const response = await fetch('/api/content/about', {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-        const result = await response.json();
+  const loadAboutSections = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch(`/api/content/about?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      const result = await response.json();
         
         if (result.success && result.data.length > 0) {
-          setSections(result.data);
-          setHistory([result.data]);
+          // Sort sections by order to ensure correct display
+          const sortedSections = [...result.data].sort((a, b) => (a.order || 0) - (b.order || 0));
+          setSections(sortedSections);
+          setHistory([sortedSections]);
           setHistoryIndex(0);
         } else {
           // Load default sections if no data exists
@@ -151,10 +157,24 @@ export function AboutPageEditor() {
       } catch (error) {
         console.error('Error loading about sections:', error);
       }
+    }, []);
+
+  useEffect(() => {
+    loadAboutSections();
+
+    // Reload when page becomes visible (user returns from another tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadAboutSections();
+      }
     };
 
-    loadAboutSections();
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadAboutSections]);
 
   const saveToHistory = (newSections: AboutSection[]) => {
     const newHistory = history.slice(0, historyIndex + 1);
@@ -236,11 +256,14 @@ export function AboutPageEditor() {
     
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/about', {
+      const response = await fetch(`/api/content/about?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           sections: sections.map(section => ({
@@ -256,6 +279,11 @@ export function AboutPageEditor() {
       
       if (result.success) {
         setSaveStatus('success');
+        // Reload sections from API to get the latest saved data with fresh cache-busting
+        // Use a small delay to ensure server has committed the transaction
+        setTimeout(async () => {
+          await loadAboutSections();
+        }, 100);
         setTimeout(() => setSaveStatus('idle'), 3000);
       } else {
         setSaveStatus('error');

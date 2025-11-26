@@ -83,8 +83,20 @@ export default function NewsPage() {
     try {
       const timestamp = Date.now();
       const [statesRes, newsRes] = await Promise.all([
-        fetch(`/api/states?_t=${timestamp}`, { cache: "no-store" }),
-        fetch(`/api/content/news?page=${currentPage}&limit=12&_t=${timestamp}`, { cache: "no-store" }),
+        fetch(`/api/states?_t=${timestamp}`, { 
+          cache: "no-store",
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        }),
+        fetch(`/api/content/news?page=${currentPage}&limit=12&_t=${timestamp}`, { 
+          cache: "no-store",
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        }),
       ]);
       const statesData = await statesRes.json();
       if (statesData?.success && Array.isArray(statesData.data)) {
@@ -416,7 +428,13 @@ export default function NewsPage() {
 
                       if (actualId) {
                         try {
-                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { cache: "no-store" });
+                          const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { 
+                            cache: "no-store",
+                            headers: {
+                              'Cache-Control': 'no-cache, no-store, must-revalidate',
+                              'Pragma': 'no-cache',
+                            }
+                          });
                           const data = await res.json();
                           if (data?.success && Array.isArray(data.data)) {
                             const districts = data.data.map((d: { id: string | number; name: string }) => ({
@@ -492,7 +510,13 @@ export default function NewsPage() {
 
                 if (actualId) {
                   try {
-                    const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}`, { cache: "no-store" });
+                    const res = await fetch(`/api/districts?stateId=${encodeURIComponent(actualId)}&_t=${Date.now()}`, { 
+                      cache: "no-store",
+                      headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                      }
+                    });
                     const data = await res.json();
                     if (data?.success && Array.isArray(data.data)) {
                       const districts = data.data.map((d: { id: string | number; name: string }) => ({

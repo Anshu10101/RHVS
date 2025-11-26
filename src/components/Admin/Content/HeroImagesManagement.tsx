@@ -67,6 +67,20 @@ export function HeroImagesManagement() {
   useEffect(() => {
     fetchImages();
     fetchSettings();
+
+    // Reload when page becomes visible (user returns from another tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchImages();
+        fetchSettings();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const fetchImages = async () => {
@@ -74,7 +88,11 @@ export function HeroImagesManagement() {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images?_t=${Date.now()}`, {
         cache: 'no-store',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
       if (response.ok) {
         const data = await response.json();
@@ -92,7 +110,11 @@ export function HeroImagesManagement() {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images/settings?_t=${Date.now()}`, {
         cache: 'no-store',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
       if (response.ok) {
         const data = await response.json();
@@ -125,7 +147,12 @@ export function HeroImagesManagement() {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images?_t=${Date.now()}`, {
         method: 'POST',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: formData
       });
 
@@ -152,8 +179,11 @@ export function HeroImagesManagement() {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images/${editingImage.id}?_t=${Date.now()}`, {
         method: 'PUT',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(editingImage)
@@ -178,9 +208,14 @@ export function HeroImagesManagement() {
 
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/hero-images/${id}`, {
+      const response = await fetch(`/api/hero-images/${id}?_t=${Date.now()}`, {
         method: 'DELETE',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
 
       if (response.ok) {
@@ -201,8 +236,11 @@ export function HeroImagesManagement() {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/hero-images/settings?_t=${Date.now()}`, {
         method: 'PUT',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ settings })
@@ -241,10 +279,13 @@ export function HeroImagesManagement() {
     // Update in database
     try {
       const token = localStorage.getItem('admin_token');
-      await fetch(`/api/hero-images/${id}`, {
+      await fetch(`/api/hero-images/${id}?_t=${Date.now()}`, {
         method: 'PUT',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({ display_order: newImages[currentIndex].display_order })

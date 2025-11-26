@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Get permissions for a specific district admin
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -44,14 +45,14 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const permissions = await executeQuery(permissionsQuery, [adminId]) as any[];
     
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       permissions: permissions.map((p: any) => p.permission)
     });
   } catch (error) {
     console.error('Error fetching district admin permissions:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, message: 'Server error' },
       { status: 500 }
     );
@@ -96,10 +97,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     
     // Calculate expiry date if expiryDays is provided
-    let expiresAt = null;
+    let expiresAt: string | null = null;
     if (expiryDays > 0) {
-      expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + expiryDays);
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + expiryDays);
+      // Convert to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
+      expiresAt = expiryDate.toISOString().slice(0, 19).replace('T', ' ');
     }
     
     // First, deactivate all existing permissions
@@ -163,13 +166,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);
     
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       permissions
     });
   } catch (error) {
     console.error('Error updating district admin permissions:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, message: 'Server error' },
       { status: 500 }
     );

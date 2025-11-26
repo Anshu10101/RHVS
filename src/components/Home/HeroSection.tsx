@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 
 interface HeroImage {
   id: number;
@@ -45,10 +45,6 @@ export default function HeroSection() {
   const shlokasWidthRef = useRef<number>(0);
   const shlokasRafRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    fetchHeroImages();
-    fetchHeroSettings();
-  }, []);
 
   // Measure welcome marquee width
   useEffect(() => {
@@ -162,16 +158,23 @@ export default function HeroSection() {
     }
   }, [heroImages.length, heroSettings.auto_play, heroSettings.image_display_duration]);
 
-  const fetchHeroImages = async () => {
+  const fetchHeroImages = useCallback(async () => {
     try {
-      const response = await fetch('/api/hero-images');
+      const response = await fetch(`/api/hero-images?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         // Filter out images with invalid paths (legacy /uploads/ paths that don't exist)
         const validImages = (data.images || []).filter((img: HeroImage) => {
           if (!img.image_path) return false;
-          // Keep images that use API routes or external URLs
           // Exclude legacy /uploads/ paths that may not exist
+          if (img.image_path.startsWith('/uploads/')) return false;
+          // Keep images that use API routes or external URLs
           // Only allow HTTPS or relative paths (no HTTP to prevent mixed content)
           return img.image_path.startsWith('/api/') || 
                  img.image_path.startsWith('https://');
@@ -183,11 +186,17 @@ export default function HeroSection() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchHeroSettings = async () => {
+  const fetchHeroSettings = useCallback(async () => {
     try {
-      const response = await fetch('/api/hero-images/settings');
+      const response = await fetch(`/api/hero-images/settings?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         const fetched = data.settings || {};
@@ -204,7 +213,27 @@ export default function HeroSection() {
     } catch (error) {
       console.error('Error fetching hero settings:', error);
     }
-  };
+  }, []);
+
+  // Load hero images and settings on mount and when page becomes visible
+  useEffect(() => {
+    fetchHeroImages();
+    fetchHeroSettings();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchHeroImages();
+        fetchHeroSettings();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchHeroImages, fetchHeroSettings]);
 
   const detectImageAspectRatio = (imagePath: string, imageId: number) => {
     if (typeof window === 'undefined') return;

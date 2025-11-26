@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET - Fetch hero image settings
 export async function GET(request: NextRequest) {
@@ -22,14 +23,14 @@ export async function GET(request: NextRequest) {
       settings[row.setting_key] = value;
     });
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       settings
     });
 
   } catch (error) {
     console.error('Error fetching hero settings:', error);
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: false,
       error: 'Failed to fetch hero settings'
     }, { status: 500 });
@@ -76,7 +77,7 @@ export async function PUT(request: NextRequest) {
 
       await pool.execute('COMMIT');
 
-      return NextResponse.json({
+      return noCacheJsonResponse({
         success: true,
         message: 'Hero settings updated successfully'
       });
@@ -88,7 +89,7 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     console.error('Error updating hero settings:', error);
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: false,
       error: 'Failed to update hero settings'
     }, { status: 500 });

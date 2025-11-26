@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -176,20 +176,29 @@ export default function AssignPermissionsPage() {
     }
   };
 
-  useEffect(() => {
-    if (currentUser?.type === 'superadmin') {
-      fetchData();
-    }
-  }, [currentUser]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('admin_token');
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const timestamp = Date.now();
       const [adminsRes, permissionsRes] = await Promise.all([
-        fetch('/api/admin/members/admins', { headers }),
-        fetch('/api/admin/permissions', { headers })
+        fetch(`/api/admin/members/admins?_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        }),
+        fetch(`/api/admin/permissions?_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        })
       ]);
 
        if (adminsRes.ok) {
@@ -218,7 +227,29 @@ export default function AssignPermissionsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (currentUser?.type === 'superadmin') {
+      fetchData();
+    }
+  }, [currentUser, fetchData]);
+
+  // Reload data when page becomes visible (user navigates back or refreshes)
+  useEffect(() => {
+    if (currentUser?.type !== 'superadmin') return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUser, fetchData]);
 
   // Templates removed
   // const handleTemplateSelect = (_: string) => {};

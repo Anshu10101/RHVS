@@ -12,6 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Noto_Serif_Devanagari } from 'next/font/google';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 interface Department {
   id: number | string;
@@ -100,8 +106,15 @@ export default function DepartmentsSection() {
         const params = new URLSearchParams({ level });
         if (options?.stateName) params.append('state', options.stateName);
         if (options?.districtName) params.append('district', options.districtName);
+        params.append('_t', String(Date.now()));
 
-        const response = await fetch(`/api/public/departments?${params.toString()}`, { cache: 'no-store' });
+        const response = await fetch(`/api/public/departments?${params.toString()}`, { 
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         const data = await response.json();
 
         if (data?.success) {
@@ -124,7 +137,13 @@ export default function DepartmentsSection() {
 
   const loadStates = useCallback(async () => {
     try {
-      const response = await fetch('/api/states', { cache: 'no-store' });
+      const response = await fetch(`/api/states?_t=${Date.now()}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       const data = await response.json();
       if (data?.success) {
         const formatted = (data.data || []).map((state: { id: string | number; name: string }) => ({
@@ -145,7 +164,13 @@ export default function DepartmentsSection() {
     }
 
     try {
-      const response = await fetch(`/api/districts?stateId=${stateId}`, { cache: 'no-store' });
+      const response = await fetch(`/api/districts?stateId=${stateId}&_t=${Date.now()}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       const data = await response.json();
       if (data?.success) {
         const formatted = (data.data || []).map((district: { id: string | number; name: string }) => ({
@@ -265,6 +290,20 @@ export default function DepartmentsSection() {
   useEffect(() => {
     loadNationalDepartments();
     loadStates();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadNationalDepartments();
+        loadStates();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [loadNationalDepartments, loadStates]);
 
   useEffect(() => {
@@ -588,23 +627,20 @@ export default function DepartmentsSection() {
     <section className="py-16 bg-gradient-to-b from-slate-50 to-white">
       <div className="container mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="h-px w-8 bg-orange-300"></div>
-            <span className="text-orange-600 font-semibold text-sm uppercase tracking-wider">
+        <div className="text-center mb-12 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
+            <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
               Organizational Structure
             </span>
-            <div className="h-px w-8 bg-orange-300"></div>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
           </div>
           
-          <h3 className="text-4xl md:text-5xl font-black text-orange-900 mb-2 leading-tight">
+          <h3 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight`}>
             राष्ट्रीय विभाग
           </h3>
-          <p className="text-xl md:text-2xl font-semibold text-slate-800 mb-4 tracking-tight">
-            Departments
-          </p>
           
-          <p className="max-w-3xl mx-auto text-slate-600 leading-relaxed">
+          <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
             Meet our dedicated department heads who lead various initiatives across the organization, 
             ensuring smooth operations and effective implementation of our mission.
           </p>

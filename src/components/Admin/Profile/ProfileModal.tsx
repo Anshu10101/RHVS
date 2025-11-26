@@ -96,7 +96,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
-      alert('File size must be less than 2MB');
+      alert(`File size must be less than 2MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
       return;
     }
 
@@ -107,49 +107,62 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     };
     reader.readAsDataURL(file);
 
-    // Upload to staging first
+    // Upload directly to superadmin profile
     setUploadingPhoto(true);
     try {
+      // Get auth token
+      const { getToken } = await import('@/lib/secure-storage');
+      const token = getToken();
+
+      if (!token) {
+        throw new Error('Not authenticated. Please log in again.');
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadResponse = await fetch('/api/upload/profile', {
+      const saveResponse = await fetch(`/api/admin/profile/photo?_t=${Date.now()}`, {
         method: 'POST',
         body: formData,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error('Failed to upload photo');
-      }
-
-      const uploadData = await uploadResponse.json();
-
-      // Now save to superadmin profile - send file directly
-      const saveFormData = new FormData();
-      saveFormData.append('file', file);
-
-      const saveResponse = await fetch('/api/admin/profile/photo', {
-        method: 'POST',
-        body: saveFormData,
+        cache: 'no-store',
+        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       });
 
       if (!saveResponse.ok) {
-        const errorData = await saveResponse.json();
-        throw new Error(errorData.message || 'Failed to save profile photo');
+        const errorData = await saveResponse.json().catch(() => ({ message: 'Unknown error occurred' }));
+        const errorMessage = errorData.message || errorData.error || `Server error: ${saveResponse.status} ${saveResponse.statusText}`;
+        console.error('Profile photo upload failed:', {
+          status: saveResponse.status,
+          statusText: saveResponse.statusText,
+          error: errorData
+        });
+        throw new Error(errorMessage);
+      }
+
+      const result = await saveResponse.json();
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to save profile photo');
       }
 
       // Refresh user data to get updated photo
       if (refreshData) {
         await refreshData();
         // Force a small delay to ensure state updates
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       // Force reload to ensure image cache is cleared
       window.location.reload();
     } catch (error) {
       console.error('Error uploading photo:', error);
-      alert('Failed to upload profile photo. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload profile photo. Please try again.';
+      alert(errorMessage);
       setPhotoPreview(null);
     } finally {
       setUploadingPhoto(false);

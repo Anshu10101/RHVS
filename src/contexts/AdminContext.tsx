@@ -376,11 +376,21 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (!state.currentUser || state.currentUser.type !== 'district_admin') return;
     
     try {
+      // Get token from secure storage
+      const { getToken } = await import('@/lib/secure-storage');
+      const token = getToken();
+      
+      if (!token) {
+        return; // No token, skip check
+      }
+      
       const response = await fetch('/api/admin/permissions/check-expiry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
+        credentials: 'omit', // Don't send cookies - only use Authorization header
         body: JSON.stringify({
           district_admin_id: state.currentUser.id
         }),

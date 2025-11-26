@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { AdminPageTitle } from '@/components/Admin/Layout/AdminPageTitle';
 import {
@@ -144,14 +144,22 @@ export default function AdminsManagementPage() {
   };
 
   // Load data
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('admin_token');
         const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const timestamp = Date.now();
         
         // Fetch members
-        const membersRes = await fetch('/api/admin/members', { cache: 'no-store', headers });
+        const membersRes = await fetch(`/api/admin/members?_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         if (membersRes.ok) {
           const data = await membersRes.json();
           const membersList = data.data?.members || data.members || [];
@@ -159,8 +167,15 @@ export default function AdminsManagementPage() {
           setFilteredMembers(membersList);
         }
         
-        // Fetch district admins
-        const adminsRes = await fetch('/api/admin/members/admins', { cache: 'no-store', headers });
+        // Fetch district admins with cache-busting
+        const adminsRes = await fetch(`/api/admin/members/admins?_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         if (adminsRes.ok) {
           const data = await adminsRes.json();
           const adminsList = data.admins || [];
@@ -177,13 +192,29 @@ export default function AdminsManagementPage() {
       } finally {
         setLoading(false);
       }
-    };
+    }, []);
   
   useEffect(() => {
     if (!isSuperAdmin) return;
     fetchData();
     fetchStates();
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, fetchData]);
+
+  // Reload data when page becomes visible (user navigates back or refreshes)
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isSuperAdmin, fetchData]);
 
   // Fetch districts when state filter changes (for dialog)
   useEffect(() => {
@@ -269,7 +300,8 @@ export default function AdminsManagementPage() {
       
       if (res.ok) {
         const data = await res.json();
-        setDistrictAdmins(prev => [...prev, data.admin]);
+        // Refetch data from server to ensure consistency
+        await fetchData();
         toast.success('District admin added successfully');
         setAddDialogOpen(false);
         resetForm();
@@ -297,15 +329,8 @@ export default function AdminsManagementPage() {
       });
       
       if (res.ok) {
-        // Refresh admins list
-        const token = localStorage.getItem('admin_token');
-        const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const adminsRes = await fetch('/api/admin/members/admins', { cache: 'no-store', headers });
-        if (adminsRes.ok) {
-          const adminsData = await adminsRes.json();
-          setDistrictAdmins(adminsData.admins || []);
-          setFilteredDistrictAdmins(adminsData.admins || []);
-        }
+        // Refetch data from server to ensure consistency
+        await fetchData();
         toast.success('District admin removed successfully');
       } else {
         const error = await res.json();

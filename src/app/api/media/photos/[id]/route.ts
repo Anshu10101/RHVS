@@ -61,7 +61,7 @@ export async function GET(
           'Content-Type': contentType,
           'Content-Length': stat.size.toString(),
           'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
-          'Cache-Control': 'public, max-age=86400'
+          'Cache-Control': 'max-age=3600, must-revalidate'
         }
       });
     } catch {
@@ -90,7 +90,7 @@ async function serveDirectBlob(
   const headers: Record<string, string> = {
     'Content-Type': contentType,
     'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
-    'Cache-Control': 'public, max-age=31536000, immutable'
+    'Cache-Control': 'max-age=3600, must-revalidate'
   };
   if (size != null) {
     headers['Content-Length'] = size.toString();

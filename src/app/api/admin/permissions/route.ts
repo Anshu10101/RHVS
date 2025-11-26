@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // GET available permissions (superadmin only)
 export async function GET(request: NextRequest) {
@@ -21,10 +22,10 @@ export async function GET(request: NextRequest) {
        ORDER BY category ASC, permission_name ASC`
     );
 
-    return NextResponse.json({ success: true, permissions: rows });
+    return noCacheJsonResponse({ success: true, permissions: rows });
   } catch (error) {
     console.error('Error fetching available permissions:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch permissions' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, error: 'Failed to fetch permissions' }, { status: 500 });
   }
 }
 

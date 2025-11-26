@@ -10,7 +10,7 @@ const dbConfig = {
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  connectTimeout: 20000,
+  connectTimeout: 30000, // 30 seconds
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
   // Optional SSL for hosts that require it (set DB_SSL=true in env)
@@ -39,9 +39,25 @@ export async function executeQuery(query: string, params: unknown[] = [], attemp
     const [results] = await pool.execute(query, params);
     return results;
   } catch (error: unknown) {
-    const transient = (error as { code?: string; fatal?: boolean }).code === 'ECONNRESET' || (error as { code?: string; fatal?: boolean }).code === 'PROTOCOL_CONNECTION_LOST' || (error as { code?: string; fatal?: boolean }).fatal;
+    const err = error as { code?: string; fatal?: boolean };
+    // Handle transient errors: connection resets, timeouts, and fatal connection errors
+    const transient = 
+      err.code === 'ECONNRESET' || 
+      err.code === 'PROTOCOL_CONNECTION_LOST' || 
+      err.code === 'ETIMEDOUT' ||
+      err.fatal === true;
+    
     if (transient && attempt < 3) {
-      await new Promise((r) => setTimeout(r, 300 * attempt));
+      const delay = 500 * attempt; // Exponential backoff: 500ms, 1000ms, 1500ms
+      console.warn(`Database query timeout/error (attempt ${attempt}/3), retrying in ${delay}ms...`, err.code || 'fatal');
+      await new Promise((r) => setTimeout(r, delay));
+      // Try to get a fresh connection on retry
+      try {
+        const connection = await pool.getConnection();
+        connection.release();
+      } catch (connError) {
+        // Connection pool might be recovering, continue with retry
+      }
       return executeQuery(query, params, attempt + 1);
     }
     console.error('Database query error:', error);

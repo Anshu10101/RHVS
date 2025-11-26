@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -73,7 +74,7 @@ export async function GET(_request: NextRequest) {
     const fallbackTags = tags.length > 0 ? tags : ['festival', 'celebration', 'community', 'spiritual', 'prayer', 'devotion', 'cultural', 'heritage', 'tradition'];
     const fallbackEvents = events.length > 0 ? events : ['Diwali event', 'hinduism meet', 'Annual General Meeting 2024'];
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       states: fallbackStates,
       districts: fallbackDistricts,
@@ -83,7 +84,7 @@ export async function GET(_request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching photo filters:', error);
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: false,
       error: 'Failed to fetch filters',
       states: [],

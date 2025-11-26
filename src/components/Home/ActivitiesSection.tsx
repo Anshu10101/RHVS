@@ -1,66 +1,131 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarDays, HandHeart, GraduationCap, UsersRound, Megaphone, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Noto_Serif_Devanagari } from 'next/font/google';
+import Link from 'next/link';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 const items = [
   {
-    icon: <HandHeart className="h-6 w-6" />, title: 'सेवा अभियान (Seva Drives)',
+    icon: <HandHeart className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'सेवा अभियान (Seva Drives)',
     desc: 'रक्तदान, अन्नदान, वस्त्रदान और आपदा राहत के माध्यम से समाज सेवा।'
   },
   {
-    icon: <GraduationCap className="h-6 w-6" />, title: 'शिक्षा एवं संस्कार',
+    icon: <GraduationCap className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'शिक्षा एवं संस्कार',
     desc: 'संस्कृत/गीतापाठ, बाल संस्कार केंद्र, और छात्र मार्गदर्शन सत्र।'
   },
   {
-    icon: <UsersRound className="h-6 w-6" />, title: 'समाज एकता कार्यक्रम',
+    icon: <UsersRound className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'समाज एकता कार्यक्रम',
     desc: 'सामुदायिक बैठकें, भजन संध्या और सांस्कृतिक उत्सवों द्वारा एकता।'
   },
   {
-    icon: <Megaphone className="h-6 w-6" />, title: 'जागरूकता अभियान',
+    icon: <Megaphone className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'जागरूकता अभियान',
     desc: 'स्वच्छता, पर्यावरण, और नशामुक्ति जैसे विषयों पर जनजागरण।'
   },
   {
-    icon: <BookOpen className="h-6 w-6" />, title: 'धार्मिक अध्ययन',
+    icon: <BookOpen className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'धार्मिक अध्ययन',
     desc: 'वेद-पुराण, रामायण, गीता अध्ययन मंडलियों का आयोजन।'
   },
   {
-    icon: <CalendarDays className="h-6 w-6" />, title: 'विशेष आयोजन',
+    icon: <CalendarDays className="h-7 w-7" strokeWidth={1.5} />, 
+    title: 'विशेष आयोजन',
     desc: 'त्योहार सेवा, शोभा यात्राएँ, और युवा सम्मेलन।'
   },
 ];
 
 export default function ActivitiesSection() {
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-10">
-          <h3 className="uppercase font-bold mb-2 text-orange-700">Activities</h3>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-orange-900">हमारी प्रमुख गतिविधियाँ</h2>
-          <p className="max-w-2xl mx-auto text-gray-700">सनातन मूल्यों पर आधारित सामाजिक सेवा, शिक्षा, और सांस्कृतिक समन्वय के प्रयास।</p>
+    <section className="py-20 sm:py-24 bg-white relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 2px 2px, rgb(0,0,0) 1px, transparent 0)`,
+          backgroundSize: '40px 40px'
+        }} />
+      </div>
+      
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        {/* Header */}
+        <div className="text-center mb-16 sm:mb-20 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
+            <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
+              Activities
+            </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
+          </div>
+          
+          <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
+            हमारी प्रमुख गतिविधियाँ
+          </h2>
+          
+          <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+            सनातन मूल्यों पर आधारित सामाजिक सेवा, शिक्षा, और सांस्कृतिक समन्वय के प्रयास।
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((it, idx) => (
-            <Card key={idx} className="rounded-2xl border-orange-100 hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-700">
-                  {it.icon}
+        {/* Activities Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-12">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="group relative bg-white rounded-2xl p-8 border border-gray-100 hover:border-orange-200 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+            >
+              {/* Subtle gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-50/0 to-orange-50/0 group-hover:from-orange-50/50 group-hover:to-transparent rounded-2xl transition-all duration-300 pointer-events-none" />
+              
+              {/* Icon */}
+              <div className="relative mb-6">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-50 to-orange-100 group-hover:from-orange-100 group-hover:to-orange-200 transition-all duration-300">
+                  <div className="text-orange-600 group-hover:text-orange-700 transition-colors duration-300">
+                    {item.icon}
+                  </div>
                 </div>
-                <CardTitle className="mt-3 text-xl text-orange-900">{it.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-7">{it.desc}</p>
-              </CardContent>
-            </Card>
+              </div>
+              
+              {/* Title */}
+              <h3 className={`${devanagari.className} text-xl font-bold mb-3 text-gray-900 group-hover:text-orange-800 transition-colors duration-300 relative z-10`}>
+                {item.title}
+              </h3>
+              
+              {/* Description */}
+              <p className="text-gray-600 leading-relaxed text-[15px] relative z-10">
+                {item.desc}
+              </p>
+              
+              {/* Decorative line */}
+              <div className="absolute bottom-0 left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-orange-200 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
           ))}
         </div>
 
-        <div className="mt-10 text-center">
-          <Button className="rounded-full px-6 bg-orange-600 hover:bg-orange-700">सभी गतिविधियाँ देखें</Button>
+        {/* CTA Button */}
+        <div className="text-center">
+          <Link href="/activities">
+            <Button 
+              className="group relative inline-flex items-center gap-2 px-8 py-6 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
+            >
+              <span>सभी गतिविधियाँ देखें</span>
+              <svg 
+                className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
   );
 }
-
-

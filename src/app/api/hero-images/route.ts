@@ -42,13 +42,22 @@ export async function GET(request: NextRequest) {
 
     const [rows] = await pool.execute(query, params);
     const images = Array.isArray(rows)
-      ? rows.map((row: any) => {
-          const { resolved_image_path, ...rest } = row;
-          return {
-            ...rest,
-            image_path: resolved_image_path ?? rest.image_path ?? null
-          };
-        })
+      ? rows
+          .map((row: any) => {
+            const { resolved_image_path, ...rest } = row;
+            return {
+              ...rest,
+              image_path: resolved_image_path ?? rest.image_path ?? null
+            };
+          })
+          // Filter out legacy /uploads/ paths that don't exist
+          .filter((img: any) => {
+            if (!img.image_path) return false;
+            // Exclude legacy /uploads/ paths
+            if (img.image_path.startsWith('/uploads/')) return false;
+            // Only allow API routes or HTTPS URLs
+            return img.image_path.startsWith('/api/') || img.image_path.startsWith('https://');
+          })
       : [];
     
     return noCacheJsonResponse({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { verifyAdminJwt, getAdminToken } from '@/lib/auth-jwt';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Update a district admin
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -105,10 +106,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     updatedAdmin[0].permissions = permissions.map((p: any) => p.permission);
     
-    return NextResponse.json({ success: true, admin: updatedAdmin[0] });
+    return noCacheJsonResponse({ success: true, admin: updatedAdmin[0] });
   } catch (error) {
     console.error('Error updating district admin:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, message: 'Server error' },
       { status: 500 }
     );
@@ -172,10 +173,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       req.headers.get('x-forwarded-for') || 'unknown'
     ]);
     
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (error) {
     console.error('Error deleting district admin:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, message: 'Server error' },
       { status: 500 }
     );

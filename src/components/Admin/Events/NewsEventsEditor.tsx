@@ -101,7 +101,15 @@ export default function NewsEventsEditor() {
     is_featured: false,
     is_published: true,
     order: 0,
+    district: '',
+    state: '',
   });
+
+  // State/district dropdowns (for superadmins)
+  const [states, setStates] = useState<Array<{ id: number; name: string }>>([]);
+  const [districts, setDistricts] = useState<Array<{ id: string; name: string }>>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
 
   // Event form state
   const [eventForm, setEventForm] = useState({
@@ -120,12 +128,71 @@ export default function NewsEventsEditor() {
     event_type: 'other' as Event['event_type'],
     order: 0,
     isVisible: true,
+    district: '',
+    state: '',
   });
 
   // Fetch data
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Fetch states when currentUser is available (for superadmins)
+  useEffect(() => {
+    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && states.length === 0 && !loadingStates) {
+      fetchStates();
+    }
+  }, [currentUser]);
+
+  // Fetch districts when state changes (for news)
+  useEffect(() => {
+    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && newsForm.state) {
+      fetchDistricts(newsForm.state);
+    } else if (!newsForm.state) {
+      setDistricts([]);
+    }
+  }, [newsForm.state, currentUser]);
+
+  // Fetch districts when state changes (for events)
+  useEffect(() => {
+    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && eventForm.state) {
+      fetchDistricts(eventForm.state);
+    } else if (!eventForm.state) {
+      setDistricts([]);
+    }
+  }, [eventForm.state, currentUser]);
+
+  const fetchStates = async () => {
+    setLoadingStates(true);
+    try {
+      const response = await fetch('/api/states');
+      const data = await response.json();
+      if (data.success && data.data) {
+        setStates(data.data || []);
+      } else {
+        console.error('Failed to fetch states:', data);
+      }
+    } catch (error) {
+      console.error('Error fetching states:', error);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  const fetchDistricts = async (stateId: string) => {
+    setLoadingDistricts(true);
+    try {
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -156,6 +223,20 @@ export default function NewsEventsEditor() {
 
   const handleSave = async () => {
     if (!currentUser) return;
+
+    // Validate state/district for superadmins
+    if (activeTab === 'news' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
+      if (!newsForm.state || !newsForm.district) {
+        alert('Please select both state and district for this news item');
+        return;
+      }
+    }
+    if (activeTab === 'events' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
+      if (!eventForm.state || !eventForm.district) {
+        alert('Please select both state and district for this event');
+        return;
+      }
+    }
 
     // Validate content limits for news
     if (activeTab === 'news') {
@@ -193,16 +274,31 @@ export default function NewsEventsEditor() {
       let data: any; // eslint-disable-line @typescript-eslint/no-explicit-any
       
       if (activeTab === 'news') {
-        data = { ...newsForm, created_by: currentUser.name };
+        data = { 
+          ...newsForm, 
+          created_by: currentUser.name,
+          // Include district/state for superadmins
+          ...((currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && {
+            district: newsForm.district,
+            state: newsForm.state,
+          }),
+        };
       } else {
         // For events, ensure dates are properly formatted and empty strings become null
         data = {
           ...eventForm,
-          created_by: currentUser.name,
+          created_by: (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') 
+            ? currentUser.id 
+            : currentUser.name,
           event_date: eventForm.event_date?.trim() || null,
           event_time: eventForm.event_time?.trim() || null,
           end_date: eventForm.end_date?.trim() || null,
           end_time: eventForm.end_time?.trim() || null,
+          // Include district/state for superadmins
+          ...((currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && {
+            district: eventForm.district,
+            state: eventForm.state,
+          }),
         };
       }
 
@@ -305,7 +401,10 @@ export default function NewsEventsEditor() {
       is_featured: false,
       is_published: true,
       order: 0,
+      district: '',
+      state: '',
     });
+    setDistricts([]);
     setEventForm({
       title: '',
       description: '',
@@ -322,6 +421,8 @@ export default function NewsEventsEditor() {
       event_type: 'other',
       order: 0,
       isVisible: true,
+      district: '',
+      state: '',
     });
   };
 
@@ -372,7 +473,18 @@ export default function NewsEventsEditor() {
         is_featured: newsItem.is_featured,
         is_published: newsItem.is_published,
         order: newsItem.order,
+        district: (newsItem as any).district || '',
+        state: (newsItem as any).state || '',
       });
+      
+      // If superadmin and state is set, fetch districts
+      if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (newsItem as any).state) {
+        // Find state ID from state name
+        const stateObj = states.find(s => s.name === (newsItem as any).state);
+        if (stateObj) {
+          fetchDistricts(String(stateObj.id));
+        }
+      }
     } else {
       const eventItem = itemToUse as Event;
       
@@ -430,7 +542,18 @@ export default function NewsEventsEditor() {
         event_type: eventItem.event_type,
         order: eventItem.order,
         isVisible: eventItem.isVisible,
+        district: (eventItem as any).district || '',
+        state: (eventItem as any).state || '',
       });
+      
+      // If superadmin and state is set, fetch districts
+      if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (eventItem as any).state) {
+        // Find state ID from state name
+        const stateObj = states.find(s => s.name === (eventItem as any).state);
+        if (stateObj) {
+          fetchDistricts(String(stateObj.id));
+        }
+      }
     }
   };
 
@@ -601,6 +724,75 @@ export default function NewsEventsEditor() {
               {/* News-specific fields */}
               {activeTab === 'news' && (
                 <>
+                  {/* State/District selection for superadmins */}
+                  {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4 ">
+                      <div>
+                        <Label htmlFor="state">State *</Label>
+                        <Select 
+                          value={newsForm.state} 
+                          onValueChange={(value) => {
+                            setNewsForm({ ...newsForm, state: value, district: '' });
+                            setDistricts([]);
+                          }}
+                          disabled={loadingStates}
+                        >
+                          <SelectTrigger className={loadingStates ? 'opacity-50' : ''}>
+                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select state"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {states.length === 0 && !loadingStates ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No states available</div>
+                            ) : (
+                              states.map((state) => (
+                                <SelectItem key={state.id} value={String(state.id)}>
+                                  {state.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {loadingStates && (
+                          <p className="text-xs text-gray-500 mt-1">Loading states...</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="district">District *</Label>
+                        <Select 
+                          value={newsForm.district} 
+                          onValueChange={(value) => setNewsForm({ ...newsForm, district: value })}
+                          disabled={!newsForm.state || loadingDistricts}
+                        >
+                          <SelectTrigger className={(!newsForm.state || loadingDistricts) ? 'opacity-50' : ''}>
+                            <SelectValue placeholder={
+                              loadingDistricts 
+                                ? "Loading districts..." 
+                                : !newsForm.state 
+                                  ? "Select state first" 
+                                  : districts.length === 0
+                                    ? "No districts found"
+                                    : "Select district"
+                            } />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {districts.length === 0 && newsForm.state && !loadingDistricts ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No districts available for this state</div>
+                            ) : (
+                              districts.map((district) => (
+                                <SelectItem key={district.id} value={district.id}>
+                                  {district.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {loadingDistricts && (
+                          <p className="text-xs text-gray-500 mt-1">Loading districts...</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="news_type">Type</Label>
@@ -696,6 +888,75 @@ export default function NewsEventsEditor() {
               {/* Event-specific fields */}
               {activeTab === 'events' && (
                 <>
+                  {/* State/District selection for superadmins */}
+                  {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4">
+                      <div>
+                        <Label htmlFor="event_state">State *</Label>
+                        <Select 
+                          value={eventForm.state} 
+                          onValueChange={(value) => {
+                            setEventForm({ ...eventForm, state: value, district: '' });
+                            setDistricts([]);
+                          }}
+                          disabled={loadingStates}
+                        >
+                          <SelectTrigger className={loadingStates ? 'opacity-50' : ''}>
+                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select state"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {states.length === 0 && !loadingStates ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No states available</div>
+                            ) : (
+                              states.map((state) => (
+                                <SelectItem key={state.id} value={String(state.id)}>
+                                  {state.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {loadingStates && (
+                          <p className="text-xs text-gray-500 mt-1">Loading states...</p>
+                        )}
+                      </div>
+                      <div>
+                        <Label htmlFor="event_district">District *</Label>
+                        <Select 
+                          value={eventForm.district} 
+                          onValueChange={(value) => setEventForm({ ...eventForm, district: value })}
+                          disabled={!eventForm.state || loadingDistricts}
+                        >
+                          <SelectTrigger className={(!eventForm.state || loadingDistricts) ? 'opacity-50' : ''}>
+                            <SelectValue placeholder={
+                              loadingDistricts 
+                                ? "Loading districts..." 
+                                : !eventForm.state 
+                                  ? "Select state first" 
+                                  : districts.length === 0
+                                    ? "No districts found"
+                                    : "Select district"
+                            } />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {districts.length === 0 && eventForm.state && !loadingDistricts ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No districts available for this state</div>
+                            ) : (
+                              districts.map((district) => (
+                                <SelectItem key={district.id} value={district.id}>
+                                  {district.name}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {loadingDistricts && (
+                          <p className="text-xs text-gray-500 mt-1">Loading districts...</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div>
                     <Label htmlFor="description">Description *</Label>
                     <Textarea

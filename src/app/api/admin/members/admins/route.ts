@@ -294,14 +294,15 @@ export async function POST(req: NextRequest) {
       name: memberCheck[0].name,
       email: memberCheck[0].email,
       district,
+      state,
       isActive: true,
       appointmentDate: new Date().toISOString(),
       expiryDate: expiryDate || null,
       lastLogin: null,
-      permissions: permissions || []
+      permissions: finalPermissions || []
     };
     
-    return NextResponse.json({ success: true, admin: newAdmin });
+    return noCacheJsonResponse({ success: true, admin: newAdmin });
   } catch (error) {
     console.error('Error creating district admin:', error);
     return NextResponse.json(

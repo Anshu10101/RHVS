@@ -468,21 +468,32 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const lineSpacing = isHindi ? 90 : 100;
     const signaturesY = motTextY + (motLines.length * lineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
     
+    // Dynamically center 1–4 signatures within the inner golden border.
+    // The group of signatures is always centered on the inner content area.
     const signatureBlockWidth = 500;
     const signatureSpacing = 60;
-    const totalSignatureWidth = (signatureBlockWidth * 4) + (signatureSpacing * 3);
-    const signatureStartX = (width - totalSignatureWidth) / 2;
+    const visibleSignatureCount = Math.min(signatureBlocks.length, 4);
     
-    const sigX1 = signatureStartX;
-    const sigX2 = sigX1 + signatureBlockWidth + signatureSpacing;
-    const sigX3 = sigX2 + signatureBlockWidth + signatureSpacing;
-    const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
-    const signaturePositions = [sigX1, sigX2, sigX3, sigX4];
+    if (visibleSignatureCount > 0) {
+      const innerWidth = width - borderMargin * 2;
+      const totalSignatureWidth =
+        (signatureBlockWidth * visibleSignatureCount) +
+        (signatureSpacing * (visibleSignatureCount - 1));
+      const signatureStartX = borderMargin + (innerWidth - totalSignatureWidth) / 2;
 
-    for (let index = 0; index < signatureBlocks.length; index++) {
-      const block = signatureBlocks[index];
-      const position = signaturePositions[index] ?? sigX1;
-      await drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts, block.signaturePath || undefined);
+      for (let index = 0; index < visibleSignatureCount; index++) {
+        const block = signatureBlocks[index];
+        const position = signatureStartX + index * (signatureBlockWidth + signatureSpacing);
+        await drawSignatureBlock(
+          ctx,
+          block.name,
+          block.title,
+          position,
+          signaturesY,
+          fonts,
+          block.signaturePath || undefined
+        );
+      }
     }
 
     // === FOOTER ===

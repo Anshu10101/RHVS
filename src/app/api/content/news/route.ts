@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const published = searchParams.get('published');
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
+    const district = searchParams.get('district');
+    const state = searchParams.get('state');
 
     // Check if this is an admin panel request (via query param or referer)
     const isAdminRequest = searchParams.get('admin') === 'true' || 
@@ -33,9 +35,14 @@ export async function GET(request: NextRequest) {
     `;
     const params: (string | number)[] = [];
     
-    // Only apply admin scoping if this is an admin panel request
-    // Public website should always show all published news
-    if (isAdminRequest) {
+    // Filter by district/state for public website or admin panel
+    if (district && state) {
+      // Public website filtering by district/state
+      // Use LIKE to handle district names that might include comma-separated values
+      query += ` AND (n.district = ? OR n.district LIKE ?) AND n.state = ?`;
+      params.push(district, `${district}%`, state);
+    } else if (isAdminRequest) {
+      // Admin panel: apply admin scoping
       const scope = await getAdminScope(request);
       // For district admins in admin panel, show ALL news for their district/state
       // This ensures continuity - new admins can see content created by previous admins
@@ -45,6 +52,11 @@ export async function GET(request: NextRequest) {
         query += ` AND (n.district = ? OR n.district LIKE ?) AND n.state = ?`;
         params.push(scope.districtName, `${scope.districtName}%`, scope.stateName);
       }
+    } else {
+      // Public website without district/state filter: show news with district/state set OR null
+      // This means superadmin news without district/state will show everywhere,
+      // but news with specific district/state will only show when filtered
+      // For now, show all published news (can be filtered by frontend)
     }
 
     const id = searchParams.get('id');
@@ -75,7 +87,10 @@ export async function GET(request: NextRequest) {
     const countParams: (string | number)[] = [];
     
     // Apply same filters for count
-    if (isAdminRequest) {
+    if (district && state) {
+      countQuery += ` AND (n.district = ? OR n.district LIKE ?) AND n.state = ?`;
+      countParams.push(district, `${district}%`, state);
+    } else if (isAdminRequest) {
       const scope = await getAdminScope(request);
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
         // Use LIKE to handle district names that might include comma-separated values
@@ -175,7 +190,9 @@ export async function POST(request: NextRequest) {
       is_featured,
       is_published,
       order,
-      created_by
+      created_by,
+      district: districtInput,
+      state: stateInput
     } = body;
 
     const id = `news_${Date.now()}`;
@@ -198,7 +215,27 @@ export async function POST(request: NextRequest) {
     let state = null;
     let owner_admin_id = null;
     
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
+    if (scope.isSuperAdmin && districtInput && stateInput) {
+      // Superadmin can specify district/state
+      // Validate and get actual names from database
+      const [stateRows] = await pool.execute(
+        'SELECT state_name_english FROM states WHERE id = ? OR state_name_english = ? LIMIT 1',
+        [stateInput, stateInput]
+      ) as any[];
+      
+      if (stateRows && stateRows.length > 0) {
+        state = stateRows[0].state_name_english;
+        
+        const [districtRows] = await pool.execute(
+          'SELECT district_name_english FROM districts WHERE district_code = ? OR district_name_english = ? LIMIT 1',
+          [districtInput, districtInput]
+        ) as any[];
+        
+        if (districtRows && districtRows.length > 0) {
+          district = districtRows[0].district_name_english;
+        }
+      }
+    } else if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
       district = scope.districtName;
       state = scope.stateName;
       owner_admin_id = scope.adminId;

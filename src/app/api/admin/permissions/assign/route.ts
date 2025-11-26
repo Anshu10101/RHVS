@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Assign permissions (permanent or temporary)
 export async function POST(request: NextRequest) {
@@ -16,6 +17,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400 });
     }
 
+    // Convert ISO datetime string to MySQL datetime format if provided
+    let expiresAtValue: string | null = null;
+    if (expires_at) {
+      try {
+        // Parse ISO string and convert to MySQL datetime format (YYYY-MM-DD HH:MM:SS)
+        const date = new Date(expires_at);
+        if (!isNaN(date.getTime())) {
+          expiresAtValue = date.toISOString().slice(0, 19).replace('T', ' ');
+        }
+      } catch (e) {
+        console.error('Error parsing expires_at:', e);
+      }
+    }
+
     await pool.execute('START TRANSACTION');
     for (const perm of permissions) {
       await pool.execute(
@@ -26,16 +41,16 @@ export async function POST(request: NextRequest) {
            expires_at = VALUES(expires_at),
            granted_at = VALUES(granted_at),
            granted_by = VALUES(granted_by)`,
-        [district_admin_id, perm, scope.adminId || 0, expires_at || null]
+        [district_admin_id, perm, scope.adminId || 0, expiresAtValue]
       );
     }
     await pool.execute('COMMIT');
 
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (error) {
     console.error('Error assigning permissions:', error);
     try { await pool.execute('ROLLBACK'); } catch {}
-    return NextResponse.json({ success: false, error: 'Failed to assign permissions' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, error: 'Failed to assign permissions' }, { status: 500 });
   }
 }
 
@@ -71,10 +86,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (error) {
     console.error('Error revoking permissions:', error);
-    return NextResponse.json({ success: false, error: 'Failed to revoke permissions' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, error: 'Failed to revoke permissions' }, { status: 500 });
   }
 }
 

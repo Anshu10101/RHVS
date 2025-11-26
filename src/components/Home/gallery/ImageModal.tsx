@@ -177,41 +177,43 @@ export default function ImageModal({ image, images, isOpen, onClose, favorites, 
           </div>
         </div>
 
-        {/* Image info overlay - positioned over image */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-3 sm:p-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0">
-              <div className="flex-1 text-white min-w-0">
-                <h3 className={`${devanagari.className} text-base sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-2`}>
-                  {image.title}
-                </h3>
-                {image.description && (
-                  <div className="mb-2 sm:mb-3">
-                    <p className={`text-gray-200 text-xs sm:text-sm md:text-base leading-relaxed ${
-                      needsTruncation && !isDescriptionExpanded ? 'line-clamp-2 sm:line-clamp-3' : ''
-                    }`}>
-                      {image.description}
-                    </p>
-                    {needsTruncation && (
-                      <button
-                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                        className="mt-1 text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors"
-                      >
-                        {isDescriptionExpanded ? 'See less' : 'See more...'}
-                      </button>
-                    )}
-                  </div>
-                )}
-                {image.tags && image.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                    {image.tags.map((tag, index) => (
-                      <span key={index} className="inline-block bg-orange-600/90 text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-xs md:text-sm font-medium">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+         {/* Image info overlay - positioned over image */}
+         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 sm:p-6 pb-6 sm:pb-7">
+           <div className="max-w-4xl mx-auto">
+             <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-0">
+               <div className="flex-1 text-white min-w-0">
+                 <h3 className={`${devanagari.className} text-base sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 line-clamp-2`} style={{ paddingTop: '0.375rem', lineHeight: '1.5', overflow: 'visible' }}>
+                   {image.title}
+                 </h3>
+                 {image.description && (
+                   <div className="mb-2 sm:mb-3">
+                     <p className={`text-gray-200 text-xs sm:text-sm md:text-base leading-relaxed ${
+                       needsTruncation && !isDescriptionExpanded ? 'line-clamp-2 sm:line-clamp-3' : ''
+                     }`}>
+                       {image.description}
+                     </p>
+                     {needsTruncation && (
+                       <button
+                         onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                         className="mt-1 text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors"
+                       >
+                         {isDescriptionExpanded ? 'See less' : 'See more...'}
+                       </button>
+                     )}
+                   </div>
+                 )}
+                 {image.tags && image.tags.length > 0 && (
+                   <div className="mt-2 sm:mt-3 pb-1" style={{ maxHeight: '3rem', overflow: 'hidden' }}>
+                     <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                       {image.tags.map((tag, index) => (
+                         <span key={index} className="inline-block bg-orange-600/90 text-white px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full text-[9px] sm:text-[10px] md:text-xs font-medium whitespace-nowrap">
+                           {tag}
+                         </span>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+               </div>
               
               <div className="flex gap-1.5 sm:gap-2 ml-0 sm:ml-6 shrink-0">
                 <button

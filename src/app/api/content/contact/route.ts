@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService, ContactInfo, ContactOffice } from '@/lib/content';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET() {
   try {
@@ -8,7 +9,7 @@ export async function GET() {
       ContentService.getContactOffices()
     ]);
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       data: {
         contactInfo,
@@ -17,7 +18,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('Error fetching contact content:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, error: 'Failed to fetch contact content' },
       { status: 500 }
     );
@@ -30,26 +31,32 @@ export async function POST(request: NextRequest) {
     const { contactInfo, offices, updatedBy } = body;
 
     if (!contactInfo || !offices || !updatedBy) {
-      return NextResponse.json(
+      return noCacheJsonResponse(
         { success: false, error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // TODO: Implement saveContactContent method in ContentService
-    // const success = await ContentService.saveContactContent(
-    //   contactInfo as ContactInfo[],
-    //   offices as ContactOffice[],
-    //   updatedBy
-    // );
-
-    return NextResponse.json(
-      { success: false, error: 'Not implemented: saveContactContent method is missing' },
-      { status: 501 }
+    const success = await ContentService.saveContactContent(
+      contactInfo as ContactInfo[],
+      offices as ContactOffice[],
+      updatedBy
     );
+
+    if (success) {
+      return noCacheJsonResponse({
+        success: true,
+        message: 'Contact content saved successfully'
+      });
+    } else {
+      return noCacheJsonResponse(
+        { success: false, error: 'Failed to save contact content' },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error saving contact content:', error);
-    return NextResponse.json(
+    return noCacheJsonResponse(
       { success: false, error: 'Failed to save contact content' },
       { status: 500 }
     );

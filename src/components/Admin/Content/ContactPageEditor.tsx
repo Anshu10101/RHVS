@@ -106,8 +106,13 @@ export function ContactPageEditor() {
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/contact', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
       if (response.ok) {
         const data = await response.json();
@@ -134,10 +139,13 @@ export function ContactPageEditor() {
       };
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/contact', {
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),
@@ -165,10 +173,13 @@ export function ContactPageEditor() {
       };
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/contact', {
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),
@@ -194,10 +205,13 @@ export function ContactPageEditor() {
       };
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/contact', {
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),
@@ -222,10 +236,13 @@ export function ContactPageEditor() {
       };
 
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/content/contact', {
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
         method: 'POST',
+        cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),

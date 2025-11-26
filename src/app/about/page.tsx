@@ -1,58 +1,162 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Noto_Sans_Devanagari } from "next/font/google";
-import { ContentService } from "@/lib/content";
 
 const devanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
   weight: ["400", "600", "700"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
-const logoUrl = `${siteUrl}/rhvs_logo.png`;
+interface AboutSection {
+  id: string;
+  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading';
+  title?: string;
+  content: string;
+  order: number;
+  isVisible: boolean;
+  styling?: {
+    textAlign?: 'left' | 'center' | 'right';
+    fontSize?: string;
+    fontWeight?: string;
+    color?: 'gray' | 'orange' | 'red' | 'blue' | 'green';
+  };
+}
 
-export const metadata: Metadata = {
-  title: "About • सनातन धर्म | Rashtriya Hindu Vahini Sangathan",
-  description:
-    "सनातन धर्म के इतिहास, स्वरूप और मूल भावों का संक्षिप्त परिचय | About Sanatan Dharma by Rashtriya Hindu Vahini Sangathan",
-  keywords: [
-    "Sanatan Dharma",
-    "सनातन धर्म",
-    "RHVS about",
-    "Rashtriya Hindu Vahini Sangathan about",
-    "Hindu religion",
-    "Hindu philosophy",
-    "Hindu culture",
-    "Hindu organization about",
-    "Hindu community about"
-  ],
-  openGraph: {
-    title: "About • सनातन धर्म | Rashtriya Hindu Vahini Sangathan",
-    description: "सनातन धर्म के इतिहास, स्वरूप और मूल भावों का संक्षिप्त परिचय | About Sanatan Dharma by Rashtriya Hindu Vahini Sangathan",
-    url: "/about",
-    images: [
-      {
-        url: logoUrl,
-        width: 1200,
-        height: 630,
-        alt: "Rashtriya Hindu Vahini Sangathan Logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "About • सनातन धर्म | Rashtriya Hindu Vahini Sangathan",
-    description: "About Sanatan Dharma by Rashtriya Hindu Vahini Sangathan",
-    images: [logoUrl],
-  },
-  alternates: {
-    canonical: "/about",
-  },
-};
+export default function AboutPage() {
+  const [sections, setSections] = useState<AboutSection[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function AboutPage() {
-  // Load about page sections from database
-  const sections = await ContentService.getAboutSections();
+  const loadSections = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/content/about?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      const result = await response.json();
+      
+      if (result.success && result.data.length > 0) {
+        // Sort sections by order
+        const sortedSections = [...result.data].sort((a, b) => (a.order || 0) - (b.order || 0));
+        setSections(sortedSections);
+      } else {
+        // Load default sections if no data exists
+        const defaultSections: AboutSection[] = [
+          {
+            id: '1',
+            type: 'hero',
+            title: 'सनातन धर्म',
+            content: 'सनातन धर्म शाश्वत है — जिसका न आदि है न अंत। यही सनातन परम्परा हिंदू धर्म का मूल स्वरूप है और भारतीय संस्कृति की आत्मा है।',
+            order: 1,
+            isVisible: true,
+            styling: {
+              textAlign: 'center',
+              fontSize: '5xl',
+              fontWeight: 'extrabold',
+              color: 'orange'
+            }
+          },
+          {
+            id: '2',
+            type: 'card',
+            title: 'परिचय',
+            content: 'सनातन धर्म हिंदू धर्म का ही वैकल्पिक नाम है जिसका उपयोग संस्कृत और अन्य भारतीय भाषाओं में भी किया जाता है। वैदिक काल में भारतीय उपमहाद्वीप के धर्म के लिए \'सनातन धर्म\' नाम मिलता है। \'सनातन\' का अर्थ है - शाश्वत या \'सदा बना रहने वाला\', अर्थात् जिसका न आदि है न अन्त।',
+            order: 2,
+            isVisible: true,
+            styling: {
+              textAlign: 'left',
+              fontSize: 'base',
+              fontWeight: 'normal',
+              color: 'gray'
+            },
+          },
+        ];
+        setSections(defaultSections);
+      }
+    } catch (error) {
+      console.error('Error loading about sections:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSections();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadSections();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadSections]);
+
+  const getTextAlignClass = (align?: string) => {
+    switch (align) {
+      case 'center': return 'text-center';
+      case 'right': return 'text-right';
+      default: return 'text-left';
+    }
+  };
+
+  const getFontSizeClass = (size?: string) => {
+    switch (size) {
+      case 'sm': return 'text-sm';
+      case 'lg': return 'text-lg';
+      case 'xl': return 'text-xl';
+      case '2xl': return 'text-2xl';
+      case '3xl': return 'text-3xl';
+      case '4xl': return 'text-4xl';
+      case '5xl': return 'text-5xl';
+      default: return 'text-base';
+    }
+  };
+
+  const getFontWeightClass = (weight?: string) => {
+    switch (weight) {
+      case 'medium': return 'font-medium';
+      case 'semibold': return 'font-semibold';
+      case 'bold': return 'font-bold';
+      case 'extrabold': return 'font-extrabold';
+      default: return 'font-normal';
+    }
+  };
+
+  const getTextColorClass = (color?: string) => {
+    switch (color) {
+      case 'orange': return 'text-orange-800';
+      case 'red': return 'text-red-800';
+      case 'blue': return 'text-blue-800';
+      case 'green': return 'text-green-800';
+      default: return 'text-gray-800';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <section className="bg-gradient-to-b from-orange-50 to-white py-14 md:py-20">
+          <div className="container mx-auto px-4 text-center">
+            <div className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-orange-200 bg-white/70 text-orange-700 mb-4">
+              <span className="text-xl md:text-2xl">ॐ</span>
+              <span className="ml-2 text-sm md:text-base font-medium">सनातन धर्म</span>
+            </div>
+            <p className="text-orange-700">Loading...</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   // If no sections found, show default content
   if (!sections || sections.length === 0) {
@@ -87,47 +191,6 @@ export default async function AboutPage() {
         .filter(section => section.isVisible)
         .sort((a, b) => a.order - b.order)
         .map((section) => {
-          const getTextAlignClass = (align?: string) => {
-            switch (align) {
-              case 'center': return 'text-center';
-              case 'right': return 'text-right';
-              default: return 'text-left';
-            }
-          };
-
-          const getFontSizeClass = (size?: string) => {
-            switch (size) {
-              case 'sm': return 'text-sm';
-              case 'lg': return 'text-lg';
-              case 'xl': return 'text-xl';
-              case '2xl': return 'text-2xl';
-              case '3xl': return 'text-3xl';
-              case '4xl': return 'text-4xl';
-              case '5xl': return 'text-5xl';
-              default: return 'text-base';
-            }
-          };
-
-          const getFontWeightClass = (weight?: string) => {
-            switch (weight) {
-              case 'medium': return 'font-medium';
-              case 'semibold': return 'font-semibold';
-              case 'bold': return 'font-bold';
-              case 'extrabold': return 'font-extrabold';
-              default: return 'font-normal';
-            }
-          };
-
-          const getTextColorClass = (color?: string) => {
-            switch (color) {
-              case 'orange': return 'text-orange-800';
-              case 'red': return 'text-red-800';
-              case 'blue': return 'text-blue-800';
-              case 'green': return 'text-green-800';
-              default: return 'text-gray-800';
-            }
-          };
-
           if (section.type === 'hero') {
             return (
               <section key={section.id} className="bg-gradient-to-b from-orange-50 to-white py-14 md:py-20">

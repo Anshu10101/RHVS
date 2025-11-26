@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import EventCard from "./EventCard";
+import { Noto_Serif_Devanagari } from 'next/font/google';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 type EventItem = {
   id: number | string;
@@ -26,24 +32,45 @@ export default function LatestEventsSection() {
   const [loading, setLoading] = useState(true);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  const loadEvents = useCallback(async () => {
     let mounted = true;
-    (async () => {
-      try {
-        const res = await fetch("/api/content/events?limit=10", { cache: "no-store" });
-        const data = await res.json();
-        if (!mounted) return;
-        if (data?.success) setEvents(data.data || []);
-      } catch (e) {
-        console.error("Failed to load events", e);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    })();
+    try {
+      const res = await fetch(`/api/content/events?limit=10&_t=${Date.now()}`, { 
+        cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      const data = await res.json();
+      if (!mounted) return;
+      if (data?.success) setEvents(data.data || []);
+    } catch (e) {
+      console.error("Failed to load events", e);
+    } finally {
+      if (mounted) setLoading(false);
+    }
     return () => {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    loadEvents();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadEvents();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadEvents]);
 
   const scrollByAmount = (direction: 'left' | 'right') => {
     const el = scrollerRef.current;
@@ -64,18 +91,23 @@ export default function LatestEventsSection() {
   return (
     <section className="py-14 bg-gradient-to-b from-orange-50/40 to-white">
       <div className="container mx-auto px-4">
-        <div className="relative flex items-center justify-between md:justify-center mb-8">
-          <div className="md:text-center">
-            <div className="flex items-center justify-start md:justify-center gap-2 mb-3">
-              <Calendar className="h-6 w-6 text-orange-500" />
-              <p className="text-sm uppercase tracking-widest text-orange-600 font-semibold">Upcoming Events</p>
+        <div className="relative mb-8">
+          <div className="text-center max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
+              <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
+                Upcoming Events
+              </span>
+              <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-black text-orange-900 mb-2">
+            <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
               आगामी कार्यक्रम
             </h2>
-            <p className="text-gray-600 text-sm md:text-base">Join us for our upcoming events and celebrations</p>
+            <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              Join us for our upcoming events and celebrations
+            </p>
           </div>
-          <Link href="/events" className="absolute right-0 text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
+          <Link href="/events" className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
             सभी देखें →
           </Link>
         </div>

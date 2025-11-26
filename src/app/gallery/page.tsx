@@ -75,11 +75,23 @@ export default function GalleryPage() {
         }
 
         // Load filter options
-        const filtersResponse = await fetch('/api/public/photos/filters');
+        const filtersResponse = await fetch(`/api/public/photos/filters?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         const filtersData = await filtersResponse.json();
         
         if (filtersData.success) {
           setAvailableEvents(['All', ...(filtersData.events || [])]);
+        }
+        
+        // Also reload states if needed
+        if (statesData?.success && Array.isArray(statesData.data)) {
+          const opts = statesData.data.map((s: { id: number; name: string }) => ({ id: String(s.id), name: String(s.name) }));
+          setStateOptions(opts);
         }
 
         // Load photos with current filters and pagination
@@ -90,8 +102,14 @@ export default function GalleryPage() {
         if (selectedEvent !== 'All') params.append('event', selectedEvent);
         params.append('page', currentPage.toString());
         params.append('limit', '24'); // 24 images per page - optimal for performance
+        params.append('_t', Date.now().toString()); // Cache-busting
         
-        const response = await fetch(`/api/public/photos?${params}`);
+        const response = await fetch(`/api/public/photos?${params}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        });
         const data = await response.json();
         
         if (data.success && data.images) {
@@ -129,6 +147,64 @@ export default function GalleryPage() {
 
     loadGalleryData();
   }, [selectedStateName, selectedDistrictName, selectedDistrictId, selectedEvent, currentPage]);
+
+  // Reload when page becomes visible (user returns from admin panel or switches tabs)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !loading) {
+        // Reload gallery data when page becomes visible
+        const loadGalleryData = async () => {
+          try {
+            // Reload filters first to get latest events
+            const filtersResponse = await fetch(`/api/public/photos/filters?_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+              }
+            });
+            const filtersData = await filtersResponse.json();
+            if (filtersData.success) {
+              setAvailableEvents(['All', ...(filtersData.events || [])]);
+            }
+            
+            const params = new URLSearchParams();
+            if (selectedStateName !== 'All') params.append('state', selectedStateName);
+            if (selectedDistrictName !== 'All') params.append('district', selectedDistrictName);
+            if (selectedDistrictId && selectedDistrictId !== '') params.append('districtId', selectedDistrictId);
+            if (selectedEvent !== 'All') params.append('event', selectedEvent);
+            params.append('page', currentPage.toString());
+            params.append('limit', '24');
+            params.append('_t', Date.now().toString());
+            
+            const response = await fetch(`/api/public/photos?${params}`, {
+              cache: 'no-store',
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+              }
+            });
+            const data = await response.json();
+            
+            if (data.success && data.images) {
+              setGalleryImages(data.images);
+              setFilteredImages(data.images);
+              setAllImages(data.images);
+              setTotalPages(data.totalPages || 1);
+              setTotalImages(data.total || 0);
+            }
+          } catch (error) {
+            console.error('Error reloading gallery data:', error);
+          }
+        };
+        loadGalleryData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedStateName, selectedDistrictName, selectedDistrictId, selectedEvent, currentPage, loading]);
   
   // Reset to page 1 when filters change
   useEffect(() => {

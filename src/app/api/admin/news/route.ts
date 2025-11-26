@@ -112,39 +112,81 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if admin has permission to add news
-    const permissionQuery = `
-      SELECT 1 FROM district_admin_permissions
-      WHERE district_admin_id = ? 
-      AND permission = 'add_news'
-      AND is_active = 1
-      AND (expires_at IS NULL OR expires_at > NOW())
-    `;
-    const hasPermission = await executeQuery(permissionQuery, [claims.sub]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    
-    if (hasPermission.length === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'You do not have permission to add news' 
-      }, { status: 403 });
-    }
+    // Parse request body once
+    const body = await req.json();
+    const { title, content, image_url, is_featured, is_published, district, state } = body;
 
-    // Get admin's district and state
-    const adminQuery = 'SELECT district, state FROM district_admins WHERE id = ?';
-    const adminResult = await executeQuery(adminQuery, [claims.sub]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
-    
-    if (adminResult.length === 0) {
-      return NextResponse.json({ success: false, message: 'Admin not found' }, { status: 404 });
-    }
-    
-    const adminDistrict = adminResult[0].district;
-    const adminState = adminResult[0].state;
-    
-    // Extract district name (before comma if present)
-    const districtName = adminDistrict.split(',')[0].trim();
+    // For superadmins, skip permission check. For district admins, check permissions
+    let districtName: string | null = null;
+    let adminState: string | null = null;
 
-    // Parse request body
-    const { title, content, image_url, is_featured, is_published } = await req.json();
+    if (claims.type === 'superadmin') {
+      // Superadmin can select district/state from request body
+      districtName = district || null;
+      adminState = state || null;
+      
+      // If district/state provided, validate they exist
+      if (districtName && adminState) {
+        const stateCheck = await executeQuery(
+          'SELECT state_name_english FROM states WHERE id = ? OR state_name_english = ?',
+          [adminState, adminState]
+        ) as Array<{ state_name_english: string }>;
+        
+        if (stateCheck.length === 0) {
+          return NextResponse.json({ 
+            success: false, 
+            message: 'Invalid state selected' 
+          }, { status: 400 });
+        }
+        
+        const districtCheck = await executeQuery(
+          'SELECT district_name_english FROM districts WHERE district_code = ? OR district_name_english = ?',
+          [districtName, districtName]
+        ) as Array<{ district_name_english: string }>;
+        
+        if (districtCheck.length === 0) {
+          return NextResponse.json({ 
+            success: false, 
+            message: 'Invalid district selected' 
+          }, { status: 400 });
+        }
+        
+        // Use the actual names from database
+        adminState = stateCheck[0].state_name_english;
+        districtName = districtCheck[0].district_name_english;
+      }
+    } else {
+      // District admin: check permissions and get district/state from their record
+      const permissionQuery = `
+        SELECT 1 FROM district_admin_permissions
+        WHERE district_admin_id = ? 
+        AND permission = 'add_news'
+        AND is_active = 1
+        AND (expires_at IS NULL OR expires_at > NOW())
+      `;
+      const hasPermission = await executeQuery(permissionQuery, [claims.sub]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+      
+      if (hasPermission.length === 0) {
+        return NextResponse.json({ 
+          success: false, 
+          message: 'You do not have permission to add news' 
+        }, { status: 403 });
+      }
+
+      // Get admin's district and state
+      const adminQuery = 'SELECT district, state FROM district_admins WHERE id = ?';
+      const adminResult = await executeQuery(adminQuery, [claims.sub]) as any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
+      
+      if (adminResult.length === 0) {
+        return NextResponse.json({ success: false, message: 'Admin not found' }, { status: 404 });
+      }
+      
+      const adminDistrict = adminResult[0].district;
+      adminState = adminResult[0].state;
+      
+      // Extract district name (before comma if present)
+      districtName = adminDistrict.split(',')[0].trim();
+    }
 
     // Validate required fields
     if (!title || !content) {
@@ -154,7 +196,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Insert news item
+    // Insert news item with district and state
     const insertResult = await executeQuery(
       `INSERT INTO news (
         title, 
@@ -162,16 +204,27 @@ export async function POST(req: NextRequest) {
         image_url, 
         is_featured, 
         is_published, 
+        district,
+        state,
         created_by, 
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [title, content, image_url || null, is_featured || false, is_published || true, claims.sub]
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        title, 
+        content, 
+        image_url || null, 
+        is_featured || false, 
+        is_published || true,
+        districtName,
+        adminState,
+        claims.sub
+      ]
     ) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     const newsId = insertResult.insertId;
 
-    // Track content origin (only for district admins - superadmins are not in district_admins table)
-    if (claims.type === 'district_admin' && adminResult.length > 0) {
+    // Track content origin for both superadmins and district admins
+    if (districtName && adminState) {
       await trackContentOrigin('news', newsId, districtName, adminState, parseInt(claims.sub));
     }
 

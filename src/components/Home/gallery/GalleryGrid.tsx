@@ -82,19 +82,11 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
-                {/* Content */}
+                {/* Content - Only show title */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className={`${devanagari.className} text-lg font-semibold mb-1`}>
+                  <h3 className={`${devanagari.className} text-lg font-semibold line-clamp-1`}>
                     {image.title}
                   </h3>
-                  <p className="text-sm text-orange-100 mb-2 line-clamp-2">
-                    {image.description}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs bg-orange-600/80 px-2 py-1 rounded-full">
-                      {image.category}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>

@@ -430,26 +430,34 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // === SIGNATURES SECTION (Much lower on certificate) ===
   const signaturesY = motTextY + (motLines.length * motLineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
   
-
-  // Center the signatures properly
-  // Calculate positions for four signature blocks
+  // Dynamically center 1–4 signatures within the inner golden border.
+  // The group of signatures is always centered on the inner content area.
   const signatureBlockWidth = 500; // Width of each signature block
   const signatureSpacing = 60; // Gap between blocks
-  const totalSignatureWidth = (signatureBlockWidth * 4) + (signatureSpacing * 3); // 4 blocks + 3 gaps
-  const signatureStartX = (width - totalSignatureWidth) / 2;
-  
-  // Calculate X positions for each signature block
-  const sigX1 = signatureStartX;
-  const sigX2 = sigX1 + signatureBlockWidth + signatureSpacing;
-  const sigX3 = sigX2 + signatureBlockWidth + signatureSpacing;
-  const sigX4 = sigX3 + signatureBlockWidth + signatureSpacing;
-  const signaturePositions = [sigX1, sigX2, sigX3, sigX4];
+  const visibleSignatureCount = Math.min(signatureBlocks.length, 4);
 
-  // Draw all signature blocks
-  for (let index = 0; index < signatureBlocks.length; index++) {
-    const block = signatureBlocks[index];
-    const position = signaturePositions[index] ?? sigX1;
-    await drawSignatureBlock(ctx, block.name, block.title, position, signaturesY, fonts, language, block.signaturePath || undefined);
+  if (visibleSignatureCount > 0) {
+    const innerWidth = width - borderMargin * 2;
+    const totalSignatureWidth =
+      (signatureBlockWidth * visibleSignatureCount) +
+      (signatureSpacing * (visibleSignatureCount - 1)); // N blocks + N-1 gaps
+
+    const signatureStartX = borderMargin + (innerWidth - totalSignatureWidth) / 2;
+
+    for (let index = 0; index < visibleSignatureCount; index++) {
+      const block = signatureBlocks[index];
+      const position = signatureStartX + index * (signatureBlockWidth + signatureSpacing);
+      await drawSignatureBlock(
+        ctx,
+        block.name,
+        block.title,
+        position,
+        signaturesY,
+        fonts,
+        language,
+        block.signaturePath || undefined
+      );
+    }
   }
 
   // === FOOTER ===

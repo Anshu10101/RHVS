@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
 import { executeQuery } from '@/lib/database';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(request: NextRequest) {
   try {
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
         state: photo.state || ''
       }));
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       images: galleryImages,
       total: totalPhotos,
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching public photos:', error);
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: false,
       error: 'Failed to fetch photos',
       images: []

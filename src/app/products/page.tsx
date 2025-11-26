@@ -330,32 +330,32 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Modern Header with Search */}
       <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Products Store</h1>
-            
-            <div className="flex items-center gap-3">
-              {/* Search Bar */}
-              <div className="relative hidden md:block w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input 
-                  type="text" 
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500"
-                />
-              </div>
-              
-              {/* Mobile Filter Button */}
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="md:hidden cursor-pointer">
-                    <SlidersHorizontal className="h-4 w-4 mr-2" />
-                    Filters
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          {/* Mobile: Stacked layout */}
+          <div className="md:hidden space-y-3">
+            <div className="flex items-center justify-between">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Products Store</h1>
+              <div className="flex items-center gap-2">
+                <Link href="/cart">
+                  <Button 
+                    size="sm"
+                    className="h-9 px-3 gap-1.5 bg-orange-600 text-white hover:bg-orange-700 rounded-full"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                    {getTotalItems() > 0 && (
+                      <span className="bg-white text-orange-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                        {getTotalItems()}
+                      </span>
+                    )}
                   </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[350px]">
+                </Link>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-9 px-3 cursor-pointer">
+                      <SlidersHorizontal className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                <SheetContent side="left" className="w-[85vw] sm:w-[350px] overflow-y-auto">
                   <SheetHeader>
                     <SheetTitle>Filter Products</SheetTitle>
                     <SheetDescription>
@@ -467,88 +467,117 @@ export default function ProductsPage() {
                     </div>
 
                     {/* Mobile Price Range */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-sm font-medium text-gray-700">Price Range</h3>
-                        </div>
-                        <div className="bg-orange-50/50 rounded-lg p-4 mb-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs text-gray-500">Min</span>
-                            <span className="text-xs text-gray-500">Max</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-orange-600">₹{priceRange[0].toLocaleString()}</span>
-                            <span className="text-gray-400">—</span>
-                            <span className="text-lg font-bold text-orange-600">₹{priceRange[1].toLocaleString()}</span>
-                          </div>
-                        </div>
-                        <Slider
-                          defaultValue={[priceRange[0], priceRange[1]]}
-                          max={Math.max(...products.map((p: Product) => p.price))}
-                          step={100}
-                          value={[priceRange[0], priceRange[1]]}
-                          onValueChange={handlePriceChange}
-                          className="py-4"
-                        />
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-medium text-gray-700">Price Range</h3>
                       </div>
+                      <div className="bg-orange-50/50 rounded-lg p-4 mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-gray-500">Min</span>
+                          <span className="text-xs text-gray-500">Max</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-orange-600">₹{priceRange[0].toLocaleString()}</span>
+                          <span className="text-gray-400">—</span>
+                          <span className="text-lg font-bold text-orange-600">₹{priceRange[1].toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <Slider
+                        defaultValue={[priceRange[0], priceRange[1]]}
+                        max={Math.max(...products.map((p: Product) => p.price))}
+                        step={100}
+                        value={[priceRange[0], priceRange[1]]}
+                        onValueChange={handlePriceChange}
+                        className="py-4"
+                      />
+                    </div>
+                    
+                    {/* Mobile Sort */}
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">Sort By</h3>
+                      <Select value={sortOption} onValueChange={setSortOption}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="featured">Featured</SelectItem>
+                          <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                          <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                          <SelectItem value="new">Newest First</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                  <SheetFooter>
-                    <Button variant="outline" onClick={resetFilters} className="w-full">
-                      <FilterX className="h-4 w-4 mr-2" />
-                      Reset Filters
-                    </Button>
-                  </SheetFooter>
-                </SheetContent>
-              </Sheet>
-              
-              {/* Desktop Sort Dropdown */}
-              <div className="relative inline-block">
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg overflow-hidden z-20 hidden group-focus:block">
-                  <div className="py-1">
-                    <button 
-                      onClick={() => setSortOption('featured')} 
-                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'featured' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                    >
-                      Featured
-                    </button>
-                    <button 
-                      onClick={() => setSortOption('price-asc')} 
-                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'price-asc' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                    >
-                      Price: Low to High
-                    </button>
-                    <button 
-                      onClick={() => setSortOption('price-desc')} 
-                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'price-desc' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                    >
-                      Price: High to Low
-                    </button>
-                    <button 
-                      onClick={() => setSortOption('new')} 
-                      className={`block px-4 py-2 text-sm w-full text-left cursor-pointer ${sortOption === 'new' ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-100'}`}
-                    >
-                      Newest First
-                    </button>
-                  </div>
                 </div>
+                <SheetFooter className="mt-6">
+                  <Button variant="outline" onClick={resetFilters} className="w-full">
+                    <FilterX className="h-4 w-4 mr-2" />
+                    Reset Filters
+                  </Button>
+                </SheetFooter>
+              </SheetContent>
+            </Sheet>
+            </div>
+            </div>
+            
+            {/* Mobile Search Bar */}
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input 
+                type="text" 
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2.5 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500 text-sm"
+              />
+            </div>
+          </div>
+          
+          {/* Desktop: Horizontal layout */}
+          <div className="hidden md:flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-900">Products Store</h1>
+            
+            <div className="flex items-center gap-3">
+              {/* Desktop Search Bar */}
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input 
+                  type="text" 
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500"
+                />
               </div>
               
-              {/* Cart Button */}
-        <Link href="/cart">
-          <Button 
-            size="sm"
+              {/* Desktop Sort Dropdown */}
+              <Select value={sortOption} onValueChange={setSortOption}>
+                <SelectTrigger className="w-[180px] cursor-pointer">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                  <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                  <SelectItem value="new">Newest First</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Desktop Cart Button */}
+              <Link href="/cart">
+                <Button 
+                  size="sm"
                   className="h-10 px-4 gap-2 bg-orange-600 text-white hover:bg-orange-700 rounded-full transition-all duration-200 cursor-pointer"
                 >
                   <ShoppingCart className="h-4 w-4" />
-                  <span className="font-medium hidden sm:inline">Cart</span>
-            {getTotalItems() > 0 && (
+                  <span className="font-medium">Cart</span>
+                  {getTotalItems() > 0 && (
                     <span className="bg-white text-orange-600 text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
-                {getTotalItems()}
-              </span>
-            )}
-          </Button>
-        </Link>
+                      {getTotalItems()}
+                    </span>
+                  )}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -557,8 +586,8 @@ export default function ProductsPage() {
       {/* Featured Products Marquee */}
       <FeaturedProductsMarquee products={products} onProductClick={handleProductClick} />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row gap-8">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        <div className="flex flex-col md:flex-row gap-6 md:gap-8">
           {/* Desktop Sidebar Filters */}
           <div className="hidden md:block w-64 flex-shrink-0">
             <Card className="sticky top-24">
@@ -695,19 +724,19 @@ export default function ProductsPage() {
           {/* Product Grid */}
           <div className="flex-1">
             {/* Active Filters */}
-            {(selectedCategories.length > 0 || searchQuery) && (
-              <div className="mb-6">
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-sm text-gray-500">Active Filters:</span>
+            {(selectedCategories.length > 0 || searchQuery || selectedStateName !== 'All' || selectedDistrictName !== 'All') && (
+              <div className="mb-4 sm:mb-6">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+                  <span className="text-xs sm:text-sm text-gray-500 mr-1">Active Filters:</span>
                   {selectedCategories.map(category => (
                     <Badge 
                       key={category} 
                       variant="secondary"
-                      className="px-3 py-1 flex items-center gap-1"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 flex items-center gap-1 text-xs"
                     >
-                      {category}
+                      <span className="truncate max-w-[120px] sm:max-w-none">{category}</span>
                       <X 
-                        className="h-3 w-3 cursor-pointer" 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
                         onClick={() => toggleCategory(category)}
                       />
                     </Badge>
@@ -715,12 +744,41 @@ export default function ProductsPage() {
                   {searchQuery && (
                     <Badge 
                       variant="secondary"
-                      className="px-3 py-1 flex items-center gap-1"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 flex items-center gap-1 text-xs"
                     >
-                      Search: {searchQuery}
+                      <span className="truncate max-w-[100px] sm:max-w-none">Search: {searchQuery}</span>
                       <X 
-                        className="h-3 w-3 cursor-pointer" 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
                         onClick={() => setSearchQuery('')}
+                      />
+                    </Badge>
+                  )}
+                  {selectedStateName !== 'All' && (
+                    <Badge 
+                      variant="secondary"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 flex items-center gap-1 text-xs"
+                    >
+                      <span className="truncate max-w-[100px] sm:max-w-none">State: {selectedStateName}</span>
+                      <X 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
+                        onClick={() => {
+                          setSelectedStateId('');
+                          setSelectedStateName('All');
+                          setDistrictOptions([]);
+                          setSelectedDistrictName('All');
+                        }}
+                      />
+                    </Badge>
+                  )}
+                  {selectedDistrictName !== 'All' && (
+                    <Badge 
+                      variant="secondary"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 flex items-center gap-1 text-xs"
+                    >
+                      <span className="truncate max-w-[100px] sm:max-w-none">District: {selectedDistrictName}</span>
+                      <X 
+                        className="h-3 w-3 cursor-pointer flex-shrink-0" 
+                        onClick={() => setSelectedDistrictName('All')}
                       />
                     </Badge>
                   )}
@@ -729,23 +787,22 @@ export default function ProductsPage() {
             )}
             
             {/* Results Count */}
-            <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, filteredProducts.length)}</span> of <span className="font-medium">{filteredProducts.length}</span> products
+            <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <p className="text-xs sm:text-sm text-gray-500">
+                  Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, filteredProducts.length)}</span> of <span className="font-medium">{filteredProducts.length}</span> products
+                  {totalPages > 1 && (
+                    <span className="hidden sm:inline ml-2 text-gray-400">(Page {currentPage} of {totalPages})</span>
+                  )}
+                </p>
                 {totalPages > 1 && (
-                  <span className="ml-2 text-gray-400">(Page {currentPage} of {totalPages})</span>
+                  <p className="sm:hidden text-xs text-gray-400">Page {currentPage} of {totalPages}</p>
                 )}
-              </p>
-              <div className="md:hidden">
-                <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="cursor-pointer">
-                  <SlidersHorizontal className="h-4 w-4 mr-2" />
-                  Filters
-                </Button>
               </div>
             </div>
             
             {/* Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 pb-4 sm:pb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 md:gap-6 pb-4 sm:pb-6">
               {currentProducts.map((product, index) => (
                 <div
                   key={product.id}
@@ -772,16 +829,17 @@ export default function ProductsPage() {
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-12 flex items-center justify-center">
-                <div className="flex items-center space-x-2">
+              <div className="mt-8 sm:mt-12 flex items-center justify-center">
+                <div className="flex items-center space-x-1 sm:space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-xs sm:text-sm px-2 sm:px-3"
                   >
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
                   
                   <div className="flex items-center space-x-1">
@@ -803,7 +861,7 @@ export default function ProductsPage() {
                           variant={currentPage === pageNum ? "default" : "outline"}
                           size="sm"
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`cursor-pointer ${currentPage === pageNum ? 'bg-orange-600 hover:bg-orange-700' : ''}`}
+                          className={`cursor-pointer text-xs sm:text-sm min-w-[32px] sm:min-w-[40px] px-2 sm:px-3 ${currentPage === pageNum ? 'bg-orange-600 hover:bg-orange-700' : ''}`}
                         >
                           {pageNum}
                         </Button>
@@ -816,7 +874,7 @@ export default function ProductsPage() {
                     size="sm"
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="cursor-pointer"
+                    className="cursor-pointer text-xs sm:text-sm px-2 sm:px-3"
                   >
                     Next
                   </Button>

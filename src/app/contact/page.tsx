@@ -1,69 +1,117 @@
+"use client";
+
+import { useEffect, useState, useCallback } from 'react';
 import { MapPin, Phone, Mail, Clock, Building2 } from 'lucide-react';
 import { Noto_Serif_Devanagari } from 'next/font/google';
-import { ContentService } from '@/lib/content';
-import type { Metadata } from 'next';
-
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
-const logoUrl = `${siteUrl}/rhvs_logo.png`;
-
-export const metadata: Metadata = {
-  title: "संपर्क करें - Contact Us",
-  description: "पूछताछ, सहायता और हमारे समुदाय में शामिल होने के लिए राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) से संपर्क करें | Get in touch with Rashtriya Hindu Vahini Sangathan (RHVS) for inquiries, support, and to join our community. Find our office locations and contact information.",
-  keywords: [
-    "contact RHVS",
-    "Rashtriya Hindu Vahini Sangathan contact",
-    "Hindu organization contact",
-    "join Hindu community",
-    "RHVS office locations",
-    "community support",
-    "Hindu community contact",
-    "RHVS contact information",
-    "join RHVS",
-    "Hindu organization India contact"
-  ],
-  openGraph: {
-    title: "संपर्क करें - Contact Us | राष्ट्रीय हिंदू वाहिनी संगठन",
-    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) से संपर्क करें | Get in touch with Rashtriya Hindu Vahini Sangathan (RHVS) for inquiries, support, and to join our community.",
-    url: "/contact",
-    images: [
-      {
-        url: logoUrl,
-        width: 1200,
-        height: 630,
-        alt: "Rashtriya Hindu Vahini Sangathan Logo",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "संपर्क करें - Contact Us | राष्ट्रीय हिंदू वाहिनी संगठन",
-    description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) से संपर्क करें | Get in touch with Rashtriya Hindu Vahini Sangathan (RHVS) for inquiries and support.",
-    images: [logoUrl],
-  },
-  alternates: {
-    canonical: "/contact",
-  },
-};
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
   weight: ['400', '600', '700'],
 });
 
-export default async function ContactPage() {
-  const [contactInfo, offices] = await Promise.all([
-    ContentService.getContactInfo(),
-    ContentService.getContactOffices()
-  ]);
+interface ContactInfo {
+  id: string;
+  contactType: 'phone' | 'email' | 'address' | 'social' | 'emergency' | 'office';
+  title: string;
+  value: string;
+  description?: string;
+  order: number;
+  isVisible: boolean;
+}
 
-  // Group contact info by type
-  const phoneNumbers = contactInfo.filter(item => item.contactType === 'phone' && item.isVisible);
-  const emails = contactInfo.filter(item => item.contactType === 'email' && item.isVisible);
-  const emergencyContacts = contactInfo.filter(item => item.contactType === 'emergency' && item.isVisible);
-  const officeHours = contactInfo.filter(item => item.contactType === 'office' && item.isVisible);
+interface ContactOffice {
+  id: string;
+  name: string;
+  nameHindi?: string;
+  address: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  email?: string;
+  officeType: 'head' | 'regional' | 'branch';
+  order: number;
+  isVisible: boolean;
+}
+
+export default function ContactPage() {
+  const [contactInfo, setContactInfo] = useState<ContactInfo[]>([]);
+  const [offices, setOffices] = useState<ContactOffice[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadContactData = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        setContactInfo(data.data.contactInfo || []);
+        setOffices(data.data.offices || []);
+      }
+    } catch (error) {
+      console.error('Error fetching contact data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadContactData();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadContactData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadContactData]);
+
+  // Group contact info by type and sort by order
+  const phoneNumbers = contactInfo
+    .filter(item => item.contactType === 'phone' && item.isVisible)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const emails = contactInfo
+    .filter(item => item.contactType === 'email' && item.isVisible)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const emergencyContacts = contactInfo
+    .filter(item => item.contactType === 'emergency' && item.isVisible)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const officeHours = contactInfo
+    .filter(item => item.contactType === 'office' && item.isVisible)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
   
-  // Filter visible offices
-  const visibleOffices = offices.filter(office => office.isVisible);
+  // Filter and sort visible offices by order
+  const visibleOffices = offices
+    .filter(office => office.isVisible)
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+        <section className="py-12 md:py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h1 className={`${devanagari.className} text-4xl md:text-6xl font-bold mb-4 text-orange-900`}>
+              संपर्क करें
+            </h1>
+            <p className="text-orange-700">Loading...</p>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Hero Section */}

@@ -98,35 +98,40 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST: create new seller (scoped to district admin)
+// POST: create new seller (scoped to district admin or superadmin)
 export async function POST(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
 
-    if (!ensurePermission(scope, ['manage_sellers', 'add_sellers'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
-    }
+    // Superadmins can always create sellers
+    if (!scope.isSuperAdmin) {
+      // District admins need permission
+      if (!ensurePermission(scope, ['manage_sellers', 'add_sellers'])) {
+        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+      }
 
-    if (!scope.districtName || !scope.stateName || !scope.adminId) {
-      console.error('Invalid admin scope:', {
-        isSuperAdmin: scope.isSuperAdmin,
-        isDistrictAdmin: scope.isDistrictAdmin,
-        adminId: scope.adminId,
-        districtName: scope.districtName,
-        stateName: scope.stateName,
-        permissions: scope.permissions
-      });
-      return NextResponse.json({ 
-        success: false, 
-        message: 'Invalid admin scope. Please ensure you are logged in as a district admin with proper district assignment.',
-        debug: {
+      // District admins must have district/state assignment
+      if (!scope.districtName || !scope.stateName || !scope.adminId) {
+        console.error('Invalid admin scope:', {
           isSuperAdmin: scope.isSuperAdmin,
           isDistrictAdmin: scope.isDistrictAdmin,
           adminId: scope.adminId,
           districtName: scope.districtName,
-          stateName: scope.stateName
-        }
-      }, { status: 403 });
+          stateName: scope.stateName,
+          permissions: scope.permissions
+        });
+        return NextResponse.json({ 
+          success: false, 
+          message: 'Invalid admin scope. Please ensure you are logged in as a district admin with proper district assignment.',
+          debug: {
+            isSuperAdmin: scope.isSuperAdmin,
+            isDistrictAdmin: scope.isDistrictAdmin,
+            adminId: scope.adminId,
+            districtName: scope.districtName,
+            stateName: scope.stateName
+          }
+        }, { status: 403 });
+      }
     }
 
     const { 

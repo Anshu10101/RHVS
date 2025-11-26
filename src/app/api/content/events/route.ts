@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const upcoming = searchParams.get('upcoming');
     const limit = searchParams.get('limit');
     const offset = searchParams.get('offset');
+    const district = searchParams.get('district');
+    const state = searchParams.get('state');
 
     // Check if this is an admin panel request (via query param or referer)
     const isAdminRequest = searchParams.get('admin') === 'true' || 
@@ -29,6 +31,10 @@ export async function GET(request: NextRequest) {
              COALESCE(e.state, 'All States') as state,
              COALESCE(
                CASE 
+                 WHEN sa.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/superadmin/', sa.id, '/profile')
+                 ELSE NULL
+               END,
+               CASE 
                  WHEN m2.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m2.id, '/profile')
                  ELSE m2.profile_photo_path
                END,
@@ -37,19 +43,24 @@ export async function GET(request: NextRequest) {
                  ELSE m.profile_photo_path
                END
              ) as creator_photo,
-             COALESCE(m2.name, m.name, 'Admin') as creator_name,
-             COALESCE(m2.email, m.email) as creator_email
+             COALESCE(sa.name, sa.email, m2.name, m.name, 'Admin') as creator_name,
+             COALESCE(sa.email, m2.email, m.email) as creator_email
       FROM events e
+      LEFT JOIN superadmin sa ON (e.created_by = sa.id OR e.created_by = CAST(sa.id AS CHAR)) AND e.owner_admin_id IS NULL
       LEFT JOIN district_admins da ON e.owner_admin_id = da.id
       LEFT JOIN members m2 ON da.member_id = m2.id
-      LEFT JOIN members m ON e.created_by = m.email
+      LEFT JOIN members m ON e.created_by = m.email AND e.owner_admin_id IS NOT NULL
       WHERE e.isVisible = TRUE 
     `;
     const params: (string | number)[] = [];
     
-    // Only apply admin scoping if this is an admin panel request
-    // Public website should always show all visible events
-    if (isAdminRequest) {
+    // Filter by district/state for public website or admin panel
+    if (district && state) {
+      // Public website filtering by district/state
+      query += ` AND (e.district = ? OR e.district LIKE ?) AND e.state = ?`;
+      params.push(district, `${district}%`, state);
+    } else if (isAdminRequest) {
+      // Admin panel: apply admin scoping
       const scope = await getAdminScope(request);
       // For district admins in admin panel, show ALL events for their district/state
       // This ensures continuity - new admins can see content created by previous admins
@@ -80,7 +91,10 @@ export async function GET(request: NextRequest) {
     const countParams: (string | number)[] = [];
     
     // Apply same filters for count
-    if (isAdminRequest) {
+    if (district && state) {
+      countQuery += ` AND (e.district = ? OR e.district LIKE ?) AND e.state = ?`;
+      countParams.push(district, `${district}%`, state);
+    } else if (isAdminRequest) {
       const scope = await getAdminScope(request);
       if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
         // Use LIKE to handle district names that might include comma-separated values
@@ -176,7 +190,9 @@ export async function POST(request: NextRequest) {
       max_participants,
       event_type,
       order,
-      created_by
+      created_by,
+      district: districtInput,
+      state: stateInput
     } = body;
 
     const id = `event_${Date.now()}`;
@@ -199,7 +215,27 @@ export async function POST(request: NextRequest) {
     let state = null as string | null;
     let owner_admin_id = null as string | null;
 
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
+    if (scope.isSuperAdmin && districtInput && stateInput) {
+      // Superadmin can specify district/state
+      // Validate and get actual names from database
+      const [stateRows] = await pool.execute(
+        'SELECT state_name_english FROM states WHERE id = ? OR state_name_english = ? LIMIT 1',
+        [stateInput, stateInput]
+      ) as any[];
+      
+      if (stateRows && stateRows.length > 0) {
+        state = stateRows[0].state_name_english;
+        
+        const [districtRows] = await pool.execute(
+          'SELECT district_name_english FROM districts WHERE district_code = ? OR district_name_english = ? LIMIT 1',
+          [districtInput, districtInput]
+        ) as any[];
+        
+        if (districtRows && districtRows.length > 0) {
+          district = districtRows[0].district_name_english;
+        }
+      }
+    } else if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
       district = scope.districtName || null;
       state = scope.stateName || null;
       owner_admin_id = scope.adminId?.toString() || null;

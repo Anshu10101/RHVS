@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
+import { Noto_Serif_Devanagari } from 'next/font/google';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 type GalleryImage = {
   id: number;
@@ -21,24 +27,41 @@ export default function LatestPhotosSection() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadPhotos = useCallback(async () => {
     let isMounted = true;
-    const load = async () => {
-      try {
-        const res = await fetch(`/api/public/photos?limit=8`, { cache: "no-store" });
-        const data = await res.json();
-        if (isMounted && data?.success) setImages(data.images || []);
-      } catch (e) {
-        console.error("Failed to load latest photos", e);
-      } finally {
-        if (isMounted) setLoading(false);
+    try {
+      // Add cache-busting timestamp and no-store cache
+      const res = await fetch(`/api/public/photos?limit=8&_t=${Date.now()}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      });
+      const data = await res.json();
+      if (isMounted && data?.success) setImages(data.images || []);
+    } catch (e) {
+      console.error("Failed to load latest photos", e);
+    } finally {
+      if (isMounted) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPhotos();
+
+    // Reload when page becomes visible (user returns from admin panel or switches tabs)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadPhotos();
       }
     };
-    load();
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
-      isMounted = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [loadPhotos]);
 
   if (!loading && images.length === 0) return null;
 
@@ -46,21 +69,26 @@ export default function LatestPhotosSection() {
     <section className="py-16 bg-orange-50">
       <div className="container mx-auto px-4">
         <div className="mb-8 md:mb-12">
-          <div className="flex items-start justify-between gap-4 mb-6">
-            <div className="flex-1 md:text-center">
-              <div className="flex items-center justify-start md:justify-center gap-2 mb-3">
-                <ImageIcon className="h-6 w-6 text-orange-500" />
-                <p className="text-sm uppercase tracking-widest text-orange-600 font-semibold">Latest from the Gallery</p>
+          <div className="relative mb-6">
+            <div className="text-center max-w-3xl mx-auto">
+              <div className="inline-flex items-center gap-2 mb-4">
+                <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
+                <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
+                  Latest from the Gallery
+                </span>
+                <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-orange-800">गैलरी की ताज़ा झलकियाँ</h2>
-              <p className="text-sm sm:text-base max-w-2xl mx-auto text-gray-700">
+              <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
+                गैलरी की ताज़ा झलकियाँ
+              </h2>
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
                 हाल की गतिविधियों और आयोजनों से चुनी हुई तस्वीरें।
               </p>
             </div>
             <Link
               href="/gallery"
               aria-label="View all photos"
-              className="text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap flex-shrink-0 mt-1"
+              className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
             >
               <span className="hidden sm:inline">View All / सभी देखें →</span>
               <span className="sm:hidden">View All →</span>

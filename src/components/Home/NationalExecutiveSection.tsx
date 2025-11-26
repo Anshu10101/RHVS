@@ -5,6 +5,12 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRound, ChevronDown, ChevronUp } from "lucide-react";
+import { Noto_Serif_Devanagari } from 'next/font/google';
+
+const devanagari = Noto_Serif_Devanagari({
+  subsets: ['devanagari'],
+  weight: ['400', '600', '700'],
+});
 
 interface Member {
   id: number;
@@ -110,24 +116,22 @@ export default function NationalExecutiveSection() {
 
       <div className="container mx-auto px-4 relative z-10">
         {/* Header */}
-        <div className="text-center mb-4 md:mb-6">
-          <div className="relative inline-block mb-3 px-10">
-            <h2 className="text-center text-2xl md:text-3xl lg:text-4xl font-black text-orange-900 tracking-tight font-['Tiro_Devanagari_Hindi',serif]">
+        <div className="text-center mb-8 md:mb-10 max-w-3xl mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-5" style={{ marginLeft: '1.5rem' }}>
+            <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 leading-tight`}>
               {department.name_hi}
             </h2>
             <Image
               src="/flag_logo.png"
               alt="National Flag"
-              width={40}
-              height={40}
-              className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-2 h-7 w-7 md:h-9 md:w-9 object-contain"
+              width={48}
+              height={48}
+              className="h-10 w-10 md:h-12 md:w-12 object-contain flex-shrink-0"
+              style={{ marginTop: '-0.5rem' }}
               priority
             />
           </div>
-          <div className="flex justify-center mb-2">
-            <div className="h-1 w-28 md:w-36 bg-gradient-to-r from-transparent via-orange-400 to-transparent rounded-full shadow-[0_2px_6px_rgba(249,115,22,0.35)]"></div>
-          </div>
-          <p className="text-sm md:text-base text-orange-700 font-semibold">
+          <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
             {department.name_en}
           </p>
         </div>

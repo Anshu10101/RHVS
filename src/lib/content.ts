@@ -289,7 +289,7 @@ export class ContentService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (rows as any[]).map((row: any) => ({
         id: row.id,
-        contactType: row.contactType,
+        contactType: row.contact_type,
         title: row.title,
         value: row.value,
         description: row.description,
@@ -329,6 +329,74 @@ export class ContentService {
     } catch (error) {
       console.error('Error fetching contact offices:', error);
       return [];
+    }
+  }
+
+  static async saveContactContent(
+    contactInfo: ContactInfo[],
+    offices: ContactOffice[],
+    updatedBy: string
+  ): Promise<boolean> {
+    try {
+      await pool.execute('START TRANSACTION');
+      
+      // Clear existing contact info
+      await pool.execute('DELETE FROM contact_info');
+      
+      // Insert new contact info
+      for (const info of contactInfo) {
+        // Title is NOT NULL in database, so provide a default if missing
+        const title = info.title?.trim() || info.contactType || 'Contact';
+        await pool.execute(
+          `INSERT INTO contact_info (id, contact_type, title, value, description, \`order\`, isVisible, created_at, updated_at, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+          [
+            info.id,
+            info.contactType,
+            title,
+            info.value,
+            info.description || null,
+            info.order,
+            info.isVisible ? 1 : 0,
+            info.createdAt || new Date(),
+            updatedBy
+          ]
+        );
+      }
+      
+      // Clear existing offices
+      await pool.execute('DELETE FROM offices');
+      
+      // Insert new offices
+      for (const office of offices) {
+        await pool.execute(
+          `INSERT INTO offices (id, name, name_hindi, address, city, state, pincode, phone, email, office_type, \`order\`, isVisible, created_at, updated_at, created_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+          [
+            office.id,
+            office.name,
+            office.nameHindi || null,
+            office.address,
+            office.city || null,
+            office.state || null,
+            office.pincode || null,
+            office.phone || null,
+            office.email || null,
+            office.officeType,
+            office.order,
+            office.isVisible ? 1 : 0,
+            office.createdAt || new Date(),
+            updatedBy
+          ]
+        );
+      }
+      
+      await pool.execute('COMMIT');
+      return true;
+    } catch (error) {
+      console.error('Error saving contact content:', error);
+      await pool.execute('ROLLBACK');
+      return false;
     }
   }
 
@@ -555,7 +623,7 @@ export class ContentService {
           p.filename,
           p.original_name,
           CASE 
-            WHEN p.file_blob IS NOT NULL THEN CONCAT('/api/media/photos/', p.id)
+            WHEN p.file_blob IS NOT NULL THEN CONCAT('/api/media/photos/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
             ELSE p.file_path
           END AS resolved_file_path,
           p.thumbnail_path,

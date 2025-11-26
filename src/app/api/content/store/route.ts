@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ContentService } from '@/lib/content';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -10,14 +11,14 @@ export async function GET(_request: NextRequest) {
     const products = await ContentService.getProducts(filter);
     const categories = await ContentService.getProductCategories();
 
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: true, 
       products, 
       categories 
     });
   } catch (error) {
     console.error('Error fetching store content:', error);
-    return NextResponse.json({ 
+    return noCacheJsonResponse({ 
       success: false, 
       error: 'Failed to fetch store content' 
     }, { status: 500 });
