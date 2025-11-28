@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Plus, 
   Edit2, 
@@ -49,6 +50,7 @@ interface Seller {
 export default function StoreSellersPage() {
   const router = useRouter();
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   const [sellers, setSellers] = useState<Seller[]>([]);
   const [editingSeller, setEditingSeller] = useState<string | null>(null);
   const [editingSellerData, setEditingSellerData] = useState<Seller | null>(null);
@@ -95,7 +97,7 @@ export default function StoreSellersPage() {
         
         // Show user-friendly error for table not found
         if (result.error === 'TABLE_NOT_FOUND') {
-          alert('Sellers table not found. Please run the database setup first.\n\nRun this SQL in your database:\nsource database/complete-sellers-setup.sql');
+          alert(t('admin.store.sellers.tableNotFound'));
         }
       }
     } catch (error) {
@@ -174,7 +176,7 @@ export default function StoreSellersPage() {
           setEditingSellerData(null);
           fetchSellers();
         } else {
-          alert('Failed to update seller: ' + result.message);
+          alert(t('admin.store.sellers.failedToUpdate') + ' ' + result.message);
         }
       } else {
         // Create new seller
@@ -205,12 +207,12 @@ export default function StoreSellersPage() {
           });
           fetchSellers();
         } else {
-          alert('Failed to create seller: ' + result.message);
+          alert(t('admin.store.sellers.failedToCreate') + ' ' + result.message);
         }
       }
     } catch (error) {
       console.error('Error saving seller:', error);
-      alert('Error saving seller');
+      alert(t('admin.store.sellers.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -218,7 +220,7 @@ export default function StoreSellersPage() {
 
   // Delete seller
   const deleteSeller = async (sellerId: string) => {
-    if (!confirm('Are you sure you want to delete this seller?')) return;
+    if (!confirm(t('admin.store.sellers.deleteConfirm'))) return;
     
     try {
       const token = localStorage.getItem('admin_token');
@@ -231,11 +233,11 @@ export default function StoreSellersPage() {
       if (result.success) {
         fetchSellers();
       } else {
-        alert('Failed to delete seller: ' + result.message);
+        alert(t('admin.store.sellers.failedToDelete') + ' ' + result.message);
       }
     } catch (error) {
       console.error('Error deleting seller:', error);
-      alert('Error deleting seller');
+      alert(t('admin.store.sellers.errorDeleting'));
     }
   };
 
@@ -311,9 +313,9 @@ export default function StoreSellersPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Store Sellers Management</h1>
+            <h1 className="text-3xl font-bold">{t('admin.store.sellers.title')}</h1>
             <p className="text-muted-foreground">
-              Manage sellers for your district ({currentUser?.district})
+              {t('admin.store.sellers.description')} ({currentUser?.district})
             </p>
           </div>
         </div>
@@ -327,7 +329,7 @@ export default function StoreSellersPage() {
           className="flex items-center space-x-2"
         >
           <Plus className="h-4 w-4" />
-          <span>Add Seller</span>
+          <span>{t('admin.store.sellers.addSeller')}</span>
         </Button>
       </div>
 
@@ -337,7 +339,7 @@ export default function StoreSellersPage() {
           <div className="flex items-center space-x-2">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search sellers by name, business, phone, or email..."
+              placeholder={t('admin.store.sellers.searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="flex-1"
@@ -348,7 +350,7 @@ export default function StoreSellersPage() {
           {currentUser?.role === 'superadmin' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
               <div>
-                <label className="block text-sm font-medium mb-2">State</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.state')}</label>
                 <Select
                   value={selectedStateId || 'all'}
                   onValueChange={async (id) => {
@@ -370,10 +372,10 @@ export default function StoreSellersPage() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All States" />
+                    <SelectValue placeholder={t('admin.store.sellers.allStates')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All States</SelectItem>
+                    <SelectItem value="all">{t('admin.store.sellers.allStates')}</SelectItem>
                     {stateOptions.map((state) => (
                       <SelectItem key={state.id} value={state.id}>
                         {state.name}
@@ -384,17 +386,17 @@ export default function StoreSellersPage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">District</label>
+                <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.district')}</label>
                 <Select
                   value={selectedDistrictName || 'All'}
                   onValueChange={(value) => setSelectedDistrictName(value)}
                   disabled={!selectedStateId}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="All Districts" />
+                    <SelectValue placeholder={t('admin.store.sellers.allDistricts')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="All">All Districts</SelectItem>
+                    <SelectItem value="All">{t('admin.store.sellers.allDistricts')}</SelectItem>
                     {districtOptions.map((district) => (
                       <SelectItem key={district.id} value={district.name}>
                         {district.name}
@@ -413,13 +415,13 @@ export default function StoreSellersPage() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {editingSeller ? 'Edit Seller' : 'Add New Seller'}
+              {editingSeller ? t('admin.store.sellers.editSeller') : t('admin.store.sellers.addNewSeller')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Name *</label>
+                <label className="text-sm font-medium">{t('admin.store.sellers.name')}</label>
                 <Input
                   value={editingSeller ? editingSellerData?.name || '' : newSellerData.name || ''}
                   onChange={(e) => {
@@ -429,7 +431,7 @@ export default function StoreSellersPage() {
                       setNewSellerData({ ...newSellerData, name: e.target.value });
                     }
                   }}
-                  placeholder="Seller's full name"
+                  placeholder={t('admin.store.sellers.namePlaceholder')}
                 />
               </div>
               
@@ -437,7 +439,7 @@ export default function StoreSellersPage() {
               {currentUser?.role === 'superadmin' && (
                 <>
                   <div>
-                    <label className="text-sm font-medium">District</label>
+                    <label className="text-sm font-medium">{t('admin.store.sellers.district')}</label>
                     <Input
                       value={editingSeller ? editingSellerData?.district || '' : newSellerData.district || ''}
                       onChange={(e) => {
@@ -447,12 +449,12 @@ export default function StoreSellersPage() {
                           setNewSellerData({ ...newSellerData, district: e.target.value });
                         }
                       }}
-                      placeholder="District name"
+                      placeholder={t('admin.store.sellers.districtPlaceholder')}
                     />
                   </div>
                   
                   <div>
-                    <label className="text-sm font-medium">State</label>
+                    <label className="text-sm font-medium">{t('admin.store.sellers.state')}</label>
                     <Input
                       value={editingSeller ? editingSellerData?.state || '' : newSellerData.state || ''}
                       onChange={(e) => {
@@ -462,14 +464,14 @@ export default function StoreSellersPage() {
                           setNewSellerData({ ...newSellerData, state: e.target.value });
                         }
                       }}
-                      placeholder="State name"
+                      placeholder={t('admin.store.sellers.statePlaceholder')}
                     />
                   </div>
                 </>
               )}
               
               <div>
-                <label className="text-sm font-medium">Business Name</label>
+                <label className="text-sm font-medium">{t('admin.store.sellers.businessName')}</label>
                 <Input
                   value={editingSeller ? editingSellerData?.business_name || '' : newSellerData.business_name || ''}
                   onChange={(e) => {
@@ -479,12 +481,12 @@ export default function StoreSellersPage() {
                       setNewSellerData({ ...newSellerData, business_name: e.target.value });
                     }
                   }}
-                  placeholder="Business/store name"
+                  placeholder={t('admin.store.sellers.businessNamePlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="text-sm font-medium">Contact Phone *</label>
+                <label className="text-sm font-medium">{t('admin.store.sellers.contactPhone')}</label>
                 <Input
                   value={editingSeller ? editingSellerData?.contact_phone || '' : newSellerData.contact_phone || ''}
                   onChange={(e) => {
@@ -494,12 +496,12 @@ export default function StoreSellersPage() {
                       setNewSellerData({ ...newSellerData, contact_phone: e.target.value });
                     }
                   }}
-                  placeholder="Primary contact number"
+                  placeholder={t('admin.store.sellers.contactPhonePlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="text-sm font-medium">WhatsApp Number</label>
+                <label className="text-sm font-medium">{t('admin.store.sellers.whatsappNumber')}</label>
                 <Input
                   value={editingSeller ? editingSellerData?.whatsapp_number || '' : newSellerData.whatsapp_number || ''}
                   onChange={(e) => {
@@ -509,12 +511,12 @@ export default function StoreSellersPage() {
                       setNewSellerData({ ...newSellerData, whatsapp_number: e.target.value });
                     }
                   }}
-                  placeholder="WhatsApp number (if different)"
+                  placeholder={t('admin.store.sellers.whatsappPlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">{t('admin.store.sellers.email')}</label>
                 <Input
                   type="email"
                   value={editingSeller ? editingSellerData?.email || '' : newSellerData.email || ''}
@@ -525,7 +527,7 @@ export default function StoreSellersPage() {
                       setNewSellerData({ ...newSellerData, email: e.target.value });
                     }
                   }}
-                  placeholder="Email address"
+                  placeholder={t('admin.store.sellers.emailPlaceholder')}
                 />
               </div>
               
@@ -543,12 +545,12 @@ export default function StoreSellersPage() {
                   }}
                   className="rounded"
                 />
-                <label htmlFor="is_active" className="text-sm font-medium">Active</label>
+                <label htmlFor="is_active" className="text-sm font-medium">{t('admin.store.sellers.active')}</label>
               </div>
             </div>
             
             <div>
-              <label className="text-sm font-medium">Address</label>
+              <label className="text-sm font-medium">{t('admin.store.sellers.address')}</label>
               <Textarea
                 value={editingSeller ? editingSellerData?.address || '' : newSellerData.address || ''}
                 onChange={(e) => {
@@ -558,13 +560,13 @@ export default function StoreSellersPage() {
                     setNewSellerData({ ...newSellerData, address: e.target.value });
                   }
                 }}
-                placeholder="Business address"
+                placeholder={t('admin.store.sellers.addressPlaceholder')}
                 rows={2}
               />
             </div>
             
             <div>
-              <label className="text-sm font-medium">Delivery Information</label>
+              <label className="text-sm font-medium">{t('admin.store.sellers.deliveryInfo')}</label>
               <Textarea
                 value={editingSeller ? editingSellerData?.delivery_info || '' : newSellerData.delivery_info || ''}
                 onChange={(e) => {
@@ -574,14 +576,14 @@ export default function StoreSellersPage() {
                     setNewSellerData({ ...newSellerData, delivery_info: e.target.value });
                   }
                 }}
-                placeholder="Delivery terms, areas covered, charges, etc."
+                placeholder={t('admin.store.sellers.deliveryInfoPlaceholder')}
                 rows={3}
               />
             </div>
             
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={cancelEditing}>
-                Cancel
+                {t('admin.photos.cancel')}
               </Button>
               <Button onClick={saveSeller} disabled={saving}>
                 {saving ? (
@@ -589,7 +591,7 @@ export default function StoreSellersPage() {
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
                 )}
-                {editingSeller ? 'Update' : 'Create'} Seller
+                {editingSeller ? t('admin.store.sellers.update') : t('admin.store.sellers.create')} {t('admin.store.sellers.sellers').charAt(0).toUpperCase() + t('admin.store.sellers.sellers').slice(1)}
               </Button>
             </div>
           </CardContent>
@@ -600,7 +602,7 @@ export default function StoreSellersPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className="text-sm text-gray-600">
-            {filteredSellers.length} seller{filteredSellers.length !== 1 ? 's' : ''}
+            {filteredSellers.length} {filteredSellers.length !== 1 ? t('admin.store.sellers.sellersPlural') : t('admin.store.sellers.sellers')}
           </span>
           
           {/* Active Location Filters (Superadmin only) */}
@@ -639,7 +641,7 @@ export default function StoreSellersPage() {
                   )}
                 </div>
                 <Badge variant={seller.is_active ? "default" : "secondary"}>
-                  {seller.is_active ? "Active" : "Inactive"}
+                  {seller.is_active ? t('admin.store.sellers.activeBadge') : t('admin.store.sellers.inactiveBadge')}
                 </Badge>
               </div>
             </CardHeader>
@@ -676,13 +678,13 @@ export default function StoreSellersPage() {
               
               {seller.delivery_info && (
                 <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-                  <strong>Delivery:</strong> {seller.delivery_info}
+                  <strong>{t('admin.store.sellers.delivery')}</strong> {seller.delivery_info}
                 </div>
               )}
               
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-xs text-muted-foreground">
-                  {seller.products_count || 0} products
+                  {seller.products_count || 0} {t('admin.store.sellers.products')}
                 </span>
                 <div className="flex space-x-1">
                   <Button
@@ -710,14 +712,14 @@ export default function StoreSellersPage() {
         <Card>
           <CardContent className="text-center py-8">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No sellers found</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('admin.store.sellers.noSellersFound')}</h3>
             <p className="text-muted-foreground mb-4">
-              {searchTerm ? 'No sellers match your search criteria.' : 'Get started by adding your first seller.'}
+              {searchTerm ? t('admin.store.sellers.noSellersMatch') : t('admin.store.sellers.getStarted')}
             </p>
             {!searchTerm && (
               <Button onClick={() => setAddingSeller(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add First Seller
+                {t('admin.store.sellers.addFirstSeller')}
               </Button>
             )}
           </CardContent>

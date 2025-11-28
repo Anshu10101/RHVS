@@ -8,10 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ProductCreationPage() {
 	const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useLanguage();
   // detect edit mode via URL ?id= - use searchParams to detect URL changes
   const editId = searchParams?.get('id') || '';
 	const [name, setName] = useState('');
@@ -224,7 +226,7 @@ export default function ProductCreationPage() {
 				const maxSize = 1 * 1024 * 1024; // 1MB
 				if (thumbFile.size > maxSize) {
 					const fileSizeMB = (thumbFile.size / (1024 * 1024)).toFixed(2);
-					throw new Error(`Main image is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+					throw new Error(t('admin.productCreation.imageSizeError').replace('{size}', fileSizeMB));
 				}
 				image_url = await uploadImage(thumbFile, `new_thumb_${Date.now()}`);
 			} else if (thumbType === 'url' && thumbUrl) {
@@ -266,7 +268,7 @@ export default function ProductCreationPage() {
 				const maxSize = 1 * 1024 * 1024; // 1MB
 				if (file.size > maxSize) {
 					const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-					throw new Error(`Supporting image "${file.name}" is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+					throw new Error(t('admin.productCreation.supportingImageSizeError').replace('{name}', file.name).replace('{size}', fileSizeMB));
 				}
 				const url = await uploadImage(file, `${editId || 'new'}_sup_${Date.now()}_${i}`);
 				gallery.push(url);
@@ -379,7 +381,7 @@ export default function ProductCreationPage() {
 			setTimeout(() => router.push('/admin/content/store'), 800);
 		} catch (e) {
 			console.error('Error creating/updating product:', e);
-			const errorMessage = e instanceof Error ? e.message : 'Failed to save product';
+			const errorMessage = e instanceof Error ? e.message : (editId ? t('admin.productCreation.failedToUpdate') : t('admin.productCreation.failedToCreate'));
 			alert(errorMessage); // Show user-friendly error
 			setSaving('error');
 			setTimeout(() => setSaving('idle'), 2000);
@@ -389,25 +391,25 @@ export default function ProductCreationPage() {
 	return (
 		<div className="p-6 max-w-4xl mx-auto">
 			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold">{editId ? 'Edit Product' : 'Create Product'}</h1>
+				<h1 className="text-2xl font-bold">{editId ? t('admin.productCreation.editTitle') : t('admin.productCreation.title')}</h1>
 				<div className="flex gap-2">
 					<Button variant="outline" onClick={() => router.push('/admin/content/store/sellers')}>
-						Manage Sellers
+						{t('admin.productCreation.manageSellers')}
 					</Button>
-					<Button variant="outline" onClick={() => router.back()}>Back</Button>
+					<Button variant="outline" onClick={() => router.back()}>{t('admin.productCreation.back')}</Button>
 				</div>
 			</div>
 			<div className="grid grid-cols-2 gap-4">
 				<div>
-					<label className="block text-sm font-medium mb-1">Name *</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.name')}</label>
 					<Input value={name} onChange={e => setName(e.target.value)} />
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Category</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.category')}</label>
 					{categories.length > 0 ? (
 						<Select value={category} onValueChange={(v) => setCategory(v)}>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select a category" />
+								<SelectValue placeholder={t('admin.productCreation.selectCategory')} />
 							</SelectTrigger>
 							<SelectContent>
 								{categories.map((c) => (
@@ -416,28 +418,28 @@ export default function ProductCreationPage() {
 							</SelectContent>
 						</Select>
 					) : (
-						<Input value={category} onChange={e => setCategory(e.target.value)} placeholder="Enter category (no categories found)" />
+						<Input value={category} onChange={e => setCategory(e.target.value)} placeholder={t('admin.productCreation.enterCategory')} />
 					)}
 				</div>
 				<div>
 					<div className="flex items-center justify-between mb-1">
-						<label className="block text-sm font-medium">Seller</label>
+						<label className="block text-sm font-medium">{t('admin.productCreation.seller')}</label>
 						<Button 
 							variant="outline" 
 							size="sm" 
 							onClick={() => router.push('/admin/content/store/sellers')}
 							className="text-xs"
 						>
-							+ Add Seller
+							{t('admin.productCreation.addSeller')}
 						</Button>
 					</div>
 					{sellers.length > 0 ? (
 						<Select value={sellerId} onValueChange={(v) => setSellerId(v)}>
 							<SelectTrigger className="w-full">
-								<SelectValue placeholder="Select a seller" />
+								<SelectValue placeholder={t('admin.productCreation.selectSeller')} />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="none">No seller</SelectItem>
+								<SelectItem value="none">{t('admin.productCreation.noSeller')}</SelectItem>
 								{sellers.map((s) => (
 									<SelectItem key={s.id} value={s.id}>
 										{s.name} {s.business_name && `(${s.business_name})`} - {s.district}, {s.state}
@@ -447,34 +449,34 @@ export default function ProductCreationPage() {
 						</Select>
 					) : (
 						<div className="text-sm text-gray-500 border rounded p-3 bg-gray-50">
-							No sellers available. Click &quot;Add Seller&quot; above to create your first seller.
+							{t('admin.productCreation.noSellersAvailable')}
 						</div>
 					)}
 				</div>
 				<div className="col-span-2">
-					<label className="block text-sm font-medium mb-1">Description</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.description')}</label>
 					<Textarea rows={3} value={description} onChange={e => setDescription(e.target.value)} />
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Price (₹) *</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.price')}</label>
 					<Input type="number" min={0} value={price} onChange={e => setPrice(Math.max(0, Number(e.target.value)))} />
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Original Price (₹)</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.originalPrice')}</label>
 					<Input type="number" min={0} value={originalPrice} onChange={e => setOriginalPrice(Math.max(0, Number(e.target.value)))} />
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Stock</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.stock')}</label>
 					<Input type="number" value={stock} onChange={e => setStock(Math.max(0, Number(e.target.value)))} />
 				</div>
 			</div>
 
 			<div className="grid grid-cols-2 gap-6 mt-6">
 				<div>
-					<label className="block text-sm font-medium mb-1">Thumbnail</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.thumbnail')}</label>
 					<div className="flex gap-6 mb-2">
-						<label className="flex items-center"><input type="radio" name="thumbType" checked={thumbType==='file'} onChange={()=>setThumbType('file')} className="mr-2"/>File</label>
-						<label className="flex items-center"><input type="radio" name="thumbType" checked={thumbType==='url'} onChange={()=>setThumbType('url')} className="mr-2"/>URL</label>
+						<label className="flex items-center"><input type="radio" name="thumbType" checked={thumbType==='file'} onChange={()=>setThumbType('file')} className="mr-2"/>{t('admin.productCreation.file')}</label>
+						<label className="flex items-center"><input type="radio" name="thumbType" checked={thumbType==='url'} onChange={()=>setThumbType('url')} className="mr-2"/>{t('admin.productCreation.url')}</label>
 					</div>
 					{thumbType==='file' ? (
 						<div>
@@ -484,7 +486,7 @@ export default function ProductCreationPage() {
 									const maxSize = 1 * 1024 * 1024; // 1MB
 									if (file.size > maxSize) {
 										const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-										alert(`File size must be less than 1MB. Your file is ${fileSizeMB}MB. Please compress or resize the image.`);
+										alert(t('admin.productCreation.fileSizeError').replace('{size}', fileSizeMB));
 										e.target.value = ''; // Clear the input
 										return;
 									}
@@ -495,7 +497,7 @@ export default function ProductCreationPage() {
 							}} className="w-full p-2 border rounded" />
 							{thumbFile && thumbUrl && (
 								<div className="mt-2 relative inline-block">
-									<Image src={thumbUrl} width={100} height={100} alt="Thumbnail preview" className="w-24 h-24 object-cover rounded border" />
+									<Image src={thumbUrl} width={100} height={100} alt={t('admin.productCreation.thumbnailPreview')} className="w-24 h-24 object-cover rounded border" />
 								</div>
 							)}
 						</div>
@@ -504,21 +506,21 @@ export default function ProductCreationPage() {
 						<Input placeholder="https://..." value={thumbUrl} onChange={e=>setThumbUrl(e.target.value)} />
 							{thumbUrl && (
 								<div className="mt-2 relative inline-block">
-									<Image src={thumbUrl} width={100} height={100} alt="Thumbnail preview" className="w-24 h-24 object-cover rounded border" />
+									<Image src={thumbUrl} width={100} height={100} alt={t('admin.productCreation.thumbnailPreview')} className="w-24 h-24 object-cover rounded border" />
 								</div>
 							)}
 						</div>
 					)}
 				</div>
 				<div>
-					<label className="block text-sm font-medium mb-1">Supporting Images (max 3, 1MB each)</label>
+					<label className="block text-sm font-medium mb-1">{t('admin.productCreation.supportingImages')}</label>
 					<input type="file" accept="image/*" multiple onChange={(e)=>{
 						const files = Array.from(e.target.files || []);
 						const maxSize = 1 * 1024 * 1024; // 1MB
 						const validFiles = files.filter(file => {
 							if (file.size > maxSize) {
 								const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-								alert(`File "${file.name}" is ${fileSizeMB}MB. Maximum size is 1MB. Please compress or resize the image.`);
+								alert(t('admin.productCreation.supportingImageSizeError').replace('{name}', file.name).replace('{size}', fileSizeMB));
 								return false;
 							}
 							return true;
@@ -545,7 +547,7 @@ export default function ProductCreationPage() {
 								const isExisting = i < existingSupportingUrls.length;
 								return (
 									<div key={i} className="relative group">
-										<Image src={u} width={64} height={64} alt={`Supporting image ${i+1}`} className="w-16 h-16 object-cover rounded border" />
+										<Image src={u} width={64} height={64} alt={`${t('admin.productCreation.supportingImage')} ${i+1}`} className="w-16 h-16 object-cover rounded border" />
 										<button
 											type="button"
 											onClick={() => {
@@ -563,7 +565,7 @@ export default function ProductCreationPage() {
 												}
 											}}
 											className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-											title="Remove image"
+											title={t('admin.productCreation.removeImage')}
 										>
 											×
 										</button>
@@ -576,24 +578,24 @@ export default function ProductCreationPage() {
 			</div>
 
 			<div className="mt-6">
-				<label className="block text-sm font-medium mb-1">Tags (comma separated)</label>
-				<Input value={tagsInput} onChange={e=>setTagsInput(e.target.value)} placeholder="tag1, tag2" />
+				<label className="block text-sm font-medium mb-1">{t('admin.productCreation.tags')}</label>
+				<Input value={tagsInput} onChange={e=>setTagsInput(e.target.value)} placeholder={t('admin.productCreation.tagsPlaceholder')} />
 			</div>
 
 			{/* Visibility & Featured toggles */}
 			<div className="mt-4 grid grid-cols-2 gap-4">
 				<label className="flex items-center gap-2 text-sm">
 					<input type="checkbox" checked={isVisible} onChange={e=>setIsVisible(e.target.checked)} />
-					<span>Visible</span>
+					<span>{t('admin.productCreation.visible')}</span>
 				</label>
 				<label className="flex items-center gap-2 text-sm">
 					<input type="checkbox" checked={isFeatured} onChange={e=>setIsFeatured(e.target.checked)} />
-					<span>Featured</span>
+					<span>{t('admin.productCreation.featured')}</span>
 				</label>
 			</div>
 
 			<div className="mt-6">
-				<label className="block text-sm font-medium mb-2">Key Features</label>
+				<label className="block text-sm font-medium mb-2">{t('admin.productCreation.keyFeatures')}</label>
 				<div className="space-y-2">
 					{features.map((f,idx)=> (
 						<div key={idx} className="flex gap-2">
@@ -603,34 +605,34 @@ export default function ProductCreationPage() {
 							<Button type="button" variant="outline" size="sm" onClick={()=> setFeatures(features.filter((_,i)=>i!==idx))}>×</Button>
 						</div>
 					))}
-					<Button type="button" variant="outline" size="sm" onClick={()=> setFeatures([...features,''])}>+ Add Feature</Button>
+					<Button type="button" variant="outline" size="sm" onClick={()=> setFeatures([...features,''])}>{t('admin.productCreation.addFeature')}</Button>
 				</div>
 			</div>
 
 			<div className="mt-6">
-				<label className="block text-sm font-medium mb-2">Specifications</label>
+				<label className="block text-sm font-medium mb-2">{t('admin.productCreation.specifications')}</label>
 				<div className="space-y-2">
 					{Object.entries(specs).map(([k,v],i)=> (
 						<div key={i} className="flex gap-2">
-							<Input className="flex-1" value={k} onChange={e=>{ const n={...specs}; delete n[k]; n[e.target.value]=v; setSpecs(n); }} placeholder="Name" />
-							<Input className="flex-1" value={v} onChange={e=>{ const n={...specs}; n[k]=e.target.value; setSpecs(n); }} placeholder="Value" />
+							<Input className="flex-1" value={k} onChange={e=>{ const n={...specs}; delete n[k]; n[e.target.value]=v; setSpecs(n); }} placeholder={t('admin.productCreation.specName')} />
+							<Input className="flex-1" value={v} onChange={e=>{ const n={...specs}; n[k]=e.target.value; setSpecs(n); }} placeholder={t('admin.productCreation.specValue')} />
 							<Button type="button" variant="outline" size="sm" onClick={()=>{ const n={...specs}; delete n[k]; setSpecs(n); }}>×</Button>
 						</div>
 					))}
-					<Button type="button" variant="outline" size="sm" onClick={()=> setSpecs({ ...specs, '': '' })}>+ Add Specification</Button>
+					<Button type="button" variant="outline" size="sm" onClick={()=> setSpecs({ ...specs, '': '' })}>{t('admin.productCreation.addSpecification')}</Button>
 				</div>
 			</div>
 
 			<div className="flex justify-end gap-2 mt-8 border-t pt-4">
-				<Button variant="outline" onClick={()=> router.push('/admin/content/store')}>Cancel</Button>
+				<Button variant="outline" onClick={()=> router.push('/admin/content/store')}>{t('admin.productCreation.cancel')}</Button>
 				<Button onClick={create} disabled={saving==='saving' || !name || !price} className="min-w-[150px]">
 					{saving==='saving' 
-						? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{editId ? 'Saving...' : 'Creating...'}</>) 
+						? (<><Loader2 className="mr-2 h-4 w-4 animate-spin"/>{editId ? t('admin.productCreation.saving') : t('admin.productCreation.creating')}</>) 
 						: saving==='saved' 
-							? (<><CheckCircle className="mr-2 h-4 w-4"/>{editId ? 'Saved!' : 'Created!'}</>) 
+							? (<><CheckCircle className="mr-2 h-4 w-4"/>{editId ? t('admin.productCreation.saved') : t('admin.productCreation.created')}</>) 
 							: saving==='error' 
-								? 'Retry' 
-								: (editId ? 'Save Changes' : 'Create Product')}
+								? t('admin.productCreation.retry')
+								: (editId ? t('admin.productCreation.saveChanges') : t('admin.productCreation.createProduct'))}
 				</Button>
 			</div>
 		</div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,7 @@ interface HeroSettings {
 
 export function HeroImagesManagement() {
   const { hasPermission, currentUser } = useAdmin();
+  const { t } = useLanguage();
   const [images, setImages] = useState<HeroImage[]>([]);
   const [settings, setSettings] = useState<HeroSettings>({
     marquee_speed: 30,
@@ -164,11 +166,11 @@ export function HeroImagesManagement() {
       } else {
         const errorData = await response.json();
         console.error('Error adding image:', errorData.error);
-        alert('Error adding image: ' + errorData.error);
+        alert(t('admin.content.heroImages.errorAdding') + ' ' + errorData.error);
       }
     } catch (error) {
       console.error('Error adding image:', error);
-      alert('Error adding image: ' + error);
+      alert(t('admin.content.heroImages.errorAdding') + ' ' + error);
     }
   };
 
@@ -195,16 +197,16 @@ export function HeroImagesManagement() {
       } else {
         const errorData = await response.json();
         console.error('Error updating image:', errorData.error);
-        alert('Error updating image: ' + errorData.error);
+        alert(t('admin.content.heroImages.errorUpdating') + ' ' + errorData.error);
       }
     } catch (error) {
       console.error('Error updating image:', error);
-      alert('Error updating image: ' + error);
+      alert(t('admin.content.heroImages.errorUpdating') + ' ' + error);
     }
   };
 
   const handleDeleteImage = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this image?')) return;
+    if (!confirm(t('admin.content.heroImages.deleteConfirm'))) return;
 
     try {
       const token = localStorage.getItem('admin_token');
@@ -223,11 +225,11 @@ export function HeroImagesManagement() {
       } else {
         const errorData = await response.json();
         console.error('Error deleting image:', errorData.error);
-        alert('Error deleting image: ' + errorData.error);
+        alert(t('admin.content.heroImages.errorDeleting') + ' ' + errorData.error);
       }
     } catch (error) {
       console.error('Error deleting image:', error);
-      alert('Error deleting image: ' + error);
+      alert(t('admin.content.heroImages.errorDeleting') + ' ' + error);
     }
   };
 
@@ -251,11 +253,11 @@ export function HeroImagesManagement() {
       } else {
         const errorData = await response.json();
         console.error('Error updating settings:', errorData.error);
-        alert('Error updating settings: ' + errorData.error);
+        alert(t('admin.content.heroImages.errorUpdatingSettings') + ' ' + errorData.error);
       }
     } catch (error) {
       console.error('Error updating settings:', error);
-      alert('Error updating settings: ' + error);
+      alert(t('admin.content.heroImages.errorUpdatingSettings') + ' ' + error);
     }
   };
 
@@ -298,7 +300,7 @@ export function HeroImagesManagement() {
   if (!hasPermission('manage_hero_images')) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">You don't have permission to manage hero images.</p>
+        <p className="text-gray-500">{t('admin.content.heroImages.accessDenied')}</p>
       </div>
     );
   }
@@ -308,8 +310,8 @@ export function HeroImagesManagement() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Hero Images Management</h2>
-          <p className="text-gray-600">Manage the rotating images in the hero section</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t('admin.content.heroImages.title')}</h2>
+          <p className="text-gray-600">{t('admin.content.heroImages.description')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -318,7 +320,7 @@ export function HeroImagesManagement() {
             className="gap-2"
           >
             <Settings size={16} />
-            Settings
+            {t('admin.content.heroImages.settings')}
           </Button>
           <Button
             onClick={() => {
@@ -338,7 +340,7 @@ export function HeroImagesManagement() {
             className="gap-2"
           >
             <Plus size={16} />
-            Add Image
+            {t('admin.content.heroImages.addImage')}
           </Button>
         </div>
       </div>
@@ -346,10 +348,10 @@ export function HeroImagesManagement() {
       {/* Settings Panel */}
       {showSettings && (
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Hero Section Settings</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('admin.content.heroImages.heroSectionSettings')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="marquee_speed">Marquee Speed (seconds)</Label>
+              <Label htmlFor="marquee_speed">{t('admin.content.heroImages.marqueeSpeed')}</Label>
               <Input
                 id="marquee_speed"
                 type="number"
@@ -360,7 +362,7 @@ export function HeroImagesManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="image_display_duration">Image Display Duration (seconds)</Label>
+              <Label htmlFor="image_display_duration">{t('admin.content.heroImages.imageDisplayDuration')}</Label>
               <Input
                 id="image_display_duration"
                 type="number"
@@ -376,7 +378,7 @@ export function HeroImagesManagement() {
                 checked={settings.auto_play}
                 onCheckedChange={(checked) => setSettings({...settings, auto_play: checked})}
               />
-              <Label htmlFor="auto_play">Auto Play</Label>
+              <Label htmlFor="auto_play">{t('admin.content.heroImages.autoPlay')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Switch
@@ -384,17 +386,17 @@ export function HeroImagesManagement() {
                 checked={settings.show_indicators}
                 onCheckedChange={(checked) => setSettings({...settings, show_indicators: checked})}
               />
-              <Label htmlFor="show_indicators">Show Indicators</Label>
+              <Label htmlFor="show_indicators">{t('admin.content.heroImages.showIndicators')}</Label>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
             <Button onClick={handleUpdateSettings} className="gap-2">
               <Save size={16} />
-              Save Settings
+              {t('admin.content.heroImages.saveSettings')}
             </Button>
             <Button onClick={() => setShowSettings(false)} variant="outline" className="gap-2">
               <X size={16} />
-              Cancel
+              {t('admin.content.heroImages.cancel')}
             </Button>
           </div>
         </Card>
@@ -404,11 +406,11 @@ export function HeroImagesManagement() {
       {isEditing && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4">
-            {editingImage?.id ? 'Edit Image' : 'Add New Image'}
+            {editingImage?.id ? t('admin.content.heroImages.editImage') : t('admin.content.heroImages.addNewImage')}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="image_upload">Image File</Label>
+              <Label htmlFor="image_upload">{t('admin.content.heroImages.imageFile')}</Label>
               <Input
                 id="image_upload"
                 type="file"
@@ -429,30 +431,30 @@ export function HeroImagesManagement() {
             </div>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="alt_text">Alt Text *</Label>
+                <Label htmlFor="alt_text">{t('admin.content.heroImages.altText')}</Label>
                 <Input
                   id="alt_text"
                   value={editingImage?.alt_text || ''}
                   onChange={(e) => setEditingImage({...editingImage!, alt_text: e.target.value})}
-                  placeholder="Description for screen readers"
+                  placeholder={t('admin.content.heroImages.altTextPlaceholder')}
                 />
               </div>
               <div>
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="title">{t('admin.content.heroImages.title')}</Label>
                 <Input
                   id="title"
                   value={editingImage?.title || ''}
                   onChange={(e) => setEditingImage({...editingImage!, title: e.target.value})}
-                  placeholder="Image title"
+                  placeholder={t('admin.content.heroImages.titlePlaceholder')}
                 />
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('admin.content.heroImages.description')}</Label>
                 <Textarea
                   id="description"
                   value={editingImage?.description || ''}
                   onChange={(e) => setEditingImage({...editingImage!, description: e.target.value})}
-                  placeholder="Image description"
+                  placeholder={t('admin.content.heroImages.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -465,7 +467,7 @@ export function HeroImagesManagement() {
               disabled={!editingImage?.alt_text || (!uploadFile && !editingImage?.id)}
             >
               <Save size={16} />
-              {editingImage?.id ? 'Update' : 'Add'} Image
+              {editingImage?.id ? t('admin.content.heroImages.update') : t('admin.content.heroImages.add')} {t('admin.content.heroImages.image')}
             </Button>
             <Button 
               onClick={() => {
@@ -478,7 +480,7 @@ export function HeroImagesManagement() {
               className="gap-2"
             >
               <X size={16} />
-              Cancel
+              {t('admin.content.heroImages.cancel')}
             </Button>
           </div>
         </Card>
@@ -486,15 +488,15 @@ export function HeroImagesManagement() {
 
       {/* Images List */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Current Images ({images.length})</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('admin.content.heroImages.currentImages')} ({images.length})</h3>
         {isLoading ? (
           <div className="text-center py-8">
-            <p className="text-gray-500">Loading images...</p>
+            <p className="text-gray-500">{t('admin.content.heroImages.loadingImages')}</p>
           </div>
         ) : images.length === 0 ? (
           <div className="text-center py-8">
             <ImageIcon size={48} className="mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">No images added yet. Click "Add Image" to get started.</p>
+            <p className="text-gray-500">{t('admin.content.heroImages.noImagesYet')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

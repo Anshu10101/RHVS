@@ -16,8 +16,15 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
   const token = getAdminToken(req);
   const claims = token ? await verifyAdminJwt(token) : null;
 
-  const isSuperAdmin = !!claims && claims.type === 'superadmin';
-  const isDistrictAdmin = !!claims && claims.type === 'district_admin';
+  // Check both 'type' and 'role' fields for backward compatibility and robustness
+  // Some older tokens might only have 'role', newer ones have both 'type' and 'role'
+  const isSuperAdmin = !!claims && (claims.type === 'superadmin' || claims.role === 'superadmin');
+  const isDistrictAdmin = !!claims && (claims.type === 'district_admin' || (claims.role === 'district_admin' && claims.type !== 'superadmin'));
+  
+  // Debug logging for superadmin detection issues
+  if (claims && !isSuperAdmin && !isDistrictAdmin) {
+    console.log('⚠️ Admin scope detection: claims have type:', claims.type, 'role:', claims.role, 'but not recognized as superadmin or district admin');
+  }
   const adminId = claims ? Number(claims.sub) : null;
   let permissions: string[] = (claims?.permissions as string[]) || [];
 

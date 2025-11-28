@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +80,7 @@ interface Event {
 
 export default function NewsEventsEditor() {
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'news' | 'events'>('news');
   const [news, setNews] = useState<News[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -227,13 +229,13 @@ export default function NewsEventsEditor() {
     // Validate state/district for superadmins
     if (activeTab === 'news' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
       if (!newsForm.state || !newsForm.district) {
-        alert('Please select both state and district for this news item');
+        alert(t('admin.newsEvents.selectBothStateDistrict'));
         return;
       }
     }
     if (activeTab === 'events' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
       if (!eventForm.state || !eventForm.district) {
-        alert('Please select both state and district for this event');
+        alert(t('admin.newsEvents.selectBothStateDistrictEvent'));
         return;
       }
     }
@@ -241,30 +243,30 @@ export default function NewsEventsEditor() {
     // Validate content limits for news
     if (activeTab === 'news') {
       if (newsForm.title.length > 255) {
-        alert('Title cannot exceed 255 characters');
+        alert(t('admin.newsEvents.titleMaxLength'));
         return;
       }
       if (newsForm.excerpt.length > 500) {
-        alert('Excerpt cannot exceed 500 characters');
+        alert(t('admin.newsEvents.excerptMaxLength'));
         return;
       }
       if (newsForm.content.length > 5000) {
-        alert('Content cannot exceed 5000 characters');
+        alert(t('admin.newsEvents.contentMaxLength'));
         return;
       }
       if (!newsForm.title.trim() || !newsForm.content.trim()) {
-        alert('Title and content are required');
+        alert(t('admin.newsEvents.titleContentRequired'));
         return;
       }
     }
     // Validate content limits for events
     if (activeTab === 'events') {
       if (!eventForm.title.trim() || !eventForm.description.trim() || !eventForm.event_date.trim()) {
-        alert('Title, description and event date are required');
+        alert(t('admin.newsEvents.titleDescriptionDateRequired'));
         return;
       }
       if (eventForm.description.length > 5000) {
-        alert('Description cannot exceed 5000 characters');
+        alert(t('admin.newsEvents.descriptionMaxLength'));
         return;
       }
     }
@@ -332,7 +334,7 @@ export default function NewsEventsEditor() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
+    if (!confirm(t('admin.newsEvents.deleteConfirm'))) return;
 
     try {
       const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
@@ -579,7 +581,7 @@ export default function NewsEventsEditor() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+            <p className="mt-2 text-gray-600">{t('admin.newsEvents.loading')}</p>
         </div>
       </div>
     );
@@ -590,12 +592,12 @@ export default function NewsEventsEditor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">News & Events Management</h1>
-          <p className="text-gray-600">Manage news articles and events</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.newsEvents.title')}</h1>
+          <p className="text-gray-600">{t('admin.newsEvents.description')}</p>
         </div>
         <Button onClick={startCreate} className="gap-2">
           <Plus className="h-4 w-4" />
-          Add {activeTab === 'news' ? 'News' : 'Event'}
+          {activeTab === 'news' ? t('admin.newsEvents.addNews') : t('admin.newsEvents.addEvent')}
         </Button>
       </div>
 
@@ -610,7 +612,7 @@ export default function NewsEventsEditor() {
           }`}
         >
           <Newspaper className="h-4 w-4 inline mr-2" />
-          News
+          {t('admin.newsEvents.news')}
         </button>
         <button
           onClick={() => setActiveTab('events')}
@@ -621,7 +623,7 @@ export default function NewsEventsEditor() {
           }`}
         >
           <CalendarDays className="h-4 w-4 inline mr-2" />
-          Events
+          {t('admin.newsEvents.events')}
         </button>
       </div>
 
@@ -631,7 +633,7 @@ export default function NewsEventsEditor() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder={`Search ${activeTab}...`}
+              placeholder={t('admin.newsEvents.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -640,26 +642,26 @@ export default function NewsEventsEditor() {
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
             {activeTab === 'news' ? (
               <>
-                <SelectItem value="announcement">Announcement</SelectItem>
-                <SelectItem value="update">Update</SelectItem>
-                <SelectItem value="achievement">Achievement</SelectItem>
-                <SelectItem value="notice">Notice</SelectItem>
-                <SelectItem value="general">General</SelectItem>
+                <SelectItem value="announcement">{t('admin.newsEvents.announcement')}</SelectItem>
+                <SelectItem value="update">{t('admin.newsEvents.update')}</SelectItem>
+                <SelectItem value="achievement">{t('admin.newsEvents.achievement')}</SelectItem>
+                <SelectItem value="notice">{t('admin.newsEvents.notice')}</SelectItem>
+                <SelectItem value="general">{t('admin.newsEvents.general')}</SelectItem>
               </>
             ) : (
               <>
-                <SelectItem value="festival">Festival</SelectItem>
-                <SelectItem value="meeting">Meeting</SelectItem>
-                <SelectItem value="celebration">Celebration</SelectItem>
-                <SelectItem value="workshop">Workshop</SelectItem>
-                <SelectItem value="conference">Conference</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="festival">{t('admin.newsEvents.festival')}</SelectItem>
+                <SelectItem value="meeting">{t('admin.newsEvents.meeting')}</SelectItem>
+                <SelectItem value="celebration">{t('admin.newsEvents.celebration')}</SelectItem>
+                <SelectItem value="workshop">{t('admin.newsEvents.workshop')}</SelectItem>
+                <SelectItem value="conference">{t('admin.newsEvents.conference')}</SelectItem>
+                <SelectItem value="other">{t('admin.newsEvents.other')}</SelectItem>
               </>
             )}
           </SelectContent>
@@ -688,7 +690,7 @@ export default function NewsEventsEditor() {
           <CardHeader className="bg-orange-50">
             <div className="flex items-center justify-between">
               <CardTitle className="text-orange-800">
-                {isCreating ? 'Add New' : 'Edit'} {activeTab === 'news' ? 'News Article' : 'Event'}
+                {isCreating ? t('admin.newsEvents.addNew') : t('admin.newsEvents.edit')} {activeTab === 'news' ? t('admin.newsEvents.newsArticle') : t('admin.newsEvents.event')}
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={resetForm}>
                 <X className="h-4 w-4" />
@@ -700,7 +702,7 @@ export default function NewsEventsEditor() {
               {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Title *</Label>
+                  <Label htmlFor="title">{t('admin.newsEvents.titleLabel')}</Label>
                   <Input
                     id="title"
                     value={activeTab === 'news' ? newsForm.title : eventForm.title}
@@ -711,11 +713,11 @@ export default function NewsEventsEditor() {
                         setEventForm({ ...eventForm, title: e.target.value });
                       }
                     }}
-                    placeholder="Enter title"
+                    placeholder={t('admin.newsEvents.titlePlaceholder')}
                     maxLength={255}
                   />
                   <div className="text-xs text-gray-500 mt-1">
-                    {(activeTab === 'news' ? newsForm.title : eventForm.title).length}/255 characters
+                    {(activeTab === 'news' ? newsForm.title : eventForm.title).length}/255 {t('admin.newsEvents.characters')}
                   </div>
                 </div>
                 {/* Removed Hindi title field to keep a single title input */}
@@ -728,7 +730,7 @@ export default function NewsEventsEditor() {
                   {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4 ">
                       <div>
-                        <Label htmlFor="state">State *</Label>
+                        <Label htmlFor="state">{t('admin.store.sellers.state')} *</Label>
                         <Select 
                           value={newsForm.state} 
                           onValueChange={(value) => {
@@ -738,11 +740,11 @@ export default function NewsEventsEditor() {
                           disabled={loadingStates}
                         >
                           <SelectTrigger className={loadingStates ? 'opacity-50' : ''}>
-                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select state"} />
+                            <SelectValue placeholder={loadingStates ? t('admin.newsEvents.loadingStates') : t('admin.newsEvents.selectState')} />
                           </SelectTrigger>
                           <SelectContent>
                             {states.length === 0 && !loadingStates ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No states available</div>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('admin.newsEvents.noStatesAvailable')}</div>
                             ) : (
                               states.map((state) => (
                                 <SelectItem key={state.id} value={String(state.id)}>
@@ -753,11 +755,11 @@ export default function NewsEventsEditor() {
                           </SelectContent>
                         </Select>
                         {loadingStates && (
-                          <p className="text-xs text-gray-500 mt-1">Loading states...</p>
+                          <p className="text-xs text-gray-500 mt-1">{t('admin.newsEvents.loadingStates')}</p>
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="district">District *</Label>
+                        <Label htmlFor="district">{t('admin.store.sellers.district')} *</Label>
                         <Select 
                           value={newsForm.district} 
                           onValueChange={(value) => setNewsForm({ ...newsForm, district: value })}
@@ -766,17 +768,17 @@ export default function NewsEventsEditor() {
                           <SelectTrigger className={(!newsForm.state || loadingDistricts) ? 'opacity-50' : ''}>
                             <SelectValue placeholder={
                               loadingDistricts 
-                                ? "Loading districts..." 
+                                ? t('admin.newsEvents.loadingDistricts')
                                 : !newsForm.state 
-                                  ? "Select state first" 
+                                  ? t('admin.newsEvents.selectStateFirst')
                                   : districts.length === 0
-                                    ? "No districts found"
-                                    : "Select district"
+                                    ? t('admin.newsEvents.noDistrictsFound')
+                                    : t('admin.newsEvents.selectDistrict')
                             } />
                           </SelectTrigger>
                           <SelectContent>
                             {districts.length === 0 && newsForm.state && !loadingDistricts ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No districts available for this state</div>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('admin.newsEvents.noDistrictsForState')}</div>
                             ) : (
                               districts.map((district) => (
                                 <SelectItem key={district.id} value={district.id}>
@@ -787,7 +789,7 @@ export default function NewsEventsEditor() {
                           </SelectContent>
                         </Select>
                         {loadingDistricts && (
-                          <p className="text-xs text-gray-500 mt-1">Loading districts...</p>
+                          <p className="text-xs text-gray-500 mt-1">{t('admin.newsEvents.loadingDistricts')}</p>
                         )}
                       </div>
                     </div>
@@ -795,72 +797,72 @@ export default function NewsEventsEditor() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="news_type">Type</Label>
+                      <Label htmlFor="news_type">{t('admin.newsEvents.type')}</Label>
                       <Select value={newsForm.news_type} onValueChange={(value) => setNewsForm({ ...newsForm, news_type: value as News['news_type'] })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="general">General</SelectItem>
-                          <SelectItem value="announcement">Announcement</SelectItem>
-                          <SelectItem value="update">Update</SelectItem>
-                          <SelectItem value="achievement">Achievement</SelectItem>
-                          <SelectItem value="notice">Notice</SelectItem>
+                          <SelectItem value="general">{t('admin.newsEvents.general')}</SelectItem>
+                          <SelectItem value="announcement">{t('admin.newsEvents.announcement')}</SelectItem>
+                          <SelectItem value="update">{t('admin.newsEvents.update')}</SelectItem>
+                          <SelectItem value="achievement">{t('admin.newsEvents.achievement')}</SelectItem>
+                          <SelectItem value="notice">{t('admin.newsEvents.notice')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="priority">Priority</Label>
+                      <Label htmlFor="priority">{t('admin.newsEvents.priority')}</Label>
                       <Select value={newsForm.priority} onValueChange={(value) => setNewsForm({ ...newsForm, priority: value as News['priority'] })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="low">{t('admin.newsEvents.low')}</SelectItem>
+                          <SelectItem value="medium">{t('admin.newsEvents.medium')}</SelectItem>
+                          <SelectItem value="high">{t('admin.newsEvents.high')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="order">Order</Label>
+                      <Label htmlFor="order">{t('admin.newsEvents.order')}</Label>
                       <Input
                         id="order"
                         type="number"
                         value={newsForm.order}
                         onChange={(e) => setNewsForm({ ...newsForm, order: parseInt(e.target.value) || 0 })}
-                        placeholder="Display order"
+                        placeholder={t('admin.newsEvents.displayOrder')}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="excerpt">Excerpt</Label>
+                    <Label htmlFor="excerpt">{t('admin.newsEvents.excerpt')}</Label>
                     <Textarea
                       id="excerpt"
                       value={newsForm.excerpt}
                       onChange={(e) => setNewsForm({ ...newsForm, excerpt: e.target.value })}
-                      placeholder="Brief description"
+                      placeholder={t('admin.newsEvents.excerptPlaceholder')}
                       rows={3}
                       maxLength={500}
                     />
                     <div className="text-xs text-gray-500 mt-1">
-                      {newsForm.excerpt.length}/500 characters
+                      {newsForm.excerpt.length}/500 {t('admin.newsEvents.characters')}
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="content">Content *</Label>
+                    <Label htmlFor="content">{t('admin.newsEvents.content')}</Label>
                     <Textarea
                       id="content"
                       value={newsForm.content}
                       onChange={(e) => setNewsForm({ ...newsForm, content: e.target.value })}
-                      placeholder="Full article content"
+                      placeholder={t('admin.newsEvents.contentPlaceholder')}
                       rows={8}
                       maxLength={5000}
                     />
                     <div className="text-xs text-gray-500 mt-1">
-                      {newsForm.content.length}/5000 characters
+                      {newsForm.content.length}/5000 {t('admin.newsEvents.characters')}
                     </div>
                   </div>
 
@@ -871,7 +873,7 @@ export default function NewsEventsEditor() {
                         checked={newsForm.is_featured}
                         onCheckedChange={(checked) => setNewsForm({ ...newsForm, is_featured: checked })}
                       />
-                      <Label htmlFor="is_featured">Featured</Label>
+                      <Label htmlFor="is_featured">{t('admin.newsEvents.featured')}</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Switch
@@ -879,7 +881,7 @@ export default function NewsEventsEditor() {
                         checked={newsForm.is_published}
                         onCheckedChange={(checked) => setNewsForm({ ...newsForm, is_published: checked })}
                       />
-                      <Label htmlFor="is_published">Published</Label>
+                      <Label htmlFor="is_published">{t('admin.newsEvents.published')}</Label>
                     </div>
                   </div>
                 </>
@@ -892,7 +894,7 @@ export default function NewsEventsEditor() {
                   {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4">
                       <div>
-                        <Label htmlFor="event_state">State *</Label>
+                        <Label htmlFor="event_state">{t('admin.store.sellers.state')} *</Label>
                         <Select 
                           value={eventForm.state} 
                           onValueChange={(value) => {
@@ -902,11 +904,11 @@ export default function NewsEventsEditor() {
                           disabled={loadingStates}
                         >
                           <SelectTrigger className={loadingStates ? 'opacity-50' : ''}>
-                            <SelectValue placeholder={loadingStates ? "Loading states..." : "Select state"} />
+                            <SelectValue placeholder={loadingStates ? t('admin.newsEvents.loadingStates') : t('admin.newsEvents.selectState')} />
                           </SelectTrigger>
                           <SelectContent>
                             {states.length === 0 && !loadingStates ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No states available</div>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('admin.newsEvents.noStatesAvailable')}</div>
                             ) : (
                               states.map((state) => (
                                 <SelectItem key={state.id} value={String(state.id)}>
@@ -917,11 +919,11 @@ export default function NewsEventsEditor() {
                           </SelectContent>
                         </Select>
                         {loadingStates && (
-                          <p className="text-xs text-gray-500 mt-1">Loading states...</p>
+                          <p className="text-xs text-gray-500 mt-1">{t('admin.newsEvents.loadingStates')}</p>
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="event_district">District *</Label>
+                        <Label htmlFor="event_district">{t('admin.store.sellers.district')} *</Label>
                         <Select 
                           value={eventForm.district} 
                           onValueChange={(value) => setEventForm({ ...eventForm, district: value })}
@@ -930,17 +932,17 @@ export default function NewsEventsEditor() {
                           <SelectTrigger className={(!eventForm.state || loadingDistricts) ? 'opacity-50' : ''}>
                             <SelectValue placeholder={
                               loadingDistricts 
-                                ? "Loading districts..." 
+                                ? t('admin.newsEvents.loadingDistricts')
                                 : !eventForm.state 
-                                  ? "Select state first" 
+                                  ? t('admin.newsEvents.selectStateFirst')
                                   : districts.length === 0
-                                    ? "No districts found"
-                                    : "Select district"
+                                    ? t('admin.newsEvents.noDistrictsFound')
+                                    : t('admin.newsEvents.selectDistrict')
                             } />
                           </SelectTrigger>
                           <SelectContent>
                             {districts.length === 0 && eventForm.state && !loadingDistricts ? (
-                              <div className="px-2 py-1.5 text-sm text-muted-foreground">No districts available for this state</div>
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">{t('admin.newsEvents.noDistrictsForState')}</div>
                             ) : (
                               districts.map((district) => (
                                 <SelectItem key={district.id} value={district.id}>

@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, Loader2, Plus, MoveVertical, Trash2, Edit, Save, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,6 +39,7 @@ export default function ManageDepartmentsPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -97,8 +99,8 @@ export default function ManageDepartmentsPage() {
     } catch (error) {
       console.error('Error fetching departments:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load departments',
+        title: t('admin.departments.manage.error'),
+        description: t('admin.departments.manage.failedToLoad'),
         variant: 'destructive',
       });
     } finally {
@@ -130,8 +132,8 @@ export default function ManageDepartmentsPage() {
       } catch (error) {
         console.error('Error fetching National Executive Department:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load National Executive Department',
+          title: t('admin.departments.manage.error'),
+          description: t('admin.departments.manage.failedToLoadNationalExecutive'),
           variant: 'destructive',
         });
       } finally {
@@ -173,8 +175,8 @@ export default function ManageDepartmentsPage() {
     
     if (!editDeptNameEn.trim() || !editDeptNameHi.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter both English and Hindi names for the department',
+        title: t('admin.departments.manage.validationError'),
+        description: t('admin.departments.manage.enterBothNamesDept'),
         variant: 'destructive',
       });
       return;
@@ -228,14 +230,14 @@ export default function ManageDepartmentsPage() {
       setEditDeptNameHi('');
 
       toast({
-        title: 'Success',
-        description: 'Department updated successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.departmentUpdated'),
       });
     } catch (error) {
       console.error('Error updating department:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update department',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToUpdate'),
         variant: 'destructive',
       });
     } finally {
@@ -263,8 +265,8 @@ export default function ManageDepartmentsPage() {
     } catch (error) {
       console.error('Error fetching posts:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load department posts',
+        title: t('admin.departments.manage.error'),
+        description: t('admin.departments.manage.failedToLoadPosts'),
         variant: 'destructive',
       });
     } finally {
@@ -281,8 +283,8 @@ export default function ManageDepartmentsPage() {
     
     if (!newPostNameEn.trim() || !newPostNameHi.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter both English and Hindi names for the post',
+        title: t('admin.departments.manage.validationError'),
+        description: t('admin.departments.manage.enterBothNamesPost'),
         variant: 'destructive',
       });
       return;
@@ -319,14 +321,14 @@ export default function ManageDepartmentsPage() {
       setNewPostNameHi('');
 
       toast({
-        title: 'Success',
-        description: 'Post created successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.postCreated'),
       });
     } catch (error) {
       console.error('Error creating post:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create post',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToCreatePost'),
         variant: 'destructive',
       });
     } finally {
@@ -339,8 +341,8 @@ export default function ManageDepartmentsPage() {
     
     if (!editPostNameEn.trim() || !editPostNameHi.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter both English and Hindi names for the post',
+        title: t('admin.departments.manage.validationError'),
+        description: t('admin.departments.manage.enterBothNamesPost'),
         variant: 'destructive',
       });
       return;
@@ -378,14 +380,14 @@ export default function ManageDepartmentsPage() {
       setEditPostNameHi('');
 
       toast({
-        title: 'Success',
-        description: 'Post updated successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.postUpdated'),
       });
     } catch (error) {
       console.error('Error updating post:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update post',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToUpdatePost'),
         variant: 'destructive',
       });
     } finally {
@@ -397,7 +399,7 @@ export default function ManageDepartmentsPage() {
     if (!selectedDepartment) return;
     
     // Confirm before deleting
-    if (!window.confirm(`Are you sure you want to delete the post "${post.name_en}"?`)) {
+    if (!window.confirm(t('admin.departments.manage.deleteConfirm').replace('{name}', post.name_en))) {
       return;
     }
 
@@ -420,14 +422,14 @@ export default function ManageDepartmentsPage() {
       await fetchPosts();
 
       toast({
-        title: 'Success',
-        description: 'Post deleted successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.postDeleted'),
       });
     } catch (error) {
       console.error('Error deleting post:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete post',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToDeletePost'),
         variant: 'destructive',
       });
     } finally {
@@ -473,14 +475,14 @@ export default function ManageDepartmentsPage() {
       }
 
       toast({
-        title: 'Success',
-        description: 'National Executive Department set successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.nationalExecutiveSet'),
       });
     } catch (error) {
       console.error('Error setting National Executive Department:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to set National Executive Department',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToSetNationalExecutive'),
         variant: 'destructive',
       });
     } finally {
@@ -489,7 +491,7 @@ export default function ManageDepartmentsPage() {
   };
 
   const handleUnsetNationalExecutive = async () => {
-    if (!window.confirm('Are you sure you want to unset the National Executive Department?')) {
+    if (!window.confirm(t('admin.departments.manage.unsetConfirm'))) {
       return;
     }
 
@@ -522,14 +524,14 @@ export default function ManageDepartmentsPage() {
       }
 
       toast({
-        title: 'Success',
-        description: 'National Executive Department unset successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.nationalExecutiveUnset'),
       });
     } catch (error) {
       console.error('Error unsetting National Executive Department:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to unset National Executive Department',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToUnsetNationalExecutive'),
         variant: 'destructive',
       });
     } finally {
@@ -557,8 +559,8 @@ export default function ManageDepartmentsPage() {
     // Check if trying to move the president post (position_order = 1)
     if (movedPost.position_order === 1 && destination.index !== 0) {
       toast({
-        title: 'Error',
-        description: 'Cannot change the position of the president post',
+        title: t('admin.departments.manage.error'),
+        description: t('admin.departments.manage.cannotChangePresident'),
         variant: 'destructive',
       });
       return;
@@ -599,14 +601,14 @@ export default function ManageDepartmentsPage() {
       }
       
       toast({
-        title: 'Success',
-        description: 'Post order updated successfully',
+        title: t('admin.departments.manage.success'),
+        description: t('admin.departments.manage.postOrderUpdated'),
       });
     } catch (error) {
       console.error('Error updating post order:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update post order',
+        title: t('admin.departments.manage.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.manage.failedToUpdateOrder'),
         variant: 'destructive',
       });
       
@@ -632,30 +634,30 @@ export default function ManageDepartmentsPage() {
     <>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Manage Departments</h1>
+          <h1 className="text-2xl font-bold">{t('admin.departments.manage.title')}</h1>
           <Button
             variant="outline"
             onClick={() => router.push('/admin/departments')}
             className="flex items-center"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Departments
+            {t('admin.departments.manage.backToDepartments')}
           </Button>
         </div>
         
         <Tabs defaultValue="departments" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="departments">Select Department</TabsTrigger>
-            <TabsTrigger value="national-executive">Manage National Executive Department</TabsTrigger>
+            <TabsTrigger value="departments">{t('admin.departments.manage.selectDepartment')}</TabsTrigger>
+            <TabsTrigger value="national-executive">{t('admin.departments.manage.manageNationalExecutive')}</TabsTrigger>
             {selectedDepartment && (
-              <TabsTrigger value="posts">Manage Posts</TabsTrigger>
+              <TabsTrigger value="posts">{t('admin.departments.manage.managePosts')}</TabsTrigger>
             )}
           </TabsList>
           
           <TabsContent value="departments" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Select Department</CardTitle>
+                <CardTitle>{t('admin.departments.manage.selectDepartment')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -664,14 +666,14 @@ export default function ManageDepartmentsPage() {
                   </div>
                 ) : departments.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No departments found</p>
+                    <p className="text-gray-500">{t('admin.departments.manage.noDepartmentsFound')}</p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
                       onClick={() => router.push('/admin/departments/create')}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Department
+                      {t('admin.departments.manage.createDepartment')}
                     </Button>
                   </div>
                 ) : (
@@ -681,7 +683,7 @@ export default function ManageDepartmentsPage() {
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                         <Input
-                          placeholder="Search departments by name (English or Hindi)..."
+                          placeholder={t('admin.departments.manage.searchDepartments')}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-10"
@@ -691,7 +693,7 @@ export default function ManageDepartmentsPage() {
                     
                     {filteredDepartments.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">No departments found matching your search</p>
+                        <p className="text-gray-500">{t('admin.departments.manage.noMatchingDepartments')}</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -738,10 +740,9 @@ export default function ManageDepartmentsPage() {
           <TabsContent value="national-executive" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Manage National Executive Department</CardTitle>
+                <CardTitle>{t('admin.departments.manage.manageNationalExecutive')}</CardTitle>
                 <p className="text-sm text-gray-500 mt-2">
-                  Select a department to be marked as the top-most National Executive Department. 
-                  Only one department can be marked as National Executive at a time.
+                  {t('admin.departments.manage.nationalExecutiveDescription')}
                 </p>
               </CardHeader>
               <CardContent>
@@ -758,7 +759,7 @@ export default function ManageDepartmentsPage() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
-                                CURRENT NATIONAL EXECUTIVE DEPARTMENT
+                                {t('admin.departments.manage.currentNationalExecutive')}
                               </span>
                             </div>
                             <h3 className="font-bold text-lg text-gray-900">{nationalExecutiveDept.name_hi}</h3>
@@ -774,34 +775,34 @@ export default function ManageDepartmentsPage() {
                             {isSettingNationalExecutive ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Unsetting...
+                                {t('admin.departments.manage.unsetting')}
                               </>
                             ) : (
-                              'Unset'
+                              t('admin.departments.manage.unset')
                             )}
                           </Button>
                         </div>
                       </div>
                     ) : (
                       <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                        <p className="text-gray-500">No National Executive Department is currently set.</p>
-                        <p className="text-sm text-gray-400 mt-1">Select a department below to set it as National Executive.</p>
+                        <p className="text-gray-500">{t('admin.departments.manage.noNationalExecutive')}</p>
+                        <p className="text-sm text-gray-400 mt-1">{t('admin.departments.manage.selectBelow')}</p>
                       </div>
                     )}
 
                     {/* Available Departments to Select */}
                     <div>
-                      <h3 className="font-semibold text-lg mb-4">Select Department</h3>
+                      <h3 className="font-semibold text-lg mb-4">{t('admin.departments.manage.selectDepartmentLabel')}</h3>
                       {departments.length === 0 ? (
                         <div className="text-center py-8">
-                          <p className="text-gray-500">No departments available</p>
+                          <p className="text-gray-500">{t('admin.departments.manage.noDepartmentsAvailable')}</p>
                           <Button 
                             variant="outline" 
                             className="mt-4"
                             onClick={() => router.push('/admin/departments/create')}
                           >
                             <Plus className="mr-2 h-4 w-4" />
-                            Create Department
+                            {t('admin.departments.manage.createDepartment')}
                           </Button>
                         </div>
                       ) : (
@@ -826,10 +827,10 @@ export default function ManageDepartmentsPage() {
                                   {isSettingNationalExecutive ? (
                                     <>
                                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                      Setting...
+                                      {t('admin.departments.manage.setting')}
                                     </>
                                   ) : (
-                                    'Set as National Executive'
+                                    t('admin.departments.manage.setAsNationalExecutive')
                                   )}
                                 </Button>
                               </CardContent>
@@ -855,7 +856,7 @@ export default function ManageDepartmentsPage() {
                     </div>
                     <Button onClick={() => setIsNewPostDialogOpen(true)}>
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Post
+                      {t('admin.departments.manage.addPost')}
                     </Button>
                   </CardHeader>
                   <CardContent>
@@ -865,14 +866,14 @@ export default function ManageDepartmentsPage() {
                       </div>
                     ) : posts.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">No posts found</p>
+                        <p className="text-gray-500">{t('admin.departments.manage.noPostsFound')}</p>
                         <Button 
                           variant="outline" 
                           className="mt-4"
                           onClick={() => setIsNewPostDialogOpen(true)}
                         >
                           <Plus className="mr-2 h-4 w-4" />
-                          Create First Post
+                          {t('admin.departments.manage.createFirstPost')}
                         </Button>
                       </div>
                     ) : (
@@ -913,7 +914,7 @@ export default function ManageDepartmentsPage() {
                                             {post.position_order}. {post.name_en}
                                             {post.position_order === 1 && (
                                               <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
-                                                President
+                                                {t('admin.departments.manage.president')}
                                               </span>
                                             )}
                                           </p>
@@ -969,26 +970,26 @@ export default function ManageDepartmentsPage() {
       <Dialog open={isNewPostDialogOpen} onOpenChange={setIsNewPostDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Post</DialogTitle>
+            <DialogTitle>{t('admin.departments.manage.addNewPost')}</DialogTitle>
             <DialogDescription>
-              Create a new post for {selectedDepartment?.name_en}
+              {t('admin.departments.manage.createPostFor')} {selectedDepartment?.name_en}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="post_name_en">Post Name (English)</Label>
+              <Label htmlFor="post_name_en">{t('admin.departments.manage.postNameEn')}</Label>
               <Input
                 id="post_name_en"
-                placeholder="Enter post name in English"
+                placeholder={t('admin.departments.manage.postNameEnPlaceholder')}
                 value={newPostNameEn}
                 onChange={(e) => setNewPostNameEn(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="post_name_hi">Post Name (Hindi)</Label>
+              <Label htmlFor="post_name_hi">{t('admin.departments.manage.postNameHi')}</Label>
               <Input
                 id="post_name_hi"
-                placeholder="Enter post name in Hindi"
+                placeholder={t('admin.departments.manage.postNameHiPlaceholder')}
                 value={newPostNameHi}
                 onChange={(e) => setNewPostNameHi(e.target.value)}
               />
@@ -996,16 +997,16 @@ export default function ManageDepartmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNewPostDialogOpen(false)}>
-              Cancel
+              {t('admin.departments.manage.cancel')}
             </Button>
             <Button onClick={handleAddPost} disabled={isAddingPost}>
               {isAddingPost ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
+                  {t('admin.departments.manage.adding')}
                 </>
               ) : (
-                'Add Post'
+                t('admin.departments.manage.addPost')
               )}
             </Button>
           </DialogFooter>
@@ -1016,26 +1017,26 @@ export default function ManageDepartmentsPage() {
       <Dialog open={isEditPostDialogOpen} onOpenChange={setIsEditPostDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
+            <DialogTitle>{t('admin.departments.manage.editPost')}</DialogTitle>
             <DialogDescription>
-              Update the post details
+              {t('admin.departments.manage.updatePostDetails')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_post_name_en">Post Name (English)</Label>
+              <Label htmlFor="edit_post_name_en">{t('admin.departments.manage.postNameEn')}</Label>
               <Input
                 id="edit_post_name_en"
-                placeholder="Enter post name in English"
+                placeholder={t('admin.departments.manage.postNameEnPlaceholder')}
                 value={editPostNameEn}
                 onChange={(e) => setEditPostNameEn(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_post_name_hi">Post Name (Hindi)</Label>
+              <Label htmlFor="edit_post_name_hi">{t('admin.departments.manage.postNameHi')}</Label>
               <Input
                 id="edit_post_name_hi"
-                placeholder="Enter post name in Hindi"
+                placeholder={t('admin.departments.manage.postNameHiPlaceholder')}
                 value={editPostNameHi}
                 onChange={(e) => setEditPostNameHi(e.target.value)}
               />
@@ -1043,16 +1044,16 @@ export default function ManageDepartmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditPostDialogOpen(false)}>
-              Cancel
+              {t('admin.departments.manage.cancel')}
             </Button>
             <Button onClick={handleEditPost} disabled={isEditingPost}>
               {isEditingPost ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('admin.departments.manage.saving')}
                 </>
               ) : (
-                'Save Changes'
+                t('admin.departments.manage.saveChanges')
               )}
             </Button>
           </DialogFooter>
@@ -1063,26 +1064,26 @@ export default function ManageDepartmentsPage() {
       <Dialog open={isEditDepartmentDialogOpen} onOpenChange={setIsEditDepartmentDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Department</DialogTitle>
+            <DialogTitle>{t('admin.departments.manage.editDepartment')}</DialogTitle>
             <DialogDescription>
-              Update the department name
+              {t('admin.departments.manage.updateDepartmentName')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_dept_name_en">Department Name (English)</Label>
+              <Label htmlFor="edit_dept_name_en">{t('admin.departments.manage.deptNameEn')}</Label>
               <Input
                 id="edit_dept_name_en"
-                placeholder="Enter department name in English"
+                placeholder={t('admin.departments.manage.deptNameEnPlaceholder')}
                 value={editDeptNameEn}
                 onChange={(e) => setEditDeptNameEn(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_dept_name_hi">Department Name (Hindi)</Label>
+              <Label htmlFor="edit_dept_name_hi">{t('admin.departments.manage.deptNameHi')}</Label>
               <Input
                 id="edit_dept_name_hi"
-                placeholder="Enter department name in Hindi"
+                placeholder={t('admin.departments.manage.deptNameHiPlaceholder')}
                 value={editDeptNameHi}
                 onChange={(e) => setEditDeptNameHi(e.target.value)}
               />
@@ -1090,16 +1091,16 @@ export default function ManageDepartmentsPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDepartmentDialogOpen(false)}>
-              Cancel
+              {t('admin.departments.manage.cancel')}
             </Button>
             <Button onClick={handleEditDepartment} disabled={isEditingDepartment}>
               {isEditingDepartment ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t('admin.departments.manage.saving')}
                 </>
               ) : (
-                'Save Changes'
+                t('admin.departments.manage.saveChanges')
               )}
             </Button>
           </DialogFooter>

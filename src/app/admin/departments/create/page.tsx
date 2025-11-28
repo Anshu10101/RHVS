@@ -9,12 +9,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function CreateDepartmentPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   
   const [isLoading, setIsLoading] = useState(false);
   const [nameEn, setNameEn] = useState('');
@@ -33,8 +35,8 @@ export default function CreateDepartmentPage() {
     // Validate form
     if (!nameEn.trim() || !nameHi.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter both English and Hindi names',
+        title: t('admin.departments.create.validationError'),
+        description: t('admin.departments.create.enterBothNames'),
         variant: 'destructive',
       });
       return;
@@ -80,13 +82,13 @@ export default function CreateDepartmentPage() {
         // Handle other error types
         const errorMessage = typeof data.error === 'string' 
           ? data.error 
-          : data.error?.message || JSON.stringify(data.error) || 'Failed to create department';
+          : data.error?.message || JSON.stringify(data.error) || t('admin.departments.create.failedToCreate');
         throw new Error(errorMessage);
       }
 
       toast({
-        title: 'Success',
-        description: 'Department created successfully',
+        title: t('admin.departments.create.success'),
+        description: t('admin.departments.create.createdSuccessfully'),
       });
 
       // Redirect to create posts for this department
@@ -94,8 +96,8 @@ export default function CreateDepartmentPage() {
     } catch (error) {
       console.error('Error creating department:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to create department',
+        title: t('admin.departments.create.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.create.failedToCreate'),
         variant: 'destructive',
       });
     } finally {
@@ -110,29 +112,29 @@ export default function CreateDepartmentPage() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Create Department</h1>
+        <h1 className="text-2xl font-bold">{t('admin.departments.create.title')}</h1>
         <Button
           variant="outline"
           onClick={() => router.back()}
           className="flex items-center"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
+          {t('admin.departments.create.back')}
         </Button>
       </div>
         
         <Card>
           <CardHeader>
-            <CardTitle>Department Details</CardTitle>
+            <CardTitle>{t('admin.departments.create.departmentDetails')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* English Name */}
               <div className="space-y-2">
-                <Label htmlFor="name_en">Department Name (English)</Label>
+                <Label htmlFor="name_en">{t('admin.departments.create.nameEn')}</Label>
                 <Input
                   id="name_en"
-                  placeholder="Enter department name in English (e.g., Cultural Department)"
+                  placeholder={t('admin.departments.create.nameEnPlaceholder')}
                   value={nameEn}
                   onChange={(e) => setNameEn(e.target.value)}
                   required
@@ -141,10 +143,10 @@ export default function CreateDepartmentPage() {
               
               {/* Hindi Name */}
               <div className="space-y-2">
-                <Label htmlFor="name_hi">Department Name (Hindi)</Label>
+                <Label htmlFor="name_hi">{t('admin.departments.create.nameHi')}</Label>
                 <Input
                   id="name_hi"
-                  placeholder="विभाग का नाम हिंदी में दर्ज करें (उदाहरण: सांस्कृतिक विभाग)"
+                  placeholder={t('admin.departments.create.nameHiPlaceholder')}
                   value={nameHi}
                   onChange={(e) => setNameHi(e.target.value)}
                   required
@@ -152,18 +154,18 @@ export default function CreateDepartmentPage() {
               </div>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-                <p className="font-medium mb-1">📝 Note:</p>
-                <p>After creating the department, you can assign members at different levels (National, State, or District) in the "Assign Members" section.</p>
+                <p className="font-medium mb-1">{t('admin.departments.create.note')}</p>
+                <p>{t('admin.departments.create.noteText')}</p>
               </div>
               
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {t('admin.departments.create.creating')}
                   </>
                 ) : (
-                  'Create Department'
+                  t('admin.departments.create.createDepartment')
                 )}
               </Button>
             </form>

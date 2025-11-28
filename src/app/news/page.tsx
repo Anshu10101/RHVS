@@ -571,10 +571,10 @@ export default function NewsPage() {
       <section className="py-10">
         <div className="container mx-auto px-4">
           {loading ? (
-                  <div className="text-center py-20">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto" />
+            <div className="text-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto" />
                     <p className="mt-6 text-orange-700">{t('news.loadingNews')}</p>
-                  </div>
+            </div>
           ) : (
             <>
               {featuredNews.length > 0 && (

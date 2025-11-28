@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -81,6 +82,7 @@ interface MemberStats {
 }
 
 export function MemberManagement() {
+  const { t } = useLanguage();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MemberStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -386,11 +388,11 @@ export function MemberManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Verified</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('admin.members.verified')}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />{t('admin.members.pending')}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('admin.members.rejected')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -402,7 +404,7 @@ export function MemberManagement() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
-          <p className="text-gray-600">Loading members...</p>
+          <p className="text-gray-600">{t('admin.members.loading')}</p>
         </div>
       </div>
     );
@@ -421,8 +423,8 @@ export function MemberManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">Member Management</h1>
-          <p className="text-sm sm:text-base text-orange-700/80 mt-1">Manage and track all RHVS members</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">{t('admin.members.title')}</h1>
+          <p className="text-sm sm:text-base text-orange-700/80 mt-1">{t('admin.members.subtitle')}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           <Button
@@ -433,7 +435,7 @@ export function MemberManagement() {
             className="w-full sm:w-auto border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('admin.members.refresh')}
           </Button>
           <Link href="/admin/members/add" className="w-full sm:w-auto cursor-pointer">
             <Button
@@ -441,7 +443,7 @@ export function MemberManagement() {
               className="w-full sm:w-auto bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 px-4 sm:px-6 py-2.5 font-medium cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Member
+              {t('admin.members.addMember')}
             </Button>
           </Link>
         </div>
@@ -457,7 +459,7 @@ export function MemberManagement() {
                   <Users className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total Members</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.totalMembers')}</p>
                   <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
                 </div>
               </div>
@@ -471,7 +473,7 @@ export function MemberManagement() {
                   <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Verified</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.verified')}</p>
                   <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.verified || 0}</p>
                 </div>
               </div>
@@ -485,7 +487,7 @@ export function MemberManagement() {
                   <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.pending')}</p>
                   <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.pending || 0}</p>
                 </div>
               </div>
@@ -499,7 +501,7 @@ export function MemberManagement() {
                   <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
                 </div>
                 <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">This Month</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.thisMonth')}</p>
                   <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.monthly}</p>
                 </div>
               </div>
@@ -513,18 +515,18 @@ export function MemberManagement() {
         <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
           <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
             <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-            Search Members
+            {t('admin.members.searchMembers')}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="search" className="text-xs sm:text-sm font-medium text-gray-700">Search by Name, Email, Phone, or Aadhar</Label>
+              <Label htmlFor="search" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.searchPlaceholder')}</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
-                  placeholder="Enter name, email, phone, or Aadhar number..."
+                  placeholder={t('admin.members.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-9 sm:h-10 text-sm"
@@ -533,12 +535,12 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="regNumber" className="text-xs sm:text-sm font-medium text-gray-700">Search by Registration Number</Label>
+              <Label htmlFor="regNumber" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.searchByRegNumber')}</Label>
               <div className="relative mt-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="regNumber"
-                  placeholder="Enter registration number..."
+                  placeholder={t('admin.members.searchByRegNumberPlaceholder')}
                   value={regNumberSearch}
                   onChange={(e) => setRegNumberSearch(e.target.value)}
                   className="pl-10 h-9 sm:h-10 text-sm"
@@ -554,19 +556,19 @@ export function MemberManagement() {
         <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
           <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
             <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-            Filter Members
+            {t('admin.members.filterMembers')}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">State</Label>
+              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.state')}</Label>
               <Select value={selectedState} onValueChange={setSelectedState}>
                 <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="All States" />
+                  <SelectValue placeholder={t('admin.members.allStates')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All States</SelectItem>
+                  <SelectItem value="all">{t('admin.members.allStates')}</SelectItem>
                   {states.map(state => (
                     <SelectItem key={state.id} value={state.id.toString()}>{state.name}</SelectItem>
                   ))}
@@ -575,7 +577,7 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">District</Label>
+              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.district')}</Label>
               <Select 
                 value={selectedDistrict} 
                 onValueChange={setSelectedDistrict}
@@ -584,14 +586,14 @@ export function MemberManagement() {
                 <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                   <SelectValue placeholder={
                     !selectedState || selectedState === 'all' 
-                      ? "Select state first" 
+                      ? t('admin.members.selectStateFirst')
                       : loadingDistricts 
-                        ? "Loading districts..." 
-                        : "All Districts"
+                        ? t('admin.members.loadingDistricts')
+                        : t('admin.members.allDistricts')
                   } />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Districts</SelectItem>
+                  <SelectItem value="all">{t('admin.members.allDistricts')}</SelectItem>
                   {districts.map(district => (
                     <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
                   ))}
@@ -600,13 +602,13 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="department" className="text-xs sm:text-sm font-medium text-gray-700">Department</Label>
+              <Label htmlFor="department" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.department')}</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                 <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="All Departments" />
+                  <SelectValue placeholder={t('admin.members.allDepartments')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Departments</SelectItem>
+                  <SelectItem value="all">{t('admin.members.allDepartments')}</SelectItem>
                   {departments.map(dept => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
@@ -615,16 +617,16 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-gray-700">Status</Label>
+              <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.status')}</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="All Status" />
+                  <SelectValue placeholder={t('admin.members.allStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
+                  <SelectItem value="all">{t('admin.members.allStatus')}</SelectItem>
+                  <SelectItem value="verified">{t('admin.members.verified')}</SelectItem>
+                  <SelectItem value="pending">{t('admin.members.pending')}</SelectItem>
+                  <SelectItem value="rejected">{t('admin.members.rejected')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -638,7 +640,7 @@ export function MemberManagement() {
               className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
-              Clear Filters
+              {t('admin.members.clearFilters')}
             </Button>
             <Button 
               variant="outline" 
@@ -647,7 +649,7 @@ export function MemberManagement() {
               className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 cursor-pointer text-sm"
             >
               <Filter className="h-4 w-4 mr-2" />
-              Apply Filters
+              {t('admin.members.applyFilters')}
             </Button>
           </div>
         </CardContent>
@@ -656,9 +658,9 @@ export function MemberManagement() {
       {/* Members Table */}
       <Card>
         <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-          <CardTitle className="text-base sm:text-lg">Members List</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{t('admin.members.membersList')}</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Showing {members.length} members (Page {currentPage} of {totalPages})
+            {t('admin.members.showing')} {members.length} {t('admin.members.results')} ({t('admin.members.page')} {currentPage} {t('admin.members.pageOf')} {totalPages})
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
@@ -668,22 +670,22 @@ export function MemberManagement() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Member
+                    {t('admin.members.member')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    {t('admin.members.contact')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
+                    {t('admin.members.location')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('admin.members.status')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Registration
+                    {t('admin.members.registration')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('admin.members.actions')}
                   </th>
                 </tr>
               </thead>
@@ -730,9 +732,9 @@ export function MemberManagement() {
                       <div className="text-xs sm:text-sm text-gray-500">{member.phone}</div>
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{member.state || 'N/A'}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">{member.district || 'N/A'}</div>
-                      <div className="text-xs sm:text-sm text-blue-600 font-medium truncate">{member.departments || 'No assignments'}</div>
+                      <div className="text-sm text-gray-900">{member.state || t('admin.members.na')}</div>
+                      <div className="text-xs sm:text-sm text-gray-500">{member.district || t('admin.members.na')}</div>
+                      <div className="text-xs sm:text-sm text-blue-600 font-medium truncate">{member.departments || t('admin.members.noAssignments')}</div>
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(member.status)}
@@ -742,7 +744,7 @@ export function MemberManagement() {
                         {new Date(member.registration_date).toLocaleDateString()}
                       </div>
                       <div className="text-xs sm:text-sm text-gray-500 truncate">
-                        {member.verified_by_name ? `Verified by ${member.verified_by_name}` : 'Admin verified'}
+                        {member.verified_by_name ? `${t('admin.members.verifiedBy')} ${member.verified_by_name}` : t('admin.members.adminVerified')}
                       </div>
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -847,14 +849,14 @@ export function MemberManagement() {
                       <div className="flex items-start space-x-2">
                         <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs text-gray-500">Email</p>
+                          <p className="text-xs text-gray-500">{t('admin.members.email')}</p>
                           <p className="text-sm text-gray-900 truncate">{member.email}</p>
                         </div>
                       </div>
                       <div className="flex items-start space-x-2">
                         <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs text-gray-500">Phone</p>
+                          <p className="text-xs text-gray-500">{t('admin.members.phone')}</p>
                           <p className="text-sm text-gray-900">{member.phone}</p>
                         </div>
                       </div>
@@ -864,8 +866,8 @@ export function MemberManagement() {
                     <div className="flex items-start space-x-2 pt-2 border-t border-gray-100">
                       <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-500">Location</p>
-                        <p className="text-sm text-gray-900">{member.state || 'N/A'}, {member.district || 'N/A'}</p>
+                        <p className="text-xs text-gray-500">{t('admin.members.location')}</p>
+                        <p className="text-sm text-gray-900">{member.state || t('admin.members.na')}, {member.district || t('admin.members.na')}</p>
                         {member.departments && (
                           <p className="text-xs text-blue-600 font-medium mt-1">{member.departments}</p>
                         )}
@@ -876,12 +878,12 @@ export function MemberManagement() {
                     <div className="flex items-start space-x-2 pt-2 border-t border-gray-100">
                       <Calendar className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-gray-500">Registration</p>
+                        <p className="text-xs text-gray-500">{t('admin.members.registration')}</p>
                         <p className="text-sm text-gray-900">
                           {new Date(member.registration_date).toLocaleDateString()}
                         </p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {member.verified_by_name ? `Verified by ${member.verified_by_name}` : 'Admin verified'}
+                          {member.verified_by_name ? `${t('admin.members.verifiedBy')} ${member.verified_by_name}` : t('admin.members.adminVerified')}
                         </p>
                       </div>
                     </div>
@@ -895,7 +897,7 @@ export function MemberManagement() {
                         className="flex-1 sm:flex-none cursor-pointer text-xs"
                       >
                         <Eye className="h-3.5 w-3.5 mr-1.5" />
-                        View
+                        {t('admin.members.view')}
                       </Button>
                       <Button
                         size="sm"
@@ -907,7 +909,7 @@ export function MemberManagement() {
                         className="flex-1 sm:flex-none cursor-pointer text-xs"
                       >
                         <Edit className="h-3.5 w-3.5 mr-1.5" />
-                        Edit
+                        {t('admin.members.edit')}
                       </Button>
                       {member.status === 'pending' && (
                         <>
@@ -918,7 +920,7 @@ export function MemberManagement() {
                             className="flex-1 sm:flex-none text-green-600 hover:text-green-700 cursor-pointer text-xs"
                           >
                             <UserCheck className="h-3.5 w-3.5 mr-1.5" />
-                            Verify
+                            {t('admin.members.verify')}
                           </Button>
                           <Button
                             size="sm"
@@ -927,7 +929,7 @@ export function MemberManagement() {
                             className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
                           >
                             <UserX className="h-3.5 w-3.5 mr-1.5" />
-                            Reject
+                            {t('admin.members.reject')}
                           </Button>
                         </>
                       )}
@@ -938,7 +940,7 @@ export function MemberManagement() {
                         className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                        Delete
+                        {t('admin.members.delete')}
                       </Button>
                     </div>
                   </div>
@@ -951,7 +953,7 @@ export function MemberManagement() {
           {totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
               <div className="text-xs sm:text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
+                {t('admin.members.page')} {currentPage} {t('admin.members.pageOf')} {totalPages}
               </div>
               <div className="flex space-x-2 w-full sm:w-auto">
                 <Button
@@ -961,7 +963,7 @@ export function MemberManagement() {
                   disabled={currentPage === 1 || loading}
                   className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
-                  Previous
+                  {t('admin.members.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -970,7 +972,7 @@ export function MemberManagement() {
                   disabled={currentPage === totalPages || loading}
                   className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
-                  Next
+                  {t('admin.members.next')}
                 </Button>
               </div>
             </div>

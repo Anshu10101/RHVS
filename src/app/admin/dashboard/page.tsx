@@ -19,17 +19,16 @@ import {
   UserCheck,
   Activity,
   Globe,
-  Building,
   Phone,
-  Menu,
-  Search,
   Award
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { AdminProvider } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 
 function AdminDashboardContent() {
+  const { t } = useLanguage();
   const { currentUser, logout, hasPermission } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -131,7 +130,7 @@ function AdminDashboardContent() {
   // All sidebar sections with their items
   const sidebarSections = [
     {
-      name: 'Members',
+      name: t('admin.dashboard.sections.members'),
       icon: Users,
       href: '/admin/members',
       bgColor: 'bg-blue-50',
@@ -139,25 +138,25 @@ function AdminDashboardContent() {
       roles: ['superadmin', 'admin', 'verified_member', 'district_admin'],
       children: [
         {
-          name: 'All Members',
+          name: t('admin.dashboard.items.allMembers'),
           href: '/admin/members',
           icon: Users,
           permission: 'view_members',
         },
         {
-          name: 'Add Member',
+          name: t('admin.dashboard.items.addMember'),
           href: '/admin/members/add',
           icon: UserPlus,
           permission: 'add_members',
         },
         {
-          name: 'District Admins',
+          name: t('admin.dashboard.items.districtAdmins'),
           href: '/admin/members/admins',
           icon: Shield,
           roles: ['superadmin'],
         },
         {
-          name: 'Token Verification',
+          name: t('admin.dashboard.items.tokenVerification'),
           href: '/admin/members/tokens',
           icon: Shield,
           permission: 'verify_tokens',
@@ -165,7 +164,7 @@ function AdminDashboardContent() {
       ],
     },
     {
-      name: 'Permission Management',
+      name: t('admin.dashboard.sections.permissionManagement'),
       icon: Shield,
       href: '/admin/permissions',
       bgColor: 'bg-red-50',
@@ -173,13 +172,13 @@ function AdminDashboardContent() {
       roles: ['superadmin'],
       children: [
         {
-          name: 'Assign Permissions',
+          name: t('admin.dashboard.items.assignPermissions'),
           href: '/admin/permissions/assign',
           icon: UserCheck,
           roles: ['superadmin'],
         },
         {
-          name: 'Permission History',
+          name: t('admin.dashboard.items.permissionHistory'),
           href: '/admin/permissions/history',
           icon: Activity,
           roles: ['superadmin'],
@@ -187,7 +186,7 @@ function AdminDashboardContent() {
       ],
     },
     {
-      name: 'Content Management',
+      name: t('admin.dashboard.sections.contentManagement'),
       icon: FileText,
       href: '/admin/content',
       bgColor: 'bg-green-50',
@@ -195,69 +194,45 @@ function AdminDashboardContent() {
       roles: ['superadmin', 'admin', 'district_admin'],
       children: [
         {
-          name: 'About Page',
+          name: t('admin.dashboard.items.aboutPage'),
           href: '/admin/content/about',
           icon: Globe,
           permission: 'edit_about',
         },
         {
-          name: 'Hero Images',
+          name: t('admin.dashboard.items.heroImages'),
           href: '/admin/content/hero-images',
           icon: Camera,
           permission: 'manage_hero_images',
         },
         {
-          name: 'Photo Management',
+          name: t('admin.dashboard.items.photoManagement'),
           href: '/admin/photos',
           icon: Camera,
           permission: 'manage_gallery',
     },
     {
-          name: 'Product Store',
+          name: t('admin.dashboard.items.productStore'),
           href: '/admin/content/store',
           icon: Store,
           permission: 'add_products',
         },
         {
-          name: 'News & Events',
+          name: t('admin.dashboard.items.newsEvents'),
           href: '/admin/content/news-events',
       icon: Calendar,
           permission: 'edit_news_events',
         },
         {
-          name: 'Offices',
-          href: '/admin/content/offices',
-          icon: Building,
-          permission: 'edit_offices',
-        },
-        {
-          name: 'Karya Samiti',
-          href: '/admin/content/karya-samiti',
-        icon: Users,
-          roles: ['superadmin'],
-        },
-        {
-          name: 'Contact Info',
+          name: t('admin.dashboard.items.contactInfo'),
           href: '/admin/content/contact',
           icon: Phone,
-          roles: ['superadmin'],
-      },
-      {
-          name: 'Navigation',
-          href: '/admin/content/navigation',
-          icon: Menu,
-          roles: ['superadmin'],
-        },
-        {
-          name: 'SEO & Meta',
-          href: '/admin/content/seo',
-          icon: Search,
           roles: ['superadmin'],
         },
       ],
       },
       {
-      name: 'Departments',
+      name: t('admin.dashboard.sections.departments'),
       icon: Building2,
       href: '/admin/departments',
       bgColor: 'bg-purple-50',
@@ -265,19 +240,19 @@ function AdminDashboardContent() {
       roles: ['superadmin'],
       children: [
         {
-          name: 'Create Department',
+          name: t('admin.dashboard.items.createDepartment'),
           href: '/admin/departments/create',
           icon: UserPlus,
           roles: ['superadmin'],
         },
         {
-          name: 'Manage Departments',
+          name: t('admin.dashboard.items.manageDepartments'),
           href: '/admin/departments/manage',
           icon: Settings,
           roles: ['superadmin'],
         },
         {
-          name: 'Assign Members',
+          name: t('admin.dashboard.items.assignMembers'),
           href: '/admin/departments/assign',
           icon: UserCheck,
           roles: ['superadmin'],
@@ -285,7 +260,7 @@ function AdminDashboardContent() {
       ],
     },
     {
-      name: 'Certificates',
+      name: t('admin.dashboard.sections.certificates'),
       icon: Award,
       href: '/admin/certificates',
       bgColor: 'bg-yellow-50',
@@ -293,7 +268,7 @@ function AdminDashboardContent() {
       roles: ['superadmin'],
       },
       {
-      name: 'Analytics',
+      name: t('admin.dashboard.sections.analytics'),
         icon: BarChart3,
         href: '/admin/analytics',
       bgColor: 'bg-indigo-50',
@@ -302,7 +277,7 @@ function AdminDashboardContent() {
       permission: 'view_analytics',
     },
     {
-      name: 'Activity Logs',
+      name: t('admin.dashboard.sections.activityLogs'),
       icon: Activity,
       href: '/admin/logs',
       bgColor: 'bg-orange-50',
@@ -311,7 +286,7 @@ function AdminDashboardContent() {
       permission: 'view_logs',
     },
     {
-      name: 'Settings',
+      name: t('admin.dashboard.sections.settings'),
       icon: Settings,
       href: '/admin/settings',
       bgColor: 'bg-gray-50',
@@ -344,11 +319,11 @@ function AdminDashboardContent() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 py-4 sm:py-5 md:py-6">
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                {isSuperAdmin ? 'Superadmin Dashboard' : 'District Admin Dashboard'}
+                {isSuperAdmin ? t('admin.dashboard.superadmin') : t('admin.dashboard.districtAdmin')}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
-                Welcome back, {currentUser.name}
-                {isDistrictAdmin && ` (${currentUser.district} District)`}
+                {t('admin.dashboard.welcomeBack')}, {currentUser.name}
+                {isDistrictAdmin && ` (${currentUser.district} ${t('admin.dashboard.district')})`}
               </p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
@@ -357,12 +332,12 @@ function AdminDashboardContent() {
                   ? 'bg-red-100 text-red-800' 
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {isSuperAdmin ? 'Superadmin' : 'District Admin'}
+                {isSuperAdmin ? t('admin.dashboard.superadminLabel') : t('admin.dashboard.districtAdminLabel')}
               </span>
               <Button onClick={logout} variant="outline" size="sm" className="text-xs sm:text-sm">
                 <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Logout</span>
-                <span className="sm:hidden">Out</span>
+                <span className="hidden sm:inline">{t('admin.dashboard.logout')}</span>
+                <span className="sm:hidden">{t('admin.dashboard.logoutShort')}</span>
               </Button>
             </div>
           </div>
@@ -373,12 +348,12 @@ function AdminDashboardContent() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <div className="mb-6 sm:mb-8 md:mb-10">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">
-            {isSuperAdmin ? 'System Management' : 'District Management'}
+            {isSuperAdmin ? t('admin.dashboard.systemManagement') : t('admin.dashboard.districtManagement')}
           </h2>
           <p className="text-xs sm:text-sm text-gray-500">
             {isSuperAdmin 
-              ? 'Access all administrative features and system controls'
-              : `Manage your district with the permissions granted to you`
+              ? t('admin.dashboard.systemManagementDesc')
+              : t('admin.dashboard.districtManagementDesc')
             }
           </p>
         </div>
@@ -411,7 +386,7 @@ function AdminDashboardContent() {
                   {!hasChildren && (
                     <Link href={section.href} className="flex-shrink-0">
                       <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-900 text-xs sm:text-sm">
-                        <span className="hidden sm:inline">Open →</span>
+                        <span className="hidden sm:inline">{t('admin.dashboard.open')}</span>
                         <span className="sm:hidden">→</span>
                       </Button>
                     </Link>
@@ -452,7 +427,7 @@ function AdminDashboardContent() {
                                 {section.name}
                               </h4>
                               <p className="text-xs sm:text-sm text-gray-500 line-clamp-1">
-                                Click to access {section.name.toLowerCase()}
+                                {t('admin.dashboard.clickToAccess')} {section.name.toLowerCase()}
                               </p>
                             </div>
                           </div>
@@ -474,12 +449,12 @@ function AdminDashboardContent() {
             <div className="inline-flex p-3 sm:p-4 rounded-full bg-gray-100 mb-3 sm:mb-4">
               <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
             </div>
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No Permissions Assigned</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">{t('admin.dashboard.noPermissions')}</h3>
             <p className="text-sm sm:text-base text-gray-600 mb-4 max-w-md mx-auto">
-              You don&apos;t have any active permissions assigned. Please contact your superadmin to get access to district management features.
+              {t('admin.dashboard.noPermissionsDesc')}
             </p>
             <div className="text-xs sm:text-sm text-gray-500">
-              <p>Current permissions: {permissions.length > 0 ? permissions.join(', ') : 'None'}</p>
+              <p>{t('admin.dashboard.currentPermissions')} {permissions.length > 0 ? permissions.join(', ') : t('admin.dashboard.none')}</p>
             </div>
           </div>
         )}
@@ -487,8 +462,8 @@ function AdminDashboardContent() {
         {/* Quick Stats */}
         <div className="mt-8 sm:mt-10 md:mt-12">
           <div className="mb-4 sm:mb-5">
-            <h3 className="text-base sm:text-lg font-semibold text-gray-900">Quick Overview</h3>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">Key metrics at a glance</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900">{t('admin.dashboard.quickOverview')}</h3>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('admin.dashboard.keyMetrics')}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
             <Card className="border border-gray-200 hover:shadow-md transition-shadow duration-300">
@@ -498,7 +473,7 @@ function AdminDashboardContent() {
                     <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   </div>
                   <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Total Members</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{t('admin.dashboard.totalMembers')}</p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900">-</p>
                   </div>
                 </div>
@@ -513,7 +488,7 @@ function AdminDashboardContent() {
                   </div>
                   <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 truncate">
-                      {isSuperAdmin ? 'Total Districts' : 'Your District'}
+                      {isSuperAdmin ? t('admin.dashboard.totalDistricts') : t('admin.dashboard.yourDistrict')}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                       {isDistrictAdmin ? currentUser.district : '-'}
@@ -530,7 +505,7 @@ function AdminDashboardContent() {
                     <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                   </div>
                   <div className="ml-3 sm:ml-4 min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">Activity</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1">{t('admin.dashboard.activity')}</p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900">-</p>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { AdminPageTitle } from '@/components/Admin/Layout/AdminPageTitle';
 import {
@@ -58,6 +59,7 @@ interface DistrictAdmin {
 
 
 export default function AdminsManagementPage() {
+  const { t } = useLanguage();
   const { currentUser } = useAdmin();
   const [loading, setLoading] = useState(true);
   const [members, setMembers] = useState<Member[]>([]);
@@ -302,7 +304,7 @@ export default function AdminsManagementPage() {
         const data = await res.json();
         // Refetch data from server to ensure consistency
         await fetchData();
-        toast.success('District admin added successfully');
+        toast.success(t('admin.members.admins.districtAdminAdded'));
         setAddDialogOpen(false);
         resetForm();
       } else {
@@ -317,7 +319,7 @@ export default function AdminsManagementPage() {
   
   
   const handleDeleteAdmin = async (id: number) => {
-    if (!confirm('Are you sure you want to remove this district admin?')) return;
+    if (!confirm(t('admin.members.admins.areYouSureRemove'))) return;
     
     try {
       const token = localStorage.getItem('admin_token');
@@ -331,7 +333,7 @@ export default function AdminsManagementPage() {
       if (res.ok) {
         // Refetch data from server to ensure consistency
         await fetchData();
-        toast.success('District admin removed successfully');
+        toast.success(t('admin.members.admins.districtAdminRemoved'));
       } else {
         const error = await res.json();
         toast.error(error.message || 'Failed to remove district admin');
@@ -396,9 +398,9 @@ export default function AdminsManagementPage() {
         <div className="flex items-center justify-center h-40 bg-yellow-50 rounded-lg border border-yellow-200">
           <div className="text-center">
             <AlertCircle className="mx-auto h-10 w-10 text-yellow-500" />
-            <h3 className="mt-2 text-sm font-medium text-yellow-800">Access Restricted</h3>
+            <h3 className="mt-2 text-sm font-medium text-yellow-800">{t('admin.members.admins.accessRestricted')}</h3>
             <p className="mt-1 text-sm text-yellow-700">
-              Only superadmins can access this page.
+              {t('admin.members.admins.onlySuperadmins')}
             </p>
           </div>
         </div>
@@ -409,8 +411,8 @@ export default function AdminsManagementPage() {
   return (
     <div className="container mx-auto p-3 sm:p-4 lg:p-6">
       <AdminPageTitle 
-        title="District Admins Management" 
-        description="Appoint and manage district-level admins"
+        title={t('admin.members.admins.title')} 
+        description={t('admin.members.admins.appointAndManage')}
         icon={<Shield className="h-5 w-5 sm:h-6 sm:w-6" />}
       />
       
@@ -426,11 +428,11 @@ export default function AdminsManagementPage() {
           className="w-full sm:w-auto"
         >
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh Data
+          {t('admin.members.admins.refreshData')}
         </Button>
         <Button onClick={() => setAddDialogOpen(true)} size="sm" className="w-full sm:w-auto cursor-pointer">
           <UserPlus className="h-4 w-4 mr-2" />
-          Appoint District Admin
+          {t('admin.members.admins.appointDistrictAdmin')}
         </Button>
       </div>
       
@@ -439,7 +441,7 @@ export default function AdminsManagementPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
             <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-            Filter District Admins
+            {t('admin.members.admins.filterDistrictAdmins')}
           </h3>
           <Button
             variant="outline"
@@ -452,18 +454,18 @@ export default function AdminsManagementPage() {
             className="w-full sm:w-auto text-xs sm:text-sm"
           >
             <RefreshCw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-            Clear Filters
+            {t('admin.members.admins.clearFilters')}
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="admin-filter-state" className="text-xs sm:text-sm font-medium text-gray-700">State</Label>
+            <Label htmlFor="admin-filter-state" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.state')}</Label>
             <Select value={adminFilterState} onValueChange={setAdminFilterState}>
               <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
-                <SelectValue placeholder="All States" />
+                <SelectValue placeholder={t('admin.members.admins.allStates')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
+                <SelectItem value="all">{t('admin.members.admins.allStates')}</SelectItem>
                 {states.map(state => (
                   <SelectItem key={state.id} value={state.id.toString()}>{state.name}</SelectItem>
                 ))}
@@ -472,7 +474,7 @@ export default function AdminsManagementPage() {
           </div>
           
           <div>
-            <Label htmlFor="admin-filter-district" className="text-xs sm:text-sm font-medium text-gray-700">District</Label>
+            <Label htmlFor="admin-filter-district" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.district')}</Label>
             <Select 
               value={adminFilterDistrict} 
               onValueChange={setAdminFilterDistrict}
@@ -481,14 +483,14 @@ export default function AdminsManagementPage() {
               <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
                 <SelectValue placeholder={
                   !adminFilterState || adminFilterState === 'all' 
-                    ? "Select state first" 
+                    ? t('admin.members.admins.selectStateFirst')
                     : loadingAdminFilterDistricts 
-                      ? "Loading districts..." 
-                      : "All Districts"
+                      ? t('admin.members.admins.loadingDistricts')
+                      : t('admin.members.admins.allDistricts')
                 } />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Districts</SelectItem>
+                <SelectItem value="all">{t('admin.members.admins.allDistricts')}</SelectItem>
                 {adminFilterDistricts.map(district => (
                   <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
                 ))}
@@ -695,9 +697,9 @@ export default function AdminsManagementPage() {
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Appoint District Admin</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">{t('admin.members.admins.addDistrictAdmin')}</DialogTitle>
             <DialogDescription className="text-sm">
-              Select a member to appoint as district admin. They will have access to manage their district.
+              {t('admin.members.admins.appointAndManage')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 sm:space-y-6 py-4">
@@ -761,7 +763,7 @@ export default function AdminsManagementPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="member" className="text-xs sm:text-sm font-medium text-gray-700">Select Member</Label>
+              <Label htmlFor="member" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.admins.selectMember')}</Label>
               <Select 
                 onValueChange={handleMemberSelect}
                 value={selectedMember ? selectedMember.id.toString() : ""}
@@ -823,13 +825,13 @@ export default function AdminsManagementPage() {
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="temp-password" className="text-xs sm:text-sm font-medium text-gray-700">Temporary Password</Label>
+              <Label htmlFor="temp-password" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.admins.temporaryPassword')}</Label>
               <Input
                 id="temp-password"
                 type="password"
                 value={tempPassword}
                 onChange={(e) => setTempPassword(e.target.value)}
-                placeholder="Set a temporary password"
+                placeholder={t('admin.members.admins.enterPassword')}
                 className="h-9 sm:h-10 text-sm"
               />
             </div>
@@ -841,11 +843,11 @@ export default function AdminsManagementPage() {
               setAddDialogOpen(false);
               resetForm();
             }} className="w-full sm:w-auto">
-              Cancel
+              {t('admin.members.admins.cancel')}
             </Button>
             <Button onClick={handleAddAdmin} size="sm" className="w-full sm:w-auto cursor-pointer">
               <Check className="h-4 w-4 mr-2" />
-              Appoint Admin
+              {t('admin.members.admins.createAdmin')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, Camera, Upload, Plus, Search, Filter, Grid, List, Settings, Eye, EyeOff, Trash2, Edit3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PhotoEvent, PhotoGallery, Photo } from '@/lib/content';
 import { notifications } from '@/lib/notifications';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
@@ -12,6 +13,7 @@ interface EventPhotoManagerProps {
 }
 
 export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
+  const { t } = useLanguage();
   const [events, setEvents] = useState<PhotoEvent[]>([]);
   const [galleries, setGalleries] = useState<PhotoGallery[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -87,10 +89,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     console.log('Number of photos:', photoIds.length);
     
     showConfirmation({
-      title: 'Delete Photos',
-      description: `Are you sure you want to delete ${photoIds.length} photo${photoIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('admin.photos.deletePhotos'),
+      description: t('admin.photos.deletePhotosConfirm'),
+      confirmText: t('admin.photos.delete'),
+      cancelText: t('admin.photos.cancel'),
       variant: 'destructive'
     }, async () => {
       console.log('=== BATCH DELETE CONFIRMED ===');
@@ -400,10 +402,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     console.log('Delete event called with ID:', eventId);
     
     showConfirmation({
-      title: 'Delete Event',
-      description: 'Are you sure you want to delete this event? This will also delete all associated photos.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('admin.photos.deleteEvent'),
+      description: t('admin.photos.deleteEventConfirm'),
+      confirmText: t('admin.photos.delete'),
+      cancelText: t('admin.photos.cancel'),
       variant: 'destructive'
     }, () => {
       performDeleteEvent(eventId);
@@ -447,10 +449,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
     console.log('Delete photo called with ID:', photoId);
     
     showConfirmation({
-      title: 'Delete Photo',
-      description: 'Are you sure you want to delete this photo? This action cannot be undone.',
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
+      title: t('admin.photos.deletePhoto'),
+      description: t('admin.photos.deletePhotoConfirm'),
+      confirmText: t('admin.photos.delete'),
+      cancelText: t('admin.photos.cancel'),
       variant: 'destructive'
     }, () => {
       performDeletePhoto(photoId);
@@ -503,7 +505,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
       const visiblePhotos = photos.filter(p => p.isVisible && p.isApproved);
       
       if (visiblePhotos.length === 0) {
-        notifications.warning('No Photos to Publish', 'Please make sure photos are approved and visible first.');
+        notifications.warning(t('admin.photos.noPhotosToPublish'), t('admin.photos.noPhotosToPublishDesc'));
         setPublishStatus('error');
         return;
       }
@@ -610,7 +612,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
             className="flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            Create Event
+            {t('admin.photos.createEvent')}
           </Button>
           
           
@@ -622,7 +624,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
               >
                 <Upload className="w-4 h-4" />
-                Upload Photos
+                {t('admin.photos.uploadPhotos')}
               </Button>
               
               <Button
@@ -645,10 +647,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                   <span className="text-white">✗</span>
                 )}
                 {publishStatus === 'idle' && <Upload className="w-4 h-4" />}
-                {publishStatus === 'publishing' ? 'Publishing...' : 
-                 publishStatus === 'success' ? 'Published!' :
-                 publishStatus === 'error' ? 'Error' :
-                 'Publish to Gallery'}
+                {publishStatus === 'publishing' ? t('admin.photos.publishing') : 
+                 publishStatus === 'success' ? t('admin.photos.published') :
+                 publishStatus === 'error' ? t('admin.photos.error') :
+                 t('admin.photos.publishToGallery')}
               </Button>
             </>
           )}
@@ -661,7 +663,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <input
             type="text"
-            placeholder="Search events, locations, or photos..."
+            placeholder={t('admin.photos.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -671,14 +673,14 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         <div className="flex flex-wrap gap-2">
           <Select value={filterStatus} onValueChange={(value) => setFilterStatus(value as 'all' | 'upcoming' | 'ongoing' | 'completed' | 'cancelled')}>
             <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="All Status" />
+              <SelectValue placeholder={t('admin.photos.allStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="ongoing">Ongoing</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t('admin.photos.allStatus')}</SelectItem>
+              <SelectItem value="upcoming">{t('admin.photos.upcoming')}</SelectItem>
+              <SelectItem value="ongoing">{t('admin.photos.ongoing')}</SelectItem>
+              <SelectItem value="completed">{t('admin.photos.completed')}</SelectItem>
+              <SelectItem value="cancelled">{t('admin.photos.cancelled')}</SelectItem>
             </SelectContent>
           </Select>
           
@@ -699,10 +701,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
               }}
             >
               <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="All States" />
+                <SelectValue placeholder={t('admin.photos.allStates')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="clear">All States</SelectItem>
+                <SelectItem value="clear">{t('admin.photos.allStates')}</SelectItem>
                 {availableStates.map(state => (
                   <SelectItem key={state.id} value={state.id.toString()}>{state.name}</SelectItem>
                 ))}
@@ -723,10 +725,10 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
               }}
             >
               <SelectTrigger className="w-[130px]">
-                <SelectValue placeholder="All Districts" />
+                <SelectValue placeholder={t('admin.photos.allDistricts')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="clear">All Districts</SelectItem>
+                <SelectItem value="clear">{t('admin.photos.allDistricts')}</SelectItem>
                 {availableDistricts.map(district => (
                   <SelectItem key={district.id} value={district.id.toString()}>{district.name}</SelectItem>
                 ))}
@@ -743,9 +745,9 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
               }}
               variant="outline"
               size="sm"
-              title="Clear all filters"
+              title={t('admin.photos.clearFilters')}
             >
-              Clear Filters
+              {t('admin.photos.clearFilters')}
             </Button>
           )}
           
@@ -786,13 +788,13 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
               <span className="text-white text-sm font-bold">✓</span>
             </div>
             <div>
-              <h3 className="font-semibold text-green-900 mb-1">Photos Published Successfully!</h3>
+              <h3 className="font-semibold text-green-900 mb-1">{t('admin.photos.photosPublished')}</h3>
               <p className="text-green-800 text-sm">
-                Your photos are now live on the public gallery at{' '}
+                {t('admin.photos.photosPublishedDesc')}{' '}
                 <a href="/gallery" target="_blank" className="underline font-medium">
                   /gallery
                 </a>
-                . Visitors can view them immediately.
+                . {t('admin.photos.visitorsCanView')}
               </p>
             </div>
           </div>
@@ -805,7 +807,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="p-4 border-b border-gray-200">
-              <h3 className="font-semibold text-gray-900">Events</h3>
+              <h3 className="font-semibold text-gray-900">{t('admin.photos.events')}</h3>
             </div>
             <div className="max-h-96 overflow-y-auto">
               {filteredEvents.map((event) => (
@@ -839,7 +841,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                           {getEventStatus(event)}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {event.photoCount || 0} photos
+                          {event.photoCount || 0} {t('admin.photos.photos')}
                         </span>
                       </div>
                     </div>
@@ -851,7 +853,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                           setShowEditEvent(true);
                         }}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Edit event"
+                        title={t('admin.photos.editEvent')}
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -862,7 +864,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                         deleteEvent(event.id);
                       }}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Delete event"
+                      title={t('admin.photos.deleteEvent')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -877,7 +879,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
           {selectedEvent && galleries.length > 0 && (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
               <div className="p-4 border-b border-gray-200">
-                <h3 className="font-semibold text-gray-900">Galleries</h3>
+                <h3 className="font-semibold text-gray-900">{t('admin.photos.galleries')}</h3>
               </div>
               <div className="max-h-64 overflow-y-auto">
                 {galleries.map((gallery) => (
@@ -889,7 +891,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                     }`}
                   >
                     <h4 className="font-medium text-gray-900 text-sm">{gallery.galleryName}</h4>
-                    <p className="text-xs text-gray-500">{gallery.photoCount || 0} photos</p>
+                    <p className="text-xs text-gray-500">{gallery.photoCount || 0} {t('admin.photos.photos')}</p>
                   </div>
                 ))}
               </div>
@@ -922,8 +924,8 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
               <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Select an Event</h3>
-              <p className="text-gray-600">Choose an event from the sidebar to view and manage photos</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('admin.photos.selectEvent')}</h3>
+              <p className="text-gray-600">{t('admin.photos.selectEventDesc')}</p>
             </div>
           )}
         </div>
@@ -1003,7 +1005,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 cursor-pointer"
                 style={{ cursor: 'pointer' }}
               >
-                {confirmationState.cancelText}
+                {confirmationState.cancelText || t('admin.photos.cancel')}
               </button>
               <button
                 onClick={handleConfirm}
@@ -1014,7 +1016,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
                 }`}
                 style={{ cursor: 'pointer' }}
               >
-                {confirmationState.confirmText}
+                {confirmationState.confirmText || t('admin.photos.confirm')}
               </button>
             </div>
           </div>
@@ -1038,12 +1040,13 @@ interface PhotoGridProps {
 }
 
 function PhotoGrid({ photos, selectedPhotos, onSelectPhoto, onSelectAll, onPhotoClick, onDeletePhoto, onClearSelection, onBatchDelete, viewMode }: PhotoGridProps) {
+  const { t } = useLanguage();
   if (photos.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
         <Camera className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Photos Yet</h3>
-        <p className="text-gray-600">Upload some photos to get started</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('admin.photos.noPhotosYet')}</h3>
+        <p className="text-gray-600">{t('admin.photos.noPhotosYetDesc')}</p>
       </div>
     );
   }
@@ -1062,10 +1065,10 @@ function PhotoGrid({ photos, selectedPhotos, onSelectPhoto, onSelectAll, onPhoto
               style={{ cursor: 'pointer' }}
             />
             <span className="ml-2 text-sm text-gray-700">
-              {selectedPhotos.length === 0 ? 'Select All' : `${selectedPhotos.length} selected`}
+              {selectedPhotos.length === 0 ? t('admin.photos.selectAll') : `${selectedPhotos.length} ${t('admin.photos.selected')}`}
             </span>
           </label>
-          <span className="text-sm text-gray-500">{photos.length} photos total</span>
+          <span className="text-sm text-gray-500">{photos.length} {t('admin.photos.photos')} {t('admin.photos.total')}</span>
         </div>
         
         {selectedPhotos.length > 0 && (
@@ -1090,7 +1093,7 @@ function PhotoGrid({ photos, selectedPhotos, onSelectPhoto, onSelectAll, onPhoto
                 e.currentTarget.style.cursor = 'pointer';
               }}
               className="p-2 text-gray-600 hover:text-red-600 transition-colors cursor-pointer"
-              title={`Delete ${selectedPhotos.length} selected photo${selectedPhotos.length > 1 ? 's' : ''}`}
+              title={t('admin.photos.deletePhotos')}
               style={{ 
                 cursor: 'pointer',
                 pointerEvents: 'auto'
@@ -1135,6 +1138,8 @@ interface PhotoCardProps {
 }
 
 function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }: PhotoCardProps) {
+  const { t } = useLanguage();
+  
   if (viewMode === 'list') {
     return (
       <div className={`flex items-center gap-4 p-4 rounded-lg border transition-colors cursor-pointer ${
@@ -1180,7 +1185,7 @@ function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }:
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xs text-gray-500">
-              {photo.viewCount || 0} views
+              {photo.viewCount || 0} {t('admin.photos.views')}
             </span>
           </div>
         </div>
@@ -1193,7 +1198,7 @@ function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }:
               onDelete();
             }}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-            title="Delete photo"
+            title={t('admin.photos.deletePhoto')}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -1277,7 +1282,7 @@ function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }:
               e.currentTarget.style.transform = 'scale(1)';
             }}
             className="p-1 bg-red-600 text-white rounded hover:bg-red-700 transition-all cursor-pointer z-30 shadow-lg"
-            title="Delete photo"
+            title={t('admin.photos.deletePhoto')}
             style={{ 
               cursor: 'pointer',
               zIndex: 30,
@@ -1296,6 +1301,7 @@ function PhotoCard({ photo, isSelected, onSelect, onClick, onDelete, viewMode }:
 
 // Modal Components
 function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (data: Record<string, unknown>) => void }) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     eventName: '',
     eventDate: '',
@@ -1314,11 +1320,11 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Create New Event</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.photos.createEventModal')}</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventName')}</label>
             <input
               type="text"
               required
@@ -1329,7 +1335,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventDate')}</label>
             <input
               type="date"
               required
@@ -1340,29 +1346,29 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventType')}</label>
             <Select
               value={formData.eventType}
               onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select event type" />
+                <SelectValue placeholder={t('admin.photos.selectEventType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="meeting">Meeting</SelectItem>
-                <SelectItem value="festival">Festival</SelectItem>
-                <SelectItem value="conference">Conference</SelectItem>
-                <SelectItem value="sports">Sports</SelectItem>
-                <SelectItem value="cultural">Cultural</SelectItem>
-                <SelectItem value="workshop">Workshop</SelectItem>
-                <SelectItem value="celebration">Celebration</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="meeting">{t('admin.photos.meeting')}</SelectItem>
+                <SelectItem value="festival">{t('admin.photos.festival')}</SelectItem>
+                <SelectItem value="conference">{t('admin.photos.conference')}</SelectItem>
+                <SelectItem value="sports">{t('admin.photos.sports')}</SelectItem>
+                <SelectItem value="cultural">{t('admin.photos.cultural')}</SelectItem>
+                <SelectItem value="workshop">{t('admin.photos.workshop')}</SelectItem>
+                <SelectItem value="celebration">{t('admin.photos.celebration')}</SelectItem>
+                <SelectItem value="other">{t('admin.photos.other')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.location')}</label>
             <input
               type="text"
               value={formData.location}
@@ -1372,7 +1378,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -1388,7 +1394,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
               onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
               className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 mr-2"
             />
-            <label className="text-sm text-gray-700">Make event public</label>
+            <label className="text-sm text-gray-700">{t('admin.photos.makeEventPublic')}</label>
           </div>
           
           <div className="flex gap-3 pt-4">
@@ -1398,13 +1404,13 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
               variant="outline"
               className="flex-1"
             >
-              Cancel
+              {t('admin.photos.cancel')}
             </Button>
             <Button
               type="submit"
               className="flex-1"
             >
-              Create Event
+              {t('admin.photos.createEvent')}
             </Button>
           </div>
         </form>
@@ -1414,6 +1420,7 @@ function CreateEventModal({ onClose, onSubmit }: { onClose: () => void; onSubmit
 }
 
 function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClose: () => void; onSubmit: (data: Record<string, unknown>) => void }) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     id: event.id,
     eventName: event.eventName,
@@ -1433,11 +1440,11 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Event</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.photos.editEventModal')}</h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventName')}</label>
             <input
               type="text"
               required
@@ -1448,7 +1455,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventDate')}</label>
             <input
               type="date"
               required
@@ -1459,50 +1466,50 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Event Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.eventType')}</label>
             <Select
               value={formData.eventType}
               onValueChange={(value) => setFormData(prev => ({ ...prev, eventType: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select event type" />
+                <SelectValue placeholder={t('admin.photos.selectEventType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="meeting">Meeting</SelectItem>
-                <SelectItem value="festival">Festival</SelectItem>
-                <SelectItem value="conference">Conference</SelectItem>
-                <SelectItem value="sports">Sports</SelectItem>
-                <SelectItem value="cultural">Cultural</SelectItem>
-                <SelectItem value="workshop">Workshop</SelectItem>
-                <SelectItem value="celebration">Celebration</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="meeting">{t('admin.photos.meeting')}</SelectItem>
+                <SelectItem value="festival">{t('admin.photos.festival')}</SelectItem>
+                <SelectItem value="conference">{t('admin.photos.conference')}</SelectItem>
+                <SelectItem value="sports">{t('admin.photos.sports')}</SelectItem>
+                <SelectItem value="cultural">{t('admin.photos.cultural')}</SelectItem>
+                <SelectItem value="workshop">{t('admin.photos.workshop')}</SelectItem>
+                <SelectItem value="celebration">{t('admin.photos.celebration')}</SelectItem>
+                <SelectItem value="other">{t('admin.photos.other')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.status')}</label>
             <Select
               value={formData.status}
               onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))} // eslint-disable-line @typescript-eslint/no-explicit-any
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select status" />
+                <SelectValue placeholder={t('admin.photos.selectStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="upcoming">Upcoming</SelectItem>
-                <SelectItem value="ongoing">Ongoing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="upcoming">{t('admin.photos.upcoming')}</SelectItem>
+                <SelectItem value="ongoing">{t('admin.photos.ongoing')}</SelectItem>
+                <SelectItem value="completed">{t('admin.photos.completed')}</SelectItem>
+                <SelectItem value="cancelled">{t('admin.photos.cancelled')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-gray-500 mt-1">
-              Status is automatically determined by event date. Only &quot;Cancelled&quot; status overrides automatic detection.
+              {t('admin.photos.statusAutoDetect')}
             </p>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.location')}</label>
             <input
               type="text"
               value={formData.location}
@@ -1512,7 +1519,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
@@ -1528,7 +1535,7 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
               onChange={(e) => setFormData(prev => ({ ...prev, isPublic: e.target.checked }))}
               className="rounded border-gray-300 text-orange-600 focus:ring-orange-500 mr-2"
             />
-            <label className="text-sm text-gray-700">Make event public</label>
+            <label className="text-sm text-gray-700">{t('admin.photos.makeEventPublic')}</label>
           </div>
           
           <div className="flex gap-3 pt-4">
@@ -1538,13 +1545,13 @@ function EditEventModal({ event, onClose, onSubmit }: { event: PhotoEvent; onClo
               variant="outline"
               className="flex-1"
             >
-              Cancel
+              {t('admin.photos.cancel')}
             </Button>
             <Button
               type="submit"
               className="flex-1"
             >
-              Save Changes
+              {t('admin.photos.saveChanges')}
             </Button>
           </div>
         </form>
@@ -1565,6 +1572,7 @@ function PhotoUploadModal({
   galleryId: string | null;
   onUploadComplete: () => void; 
 }) {
+  const { t } = useLanguage();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -1673,12 +1681,12 @@ function PhotoUploadModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Photos</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.photos.uploadPhotosModal')}</h3>
         
         <div className="space-y-6">
           {/* File Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Photos</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">{t('admin.photos.selectPhotos')}</label>
             <input
               type="file"
               multiple
@@ -1691,11 +1699,11 @@ function PhotoUploadModal({
           {/* Global Settings */}
           {files.length > 0 && (
             <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-              <h4 className="font-medium text-gray-900">Global Settings (Apply to All Photos)</h4>
+              <h4 className="font-medium text-gray-900">{t('admin.photos.globalSettings')}</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Photographer</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.photographer')}</label>
                   <input
                     type="text"
                     value={globalPhotographer}
@@ -1703,13 +1711,13 @@ function PhotoUploadModal({
                       setGlobalPhotographer(e.target.value);
                       applyToAll('photographer', e.target.value);
                     }}
-                    placeholder="Enter photographer name"
+                    placeholder={t('admin.photos.photographerPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('admin.photos.tags')}</label>
                   <input
                     type="text"
                     value={globalTags}
@@ -1717,7 +1725,7 @@ function PhotoUploadModal({
                       setGlobalTags(e.target.value);
                       applyToAll('tags', e.target.value);
                     }}
-                    placeholder="e.g., event, celebration, group"
+                    placeholder={t('admin.photos.tagsPlaceholder')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   />
                 </div>
@@ -1728,7 +1736,7 @@ function PhotoUploadModal({
           {/* Individual Photo Details */}
           {files.length > 0 && (
             <div className="space-y-4">
-              <h4 className="font-medium text-gray-900">Photo Details</h4>
+              <h4 className="font-medium text-gray-900">{t('admin.photos.photoDetails')}</h4>
               <div className="max-h-96 overflow-y-auto space-y-4">
                 {files.map((file, index) => {
                   const details = photoDetails[file.name] || { title: '', description: '', photographer: '', tags: '' };
@@ -1744,7 +1752,7 @@ function PhotoUploadModal({
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">{t('admin.photos.photoTitle')}</label>
                           <input
                             type="text"
                             value={details.title}
@@ -1754,7 +1762,7 @@ function PhotoUploadModal({
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Photographer</label>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">{t('admin.photos.photographer')}</label>
                           <input
                             type="text"
                             value={details.photographer}
@@ -1765,7 +1773,7 @@ function PhotoUploadModal({
                       </div>
                       
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{t('admin.photos.description')}</label>
                         <textarea
                           value={details.description}
                           onChange={(e) => updatePhotoDetail(file.name, 'description', e.target.value)}
@@ -1775,12 +1783,12 @@ function PhotoUploadModal({
                       </div>
                       
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Additional Tags</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">{t('admin.photos.additionalTags')}</label>
                         <input
                           type="text"
                           value={details.tags}
                           onChange={(e) => updatePhotoDetail(file.name, 'tags', e.target.value)}
-                          placeholder="Additional tags for this photo"
+                          placeholder={t('admin.photos.additionalTagsPlaceholder')}
                           className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-transparent"
                         />
                       </div>
@@ -1797,14 +1805,14 @@ function PhotoUploadModal({
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('admin.photos.cancel')}
             </button>
             <button
               onClick={uploadFiles}
               disabled={files.length === 0 || uploading}
               className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {uploading ? 'Uploading...' : `Upload ${files.length} Photo${files.length !== 1 ? 's' : ''}`}
+              {uploading ? t('admin.photos.uploading') : `${t('admin.photos.uploadPhotos')} ${files.length} ${t('admin.photos.photos')}`}
             </button>
           </div>
         </div>
@@ -1815,6 +1823,7 @@ function PhotoUploadModal({
 
 // Full Resolution Photo Viewer Modal
 function PhotoViewerModal({ photo, photos, onClose, onNavigate }: { photo: Photo; photos: Photo[]; onClose: () => void; onNavigate?: (direction: 'prev' | 'next') => void }) {
+  const { t } = useLanguage();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   // Keyboard navigation
@@ -1951,7 +1960,7 @@ function PhotoViewerModal({ photo, photos, onClose, onNavigate }: { photo: Photo
                       }}
                       className="mt-1 text-orange-400 hover:text-orange-300 text-xs sm:text-sm font-medium transition-colors"
                     >
-                      {isDescriptionExpanded ? 'See less' : 'See more...'}
+                      {isDescriptionExpanded ? t('admin.photos.seeLess') : t('admin.photos.seeMore')}
                     </button>
                   )}
                 </div>

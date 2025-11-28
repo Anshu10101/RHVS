@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -57,6 +58,7 @@ interface RegistrationToken {
 }
 
 export function TokenVerification() {
+  const { t } = useLanguage();
   const [tokens, setTokens] = useState<RegistrationToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -221,13 +223,13 @@ export function TokenVerification() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'verified':
-        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />Verified</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('admin.members.tokens.verified')}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><Clock className="w-3 h-3 mr-1" />{t('admin.members.tokens.pending')}</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('admin.members.tokens.rejected')}</Badge>;
       case 'expired':
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200"><AlertCircle className="w-3 h-3 mr-1" />Expired</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200"><AlertCircle className="w-3 h-3 mr-1" />{t('admin.members.tokens.expired')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -347,7 +349,7 @@ export function TokenVerification() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
-          <p className="text-gray-600">Loading registration tokens...</p>
+          <p className="text-gray-600">{t('admin.members.tokens.loading')}</p>
         </div>
       </div>
     );
@@ -366,8 +368,8 @@ export function TokenVerification() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">Token Verification</h1>
-          <p className="text-sm sm:text-base text-orange-700/80 mt-1">Verify registration tokens from potential members</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-orange-900">{t('admin.members.tokens.title')}</h1>
+          <p className="text-sm sm:text-base text-orange-700/80 mt-1">{t('admin.members.tokens.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -378,7 +380,7 @@ export function TokenVerification() {
             className="w-full sm:w-auto"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('admin.members.tokens.refresh')}
           </Button>
         </div>
       </div>
@@ -394,7 +396,7 @@ export function TokenVerification() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   id="search"
-                  placeholder="Search by name, email, or token..."
+                  placeholder={t('admin.members.tokens.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 h-9 sm:h-10 text-sm"
@@ -410,11 +412,11 @@ export function TokenVerification() {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="w-full mt-1 px-3 py-2 h-9 sm:h-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="verified">Verified</option>
-                <option value="rejected">Rejected</option>
-                <option value="expired">Expired</option>
+                <option value="all">{t('admin.members.tokens.allStatus')}</option>
+                <option value="pending">{t('admin.members.tokens.pending')}</option>
+                <option value="verified">{t('admin.members.tokens.verified')}</option>
+                <option value="rejected">{t('admin.members.tokens.rejected')}</option>
+                <option value="expired">{t('admin.members.tokens.expired')}</option>
               </select>
             </div>
             
@@ -430,9 +432,9 @@ export function TokenVerification() {
       {/* Tokens Table */}
       <Card>
         <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-          <CardTitle className="text-base sm:text-lg">Registration Tokens</CardTitle>
+          <CardTitle className="text-base sm:text-lg">{t('admin.members.tokens.tokensList')}</CardTitle>
           <CardDescription className="text-xs sm:text-sm">
-            Showing {tokens.length} tokens (Page {currentPage} of {totalPages})
+            {t('admin.members.tokens.showing')} {tokens.length} {t('admin.members.tokens.tokens')} ({t('admin.members.page')} {currentPage} {t('admin.members.tokens.pageOf')} {totalPages})
           </CardDescription>
         </CardHeader>
         <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
@@ -442,22 +444,22 @@ export function TokenVerification() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Applicant
+                    {t('admin.members.tokens.applicant')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
+                    {t('admin.members.contact')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Token
+                    {t('admin.members.tokens.token')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
+                    {t('admin.members.status')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Expires
+                    {t('admin.members.tokens.expires')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
+                    {t('admin.members.actions')}
                   </th>
                 </tr>
               </thead>
@@ -499,7 +501,7 @@ export function TokenVerification() {
                           </div>
                           ) : (
                             <div className="text-xs sm:text-sm text-gray-400 truncate">
-                              Pending Registration
+                              {t('admin.members.tokens.pendingRegistration')}
                             </div>
                           )}
                         </div>
@@ -519,15 +521,15 @@ export function TokenVerification() {
                     </td>
                     <td className="px-4 xl:px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        <div className="font-medium">Expires: {formatDate(token.expires_at)}</div>
+                        <div className="font-medium">{t('admin.members.tokens.expiresAt')} {formatDate(token.expires_at)}</div>
                         {token.created_at && (
                           <div className="text-xs text-gray-500 mt-1">
-                            Issued: {formatDate(token.created_at)}
+                            {t('admin.members.tokens.issued')} {formatDate(token.created_at)}
                       </div>
                         )}
                       </div>
                       <div className={`text-xs sm:text-sm mt-1 font-medium ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-green-600'}`}>
-                        {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
+                        {isTokenExpired(token.expires_at) ? t('admin.members.tokens.expired') : t('admin.members.tokens.valid')}
                       </div>
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -645,16 +647,16 @@ export function TokenVerification() {
                     {/* Token & Expiry */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Token</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('admin.members.tokens.token')}</p>
                         <p className="text-xs font-mono text-gray-900 break-all">{token.token}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 mb-1">Expires</p>
+                        <p className="text-xs text-gray-500 mb-1">{t('admin.members.tokens.expires')}</p>
                         <p className="text-sm text-gray-900">
                           {formatDate(token.expires_at)}
                         </p>
                         <p className={`text-xs ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
-                          {isTokenExpired(token.expires_at) ? 'Expired' : 'Valid'}
+                          {isTokenExpired(token.expires_at) ? t('admin.members.tokens.expired') : t('admin.members.tokens.valid')}
                         </p>
                       </div>
                     </div>
@@ -730,7 +732,7 @@ export function TokenVerification() {
                   disabled={currentPage === 1 || loading}
                   className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
-                  Previous
+                  {t('admin.members.tokens.previous')}
                 </Button>
                 <Button
                   variant="outline"
@@ -739,7 +741,7 @@ export function TokenVerification() {
                   disabled={currentPage === totalPages || loading}
                   className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
-                  Next
+                  {t('admin.members.tokens.next')}
                 </Button>
               </div>
             </div>
@@ -1028,7 +1030,7 @@ export function TokenVerification() {
                         disabled={downloading}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        {downloading ? 'Downloading...' : 'Download Certificate'}
+                        {downloading ? t('admin.members.tokens.downloading') : t('admin.members.tokens.downloadCertificate')}
                       </Button>
                     </div>
                   </CardContent>

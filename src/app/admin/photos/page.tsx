@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { EventPhotoManager } from '@/components/Admin/Photos/EventPhotoManager';
 import { Camera, AlertCircle } from 'lucide-react';
 
 export default function PhotosPage() {
   const { currentUser, hasPermission } = useAdmin();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,9 +34,9 @@ export default function PhotosPage() {
       <div className="max-w-4xl mx-auto py-12">
         <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">{t('admin.photos.accessDenied')}</h2>
           <p className="text-gray-600">
-            You don&apos;t have permission to manage photos. Contact your administrator for access.
+            {t('admin.photos.accessDenied')}
           </p>
         </div>
       </div>
@@ -46,11 +48,10 @@ export default function PhotosPage() {
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <Camera className="w-8 h-8 text-orange-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Photo Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t('admin.photos.title')}</h1>
         </div>
         <p className="text-gray-600 max-w-3xl">
-          Manage your organization&apos;s photos with our event-based system. Create events, organize photos into galleries, 
-          and track who uploaded what and when. Perfect for keeping your photo collection organized and searchable.
+          {t('admin.photos.description')}
         </p>
       </div>
       <EventPhotoManager hasPermission={hasPermission} />

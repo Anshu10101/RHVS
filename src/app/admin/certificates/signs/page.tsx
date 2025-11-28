@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   ArrowLeft, 
   Upload, 
@@ -63,6 +64,7 @@ export default function AddSignPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   
   const [certificateType, setCertificateType] = useState<'membership' | 'appointment'>('membership');
   const [method, setMethod] = useState<'manual' | 'member'>('manual');
@@ -176,8 +178,8 @@ export default function AddSignPage() {
     } catch (error) {
       console.error('Error fetching other type signatures:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load signatures from other certificate type',
+        title: t('admin.certificates.signs.error'),
+        description: t('admin.certificates.signs.failedToLoadSignatures'),
         variant: 'destructive',
       });
     }
@@ -213,8 +215,8 @@ export default function AddSignPage() {
     } catch (error) {
       console.error('Error fetching members:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to load members',
+        title: t('admin.certificates.signs.error'),
+        description: t('admin.certificates.signs.failedToLoadMembers'),
         variant: 'destructive',
       });
     }
@@ -226,8 +228,8 @@ export default function AddSignPage() {
       // Validate file size (100KB)
       if (file.size > 102400) {
         toast({
-          title: 'Error',
-          description: 'Signature file must be less than 100KB',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.signatureFileSizeError'),
           variant: 'destructive',
         });
         return;
@@ -236,8 +238,8 @@ export default function AddSignPage() {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
-          title: 'Error',
-          description: 'Signature must be an image file',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.signatureMustBeImage'),
           variant: 'destructive',
         });
         return;
@@ -259,8 +261,8 @@ export default function AddSignPage() {
     
     if (existingSignatures.length >= 4) {
       toast({
-        title: 'Error',
-        description: 'Maximum 4 signatures allowed per certificate type',
+        title: t('admin.certificates.signs.error'),
+        description: t('admin.certificates.signs.maxSignaturesReached'),
         variant: 'destructive',
       });
       return;
@@ -269,8 +271,8 @@ export default function AddSignPage() {
     // When copying from other type, ensure a source signature is selected
     if (copyFromOtherType && !selectedSourceSignature) {
       toast({
-        title: 'Error',
-        description: 'Please select a signature to copy',
+        title: t('admin.certificates.signs.error'),
+        description: t('admin.certificates.signs.selectSignatureToCopyError'),
         variant: 'destructive',
       });
       return;
@@ -279,8 +281,8 @@ export default function AddSignPage() {
     if (method === 'manual') {
       if (!nameEn || !designationEn || !signatureFile) {
         toast({
-          title: 'Error',
-          description: 'Please fill all required fields',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.fillAllRequiredFields'),
           variant: 'destructive',
         });
         return;
@@ -288,8 +290,8 @@ export default function AddSignPage() {
     } else {
       if (!selectedMember) {
         toast({
-          title: 'Error',
-          description: 'Please select a member',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.selectMemberError'),
           variant: 'destructive',
         });
         return;
@@ -314,8 +316,8 @@ export default function AddSignPage() {
       } else {
         if (!selectedMember) {
           toast({
-            title: 'Error',
-            description: 'Please select a member',
+            title: t('admin.certificates.signs.error'),
+            description: t('admin.certificates.signs.selectMemberError'),
             variant: 'destructive',
           });
           setIsSubmitting(false);
@@ -336,12 +338,12 @@ export default function AddSignPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to add signature');
+        throw new Error(data.error || t('admin.certificates.signs.failedToAddSignature'));
       }
 
       toast({
-        title: 'Success',
-        description: 'Signature added successfully',
+        title: t('admin.certificates.signs.success'),
+        description: t('admin.certificates.signs.signatureAdded'),
       });
 
       // Reset form
@@ -360,8 +362,8 @@ export default function AddSignPage() {
     } catch (error) {
       console.error('Error adding signature:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to add signature',
+        title: t('admin.certificates.signs.error'),
+        description: error instanceof Error ? error.message : t('admin.certificates.signs.failedToAddSignature'),
         variant: 'destructive',
       });
     } finally {
@@ -379,7 +381,7 @@ export default function AddSignPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to fetch signature details');
+        throw new Error(data.error || t('admin.certificates.signs.failedToLoadSignatureDetails'));
       }
 
       setEditingSignature(data.signature);
@@ -401,8 +403,8 @@ export default function AddSignPage() {
     } catch (error) {
       console.error('Error fetching signature details:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to load signature details',
+        title: t('admin.certificates.signs.error'),
+        description: error instanceof Error ? error.message : t('admin.certificates.signs.failedToLoadSignatureDetails'),
         variant: 'destructive',
       });
     }
@@ -414,8 +416,8 @@ export default function AddSignPage() {
       // Validate file size (100KB)
       if (file.size > 102400) {
         toast({
-          title: 'Error',
-          description: 'Signature file must be less than 100KB',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.signatureFileSizeError'),
           variant: 'destructive',
         });
         return;
@@ -424,8 +426,8 @@ export default function AddSignPage() {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         toast({
-          title: 'Error',
-          description: 'Signature must be an image file',
+          title: t('admin.certificates.signs.error'),
+          description: t('admin.certificates.signs.signatureMustBeImage'),
           variant: 'destructive',
         });
         return;
@@ -449,8 +451,8 @@ export default function AddSignPage() {
 
     if (!editNameEn || !editDesignationEn) {
       toast({
-        title: 'Error',
-        description: 'Please fill all required fields',
+        title: t('admin.certificates.signs.error'),
+        description: t('admin.certificates.signs.fillAllRequiredFields'),
         variant: 'destructive',
       });
       return;
@@ -479,12 +481,12 @@ export default function AddSignPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to update signature');
+        throw new Error(data.error || t('admin.certificates.signs.failedToUpdateSignature'));
       }
 
       toast({
-        title: 'Success',
-        description: 'Signature updated successfully',
+        title: t('admin.certificates.signs.success'),
+        description: t('admin.certificates.signs.signatureUpdated'),
       });
 
       // Reset edit form
@@ -511,8 +513,8 @@ export default function AddSignPage() {
     } catch (error) {
       console.error('Error updating signature:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update signature',
+        title: t('admin.certificates.signs.error'),
+        description: error instanceof Error ? error.message : t('admin.certificates.signs.failedToUpdateSignature'),
         variant: 'destructive',
       });
     } finally {
@@ -521,7 +523,7 @@ export default function AddSignPage() {
   };
 
   const handleDeleteSignature = async (signatureId: number) => {
-    if (!confirm('Are you sure you want to delete this signature?')) {
+    if (!confirm(t('admin.certificates.signs.deleteConfirm'))) {
       return;
     }
 
@@ -535,20 +537,20 @@ export default function AddSignPage() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to delete signature');
+        throw new Error(data.error || t('admin.certificates.signs.failedToDeleteSignature'));
       }
 
       toast({
-        title: 'Success',
-        description: 'Signature deleted successfully',
+        title: t('admin.certificates.signs.success'),
+        description: t('admin.certificates.signs.signatureDeleted'),
       });
 
       fetchExistingSignatures();
     } catch (error) {
       console.error('Error deleting signature:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to delete signature',
+        title: t('admin.certificates.signs.error'),
+        description: error instanceof Error ? error.message : t('admin.certificates.signs.failedToDeleteSignature'),
         variant: 'destructive',
       });
     }
@@ -562,8 +564,8 @@ export default function AddSignPage() {
     <div className="container mx-auto py-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Add Certificate Signatures</h1>
-          <p className="text-gray-500 mt-1">Manage signatures for membership and appointment certificates</p>
+          <h1 className="text-2xl font-bold">{t('admin.certificates.signs.title')}</h1>
+          <p className="text-gray-500 mt-1">{t('admin.certificates.signs.description')}</p>
         </div>
         <Button
           variant="outline"
@@ -571,7 +573,7 @@ export default function AddSignPage() {
           className="flex items-center"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Certificates
+          {t('admin.certificates.signs.backToCertificates')}
         </Button>
       </div>
 
@@ -579,15 +581,15 @@ export default function AddSignPage() {
         {/* Add Signature Form */}
         <Card>
           <CardHeader>
-            <CardTitle>Add New Signature</CardTitle>
+            <CardTitle>{t('admin.certificates.signs.addNewSignature')}</CardTitle>
             <CardDescription>
-              Add signatures for certificates. Maximum 4 signatures per certificate type.
+              {t('admin.certificates.signs.addSignatureDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="certificate_type">Certificate Type</Label>
+                <Label htmlFor="certificate_type">{t('admin.certificates.signs.certificateType')}</Label>
                 <Select value={certificateType} onValueChange={(value: 'membership' | 'appointment') => {
                   setCertificateType(value);
                   setMethod('manual');
@@ -598,16 +600,16 @@ export default function AddSignPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="membership">Membership Certificate</SelectItem>
-                    <SelectItem value="appointment">Appointment Certificate</SelectItem>
+                    <SelectItem value="membership">{t('admin.certificates.signs.membershipCertificate')}</SelectItem>
+                    <SelectItem value="appointment">{t('admin.certificates.signs.appointmentCertificate')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label>Current Signatures: {existingSignatures.length}/4</Label>
+                <Label>{t('admin.certificates.signs.currentSignatures')} {existingSignatures.length}/4</Label>
                 {existingSignatures.length >= 4 && (
-                  <p className="text-sm text-red-500 mt-1">Maximum signatures reached. Delete one to add a new one.</p>
+                  <p className="text-sm text-red-500 mt-1">{t('admin.certificates.signs.maximumReached')}</p>
                 )}
               </div>
 
@@ -639,18 +641,18 @@ export default function AddSignPage() {
                   htmlFor="copy_from_other"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                 >
-                  Copy signature from {certificateType === 'membership' ? 'Appointment' : 'Membership'} Certificate
+                  {t('admin.certificates.signs.copyFromOther').replace('{otherType}', certificateType === 'membership' ? t('admin.certificates.signs.appointmentCertificate') : t('admin.certificates.signs.membershipCertificate'))}
                 </Label>
               </div>
 
               {copyFromOtherType && (
                 <div className="space-y-4 p-4 bg-gray-50 rounded-lg border">
                   <div>
-                    <Label htmlFor="source_signature">Select Signature to Copy</Label>
+                    <Label htmlFor="source_signature">{t('admin.certificates.signs.selectSignatureToCopy')}</Label>
                     {otherTypeSignatures.length === 0 ? (
                       <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800">
-                          No signatures found in {certificateType === 'membership' ? 'Appointment' : 'Membership'} Certificate. Add signatures there first.
+                          {t('admin.certificates.signs.noSignaturesFound').replace('{type}', certificateType === 'membership' ? t('admin.certificates.signs.appointmentCertificate') : t('admin.certificates.signs.membershipCertificate'))}
                         </p>
                       </div>
                     ) : (
@@ -672,7 +674,7 @@ export default function AddSignPage() {
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a signature to copy" />
+                          <SelectValue placeholder={t('admin.certificates.signs.selectSignaturePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {otherTypeSignatures.map((sig) => (
@@ -687,17 +689,17 @@ export default function AddSignPage() {
 
                   {selectedSourceSignature && (
                     <div className="p-3 bg-white rounded border">
-                      <p className="text-sm font-semibold mb-2">Selected Signature:</p>
-                      <p className="text-sm">Name (EN): {selectedSourceSignature.nameEn}</p>
+                      <p className="text-sm font-semibold mb-2">{t('admin.certificates.signs.selectedSignature')}</p>
+                      <p className="text-sm">{t('admin.certificates.signs.nameEn')} {selectedSourceSignature.nameEn}</p>
                       {selectedSourceSignature.nameHi && (
-                        <p className="text-sm">Name (HI): {selectedSourceSignature.nameHi}</p>
+                        <p className="text-sm">{t('admin.certificates.signs.nameHi')} {selectedSourceSignature.nameHi}</p>
                       )}
-                      <p className="text-sm">Designation (EN): {selectedSourceSignature.designationEn}</p>
+                      <p className="text-sm">{t('admin.certificates.signs.designationEn')} {selectedSourceSignature.designationEn}</p>
                       {selectedSourceSignature.designationHi && (
-                        <p className="text-sm">Designation (HI): {selectedSourceSignature.designationHi}</p>
+                        <p className="text-sm">{t('admin.certificates.signs.designationHi')} {selectedSourceSignature.designationHi}</p>
                       )}
                       <p className="text-xs text-orange-600 mt-2">
-                        ⚠️ Note: You still need to upload the signature image file below.
+                        {t('admin.certificates.signs.uploadSignatureNote')}
                       </p>
                     </div>
                   )}
@@ -712,13 +714,13 @@ export default function AddSignPage() {
                 }
               }}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="manual" disabled={copyFromOtherType}>Manual Entry</TabsTrigger>
-                  <TabsTrigger value="member" disabled={copyFromOtherType}>From Member</TabsTrigger>
+                  <TabsTrigger value="manual" disabled={copyFromOtherType}>{t('admin.certificates.signs.manualEntry')}</TabsTrigger>
+                  <TabsTrigger value="member" disabled={copyFromOtherType}>{t('admin.certificates.signs.fromMember')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="manual" className="space-y-4 mt-4">
                   <div>
-                    <Label htmlFor="name_en">Name (English) *</Label>
+                    <Label htmlFor="name_en">{t('admin.certificates.signs.nameEnRequired')}</Label>
                     <Input
                       id="name_en"
                       value={nameEn}
@@ -729,7 +731,7 @@ export default function AddSignPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="name_hi">Name (Hindi)</Label>
+                    <Label htmlFor="name_hi">{t('admin.certificates.signs.nameHi')}</Label>
                     <Input
                       id="name_hi"
                       value={nameHi}
@@ -739,7 +741,7 @@ export default function AddSignPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="designation_en">Designation (English) *</Label>
+                    <Label htmlFor="designation_en">{t('admin.certificates.signs.designationEnRequired')}</Label>
                     <Input
                       id="designation_en"
                       value={designationEn}
@@ -750,7 +752,7 @@ export default function AddSignPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="designation_hi">Designation (Hindi)</Label>
+                    <Label htmlFor="designation_hi">{t('admin.certificates.signs.designationHi')}</Label>
                     <Input
                       id="designation_hi"
                       value={designationHi}
@@ -760,7 +762,7 @@ export default function AddSignPage() {
                   </div>
 
                   <div>
-                    <Label htmlFor="signature">Signature Image * (Max 100KB)</Label>
+                    <Label htmlFor="signature">{t('admin.certificates.signs.signatureImage')}</Label>
                     <div className="mt-2">
                       <Input
                         id="signature"
@@ -773,7 +775,7 @@ export default function AddSignPage() {
                         <div className="mt-4 w-48 h-24 border rounded overflow-hidden flex items-center justify-center bg-white">
                           <img
                             src={signaturePreview}
-                            alt="Signature preview"
+                            alt={t('admin.certificates.signs.signaturePreview')}
                             className="max-w-full max-h-full object-contain"
                           />
                         </div>
@@ -784,10 +786,10 @@ export default function AddSignPage() {
 
                 <TabsContent value="member" className="space-y-4 mt-4">
                   <div>
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t('admin.certificates.signs.department')}</Label>
                     <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
+                        <SelectValue placeholder={t('admin.certificates.signs.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
                         {departments.map((dept) => (
@@ -801,7 +803,7 @@ export default function AddSignPage() {
 
                   {selectedDepartment && (
                     <div>
-                      <Label htmlFor="member">Member with Appointment</Label>
+                      <Label htmlFor="member">{t('admin.certificates.signs.memberWithAppointment')}</Label>
                       <Select
                         value={selectedMember?.id.toString() || ''}
                         onValueChange={(value) => {
@@ -810,31 +812,31 @@ export default function AddSignPage() {
                         }}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select member" />
+                          <SelectValue placeholder={t('admin.certificates.signs.selectMember')} />
                         </SelectTrigger>
                         <SelectContent>
                           {members.map((member) => (
                             <SelectItem key={member.id} value={member.id.toString()}>
                               {member.name} ({member.memberRegNumber}) - {member.postNameEn}
-                              {!member.hasSignature && ' - No signature'}
+                              {!member.hasSignature && t('admin.certificates.signs.noSignature')}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {members.length === 0 && (
-                        <p className="text-sm text-gray-500 mt-1">No members with appointments in this department</p>
+                        <p className="text-sm text-gray-500 mt-1">{t('admin.certificates.signs.noMembersWithAppointments')}</p>
                       )}
                     </div>
                   )}
 
                   {selectedMember && (
                     <div className="p-4 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-semibold">Selected Member:</p>
-                      <p className="text-sm">Name: {selectedMember.name}</p>
-                      <p className="text-sm">Department: {selectedMember.deptNameEn}</p>
-                      <p className="text-sm">Post: {selectedMember.postNameEn}</p>
+                      <p className="text-sm font-semibold">{t('admin.certificates.signs.selectedMember')}</p>
+                      <p className="text-sm">{t('admin.certificates.signs.name')} {selectedMember.name}</p>
+                      <p className="text-sm">{t('admin.certificates.signs.department')}: {selectedMember.deptNameEn}</p>
+                      <p className="text-sm">{t('admin.certificates.signs.post')} {selectedMember.postNameEn}</p>
                       {!selectedMember.hasSignature && (
-                        <p className="text-sm text-red-500 mt-2">⚠️ This member does not have a signature on file</p>
+                        <p className="text-sm text-red-500 mt-2">{t('admin.certificates.signs.memberNoSignatureWarning')}</p>
                       )}
                     </div>
                   )}
@@ -849,12 +851,12 @@ export default function AddSignPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Adding...
+                    {t('admin.certificates.signs.adding')}
                   </>
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Add Signature
+                    {t('admin.certificates.signs.addSignature')}
                   </>
                 )}
               </Button>
@@ -865,16 +867,16 @@ export default function AddSignPage() {
         {/* Existing Signatures */}
         <Card>
           <CardHeader>
-            <CardTitle>Current Signatures ({certificateType})</CardTitle>
+            <CardTitle>{t('admin.certificates.signs.currentSignaturesTitle').replace('{type}', certificateType)}</CardTitle>
             <CardDescription>
-              {existingSignatures.length} of 4 signatures configured
+              {t('admin.certificates.signs.signaturesConfigured').replace('{count}', String(existingSignatures.length))}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {existingSignatures.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <User className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p>No signatures added yet</p>
+                <p>{t('admin.certificates.signs.noSignaturesAdded')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -884,11 +886,11 @@ export default function AddSignPage() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                            Order: {sig.displayOrder}
+                            {t('admin.certificates.signs.order')} {sig.displayOrder}
                           </span>
                           {sig.memberId && (
                             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                              From Member
+                              {t('admin.certificates.signs.fromMemberBadge')}
                             </span>
                           )}
                         </div>
@@ -904,9 +906,9 @@ export default function AddSignPage() {
                         {sig.signaturePath && (
                           <div className="mt-2 w-32 h-16 border rounded overflow-hidden flex items-center justify-center bg-white">
                             <img
-                              src={sig.signaturePath}
-                              alt="Signature"
-                              className="max-w-full max-h-full object-contain"
+                          src={sig.signaturePath}
+                          alt={t('admin.certificates.signs.signaturePreview')}
+                          className="max-w-full max-h-full object-contain"
                               key={`sig-img-${sig.id}-${sig.signaturePath}`}
                               onError={(e) => {
                                 // Force reload on error (cache issue)
@@ -950,14 +952,14 @@ export default function AddSignPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit Signature</DialogTitle>
+            <DialogTitle>{t('admin.certificates.signs.editSignature')}</DialogTitle>
             <DialogDescription>
-              Update signature details and image. Leave signature image unchanged if you don't want to update it.
+              {t('admin.certificates.signs.editSignatureDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateSignature} className="space-y-4">
             <div>
-              <Label htmlFor="edit_name_en">Name (English) *</Label>
+              <Label htmlFor="edit_name_en">{t('admin.certificates.signs.nameEnRequired')}</Label>
               <Input
                 id="edit_name_en"
                 value={editNameEn}
@@ -967,7 +969,7 @@ export default function AddSignPage() {
             </div>
 
             <div>
-              <Label htmlFor="edit_name_hi">Name (Hindi)</Label>
+              <Label htmlFor="edit_name_hi">{t('admin.certificates.signs.nameHi')}</Label>
               <Input
                 id="edit_name_hi"
                 value={editNameHi}
@@ -976,7 +978,7 @@ export default function AddSignPage() {
             </div>
 
             <div>
-              <Label htmlFor="edit_designation_en">Designation (English) *</Label>
+              <Label htmlFor="edit_designation_en">{t('admin.certificates.signs.designationEnRequired')}</Label>
               <Input
                 id="edit_designation_en"
                 value={editDesignationEn}
@@ -986,7 +988,7 @@ export default function AddSignPage() {
             </div>
 
             <div>
-              <Label htmlFor="edit_designation_hi">Designation (Hindi)</Label>
+              <Label htmlFor="edit_designation_hi">{t('admin.certificates.signs.designationHi')}</Label>
               <Input
                 id="edit_designation_hi"
                 value={editDesignationHi}
@@ -995,9 +997,9 @@ export default function AddSignPage() {
             </div>
 
             <div>
-              <Label htmlFor="edit_signature">Signature Image (Optional - Max 100KB)</Label>
+              <Label htmlFor="edit_signature">{t('admin.certificates.signs.signatureImageOptional')}</Label>
               <p className="text-xs text-gray-500 mb-2">
-                Leave empty to keep current signature, or upload a new one to replace it.
+                {t('admin.certificates.signs.leaveEmptyNote')}
               </p>
               <div className="mt-2">
                 <Input
@@ -1010,7 +1012,7 @@ export default function AddSignPage() {
                   <div className="mt-4 w-48 h-24 border rounded overflow-hidden flex items-center justify-center bg-white">
                     <img
                       src={editSignaturePreview}
-                      alt="Signature preview"
+                      alt={t('admin.certificates.signs.signaturePreview')}
                       className="max-w-full max-h-full object-contain"
                       key={`edit-preview-${editingSignature?.id || 'new'}`}
                     />
@@ -1021,10 +1023,7 @@ export default function AddSignPage() {
 
             {editingSignature?.memberId && (
               <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Note:</strong> This signature was originally fetched from a member. 
-                  You can edit the displayed name and designation, but the member reference will remain.
-                </p>
+                <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: t('admin.certificates.signs.memberSignatureNote').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
               </div>
             )}
 
@@ -1043,7 +1042,7 @@ export default function AddSignPage() {
                   setEditSignaturePreview(null);
                 }}
               >
-                Cancel
+                {t('admin.certificates.signs.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -1052,12 +1051,12 @@ export default function AddSignPage() {
                 {isUpdating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
+                    {t('admin.certificates.signs.updating')}
                   </>
                 ) : (
                   <>
                     <Edit className="mr-2 h-4 w-4" />
-                    Update Signature
+                    {t('admin.certificates.signs.updateSignature')}
                   </>
                 )}
               </Button>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,6 +53,7 @@ interface State {
 // }
 
 export default function AdminAddMemberPage() {
+  const { t } = useLanguage();
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [signature, setSignature] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -402,8 +404,8 @@ export default function AdminAddMemberPage() {
       
       if (registerResult.success) {
         toast({
-          title: "Member registered successfully",
-          description: `Member ${data.name} has been registered with ID: ${registerResult.memberRegNumber}`,
+          title: t('admin.members.add.memberRegistered'),
+          description: `${data.name} ${t('admin.members.add.hasBeenRegistered')}: ${registerResult.memberRegNumber}`,
         });
         
         // Reset form
@@ -465,10 +467,10 @@ export default function AdminAddMemberPage() {
                 <div className="p-2 sm:p-3 bg-orange-500/15 rounded-lg sm:rounded-xl text-orange-600">
                   <User className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-orange-500" />
                 </div>
-                <span className="flex-1">Member Information</span>
+                <span className="flex-1">{t('admin.members.add.memberInfo')}</span>
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs sm:text-sm mt-1">
-                Please provide accurate information for direct registration
+                {t('admin.members.add.provideAccurate')}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 md:p-8">
@@ -479,7 +481,7 @@ export default function AdminAddMemberPage() {
                     <div className="space-y-3 sm:space-y-4">
                       <Label className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                         <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                        Profile Photo
+                        {t('admin.members.add.profilePhoto')}
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
@@ -513,10 +515,10 @@ export default function AdminAddMemberPage() {
                             className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
                           >
                             <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            {profilePhoto ? 'Change Photo' : 'Upload Photo'}
+                            {profilePhoto ? t('admin.members.add.changePhoto') : t('admin.members.add.uploadPhoto')}
                           </Label>
                           <p className="text-xs sm:text-sm text-slate-500 px-2">
-                            Up to 500KB • Passport-size photo on white background
+                            {t('admin.members.add.photoSizeNote')}
                           </p>
                         </div>
                       </div>
@@ -529,7 +531,7 @@ export default function AdminAddMemberPage() {
                           <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
                           <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
                         </svg>
-                        Member Signature
+                        {t('admin.members.add.memberSignature')}
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
@@ -567,10 +569,10 @@ export default function AdminAddMemberPage() {
                             className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-blue-200 text-blue-600 font-semibold bg-white hover:bg-blue-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
                           >
                             <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            {signature ? 'Change Signature' : 'Upload Signature'}
+                            {signature ? t('admin.members.add.changeSignature') : t('admin.members.add.uploadSignature')}
                           </Label>
                           <p className="text-xs sm:text-sm text-slate-500 px-2">
-                            Up to 100KB • Clear signature on white background
+                            {t('admin.members.add.signatureSizeNote')}
                           </p>
                         </div>
                       </div>
@@ -586,11 +588,11 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Full Name *
+                            {t('admin.members.add.fullName')}
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Enter full name"
+                              placeholder={t('admin.members.add.enterFullName')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -607,12 +609,12 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Email Address *
+                            {t('admin.members.add.emailAddress')}
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="Enter email address"
+                              placeholder={t('admin.members.add.enterEmail')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -632,12 +634,12 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Phone Number *
+                            {t('admin.members.add.phoneNumber')}
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="tel"
-                              placeholder="Enter phone number"
+                              placeholder={t('admin.members.add.enterPhone')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -654,7 +656,7 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Registration Date *
+                            {t('admin.members.add.registrationDate')}
                           </FormLabel>
                           <Popover>
                             <PopoverTrigger asChild>
@@ -664,7 +666,7 @@ export default function AdminAddMemberPage() {
                                   className="w-full justify-start text-left font-normal border border-slate-200 h-11 sm:h-12 rounded-xl sm:rounded-2xl bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base px-3 sm:px-4"
                                 >
                                   <CalendarIcon className="mr-2 sm:mr-3 h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                                  <span className="truncate">{field.value ? format(field.value, "PPP") : "Select date"}</span>
+                                  <span className="truncate">{field.value ? format(field.value, "PPP") : t('admin.members.add.selectDate')}</span>
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -698,11 +700,11 @@ export default function AdminAddMemberPage() {
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                           <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          Address *
+                          {t('admin.members.add.address')}
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Enter complete address"
+                            placeholder={t('admin.members.add.enterAddress')}
                             className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white resize-none font-medium p-3 sm:p-4 text-sm sm:text-base"
                             {...field}
                           />
@@ -721,7 +723,7 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            State *
+                            {t('admin.members.add.state')}
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
@@ -765,7 +767,7 @@ export default function AdminAddMemberPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            District *
+                            {t('admin.members.add.district')}
                           </FormLabel>
                           <FormControl>
                             {currentUser?.type === 'district_admin' ? (
@@ -808,11 +810,11 @@ export default function AdminAddMemberPage() {
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                           <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          Aadhar Card Number *
+                          {t('admin.members.add.aadharCard')}
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter 12-digit Aadhar card number"
+                            placeholder={t('admin.members.add.enterAadhar')}
                             maxLength={12}
                             className="h-11 sm:h-12 border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white px-3 sm:px-4 text-sm sm:text-base"
                             {...field}
@@ -838,11 +840,11 @@ export default function AdminAddMemberPage() {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                               <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                              Father/Husband Name *
+                              {t('admin.members.add.fatherHusbandName')}
                             </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Enter father or husband name"
+                                placeholder={t('admin.members.add.enterFatherHusband')}
                                 {...field}
                                 className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                               />
@@ -859,11 +861,11 @@ export default function AdminAddMemberPage() {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                               <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                              Mother/Wife Name *
+                              {t('admin.members.add.motherWifeName')}
                             </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Enter mother or wife name"
+                                placeholder={t('admin.members.add.enterMotherWife')}
                                 {...field}
                                 className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                               />
@@ -892,7 +894,7 @@ export default function AdminAddMemberPage() {
                             onChange={(e) => field.onChange(e.target.checked)}
                             className="h-4 w-4 sm:h-5 sm:w-5 rounded-md border-slate-300 text-orange-600 focus:ring-orange-500"
                           />
-                          <span className="text-slate-800 font-semibold text-sm sm:text-base">I have paid the membership fee</span>
+                          <span className="text-slate-800 font-semibold text-sm sm:text-base">{t('admin.members.add.feePaid')}</span>
                         </Label>
                         <FormMessage />
                       </FormItem>
@@ -910,11 +912,11 @@ export default function AdminAddMemberPage() {
                         {isSubmitting ? (
                           <div className="flex items-center justify-center gap-2 sm:gap-3">
                             <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 sm:border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
-                            <span>Registering member…</span>
+                            <span>{t('admin.members.add.submitForm')}…</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2 sm:gap-3">
-                            <span>Register new member</span>
+                            <span>{t('admin.members.add.submitForm')}</span>
                             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                         )}

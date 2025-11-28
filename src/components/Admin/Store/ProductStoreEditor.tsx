@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   Plus, 
   Edit2, 
@@ -79,6 +80,7 @@ interface Seller {
 export default function ProductStoreEditor() {
   const router = useRouter();
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -829,13 +831,12 @@ export default function ProductStoreEditor() {
       const url = `/api/admin/content/products?id=${encodedId}`;
       console.log('Delete URL:', url, 'Encoded ID:', encodedId);
       
-      // Try alternative URL construction
-      const altUrl = new URL('/api/admin/content/products', window.location.origin);
-      altUrl.searchParams.set('id', id);
-      console.log('Alternative URL:', altUrl.toString());
-      
+      // Get admin token and include in Authorization header
+      const token = localStorage.getItem('admin_token');
       const resp = await fetch(url, {
         method: 'DELETE',
+        cache: 'no-store',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         credentials: 'include',
       });
       console.log('Delete response status:', resp.status);
@@ -1059,11 +1060,11 @@ export default function ProductStoreEditor() {
             className="cursor-pointer hover:bg-gray-50"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t('admin.store.products.back') || 'Back'}
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Product Store Editor</h1>
-            <p className="text-sm text-gray-600">Manage your product catalog</p>
+            <h1 className="text-2xl font-bold text-gray-900">{t('admin.store.products.title')}</h1>
+            <p className="text-sm text-gray-600">{t('admin.store.products.description') || 'Manage your product catalog'}</p>
           </div>
         </div>
         
@@ -1074,7 +1075,7 @@ export default function ProductStoreEditor() {
             className="cursor-pointer hover:bg-blue-600 disabled:cursor-not-allowed"
           >
             <Save className="h-4 w-4 mr-2" />
-            {saveStatus === 'saving' ? 'Saving...' : 'Save Changes'}
+            {saveStatus === 'saving' ? t('admin.store.products.saving') : t('admin.store.products.saveChanges')}
           </Button>
         </div>
       </div>
@@ -1085,7 +1086,7 @@ export default function ProductStoreEditor() {
           {/* Sidebar - Categories */}
           <div className="w-80 border-r bg-gray-50 p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Categories</h3>
+              <h3 className="text-lg font-semibold">{t('admin.store.products.categories')}</h3>
               <Button
                 onClick={() => setCreatingCategoryDraft({ id: `category_${Date.now()}`, name: '', description: '', isVisible: true })}
                 size="sm"
@@ -1102,7 +1103,7 @@ export default function ProductStoreEditor() {
                 onClick={() => setSelectedCategory('all')}
                 className="w-full justify-start cursor-pointer hover:bg-gray-100"
               >
-                All Products ({products.length})
+                {t('admin.store.products.allProducts')} ({products.length})
               </Button>
               {categories.map(category => (
                 <div key={category.id} className="flex items-center space-x-2">
@@ -1145,11 +1146,11 @@ export default function ProductStoreEditor() {
             {/* Location Filters (Superadmin only) */}
             {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') && (
               <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">Location Filters</h3>
+                <h3 className="text-lg font-semibold mb-4">{t('admin.store.products.locationFilters')}</h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">State</label>
+                    <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.state')}</label>
                     <Select
                       value={selectedStateId || 'all'}
                       onValueChange={async (id) => {
@@ -1169,10 +1170,10 @@ export default function ProductStoreEditor() {
                       }}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All States" />
+                        <SelectValue placeholder={t('admin.store.sellers.allStates')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All States</SelectItem>
+                        <SelectItem value="all">{t('admin.store.sellers.allStates')}</SelectItem>
                         {stateOptions.map((s) => (
                           <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                         ))}
@@ -1181,18 +1182,18 @@ export default function ProductStoreEditor() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">District</label>
+                    <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.district')}</label>
                     <Select
                       value={selectedDistrictName || 'All'}
                       onValueChange={(value) => setSelectedDistrictName(value)}
                       disabled={!selectedStateId}
                     >
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="All Districts" />
+                        <SelectValue placeholder={t('admin.store.sellers.allDistricts')} />
                       </SelectTrigger>
                       <SelectContent>
                         {districtOptions.length === 0 ? (
-                          <SelectItem value="All">All Districts</SelectItem>
+                          <SelectItem value="All">{t('admin.store.sellers.allDistricts')}</SelectItem>
                         ) : (
                           districtOptions.map((d) => (
                             <SelectItem key={d.id || d.name} value={d.name}>{d.name}</SelectItem>
@@ -1213,7 +1214,7 @@ export default function ProductStoreEditor() {
                     }}
                     className="w-full"
                   >
-                    Clear Filters
+                    {t('admin.store.products.clearFilters')}
                   </Button>
                 </div>
               </div>
@@ -1230,7 +1231,7 @@ export default function ProductStoreEditor() {
                   className="cursor-pointer hover:bg-blue-600"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Product
+                  {t('admin.store.products.addProduct')}
                 </Button>
                 <Button
                   onClick={() => router.push('/admin/content/store/sellers')}
@@ -1519,7 +1520,7 @@ export default function ProductStoreEditor() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Edit Product</h2>
+              <h2 className="text-xl font-bold">{t('admin.store.products.editProduct')}</h2>
               <Button
                 variant="outline"
                 onClick={cancelEditingProduct}

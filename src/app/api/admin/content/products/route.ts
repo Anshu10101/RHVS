@@ -722,6 +722,7 @@ export async function DELETE(req: NextRequest) {
     console.log('DELETE request - all params:', searchParams.toString());
     if (!id) return NextResponse.json({ success: false, message: 'Missing id' }, { status: 400 });
 
+    // Superadmins can always delete products
     if (scope.isSuperAdmin) {
       console.log('Superadmin deleting product with ID:', id);
       try {
@@ -738,7 +739,8 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // If admin has add_products permission, they can do everything with products (including delete)
+    // For non-superadmins, check if they have add_products permission
+    // ensurePermission already checks for superadmin, but we've already handled that above
     if (!ensurePermission(scope, 'add_products')) {
       return NextResponse.json({ success: false, message: 'You do not have permission to delete products. Please contact superadmin to grant "add_products" permission.' }, { status: 403 });
     }

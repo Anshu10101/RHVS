@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,6 +52,7 @@ interface PermissionTemplate {
 }
 
 export default function AssignPermissionsPage() {
+  const { t } = useLanguage();
   const { currentUser } = useAdmin();
   const [districtAdmins, setDistrictAdmins] = useState<DistrictAdmin[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<AvailablePermission[]>([]);
@@ -146,14 +148,14 @@ export default function AssignPermissionsPage() {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (res.ok) {
-        toast.success(`Revoked ${permission}`);
+        toast.success(`${t('admin.permissions.assign.revoked')} ${permission}`);
         fetchData();
       } else {
         const err = await res.json();
-        toast.error(err.error || 'Failed to revoke');
+        toast.error(err.error || t('admin.permissions.assign.failedToRevoke'));
       }
     } catch (_e) {
-      toast.error('Failed to revoke');
+      toast.error(t('admin.permissions.assign.failedToRevoke'));
     }
   };
 
@@ -169,10 +171,10 @@ export default function AssignPermissionsPage() {
         fetchData();
       } else {
         const err = await res.json();
-        toast.error(err.error || 'Failed to revoke all');
+        toast.error(err.error || t('admin.permissions.assign.failedToRevoke'));
       }
     } catch (_e) {
-      toast.error('Failed to revoke all');
+      toast.error(t('admin.permissions.assign.failedToRevoke'));
     }
   };
 
@@ -223,7 +225,7 @@ export default function AssignPermissionsPage() {
       // setTemplates([]);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to load data');
+      toast.error(t('admin.permissions.assign.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -266,7 +268,7 @@ export default function AssignPermissionsPage() {
     e.preventDefault();
     
      if (!selectedState || !selectedDistrict || !selectedAdmin || selectedPermissions.length === 0) {
-       toast.error('Please select state, district, admin and at least one permission');
+       toast.error(t('admin.permissions.assign.selectAllRequired'));
        return;
      }
 
@@ -293,7 +295,7 @@ export default function AssignPermissionsPage() {
       });
 
        if (response.ok) {
-         toast.success('Permissions assigned successfully!');
+         toast.success(t('admin.permissions.assign.assignedSuccessfully'));
          // Reset form
          setSelectedState('');
          setSelectedDistrict('');
@@ -306,11 +308,11 @@ export default function AssignPermissionsPage() {
          fetchData();
        } else {
         const error = await response.json();
-        toast.error(error.message || 'Failed to assign permissions');
+        toast.error(error.message || t('admin.permissions.assign.failedToAssign'));
       }
     } catch (error) {
       console.error('Error assigning permissions:', error);
-      toast.error('Failed to assign permissions');
+      toast.error(t('admin.permissions.assign.failedToAssign'));
     } finally {
       setSubmitting(false);
     }
@@ -318,10 +320,10 @@ export default function AssignPermissionsPage() {
 
   const getPermissionCategory = (category: string) => {
     const categories: { [key: string]: string } = {
-      'content': 'Content Management',
-      'members': 'Member Management',
-      'analytics': 'Analytics & Reports',
-      'system': 'System Administration'
+      'content': t('admin.permissions.assign.contentManagement'),
+      'members': t('admin.permissions.assign.memberManagement'),
+      'analytics': t('admin.permissions.assign.analyticsReports'),
+      'system': t('admin.permissions.assign.systemAdministration')
     };
     return categories[category] || category;
   };
@@ -388,9 +390,9 @@ export default function AssignPermissionsPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="text-center px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
             <Shield className="h-10 w-10 sm:h-12 sm:w-12 mx-auto text-red-500 mb-3 sm:mb-4" />
-            <CardTitle className="text-lg sm:text-xl">Access Denied</CardTitle>
+            <CardTitle className="text-lg sm:text-xl">{t('admin.permissions.assign.accessDenied')}</CardTitle>
             <CardDescription className="text-sm sm:text-base mt-2">
-              Only superadmins can assign permissions.
+              {t('admin.permissions.assign.onlySuperadmins')}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -403,7 +405,7 @@ export default function AssignPermissionsPage() {
       <div className="flex items-center justify-center min-h-screen p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-b-2 border-blue-600 mx-auto mb-3 sm:mb-4"></div>
-          <p className="text-sm sm:text-base">Loading data...</p>
+          <p className="text-sm sm:text-base">{t('admin.permissions.assign.loading')}</p>
         </div>
       </div>
     );
@@ -413,8 +415,8 @@ export default function AssignPermissionsPage() {
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Assign Permissions</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">Grant specific permissions to district admins</p>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t('admin.permissions.assign.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">{t('admin.permissions.assign.subtitle')}</p>
         </div>
       </div>
 
@@ -424,10 +426,10 @@ export default function AssignPermissionsPage() {
           <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <UserCheck className="h-4 w-4 sm:h-5 sm:w-5" />
-              Assign New Permissions
+              {t('admin.permissions.assign.assignNewPermissions')}
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Select a district admin and assign specific permissions
+              {t('admin.permissions.assign.selectDistrictAdminDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
@@ -435,7 +437,7 @@ export default function AssignPermissionsPage() {
                {/* Gallery-style Filter Section */}
                <div className="space-y-3 sm:space-y-4">
                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                   <Label className="text-sm sm:text-base font-medium">Filter District Admins</Label>
+                   <Label className="text-sm sm:text-base font-medium">{t('admin.permissions.assign.filterDistrictAdmins')}</Label>
                    {(selectedState || selectedDistrict) && (
                      <Button
                        type="button"
@@ -450,7 +452,7 @@ export default function AssignPermissionsPage() {
                        title="Clear all filters"
                        className="w-full sm:w-auto text-xs sm:text-sm"
                      >
-                       Clear Filters
+                       {t('admin.permissions.assign.clearFilters')}
                      </Button>
                    )}
                  </div>
@@ -458,16 +460,16 @@ export default function AssignPermissionsPage() {
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                    {/* State Selection */}
                    <div className="space-y-2">
-                     <Label htmlFor="state" className="text-xs sm:text-sm">Select State</Label>
+                     <Label htmlFor="state" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectState')}</Label>
                      <Select 
                        value={selectedState || undefined} 
                        onValueChange={handleStateChange}
                      >
                        <SelectTrigger className="h-9 sm:h-10 text-sm">
-                         <SelectValue placeholder="All States" />
+                         <SelectValue placeholder={t('admin.members.allStates')} />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="clear">All States</SelectItem>
+                         <SelectItem value="clear">{t('admin.members.allStates')}</SelectItem>
                          {availableStates.map(state => (
                            <SelectItem key={state.id} value={state.id.toString()}>
                              {state.name}
@@ -479,17 +481,17 @@ export default function AssignPermissionsPage() {
 
                    {/* District Selection */}
                    <div className="space-y-2">
-                     <Label htmlFor="district" className="text-xs sm:text-sm">Select District</Label>
+                     <Label htmlFor="district" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectDistrict')}</Label>
                      <Select 
                        value={selectedDistrict || undefined} 
                        onValueChange={handleDistrictChange}
                        disabled={!selectedState}
                      >
                        <SelectTrigger className="h-9 sm:h-10 text-sm">
-                         <SelectValue placeholder={selectedState ? "All Districts" : "Select state first"} />
+                         <SelectValue placeholder={selectedState ? t('admin.members.allDistricts') : t('admin.permissions.assign.selectDistrictFirst')} />
                        </SelectTrigger>
                        <SelectContent>
-                         <SelectItem value="clear">All Districts</SelectItem>
+                         <SelectItem value="clear">{t('admin.members.allDistricts')}</SelectItem>
                          {availableDistricts.map(district => (
                            <SelectItem key={district.id} value={district.id.toString()}>
                              {district.name}
@@ -502,14 +504,14 @@ export default function AssignPermissionsPage() {
 
                  {/* District Admin Selection */}
                  <div className="space-y-2">
-                   <Label htmlFor="admin" className="text-xs sm:text-sm">Select District Admin</Label>
+                   <Label htmlFor="admin" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectDistrictAdmin')}</Label>
                    <Select 
                      value={selectedAdmin} 
                      onValueChange={setSelectedAdmin}
                      disabled={!selectedDistrict}
                    >
                      <SelectTrigger className="h-9 sm:h-10 text-sm">
-                       <SelectValue placeholder={selectedDistrict ? "Choose a district admin" : "Select district first"} />
+                       <SelectValue placeholder={selectedDistrict ? t('admin.permissions.assign.chooseDistrictAdmin') : t('admin.permissions.assign.selectDistrictFirst')} />
                      </SelectTrigger>
                      <SelectContent>
                        {getAdminsForDistrict(selectedDistrict).map((admin) => (
@@ -529,15 +531,15 @@ export default function AssignPermissionsPage() {
 
               {/* Permissions Selection */}
               <div className="space-y-3 sm:space-y-4">
-                <Label className="text-xs sm:text-sm font-medium">Select Permissions</Label>
+                <Label className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.selectPermissions')}</Label>
                 <div className="space-y-3 sm:space-y-4 max-h-64 sm:max-h-96 overflow-y-auto border rounded-lg p-3 sm:p-4">
                   {loading ? (
                     <div className="text-center py-4 text-xs sm:text-sm text-gray-500">
-                      Loading permissions...
+                      {t('admin.permissions.assign.loadingPermissions')}
                     </div>
                   ) : Object.keys(groupedPermissions).length === 0 ? (
                     <div className="text-center py-4 text-xs sm:text-sm text-gray-500">
-                      No permissions available
+                      {t('admin.permissions.assign.noPermissionsAvailable')}
                     </div>
                   ) : (
                     Object.entries(groupedPermissions).map(([category, permissions]) => (
@@ -564,7 +566,7 @@ export default function AssignPermissionsPage() {
                                   {permission.name}
                                 </Label>
                                 <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-xs">
-                                    {permission.type === 'permanent' ? 'Permanent' : 'Time-based'}
+                                    {permission.type === 'permanent' ? t('admin.permissions.assign.permanent') : t('admin.permissions.assign.timeBased')}
                                 </Badge>
                               </div>
                                 <p className="text-xs text-gray-500 line-clamp-2">
@@ -580,7 +582,7 @@ export default function AssignPermissionsPage() {
                                 onClick={() => setSelectedPermissions(prev => prev.includes(permission.key) ? prev : [...prev, permission.key])}
                                 className="text-xs h-8 px-2 sm:px-3"
                               >
-                                Grant
+                                {t('admin.permissions.assign.grant')}
                               </Button>
                               <Button
                                 type="button"
@@ -595,20 +597,20 @@ export default function AssignPermissionsPage() {
                                       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                                     });
                                     if (res.ok) {
-                                      toast.success('Permission revoked');
+                                      toast.success(t('admin.permissions.assign.permissionRevoked'));
                                       setSelectedPermissions(prev => prev.filter(p => p !== permission.key));
                                       fetchData();
                                     } else {
                                       const err = await res.json();
-                                      toast.error(err.error || 'Failed to revoke');
+                                      toast.error(err.error || t('admin.permissions.assign.failedToRevoke'));
                                     }
                                   } catch (_e) {
-                                    toast.error('Failed to revoke');
+                                    toast.error(t('admin.permissions.assign.failedToRevoke'));
                                   }
                                 }}
                                 className="text-xs h-8 px-2 sm:px-3"
                               >
-                                Revoke
+                                {t('admin.permissions.assign.revoke')}
                               </Button>
                             </div>
                           </div>
@@ -623,14 +625,14 @@ export default function AssignPermissionsPage() {
               {/* Expiration Settings & Revocation */}
               <div className="space-y-3 sm:space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Label className="text-xs sm:text-sm font-medium">Permission Duration</Label>
+                  <Label className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.permissionDuration')}</Label>
                   <Badge variant="outline" className="text-xs w-fit">
                     {selectedPermissions.some(p => {
                       const permission = availablePermissions.find(ap => ap.key === p);
                       return permission?.type === 'permanent';
                     }) 
-                      ? 'Contains permanent permissions'
-                      : 'All time-based permissions'
+                      ? t('admin.permissions.assign.containsPermanent')
+                      : t('admin.permissions.assign.allTimeBased')
                     }
                   </Badge>
                 </div>
@@ -638,7 +640,7 @@ export default function AssignPermissionsPage() {
                 <Alert variant="default" className="bg-blue-50 border-blue-200 p-3 sm:p-4">
                   <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   <AlertDescription className="text-xs sm:text-sm">
-                    Member management permissions are permanent and will not expire. Content management permissions can be set to expire.
+                    {t('admin.permissions.assign.memberPermissionsNote')}
                   </AlertDescription>
                 </Alert>
                 
@@ -651,7 +653,7 @@ export default function AssignPermissionsPage() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="permanent" className="text-xs sm:text-sm cursor-pointer">
-                      Permanent (No expiration for time-based permissions)
+                      {t('admin.permissions.assign.permanentNoExpiration')}
                     </Label>
                   </div>
                   <div className="flex items-start space-x-2">
@@ -662,14 +664,14 @@ export default function AssignPermissionsPage() {
                       className="mt-0.5"
                     />
                     <Label htmlFor="temporary" className="text-xs sm:text-sm cursor-pointer">
-                      Temporary (Expires after specified days)
+                      {t('admin.permissions.assign.temporaryExpiresAfter')}
                     </Label>
                   </div>
                 </div>
                 
                 {expirationType === 'temporary' && (
                   <div className="space-y-2">
-                    <Label htmlFor="days" className="text-xs sm:text-sm">Expiration Days</Label>
+                    <Label htmlFor="days" className="text-xs sm:text-sm">{t('admin.permissions.assign.expirationDays')}</Label>
                     <Input
                       id="days"
                       type="number"
@@ -680,7 +682,7 @@ export default function AssignPermissionsPage() {
                       className="w-full sm:w-32 h-9 sm:h-10 text-sm"
                     />
                     <p className="text-xs text-gray-500">
-                      Time-based permissions will expire on {new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                      {t('admin.permissions.assign.willExpireOn')} {new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
                     </p>
                   </div>
                 )}
@@ -712,17 +714,17 @@ export default function AssignPermissionsPage() {
                     }}
                     className="w-full sm:w-auto text-xs sm:text-sm"
                   >
-                    Revoke All Permissions Immediately
+                    {t('admin.permissions.assign.revokeAllImmediately')}
                   </Button>
                 </div>
               </div>
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs sm:text-sm">Notes (Optional)</Label>
+                <Label htmlFor="notes" className="text-xs sm:text-sm">{t('admin.permissions.assign.notes')}</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Add any notes about this permission assignment..."
+                  placeholder={t('admin.permissions.assign.notesPlaceholder')}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
@@ -740,12 +742,12 @@ export default function AssignPermissionsPage() {
                 {submitting ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    <span className="text-xs sm:text-sm">Assigning Permissions...</span>
+                    <span className="text-xs sm:text-sm">{t('admin.permissions.assign.assigningPermissions')}</span>
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    <span className="text-xs sm:text-sm">Assign Permissions</span>
+                    <span className="text-xs sm:text-sm">{t('admin.permissions.assign.assignPermissions')}</span>
                   </>
                 )}
               </Button>
@@ -758,17 +760,17 @@ export default function AssignPermissionsPage() {
           <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-              Current Assignments
+              {t('admin.permissions.assign.currentAssignments')}
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              View existing permission assignments for district admins
+              {t('admin.permissions.assign.viewExisting')}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
              <div className="space-y-3 sm:space-y-4 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
                {districtAdmins.length === 0 ? (
                  <div className="text-center py-8 text-sm text-gray-500">
-                   No district admins found.
+                   {t('admin.permissions.assign.noDistrictAdmins')}
                  </div>
                ) : (
                  <div className="space-y-3 sm:space-y-4">
@@ -808,10 +810,10 @@ export default function AssignPermissionsPage() {
                                    </div>
                                    <div className="flex items-center gap-2 flex-shrink-0">
                                      <Badge variant="outline" className="text-xs">
-                                       {admin.permissions?.length || 0} permissions
+                                       {admin.permissions?.length || 0} {t('admin.permissions.assign.permissions')}
                                      </Badge>
                                      <Button size="sm" variant="destructive" onClick={() => revokeAll(admin.id)} className="text-xs h-8 px-2 sm:px-3">
-                                       Revoke All
+                                       {t('admin.permissions.assign.revokeAll')}
                                      </Button>
                                    </div>
                                  </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,6 +47,7 @@ interface AboutSection {
 }
 
 export function AboutPageEditor() {
+  const { t } = useLanguage();
   const { hasPermission } = useAdmin();
   const [sections, setSections] = useState<AboutSection[]>([]);
   const [editingSection, setEditingSection] = useState<string | null>(null);
@@ -325,8 +327,8 @@ export function AboutPageEditor() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Edit className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-          <p className="text-gray-600">You don&apos;t have permission to edit the about page.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('admin.content.about.accessDenied')}</h3>
+          <p className="text-gray-600">{t('admin.content.about.noPermission')}</p>
         </div>
       </div>
     );
@@ -337,8 +339,8 @@ export function AboutPageEditor() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">About Page Editor</h1>
-          <p className="text-gray-600">Edit the about page content, headings, and sections</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.content.about.title')}</h1>
+          <p className="text-gray-600">{t('admin.content.about.subtitle')}</p>
         </div>
         <div className="flex items-center space-x-2 mt-4 sm:mt-0">
           <Button
@@ -346,7 +348,7 @@ export function AboutPageEditor() {
             onClick={() => setPreviewMode(!previewMode)}
           >
             <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? 'Edit Mode' : 'Preview Mode'}
+            {previewMode ? t('admin.content.about.editMode') : t('admin.content.about.previewMode')}
           </Button>
           <Button
             variant="outline"
@@ -354,7 +356,7 @@ export function AboutPageEditor() {
             disabled={historyIndex <= 0}
           >
             <Undo className="h-4 w-4 mr-2" />
-            Undo
+            {t('admin.content.about.undo')}
           </Button>
           <Button
             variant="outline"
@@ -362,7 +364,7 @@ export function AboutPageEditor() {
             disabled={historyIndex >= history.length - 1}
           >
             <Redo className="h-4 w-4 mr-2" />
-            Redo
+            {t('admin.content.about.redo')}
           </Button>
           <Button
             onClick={saveChanges}
@@ -370,7 +372,7 @@ export function AboutPageEditor() {
             className={saveStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : saveStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : ''}
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : saveStatus === 'error' ? 'Error!' : 'Save Changes'}
+            {saving ? t('admin.content.about.saving') : saveStatus === 'success' ? t('admin.content.about.saved') : saveStatus === 'error' ? t('admin.content.about.error') : t('admin.content.about.saveChanges')}
           </Button>
         </div>
       </div>
@@ -384,7 +386,7 @@ export function AboutPageEditor() {
             onClick={() => addSection('hero')}
           >
             <Heading1 className="h-4 w-4 mr-2" />
-            Hero Section
+            {t('admin.content.about.heroSection')}
           </Button>
           <Button
             variant="outline"
@@ -392,7 +394,7 @@ export function AboutPageEditor() {
             onClick={() => addSection('card')}
           >
             <Card className="h-4 w-4 mr-2" />
-            Card Section
+            {t('admin.content.about.cardSection')}
           </Button>
           <Button
             variant="outline"
@@ -400,7 +402,7 @@ export function AboutPageEditor() {
             onClick={() => addSection('quote')}
           >
             <Quote className="h-4 w-4 mr-2" />
-            Quote Section
+            {t('admin.content.about.quoteSection')}
           </Button>
           <Button
             variant="outline"
@@ -408,7 +410,7 @@ export function AboutPageEditor() {
             onClick={() => addSection('heading')}
           >
             <Heading2 className="h-4 w-4 mr-2" />
-            Heading
+            {t('admin.content.about.heading')}
           </Button>
           <Button
             variant="outline"
@@ -416,7 +418,7 @@ export function AboutPageEditor() {
             onClick={() => addSection('paragraph')}
           >
             <Type className="h-4 w-4 mr-2" />
-            Paragraph
+            {t('admin.content.about.paragraph')}
           </Button>
         </div>
       </Card>
@@ -434,10 +436,10 @@ export function AboutPageEditor() {
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">
-                      {section.title || `Section ${section.order}`}
+                      {section.title || `${t('admin.content.about.section')} ${section.order}`}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {section.type.charAt(0).toUpperCase() + section.type.slice(1)} • Order: {section.order}
+                      {section.type.charAt(0).toUpperCase() + section.type.slice(1)} • {t('admin.content.about.order')}: {section.order}
                     </p>
                   </div>
                 </div>
@@ -479,7 +481,7 @@ export function AboutPageEditor() {
               {/* Section Preview */}
               {!previewMode && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-2">Preview:</div>
+                  <div className="text-sm text-gray-600 mb-2">{t('admin.content.about.preview')}</div>
                   <div className="prose max-w-none">
                     {section.title && (
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -487,7 +489,7 @@ export function AboutPageEditor() {
                       </h3>
                     )}
                     <p className="text-gray-700 whitespace-pre-wrap">
-                      {section.content || 'No content yet...'}
+                      {section.content || t('admin.content.about.noContent')}
                     </p>
                   </div>
                 </div>
@@ -498,43 +500,43 @@ export function AboutPageEditor() {
                 <div className="mt-4 space-y-4 border-t pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor={`title-${section.id}`}>Title</Label>
+                      <Label htmlFor={`title-${section.id}`}>{t('admin.content.about.titleLabel')}</Label>
                       <Input
                         id={`title-${section.id}`}
                         value={section.title || ''}
                         onChange={(e) => updateSection(section.id, { title: e.target.value })}
-                        placeholder="Section title..."
+                        placeholder={t('admin.content.about.titlePlaceholder')}
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`type-${section.id}`}>Section Type</Label>
+                      <Label htmlFor={`type-${section.id}`}>{t('admin.content.about.sectionType')}</Label>
                       <Select
                         value={section.type}
                         onValueChange={(value: AboutSection['type']) => updateSection(section.id, { type: value })}
                       >
-                        <option value="hero">Hero Section</option>
-                        <option value="card">Card Section</option>
-                        <option value="quote">Quote Section</option>
-                        <option value="heading">Heading</option>
-                        <option value="paragraph">Paragraph</option>
+                        <option value="hero">{t('admin.content.about.heroSection')}</option>
+                        <option value="card">{t('admin.content.about.cardSection')}</option>
+                        <option value="quote">{t('admin.content.about.quoteSection')}</option>
+                        <option value="heading">{t('admin.content.about.heading')}</option>
+                        <option value="paragraph">{t('admin.content.about.paragraph')}</option>
                       </Select>
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor={`content-${section.id}`}>Content</Label>
+                    <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.contentLabel')}</Label>
                     <Textarea
                       id={`content-${section.id}`}
                       value={section.content}
                       onChange={(e) => updateSection(section.id, { content: e.target.value })}
-                      placeholder="Section content..."
+                      placeholder={t('admin.content.about.contentPlaceholder')}
                       rows={6}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor={`textAlign-${section.id}`}>Text Alignment</Label>
+                      <Label htmlFor={`textAlign-${section.id}`}>{t('admin.content.about.textAlignment')}</Label>
                       <Select
                         value={section.styling?.textAlign || 'left'}
                         onValueChange={(value: 'left' | 'center' | 'right') => 
@@ -543,13 +545,13 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="left">Left</option>
-                        <option value="center">Center</option>
-                        <option value="right">Right</option>
+                        <option value="left">{t('admin.content.about.left')}</option>
+                        <option value="center">{t('admin.content.about.center')}</option>
+                        <option value="right">{t('admin.content.about.right')}</option>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor={`fontSize-${section.id}`}>Font Size</Label>
+                      <Label htmlFor={`fontSize-${section.id}`}>{t('admin.content.about.fontSize')}</Label>
                       <Select
                         value={section.styling?.fontSize || 'base'}
                         onValueChange={(value: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl') => 
@@ -558,18 +560,18 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="sm">Small</option>
-                        <option value="base">Base</option>
-                        <option value="lg">Large</option>
-                        <option value="xl">Extra Large</option>
-                        <option value="2xl">2X Large</option>
-                        <option value="3xl">3X Large</option>
-                        <option value="4xl">4X Large</option>
-                        <option value="5xl">5X Large</option>
+                        <option value="sm">{t('admin.content.about.small')}</option>
+                        <option value="base">{t('admin.content.about.base')}</option>
+                        <option value="lg">{t('admin.content.about.large')}</option>
+                        <option value="xl">{t('admin.content.about.extraLarge')}</option>
+                        <option value="2xl">{t('admin.content.about.twoXL')}</option>
+                        <option value="3xl">{t('admin.content.about.threeXL')}</option>
+                        <option value="4xl">{t('admin.content.about.fourXL')}</option>
+                        <option value="5xl">{t('admin.content.about.fiveXL')}</option>
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor={`color-${section.id}`}>Text Color</Label>
+                      <Label htmlFor={`color-${section.id}`}>{t('admin.content.about.textColor')}</Label>
                       <Select
                         value={section.styling?.color || 'gray'}
                         onValueChange={(value: 'gray' | 'orange' | 'red' | 'blue' | 'green') => 
@@ -578,11 +580,11 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="gray">Gray</option>
-                        <option value="orange">Orange</option>
-                        <option value="red">Red</option>
-                        <option value="blue">Blue</option>
-                        <option value="green">Green</option>
+                        <option value="gray">{t('admin.content.about.gray')}</option>
+                        <option value="orange">{t('admin.content.about.orange')}</option>
+                        <option value="red">{t('admin.content.about.red')}</option>
+                        <option value="blue">{t('admin.content.about.blue')}</option>
+                        <option value="green">{t('admin.content.about.green')}</option>
                       </Select>
                     </div>
                   </div>
@@ -592,7 +594,7 @@ export function AboutPageEditor() {
                       variant="outline"
                       onClick={() => setEditingSection(null)}
                     >
-                      Done Editing
+                      {t('admin.content.about.doneEditing')}
                     </Button>
                   </div>
                 </div>
@@ -604,7 +606,7 @@ export function AboutPageEditor() {
       {/* Preview Mode */}
       {previewMode && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Live Preview</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.content.about.livePreview')}</h2>
           <div className="prose max-w-none">
             {sections
               .sort((a, b) => a.order - b.order)

@@ -6,6 +6,7 @@ import { AdminSidebar } from '@/components/Admin';
 import { AdminHeader } from '@/components/Admin';
 import { AdminProvider } from '@/contexts/AdminContext';
 import { useAdmin } from '@/contexts/AdminContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 export default function AdminLayout({
   children,
@@ -19,15 +20,21 @@ export default function AdminLayout({
   const isPublicAdminRoute = pathname === '/admin/login' || pathname === '/admin/superadmin/login' || pathname === '/admin/unauthorized' || pathname?.startsWith('/admin/reset') || pathname?.startsWith('/admin/verify');
 
   if (isPublicAdminRoute) {
-    return children as React.ReactNode;
+    return (
+      <LanguageProvider>
+        {children as React.ReactNode}
+      </LanguageProvider>
+    );
   }
 
   return (
-    <AdminProvider>
-      <AdminScaffold sidebarOpen={sidebarOpen} onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)}>
-        {children}
-      </AdminScaffold>
-    </AdminProvider>
+    <LanguageProvider>
+      <AdminProvider>
+        <AdminScaffold sidebarOpen={sidebarOpen} onOpenSidebar={() => setSidebarOpen(true)} onCloseSidebar={() => setSidebarOpen(false)}>
+          {children}
+        </AdminScaffold>
+      </AdminProvider>
+    </LanguageProvider>
   );
 }
 

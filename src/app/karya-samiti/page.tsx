@@ -95,14 +95,14 @@ export default function KaryaSamitiPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/members/register">
-              <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors">
+            <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors">
                 {t('committee.becomeMember')}
-              </button>
+            </button>
             </Link>
             <Link href="/contact">
-              <button className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors">
+            <button className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors">
                 {t('committee.contactUs')}
-              </button>
+            </button>
             </Link>
           </div>
         </div>

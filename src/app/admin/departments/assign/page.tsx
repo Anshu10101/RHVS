@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft, Loader2, Search, UserPlus, Trash2, UserCheck } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -65,6 +66,7 @@ export default function AssignMembersPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentUser, hasPermission } = useAdmin();
+  const { t } = useLanguage();
   
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -107,8 +109,8 @@ export default function AssignMembersPage() {
       if (!hasPermission('assign_members_to_departments')) {
       router.push('/admin');
         toast({
-          title: 'Access Denied',
-          description: 'You do not have permission to assign members to departments.',
+          title: t('admin.departments.assign.accessDenied'),
+          description: t('admin.departments.assign.noPermission'),
           variant: 'destructive',
         });
       }
@@ -212,8 +214,8 @@ export default function AssignMembersPage() {
       } catch (error) {
         console.error('Error fetching departments:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load departments',
+          title: t('admin.departments.assign.error'),
+          description: t('admin.departments.assign.failedToLoadDepartments'),
           variant: 'destructive',
         });
       } finally {
@@ -276,8 +278,8 @@ export default function AssignMembersPage() {
       } catch (error) {
         console.error('Error fetching National Executive Department:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load National Executive Department',
+          title: t('admin.departments.assign.error'),
+          description: t('admin.departments.assign.failedToLoadNationalExecutive'),
           variant: 'destructive',
         });
       } finally {
@@ -354,8 +356,8 @@ export default function AssignMembersPage() {
       } catch (error) {
         console.error('Error fetching department data:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load department data',
+          title: t('admin.departments.assign.error'),
+          description: t('admin.departments.assign.failedToLoadData'),
           variant: 'destructive',
         });
       } finally {
@@ -418,8 +420,8 @@ export default function AssignMembersPage() {
       } catch (error) {
         console.error('Error fetching eligible members:', error);
         toast({
-          title: 'Error',
-          description: 'Failed to load eligible members',
+          title: t('admin.departments.assign.error'),
+          description: t('admin.departments.assign.failedToLoadEligibleMembers'),
           variant: 'destructive',
         });
       } finally {
@@ -436,8 +438,8 @@ export default function AssignMembersPage() {
     // Validate: President post can only have one member
     if (selectedPost.position_order === 1 && selectedMembers.length > 1) {
       toast({
-        title: 'Error',
-        description: 'President post can only have one member. Please select only one member.',
+        title: t('admin.departments.assign.error'),
+        description: t('admin.departments.assign.presidentOnlyOne'),
         variant: 'destructive',
       });
       return;
@@ -513,14 +515,14 @@ export default function AssignMembersPage() {
       setSearchQuery('');
 
       toast({
-        title: 'Success',
-        description: `${selectedMembers.length} member(s) assigned successfully`,
+        title: t('admin.departments.assign.success'),
+        description: t('admin.departments.assign.membersAssignedSuccess').replace('{count}', String(selectedMembers.length)),
       });
     } catch (error) {
       console.error('Error assigning members:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to assign members',
+        title: t('admin.departments.assign.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.assign.failedToAssign'),
         variant: 'destructive',
       });
     } finally {
@@ -532,7 +534,7 @@ export default function AssignMembersPage() {
     if (!selectedDepartment) return;
     
     // Confirm before removing
-    if (!window.confirm('Are you sure you want to remove this member from the post?')) {
+    if (!window.confirm(t('admin.departments.assign.removeConfirm'))) {
       return;
     }
 
@@ -568,14 +570,14 @@ export default function AssignMembersPage() {
       }
 
       toast({
-        title: 'Success',
-        description: 'Member removed successfully',
+        title: t('admin.departments.assign.success'),
+        description: t('admin.departments.assign.memberRemoved'),
       });
     } catch (error) {
       console.error('Error removing member:', error);
       toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to remove member',
+        title: t('admin.departments.assign.error'),
+        description: error instanceof Error ? error.message : t('admin.departments.assign.failedToRemove'),
         variant: 'destructive',
       });
     } finally {
@@ -593,28 +595,28 @@ export default function AssignMembersPage() {
     <>
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Assign Members to Departments</h1>
+          <h1 className="text-2xl font-bold">{t('admin.departments.assign.title')}</h1>
           <Button
             variant="outline"
             onClick={() => router.push('/admin/departments')}
             className="flex items-center"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Departments
+            {t('admin.departments.assign.backToDepartments')}
           </Button>
         </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
-            <TabsTrigger value="select">1. Select Department</TabsTrigger>
+            <TabsTrigger value="select">{t('admin.departments.assign.selectDepartment')}</TabsTrigger>
             {!isDistrictAdmin && (
-            <TabsTrigger value="national-executive">National Executive Department</TabsTrigger>
+            <TabsTrigger value="national-executive">{t('admin.departments.assign.nationalExecutive')}</TabsTrigger>
             )}
             {selectedDepartment && !isDistrictAdmin && (
-              <TabsTrigger value="level">2. Select Level</TabsTrigger>
+              <TabsTrigger value="level">{t('admin.departments.assign.selectLevel')}</TabsTrigger>
             )}
             {selectedDepartment && (selectedLevel || isDistrictAdmin) && (
-              <TabsTrigger value="assign">{isDistrictAdmin ? '2. Assign Members' : '3. Assign Members'}</TabsTrigger>
+              <TabsTrigger value="assign">{isDistrictAdmin ? t('admin.departments.assign.assignMembers') : t('admin.departments.assign.assignMembersSuperadmin')}</TabsTrigger>
             )}
           </TabsList>
           
@@ -627,7 +629,7 @@ export default function AssignMembersPage() {
                 1
               </div>
               <span className={selectedDepartment ? 'text-orange-600 font-medium' : ''}>
-                Select Department
+                {t('admin.departments.assign.stepSelectDepartment')}
               </span>
             </div>
             <div className="w-8 h-px bg-gray-300"></div>
@@ -638,7 +640,7 @@ export default function AssignMembersPage() {
                 2
               </div>
               <span className={selectedLevel || isDistrictAdmin ? 'text-orange-600 font-medium' : ''}>
-                {isDistrictAdmin ? 'Ready to Assign' : 'Select Level'}
+                {isDistrictAdmin ? t('admin.departments.assign.readyToAssign') : t('admin.departments.assign.stepSelectLevel')}
               </span>
             </div>
             {!isDistrictAdmin && (
@@ -651,7 +653,7 @@ export default function AssignMembersPage() {
                 3
               </div>
               <span className={selectedLevel ? 'text-orange-600 font-medium' : ''}>
-                Assign Members
+                {t('admin.departments.assign.stepAssignMembers') || 'Assign Members'}
               </span>
             </div>
               </>
@@ -661,7 +663,7 @@ export default function AssignMembersPage() {
           <TabsContent value="select" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Select Department</CardTitle>
+                <CardTitle>{t('admin.departments.assign.stepSelectDepartment')}</CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -670,13 +672,13 @@ export default function AssignMembersPage() {
                   </div>
                 ) : departments.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No departments found</p>
+                    <p className="text-gray-500">{t('admin.departments.assign.noDepartmentsFound')}</p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
                       onClick={() => router.push('/admin/departments/create')}
                     >
-                      Create Department
+                      {t('admin.departments.manage.createDepartment')}
                     </Button>
                   </div>
                 ) : (
@@ -716,28 +718,24 @@ export default function AssignMembersPage() {
             ) : !nationalExecutiveDept ? (
               <Card>
                 <CardContent className="p-8 text-center">
-                  <p className="text-gray-500 mb-4">No National Executive Department is currently set.</p>
-                  <p className="text-sm text-gray-400 mb-6">
-                    Please go to <strong>Manage Departments</strong> and set a department as National Executive first.
-                  </p>
+                  <p className="text-gray-500 mb-4">{t('admin.departments.assign.noNationalExecutiveSet')}</p>
+                  <p className="text-sm text-gray-400 mb-6" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.pleaseGoToManage').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
                   <Button
                     variant="outline"
                     onClick={() => router.push('/admin/departments/manage')}
                   >
-                    Go to Manage Departments
+                    {t('admin.departments.assign.goToManageDepartments')}
                   </Button>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="font-medium text-orange-800 mb-2">📋 National Executive Department Assignment</h3>
+                  <h3 className="font-medium text-orange-800 mb-2">{t('admin.departments.assign.nationalExecutiveAssignment')}</h3>
                   <p className="text-sm text-orange-700">
-                    <strong>Department:</strong> {nationalExecutiveDept.name_en} ({nationalExecutiveDept.name_hi})
+                    <strong>{t('admin.departments.assign.department')}</strong> {nationalExecutiveDept.name_en} ({nationalExecutiveDept.name_hi})
                   </p>
-                  <p className="text-xs text-orange-600 mt-1">
-                    All members assigned here will be at <strong>National Level</strong> only. This is the top-most department of the organization.
-                  </p>
+                  <p className="text-xs text-orange-600 mt-1" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.nationalLevelOnly').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
                 </div>
                 
                 <Card>
@@ -748,13 +746,13 @@ export default function AssignMembersPage() {
                   <CardContent>
                     {nationalExecutivePosts.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500">No posts found in this department</p>
+                        <p className="text-gray-500">{t('admin.departments.assign.noPostsFound')}</p>
                         <Button 
                           variant="outline" 
                           className="mt-4"
                           onClick={() => router.push(`/admin/departments/manage?department=${nationalExecutiveDept.id}`)}
                         >
-                          Create Posts
+                          {t('admin.departments.assign.createPosts')}
                         </Button>
                       </div>
                     ) : (
@@ -836,7 +834,7 @@ export default function AssignMembersPage() {
                                           onClick={async () => {
                                             if (!nationalExecutiveDept) return;
                                             // Confirm before removing
-                                            if (!window.confirm('Are you sure you want to remove this member from the post?')) {
+                                            if (!window.confirm(t('admin.departments.assign.removeConfirm'))) {
                                               return;
                                             }
 
@@ -866,14 +864,14 @@ export default function AssignMembersPage() {
                                               }
 
                                               toast({
-                                                title: 'Success',
-                                                description: 'Member removed successfully',
+                                                title: t('admin.departments.assign.success'),
+                                                description: t('admin.departments.assign.memberRemoved'),
                                               });
                                             } catch (error) {
                                               console.error('Error removing member:', error);
                                               toast({
-                                                title: 'Error',
-                                                description: error instanceof Error ? error.message : 'Failed to remove member',
+                                                title: t('admin.departments.assign.error'),
+                                                description: error instanceof Error ? error.message : t('admin.departments.assign.failedToRemove'),
                                                 variant: 'destructive',
                                               });
                                             } finally {
@@ -908,18 +906,16 @@ export default function AssignMembersPage() {
             {selectedDepartment && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Select Assignment Level</CardTitle>
-                  <p className="text-sm text-gray-500">
-                    {isDistrictAdmin 
-                      ? `Assign members to <strong>${selectedDepartment.name_en}</strong> at district level`
-                      : `Choose the level for assigning members to <strong>${selectedDepartment.name_en}</strong>`
-                    }
-                  </p>
+                  <CardTitle>{t('admin.departments.assign.selectAssignmentLevel')}</CardTitle>
+                  <p className="text-sm text-gray-500" dangerouslySetInnerHTML={{ __html: isDistrictAdmin 
+                      ? t('admin.departments.assign.districtAdminNote').replace('{name}', selectedDepartment.name_en).replace('<strong>', '<strong>').replace('</strong>', '</strong>')
+                      : t('admin.departments.assign.chooseLevelNote').replace('{name}', selectedDepartment.name_en).replace('<strong>', '<strong>').replace('</strong>', '</strong>')
+                    }} />
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-4">
-                      <Label htmlFor="level_selection">Assignment Level</Label>
+                      <Label htmlFor="level_selection">{t('admin.departments.assign.assignmentLevel')}</Label>
                       <Select
                         value={selectedLevel}
                         onValueChange={(value) => {
@@ -934,24 +930,24 @@ export default function AssignMembersPage() {
                         disabled={isDistrictAdmin}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Select level" />
+                          <SelectValue placeholder={t('admin.departments.assign.selectLevelPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="national">National Level</SelectItem>
-                          <SelectItem value="state">State Level</SelectItem>
-                          <SelectItem value="district">District Level</SelectItem>
+                          <SelectItem value="national">{t('admin.departments.assign.nationalLevel')}</SelectItem>
+                          <SelectItem value="state">{t('admin.departments.assign.stateLevel')}</SelectItem>
+                          <SelectItem value="district">{t('admin.departments.assign.districtLevel')}</SelectItem>
                         </SelectContent>
                       </Select>
                       {isDistrictAdmin && (
                         <p className="text-xs text-gray-500">
-                          District admins can only assign members at district level
+                          {t('admin.departments.assign.districtAdminOnlyDistrict')}
                         </p>
                       )}
                     </div>
                     
                     {selectedLevel !== 'national' && (
                       <div className="space-y-4">
-                        <Label htmlFor="state_selection">State</Label>
+                        <Label htmlFor="state_selection">{t('admin.departments.assign.state')}</Label>
                         <Select
                           value={selectedState}
                           onValueChange={(value) => {
@@ -961,7 +957,7 @@ export default function AssignMembersPage() {
                           disabled={isDistrictAdmin}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select state" />
+                            <SelectValue placeholder={t('admin.departments.assign.selectStatePlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             {states.map((stateName) => (
@@ -973,7 +969,7 @@ export default function AssignMembersPage() {
                         </Select>
                         {isDistrictAdmin && (
                           <p className="text-xs text-gray-500">
-                            Locked to your assigned state
+                            {t('admin.departments.assign.lockedToState')}
                           </p>
                         )}
                       </div>
@@ -981,14 +977,14 @@ export default function AssignMembersPage() {
                     
                     {selectedLevel === 'district' && (
                       <div className="space-y-4">
-                        <Label htmlFor="district_selection">District</Label>
+                        <Label htmlFor="district_selection">{t('admin.departments.assign.district')}</Label>
                         <Select
                           value={selectedDistrict}
                           onValueChange={setSelectedDistrict}
                           disabled={!selectedState || isDistrictAdmin}
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Select district" />
+                            <SelectValue placeholder={t('admin.departments.assign.selectDistrictPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             {districts.map((districtName) => (
@@ -1000,7 +996,7 @@ export default function AssignMembersPage() {
                         </Select>
                         {isDistrictAdmin && (
                           <p className="text-xs text-gray-500">
-                            Locked to your assigned district
+                            {t('admin.departments.assign.lockedToDistrict')}
                           </p>
                         )}
                       </div>
@@ -1194,30 +1190,28 @@ export default function AssignMembersPage() {
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Assign Members to {selectedPost?.name_en}</DialogTitle>
+            <DialogTitle>{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_en || '')}</DialogTitle>
             <DialogDescription>
-              Select members to assign to this post at {selectedLevel} level
+              {t('admin.departments.assign.selectMembersAtLevel').replace('{level}', selectedLevel)}
             </DialogDescription>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-              <p className="font-medium text-blue-800">Assignment Configuration:</p>
+              <p className="font-medium text-blue-800">{t('admin.departments.assign.assignmentConfiguration')}</p>
               <p className="text-blue-700">
-                <strong>Department:</strong> {selectedDepartment?.name_en} • 
-                <strong> Post:</strong> {selectedPost?.name_en} • 
-                <strong> Level:</strong> {selectedLevel}
+                <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment?.name_en} • 
+                <strong> {t('admin.departments.assign.post')}</strong> {selectedPost?.name_en} • 
+                <strong> {t('admin.departments.assign.level')}</strong> {selectedLevel}
                 {selectedLevel === 'state' && selectedState && (
-                  <span> • <strong>State:</strong> {selectedState}</span>
+                  <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState}</span>
                 )}
                 {selectedLevel === 'district' && selectedState && selectedDistrict && (
-                  <span> • <strong>State:</strong> {selectedState} • <strong>District:</strong> {selectedDistrict}</span>
+                  <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState} • <strong>{t('admin.departments.assign.district')}</strong> {selectedDistrict}</span>
                 )}
               </p>
               <p className="text-xs text-blue-600 mt-1">
-                Selected members: <span className="font-medium">{selectedMembers.length}</span>
+                {t('admin.departments.assign.selectedMembers')} <span className="font-medium">{selectedMembers.length}</span>
               </p>
               {selectedPost?.position_order === 1 && (
-                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800">
-                  ⚠️ <strong>President Post:</strong> Only one member can be assigned. Select only one member.
-                </div>
+                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.presidentPostWarning').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
               )}
             </div>
           </DialogHeader>
@@ -1225,7 +1219,7 @@ export default function AssignMembersPage() {
 
             <div className="flex items-center space-x-2 flex-shrink-0">
               <Input
-                placeholder="Search by name, email, or registration number"
+                placeholder={t('admin.departments.assign.searchMembers')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1"
@@ -1238,13 +1232,13 @@ export default function AssignMembersPage() {
             {/* Status message for incomplete level selection */}
             {selectedLevel === 'state' && !selectedState && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                <p className="font-medium">⚠️ Please go back and select a state in Step 2</p>
+                <p className="font-medium">{t('admin.departments.assign.selectStateFirst')}</p>
               </div>
             )}
             
             {selectedLevel === 'district' && (!selectedState || !selectedDistrict) && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                <p className="font-medium">⚠️ Please go back and select both state and district in Step 2</p>
+                <p className="font-medium">{t('admin.departments.assign.selectStateDistrictFirst')}</p>
               </div>
             )}
 
@@ -1258,10 +1252,10 @@ export default function AssignMembersPage() {
                   <div className="text-center py-8">
                     <p className="text-gray-500">
                       {selectedLevel === 'state' && !selectedState 
-                        ? 'Please select a state in Step 2 first'
+                        ? t('admin.departments.assign.selectStateInStep2')
                         : selectedLevel === 'district' && (!selectedState || !selectedDistrict)
-                        ? 'Please select state and district in Step 2 first'
-                        : 'No eligible members found'
+                        ? t('admin.departments.assign.selectStateDistrictInStep2')
+                        : t('admin.departments.assign.noEligibleMembers')
                       }
                     </p>
                   </div>
@@ -1332,14 +1326,14 @@ export default function AssignMembersPage() {
           <DialogFooter className="flex-shrink-0">
             <div className="flex items-center justify-between w-full">
               <div className="text-sm text-gray-600">
-                {selectedMembers.length} member(s) selected
+                {selectedMembers.length} {t('admin.departments.assign.membersSelected')}
                 {selectedPost?.position_order === 1 && selectedMembers.length > 1 && (
-                  <span className="text-red-600 ml-2">⚠️ Only one member allowed for President post</span>
+                  <span className="text-red-600 ml-2">{t('admin.departments.assign.onlyOneForPresident')}</span>
                 )}
               </div>
               <div className="flex space-x-2">
                 <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-                  Cancel
+                  {t('admin.departments.assign.cancel')}
                 </Button>
                 <Button 
                   onClick={handleAssignMembers} 
@@ -1352,12 +1346,12 @@ export default function AssignMembersPage() {
                   {isAssigning ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Assigning...
+                      {t('admin.departments.assign.assigning')}
                     </>
                   ) : (
                     selectedPost?.position_order === 1 
-                      ? `Assign 1 Member`
-                      : `Assign ${selectedMembers.length} Member(s)`
+                      ? t('admin.departments.assign.assignMember')
+                      : t('admin.departments.assign.assignMembersCount').replace('{count}', String(selectedMembers.length))
                   )}
                 </Button>
               </div>

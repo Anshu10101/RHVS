@@ -35,7 +35,7 @@ function LanguageSwitchIcon({ className }: { className?: string }) {
   );
 }
 
-export default function LanguageSwitcher({ variant = 'button', onLanguageChange }: { variant?: 'button' | 'link'; onLanguageChange?: () => void }) {
+export default function LanguageSwitcher({ variant = 'button', onLanguageChange }: { variant?: 'button' | 'link' | 'sidebar'; onLanguageChange?: () => void }) {
   const { language, setLanguage } = useLanguage();
   const [open, setOpen] = useState(false);
 
@@ -62,6 +62,63 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
           align="start" 
           sideOffset={8}
           side="bottom"
+          className="w-[160px] p-2 !z-[10000]"
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLanguageChange('hi');
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                language === 'hi'
+                  ? 'bg-orange-50 text-orange-800 font-semibold'
+                  : 'hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              <span>🇮🇳</span>
+              <span>हिंदी</span>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleLanguageChange('en');
+              }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                language === 'en'
+                  ? 'bg-orange-50 text-orange-800 font-semibold'
+                  : 'hover:bg-gray-100 text-gray-700'
+              }`}
+            >
+              <span>🇬🇧</span>
+              <span>English</span>
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  if (variant === 'sidebar') {
+    return (
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+          >
+            <LanguageSwitchIcon className="h-5 w-5 text-gray-600" />
+            <span className="flex-1 text-left">{language === 'hi' ? 'हिंदी' : 'English'}</span>
+            <ChevronDown size={16} className="opacity-70" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent 
+          align="start" 
+          sideOffset={8}
+          side="right"
           className="w-[160px] p-2 !z-[10000]"
           onClick={(e) => {
             e.stopPropagation();

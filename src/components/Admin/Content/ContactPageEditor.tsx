@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ interface ContactOffice {
 
 export function ContactPageEditor() {
   const { currentUser } = useAdmin();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'contact-info' | 'offices'>('contact-info');
   const [contactInfo, setContactInfo] = useState<ContactInfo[]>([]);
   const [offices, setOffices] = useState<ContactOffice[]>([]);
@@ -195,7 +197,7 @@ export function ContactPageEditor() {
   };
 
   const handleDeleteContact = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this contact info?')) return;
+    if (!confirm(t('admin.contact.deleteContactConfirm'))) return;
 
     try {
       const data = {
@@ -226,7 +228,7 @@ export function ContactPageEditor() {
   };
 
   const handleDeleteOffice = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this office?')) return;
+    if (!confirm(t('admin.contact.deleteOfficeConfirm'))) return;
 
     try {
       const data = {
@@ -357,10 +359,10 @@ export function ContactPageEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
-        </div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">{t('admin.newsEvents.loading')}</p>
+          </div>
       </div>
     );
   }
@@ -370,15 +372,15 @@ export function ContactPageEditor() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contact Page Management</h1>
-          <p className="text-gray-600">Manage contact information and office locations</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('admin.contact.title')}</h1>
+          <p className="text-gray-600">{t('admin.contact.description')}</p>
         </div>
         <Button 
           onClick={() => activeTab === 'contact-info' ? setIsCreatingContact(true) : setIsCreatingOffice(true)}
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          Add {activeTab === 'contact-info' ? 'Contact Info' : 'Office'}
+          {activeTab === 'contact-info' ? t('admin.contact.addContactInfo') : t('admin.contact.addOffice')}
         </Button>
       </div>
 
@@ -393,7 +395,7 @@ export function ContactPageEditor() {
           }`}
         >
           <Phone className="h-4 w-4 inline mr-2" />
-          Contact Info
+          {t('admin.contact.contactInfo')}
         </button>
         <button
           onClick={() => setActiveTab('offices')}
@@ -404,7 +406,7 @@ export function ContactPageEditor() {
           }`}
         >
           <Building2 className="h-4 w-4 inline mr-2" />
-          Offices
+          {t('admin.contact.offices')}
         </button>
       </div>
 
@@ -414,7 +416,7 @@ export function ContactPageEditor() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder={`Search ${activeTab === 'contact-info' ? 'contact info' : 'offices'}...`}
+              placeholder={activeTab === 'contact-info' ? t('admin.contact.searchContactInfo') : t('admin.contact.searchOffices')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -423,24 +425,24 @@ export function ContactPageEditor() {
         </div>
         <Select value={filterType} onValueChange={setFilterType}>
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Filter by type" />
+            <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
             {activeTab === 'contact-info' ? (
               <>
-                <SelectItem value="phone">Phone</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="address">Address</SelectItem>
-                <SelectItem value="emergency">Emergency</SelectItem>
-                <SelectItem value="office">Office Hours</SelectItem>
-                <SelectItem value="social">Social</SelectItem>
+                <SelectItem value="phone">{t('admin.contact.phone')}</SelectItem>
+                <SelectItem value="email">{t('admin.contact.email')}</SelectItem>
+                <SelectItem value="address">{t('admin.contact.address')}</SelectItem>
+                <SelectItem value="emergency">{t('admin.contact.emergency')}</SelectItem>
+                <SelectItem value="office">{t('admin.contact.officeHours')}</SelectItem>
+                <SelectItem value="social">{t('admin.contact.social')}</SelectItem>
               </>
             ) : (
               <>
-                <SelectItem value="head">Head Office</SelectItem>
-                <SelectItem value="regional">Regional</SelectItem>
-                <SelectItem value="branch">Branch</SelectItem>
+                <SelectItem value="head">{t('admin.contact.headOffice')}</SelectItem>
+                <SelectItem value="regional">{t('admin.contact.regional')}</SelectItem>
+                <SelectItem value="branch">{t('admin.contact.branch')}</SelectItem>
               </>
             )}
           </SelectContent>
@@ -453,7 +455,7 @@ export function ContactPageEditor() {
           <CardHeader className="bg-orange-50">
             <div className="flex items-center justify-between">
               <CardTitle className="text-orange-800">
-                {isCreatingContact ? 'Add New' : 'Edit'} Contact Information
+                {isCreatingContact ? t('admin.contact.addNewContact') : t('admin.contact.editContact')} {t('admin.contact.contactInformation')}
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={resetContactForm}>
                 <EyeOff className="h-4 w-4" />
@@ -464,60 +466,60 @@ export function ContactPageEditor() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="contactType">Type</Label>
+                  <Label htmlFor="contactType">{t('admin.contact.type')}</Label>
                   <Select value={contactForm.contactType} onValueChange={(value) => setContactForm({ ...contactForm, contactType: value as ContactInfo['contactType'] })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="phone">Phone</SelectItem>
-                      <SelectItem value="email">Email</SelectItem>
-                      <SelectItem value="address">Address</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                      <SelectItem value="office">Office Hours</SelectItem>
-                      <SelectItem value="social">Social</SelectItem>
+                      <SelectItem value="phone">{t('admin.contact.phone')}</SelectItem>
+                      <SelectItem value="email">{t('admin.contact.email')}</SelectItem>
+                      <SelectItem value="address">{t('admin.contact.address')}</SelectItem>
+                      <SelectItem value="emergency">{t('admin.contact.emergency')}</SelectItem>
+                      <SelectItem value="office">{t('admin.contact.officeHours')}</SelectItem>
+                      <SelectItem value="social">{t('admin.contact.social')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="order">Order</Label>
+                  <Label htmlFor="order">{t('admin.contact.order')}</Label>
                   <Input
                     id="order"
                     type="number"
                     value={contactForm.order}
                     onChange={(e) => setContactForm({ ...contactForm, order: parseInt(e.target.value) || 0 })}
-                    placeholder="Display order"
+                    placeholder={t('admin.contact.displayOrder')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="title">Title *</Label>
+                <Label htmlFor="title">{t('admin.contact.titleLabel')}</Label>
                 <Input
                   id="title"
                   value={contactForm.title}
                   onChange={(e) => setContactForm({ ...contactForm, title: e.target.value })}
-                  placeholder="e.g., Main Phone, Email Support"
+                  placeholder={t('admin.contact.titlePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="value">Value *</Label>
+                <Label htmlFor="value">{t('admin.contact.value')}</Label>
                 <Input
                   id="value"
                   value={contactForm.value}
                   onChange={(e) => setContactForm({ ...contactForm, value: e.target.value })}
-                  placeholder="e.g., +91 9876543210, info@example.com"
+                  placeholder={t('admin.contact.valuePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">{t('admin.contact.description')}</Label>
                 <Textarea
                   id="description"
                   value={contactForm.description}
                   onChange={(e) => setContactForm({ ...contactForm, description: e.target.value })}
-                  placeholder="Optional description"
+                  placeholder={t('admin.contact.descriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -528,16 +530,16 @@ export function ContactPageEditor() {
                   checked={contactForm.isVisible}
                   onCheckedChange={(checked) => setContactForm({ ...contactForm, isVisible: checked })}
                 />
-                <Label htmlFor="isVisible">Visible on website</Label>
+                <Label htmlFor="isVisible">{t('admin.contact.visibleOnWebsite')}</Label>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={resetContactForm}>
-                  Cancel
+                  {t('admin.newsEvents.cancel')}
                 </Button>
                 <Button onClick={handleSaveContact} className="gap-2">
                   <Save className="h-4 w-4" />
-                  {isCreatingContact ? 'Create' : 'Update'}
+                  {isCreatingContact ? t('admin.contact.create') : t('admin.contact.update')}
                 </Button>
               </div>
             </div>
@@ -551,7 +553,7 @@ export function ContactPageEditor() {
           <CardHeader className="bg-orange-50">
             <div className="flex items-center justify-between">
               <CardTitle className="text-orange-800">
-                {isCreatingOffice ? 'Add New' : 'Edit'} Office
+                {isCreatingOffice ? t('admin.contact.addNewContact') : t('admin.contact.editContact')} {t('admin.contact.offices').slice(0, -1)}
               </CardTitle>
               <Button variant="ghost" size="sm" onClick={resetOfficeForm}>
                 <EyeOff className="h-4 w-4" />
@@ -562,110 +564,110 @@ export function ContactPageEditor() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Office Name *</Label>
+                  <Label htmlFor="name">{t('admin.contact.officeName')}</Label>
                   <Input
                     id="name"
                     value={officeForm.name}
                     onChange={(e) => setOfficeForm({ ...officeForm, name: e.target.value })}
-                    placeholder="e.g., Delhi Head Office"
+                    placeholder={t('admin.contact.officeNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nameHindi">Office Name (Hindi)</Label>
+                  <Label htmlFor="nameHindi">{t('admin.contact.officeNameHindi')}</Label>
                   <Input
                     id="nameHindi"
                     value={officeForm.nameHindi}
                     onChange={(e) => setOfficeForm({ ...officeForm, nameHindi: e.target.value })}
-                    placeholder="e.g., दिल्ली मुख्य कार्यालय"
+                    placeholder={t('admin.contact.officeNameHindiPlaceholder')}
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="address">Address *</Label>
+                <Label htmlFor="address">{t('admin.contact.address')} *</Label>
                 <Textarea
                   id="address"
                   value={officeForm.address}
                   onChange={(e) => setOfficeForm({ ...officeForm, address: e.target.value })}
-                  placeholder="Complete address"
+                  placeholder={t('admin.contact.addressPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t('admin.contact.city')}</Label>
                   <Input
                     id="city"
                     value={officeForm.city}
                     onChange={(e) => setOfficeForm({ ...officeForm, city: e.target.value })}
-                    placeholder="City"
+                    placeholder={t('admin.contact.cityPlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="state">State *</Label>
+                  <Label htmlFor="state">{t('admin.store.sellers.state')} *</Label>
                   <Input
                     id="state"
                     value={officeForm.state}
                     onChange={(e) => setOfficeForm({ ...officeForm, state: e.target.value })}
-                    placeholder="State"
+                    placeholder={t('admin.contact.statePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="pincode">Pincode</Label>
+                  <Label htmlFor="pincode">{t('admin.contact.pincode')}</Label>
                   <Input
                     id="pincode"
                     value={officeForm.pincode}
                     onChange={(e) => setOfficeForm({ ...officeForm, pincode: e.target.value })}
-                    placeholder="Pincode"
+                    placeholder={t('admin.contact.pincodePlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('admin.contact.phone')}</Label>
                   <Input
                     id="phone"
                     value={officeForm.phone}
                     onChange={(e) => setOfficeForm({ ...officeForm, phone: e.target.value })}
-                    placeholder="Phone number"
+                    placeholder={t('admin.contact.phoneNumber')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('admin.contact.email')}</Label>
                   <Input
                     id="email"
                     type="email"
                     value={officeForm.email}
                     onChange={(e) => setOfficeForm({ ...officeForm, email: e.target.value })}
-                    placeholder="Email address"
+                    placeholder={t('admin.contact.emailAddress')}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="officeType">Office Type</Label>
+                  <Label htmlFor="officeType">{t('admin.contact.officeType')}</Label>
                   <Select value={officeForm.officeType} onValueChange={(value) => setOfficeForm({ ...officeForm, officeType: value as ContactOffice['officeType'] })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="head">Head Office</SelectItem>
-                      <SelectItem value="regional">Regional Office</SelectItem>
-                      <SelectItem value="branch">Branch Office</SelectItem>
+                      <SelectItem value="head">{t('admin.contact.headOffice')}</SelectItem>
+                      <SelectItem value="regional">{t('admin.contact.regional')} {t('admin.contact.offices').slice(0, -1)}</SelectItem>
+                      <SelectItem value="branch">{t('admin.contact.branch')} {t('admin.contact.offices').slice(0, -1)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="order">Order</Label>
+                  <Label htmlFor="order">{t('admin.contact.order')}</Label>
                   <Input
                     id="order"
                     type="number"
                     value={officeForm.order}
                     onChange={(e) => setOfficeForm({ ...officeForm, order: parseInt(e.target.value) || 0 })}
-                    placeholder="Display order"
+                    placeholder={t('admin.contact.displayOrder')}
                   />
                 </div>
               </div>
@@ -676,16 +678,16 @@ export function ContactPageEditor() {
                   checked={officeForm.isVisible}
                   onCheckedChange={(checked) => setOfficeForm({ ...officeForm, isVisible: checked })}
                 />
-                <Label htmlFor="isVisible">Visible on website</Label>
+                <Label htmlFor="isVisible">{t('admin.contact.visibleOnWebsite')}</Label>
               </div>
 
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={resetOfficeForm}>
-                  Cancel
+                  {t('admin.newsEvents.cancel')}
                 </Button>
                 <Button onClick={handleSaveOffice} className="gap-2">
                   <Save className="h-4 w-4" />
-                  {isCreatingOffice ? 'Create' : 'Update'}
+                  {isCreatingOffice ? t('admin.contact.create') : t('admin.contact.update')}
                 </Button>
               </div>
             </div>
@@ -838,12 +840,12 @@ export function ContactPageEditor() {
             {activeTab === 'contact-info' ? <Phone className="h-12 w-12 mx-auto" /> : <Building2 className="h-12 w-12 mx-auto" />}
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No {activeTab === 'contact-info' ? 'contact information' : 'offices'} found
+            {activeTab === 'contact-info' ? t('admin.contact.noContactInfo') : t('admin.contact.noOffices')}
           </h3>
           <p className="text-gray-600 mb-4">
             {searchQuery || filterType !== 'all' 
               ? 'Try adjusting your search or filter criteria.'
-              : `Get started by adding your first ${activeTab === 'contact-info' ? 'contact information' : 'office'}.`
+              : activeTab === 'contact-info' ? t('admin.contact.addFirstContact') : t('admin.contact.addFirstOffice')
             }
           </p>
           {(!searchQuery && filterType === 'all') && (
@@ -852,7 +854,7 @@ export function ContactPageEditor() {
               className="gap-2"
             >
               <Plus className="h-4 w-4" />
-              Add {activeTab === 'contact-info' ? 'Contact Info' : 'Office'}
+              {activeTab === 'contact-info' ? t('admin.contact.addContactInfo') : t('admin.contact.addOffice')}
             </Button>
           )}
         </div>
