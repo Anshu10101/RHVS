@@ -7,6 +7,7 @@ import { ShoppingBag } from "lucide-react";
 import FeaturedProductsMarquee from "@/components/Home/Product/FeaturedProductsMarquee";
 import type { Product as FullProduct } from "@/components/Home/Product/types";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -27,6 +28,7 @@ type Product = {
 };
 
 export default function FeaturedProductsSection() {
+  const { t } = useLanguage();
   const [products, setProducts] = useState<FullProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -101,23 +103,23 @@ export default function FeaturedProductsSection() {
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
               <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-                Products Store
+                {t('products.title')}
               </span>
               <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
             </div>
             <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-              प्रमुख उत्पाद
+              {t('products.home.featured')}
             </h2>
             <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-              Premium quality products handpicked for you
+              {t('products.description')}
             </p>
           </div>
           <Link
             href="/products?featured=1"
             className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
-            aria-label="View all featured products"
+            aria-label={t('products.viewAll')}
           >
-            View All / सभी देखें →
+            {t('products.viewAll')} →
           </Link>
         </div>
       </div>

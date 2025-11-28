@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Noto_Sans_Devanagari } from "next/font/google";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const devanagari = Noto_Sans_Devanagari({
   subsets: ["devanagari"],
@@ -25,6 +26,7 @@ interface AboutSection {
 }
 
 export default function AboutPage() {
+  const { t } = useLanguage();
   const [sections, setSections] = useState<AboutSection[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -149,9 +151,9 @@ export default function AboutPage() {
           <div className="container mx-auto px-4 text-center">
             <div className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-orange-200 bg-white/70 text-orange-700 mb-4">
               <span className="text-xl md:text-2xl">ॐ</span>
-              <span className="ml-2 text-sm md:text-base font-medium">सनातन धर्म</span>
+              <span className="ml-2 text-sm md:text-base font-medium">{t('about.sanatanDharma')}</span>
             </div>
-            <p className="text-orange-700">Loading...</p>
+            <p className="text-orange-700">{t('about.loading')}</p>
           </div>
         </section>
       </div>
@@ -166,18 +168,17 @@ export default function AboutPage() {
           <div className="container mx-auto px-4 text-center">
             <div className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-orange-200 bg-white/70 text-orange-700 mb-4">
               <span className="text-xl md:text-2xl">ॐ</span>
-              <span className="ml-2 text-sm md:text-base font-medium">सनातन धर्म</span>
+              <span className="ml-2 text-sm md:text-base font-medium">{t('about.sanatanDharma')}</span>
             </div>
-            <h1 className={`${devanagari.className} text-3xl md:text-5xl font-extrabold tracking-tight text-orange-800`}>सनातन धर्म</h1>
+            <h1 className={`${devanagari.className} text-3xl md:text-5xl font-extrabold tracking-tight text-orange-800`}>{t('about.sanatanDharma')}</h1>
             <p className="mt-4 text-orange-700 max-w-3xl mx-auto">
-              सनातन धर्म शाश्वत है — जिसका न आदि है न अंत। यही सनातन परम्परा हिंदू
-              धर्म का मूल स्वरूप है और भारतीय संस्कृति की आत्मा है।
+              {t('about.sanatanDharma')} {t('about.loading')}
             </p>
           </div>
         </section>
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 text-center">
-            <p className="text-gray-600">Content is being loaded...</p>
+            <p className="text-gray-600">{t('about.contentLoading')}</p>
           </div>
         </section>
       </div>
@@ -198,7 +199,7 @@ export default function AboutPage() {
                   <div className={`${getTextAlignClass(section.styling?.textAlign)}`}>
                     <div className="inline-flex items-center justify-center px-4 py-2 rounded-full border border-orange-200 bg-white/70 text-orange-700 mb-4">
                       <span className="text-xl md:text-2xl">ॐ</span>
-                      <span className="ml-2 text-sm md:text-base font-medium">सनातन धर्म</span>
+                      <span className="ml-2 text-sm md:text-base font-medium">{t('about.sanatanDharma')}</span>
                     </div>
                     <h1 className={`${devanagari.className} ${getFontSizeClass(section.styling?.fontSize)} ${getFontWeightClass(section.styling?.fontWeight)} tracking-tight ${getTextColorClass(section.styling?.color)}`}>
                       {section.title}

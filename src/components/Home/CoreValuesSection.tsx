@@ -1,6 +1,8 @@
+"use client";
 import React from 'react';
 import { Flame, Heart, Users, Book, Landmark, Globe } from 'lucide-react';
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -51,36 +53,37 @@ function ValueCard({ icon, title, description, index }: ValueCardProps) {
 }
 
 export default function CoreValuesSection() {
+  const { t } = useLanguage();
   const values = [
     {
       icon: <Flame size={28} strokeWidth={1.5} />,
-      title: "धर्म (Dharma)",
-      description: "Upholding righteousness and moral duty as the foundation of our community activities"
+      title: t('coreValues.dharma'),
+      description: t('coreValues.dharmaDesc')
     },
     {
       icon: <Heart size={28} strokeWidth={1.5} />,
-      title: "सेवा (Seva)",
-      description: "Selfless service to humanity and dedication to the welfare of all beings"
+      title: t('coreValues.seva'),
+      description: t('coreValues.sevaDesc')
     },
     {
       icon: <Users size={28} strokeWidth={1.5} />,
-      title: "एकता (Unity)",
-      description: "Bringing together Hindus from all walks of life to strengthen our community bonds"
+      title: t('coreValues.unity'),
+      description: t('coreValues.unityDesc')
     },
     {
       icon: <Book size={28} strokeWidth={1.5} />,
-      title: "ज्ञान (Knowledge)",
-      description: "Promoting understanding of our sacred texts and ancient wisdom"
+      title: t('coreValues.knowledge'),
+      description: t('coreValues.knowledgeDesc')
     },
     {
       icon: <Landmark size={28} strokeWidth={1.5} />,
-      title: "संस्कृति (Culture)",
-      description: "Preserving and celebrating our rich cultural heritage and traditions"
+      title: t('coreValues.culture'),
+      description: t('coreValues.cultureDesc')
     },
     {
       icon: <Globe size={28} strokeWidth={1.5} />,
-      title: "विश्व शांति (Peace)",
-      description: "Working towards universal harmony and wellbeing of all humanity"
+      title: t('coreValues.peace'),
+      description: t('coreValues.peaceDesc')
     }
   ];
 
@@ -92,17 +95,17 @@ export default function CoreValuesSection() {
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
             <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-              Our Core Values
+              {t('coreValues.title')}
             </span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
           </div>
           
           <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-            Guided by Hindu principles
+            {t('coreValues.header')}
           </h2>
           
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            At Rashtriya Hindu Vahini Sangathan, we are committed to living and spreading the timeless values of Hindu dharma that promote harmony, peace, and spiritual growth.
+            {t('coreValues.description')}
           </p>
         </div>
         

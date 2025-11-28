@@ -1,4 +1,7 @@
+"use client";
+
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -6,16 +9,17 @@ const devanagari = Noto_Serif_Devanagari({
 });
 
 export default function GalleryHeader() {
+  const { t } = useLanguage();
   return (
     <section className="relative py-8 md:py-12 overflow-hidden bg-gradient-to-b from-orange-50/80 to-transparent backdrop-blur-sm">
       {/* Background decoration - more subtle */}
       <div className="absolute inset-0 [background:radial-gradient(400px_200px_at_50%_-5%,rgba(253,186,116,0.08),transparent)]" />
       
       <div className="container mx-auto px-4 text-center relative">
-        <h2 className="text-sm md:text-base mb-1 text-orange-600/80">॥ गैलरी ॥</h2>
+        <h2 className="text-sm md:text-base mb-1 text-orange-600/80">{t('gallery.title')}</h2>
         
         <h1 className={`${devanagari.className} text-2xl md:text-4xl font-bold mb-2 text-orange-800/90 tracking-tight`}>
-          हमारी यादें
+          {t('gallery.ourMemories')}
         </h1>
 
         {/* Lotus divider - smaller */}
@@ -26,7 +30,7 @@ export default function GalleryHeader() {
         </div>
         
         <p className="text-sm md:text-base text-orange-600/70 mb-6 max-w-2xl mx-auto">
-          Moments of devotion, community, and cultural celebration
+          {t('gallery.subtitle')}
         </p>
       </div>
     </section>

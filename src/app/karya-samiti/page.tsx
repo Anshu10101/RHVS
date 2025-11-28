@@ -1,12 +1,13 @@
+"use client";
+
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Noto_Serif_Devanagari } from "next/font/google";
+import { useLanguage } from "@/contexts/LanguageContext";
+import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "कार्य समिति | Rashtriya Hindu Vahini Sangathan",
-  description: "राष्ट्रीय प्रभारी एवं प्रमुख पदाधिकारियों का परिचय",
-};
+// Metadata removed - using client component for translations
 
 const devanagari = Noto_Serif_Devanagari({ subsets: ["devanagari"], weight: ["400", "600", "700"] });
 
@@ -42,16 +43,17 @@ function MemberCard({ src, name, role }: { src: string; name: string; role: stri
 }
 
 export default function KaryaSamitiPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Hero Section */}
       <section className="py-8 md:py-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className={`${devanagari.className} text-4xl md:text-6xl font-bold mb-3 text-orange-900`}>
-            कार्य समिति
+            {t('committee.title')}
           </h1>
           <p className="text-lg md:text-xl text-orange-700/80 mb-4 max-w-3xl mx-auto">
-            संगठन के राष्ट्रीय प्रभारी एवं प्रमुख पदाधिकारियों का परिचय
+            {t('committee.subtitle')}
           </p>
           
           {/* Lotus divider */}
@@ -68,10 +70,10 @@ export default function KaryaSamitiPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-8">
             <h2 className={`${devanagari.className} text-3xl font-bold mb-3 text-orange-900`}>
-              राष्ट्रीय प्रभारी
+              {t('committee.nationalIncharge')}
             </h2>
             <p className="text-lg text-orange-700/80">
-              संगठन के मुख्य नेतृत्वकर्ता
+              {t('committee.leadership')}
             </p>
           </div>
 
@@ -86,18 +88,22 @@ export default function KaryaSamitiPage() {
       <section className="py-8 bg-gradient-to-r from-orange-100/50 to-orange-50/50">
         <div className="container mx-auto px-4 text-center">
           <h2 className={`${devanagari.className} text-3xl md:text-4xl font-bold mb-6 text-orange-900`}>
-            संगठन से जुड़ें
+            {t('committee.joinOrganization')}
           </h2>
           <p className="text-lg text-orange-700/80 mb-8 max-w-2xl mx-auto">
-            हिंदू धर्म और संस्कृति के संरक्षण में अपना योगदान दें
+            {t('committee.joinDescription')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors">
-              सदस्य बनें
-            </button>
-            <button className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors">
-              संपर्क करें
-            </button>
+            <Link href="/members/register">
+              <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors">
+                {t('committee.becomeMember')}
+              </button>
+            </Link>
+            <Link href="/contact">
+              <button className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors">
+                {t('committee.contactUs')}
+              </button>
+            </Link>
           </div>
         </div>
       </section>

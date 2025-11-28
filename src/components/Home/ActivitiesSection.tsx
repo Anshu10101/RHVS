@@ -1,47 +1,49 @@
+"use client";
 import { CalendarDays, HandHeart, GraduationCap, UsersRound, Megaphone, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Noto_Serif_Devanagari } from 'next/font/google';
 import Link from 'next/link';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
   weight: ['400', '600', '700'],
 });
 
+export default function ActivitiesSection() {
+  const { t } = useLanguage();
 const items = [
   {
     icon: <HandHeart className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'सेवा अभियान (Seva Drives)',
-    desc: 'रक्तदान, अन्नदान, वस्त्रदान और आपदा राहत के माध्यम से समाज सेवा।'
+      title: t('activities.seva'),
+      desc: t('activities.sevaDesc')
   },
   {
     icon: <GraduationCap className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'शिक्षा एवं संस्कार',
-    desc: 'संस्कृत/गीतापाठ, बाल संस्कार केंद्र, और छात्र मार्गदर्शन सत्र।'
+      title: t('activities.education'),
+      desc: t('activities.educationDesc')
   },
   {
     icon: <UsersRound className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'समाज एकता कार्यक्रम',
-    desc: 'सामुदायिक बैठकें, भजन संध्या और सांस्कृतिक उत्सवों द्वारा एकता।'
+      title: t('activities.unity'),
+      desc: t('activities.unityDesc')
   },
   {
     icon: <Megaphone className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'जागरूकता अभियान',
-    desc: 'स्वच्छता, पर्यावरण, और नशामुक्ति जैसे विषयों पर जनजागरण।'
+      title: t('activities.awareness'),
+      desc: t('activities.awarenessDesc')
   },
   {
     icon: <BookOpen className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'धार्मिक अध्ययन',
-    desc: 'वेद-पुराण, रामायण, गीता अध्ययन मंडलियों का आयोजन।'
+      title: t('activities.study'),
+      desc: t('activities.studyDesc')
   },
   {
     icon: <CalendarDays className="h-7 w-7" strokeWidth={1.5} />, 
-    title: 'विशेष आयोजन',
-    desc: 'त्योहार सेवा, शोभा यात्राएँ, और युवा सम्मेलन।'
+      title: t('activities.events'),
+      desc: t('activities.eventsDesc')
   },
 ];
-
-export default function ActivitiesSection() {
   return (
     <section className="py-20 sm:py-24 bg-white relative overflow-hidden">
       {/* Subtle background pattern */}
@@ -58,17 +60,17 @@ export default function ActivitiesSection() {
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
             <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-              Activities
+              {t('activities.title')}
             </span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
           </div>
           
           <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-            हमारी प्रमुख गतिविधियाँ
+            {t('activities.header')}
           </h2>
           
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            सनातन मूल्यों पर आधारित सामाजिक सेवा, शिक्षा, और सांस्कृतिक समन्वय के प्रयास।
+            {t('activities.subtitle')}
           </p>
         </div>
 
@@ -113,7 +115,7 @@ export default function ActivitiesSection() {
             <Button 
               className="group relative inline-flex items-center gap-2 px-8 py-6 text-base font-semibold bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5"
             >
-              <span>सभी गतिविधियाँ देखें</span>
+              <span>{t('activities.viewAll')}</span>
               <svg 
                 className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" 
                 fill="none" 

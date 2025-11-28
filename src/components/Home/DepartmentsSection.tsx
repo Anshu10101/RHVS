@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -45,6 +46,7 @@ interface DistrictOption {
 }
 
 export default function DepartmentsSection() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [nationalDepartments, setNationalDepartments] = useState<Department[]>([]);
   const [stateDepartments, setStateDepartments] = useState<Department[]>([]);
@@ -631,18 +633,17 @@ export default function DepartmentsSection() {
           <div className="inline-flex items-center gap-2 mb-4">
             <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
             <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-              Organizational Structure
+              {t('departments.title')}
             </span>
             <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
           </div>
           
           <h3 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-5 leading-tight`}>
-            राष्ट्रीय विभाग
+            {t('departments.nationalHeader')}
           </h3>
           
           <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-            Meet our dedicated department heads who lead various initiatives across the organization, 
-            ensuring smooth operations and effective implementation of our mission.
+            {t('departments.description')}
           </p>
         </div>
 
@@ -653,7 +654,7 @@ export default function DepartmentsSection() {
             className="rounded-full bg-orange-600 hover:bg-orange-700"
             onClick={() => setShowAllNational((v) => !v)}
           >
-            {showAllNational ? 'Close' : 'View All'}
+            {showAllNational ? t('departments.close') : t('departments.viewAll')}
           </Button>
         </div>
 
@@ -663,7 +664,7 @@ export default function DepartmentsSection() {
             {/* Left control */}
             <button
               type="button"
-              aria-label="Scroll left"
+              aria-label={t('departments.scrollLeft')}
               onClick={() => {
                 setIsHovering(true);
                 const scrollAmount = typeof window !== 'undefined' && window.innerWidth < 768 ? -260 : -320;
@@ -758,7 +759,7 @@ export default function DepartmentsSection() {
                   <CardContent className="px-0 pt-2 sm:pt-3 pb-0 w-full">
                     <div className="text-center">
                       <p className="text-xs sm:text-sm md:text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
-                        {department.president ? department.president.name : 'Position Vacant'}
+                        {department.president ? department.president.name : t('departments.positionVacant')}
                       </p>
                       <p className="text-[11px] sm:text-[12px] md:text-[13px] font-semibold text-orange-700 leading-snug line-clamp-1">
                         {department.post_name_hi}
@@ -826,7 +827,7 @@ export default function DepartmentsSection() {
                       <CardContent className="px-0 pt-2 sm:pt-3 pb-0 w-full">
                         <div className="text-center">
                           <p className="text-xs sm:text-sm md:text-[15px] font-bold text-slate-900 leading-tight line-clamp-1">
-                            {department.president ? department.president.name : 'Position Vacant'}
+                            {department.president ? department.president.name : t('departments.positionVacant')}
                           </p>
                           <p className="text-[10px] sm:text-[11px] md:text-[12px] font-semibold text-orange-700 leading-snug line-clamp-1">
                             {department.post_name_hi}
@@ -845,7 +846,7 @@ export default function DepartmentsSection() {
             {/* Right control */}
             <button
               type="button"
-              aria-label="Scroll right"
+              aria-label={t('departments.scrollRight')}
               onClick={() => {
                 setIsHovering(true);
                 const scrollAmount = typeof window !== 'undefined' && window.innerWidth < 768 ? 260 : 320;
@@ -927,12 +928,11 @@ export default function DepartmentsSection() {
         <div className="mt-16">
           <div className="text-center mb-6">
             <p className="text-sm text-orange-600 font-semibold mb-2">
-              प्रादेशिक नेतृत्व
+              {t('departments.regionalLeadership')}
             </p>
-            <h3 className="text-2xl md:text-3xl font-bold text-slate-900">राज्य एवं जिला विभाग</h3>
+            <h3 className="text-2xl md:text-3xl font-bold text-slate-900">{t('departments.stateDistrictDepartments')}</h3>
             <p className="text-slate-600 mt-2 max-w-3xl mx-auto">
-              राज्य स्तर पर नियुक्त सभी सदस्य यहाँ दिखते हैं। ज़रूरत पड़ने पर संबंधित जिले का चयन करके और भी विस्तृत
-              नेतृत्व देखें।
+              {t('departments.stateLevelDescription')}
             </p>
           </div>
 
@@ -940,12 +940,12 @@ export default function DepartmentsSection() {
             <div className="w-full md:w-64">
               <Select value={selectedStateId} onValueChange={handleStateChange}>
                 <SelectTrigger className="w-full rounded-xl bg-white border-slate-300 text-left">
-                  <SelectValue placeholder="Select state" />
+                  <SelectValue placeholder={t('departments.selectState')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
                   {states.length === 0 ? (
                     <SelectItem value="__loading" disabled>
-                      Loading states...
+                      {t('departments.loadingStates')}
                     </SelectItem>
                   ) : (
                     states.map((state) => (
@@ -965,10 +965,10 @@ export default function DepartmentsSection() {
                 disabled={!selectedStateId || districts.length === 0}
               >
                 <SelectTrigger className="w-full rounded-xl bg-white border-slate-300 text-left disabled:opacity-60">
-                  <SelectValue placeholder={selectedStateId ? "Filter by district (optional)" : "Select state first"} />
+                  <SelectValue placeholder={selectedStateId ? t('departments.filterDistrict') : t('departments.selectStateFirst')} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  <SelectItem value="all">All districts in {selectedStateName || "state"}</SelectItem>
+                  <SelectItem value="all">{t('departments.allDistricts')} {selectedStateName || t('departments.selectState')}</SelectItem>
                   {districts.map((district) => (
                     <SelectItem key={district.id} value={String(district.id)}>
                       {district.name}
@@ -981,7 +981,7 @@ export default function DepartmentsSection() {
 
           {!selectedStateId ? (
             <div className="text-center text-slate-500 text-sm">
-              Select a state to load its leadership structure.
+              {t('departments.selectStateToLoad')}
             </div>
           ) : loadingStateLevel ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -998,13 +998,13 @@ export default function DepartmentsSection() {
               <div className="text-center text-sm text-slate-600 mb-4">
                 {stateScope === "district" && selectedDistrictName ? (
                   <>
-                    Showing district-level appointments for{" "}
+                    {t('departments.showingDistrict')}{" "}
                     <span className="font-semibold text-orange-600">{selectedDistrictName}</span>,{" "}
                     <span className="font-semibold text-slate-900">{selectedStateName}</span>
                   </>
                 ) : (
                   <>
-                    Showing state-level appointments for{" "}
+                    {t('departments.showingState')}{" "}
                     <span className="font-semibold text-slate-900">{selectedStateName}</span>
                   </>
                 )}
@@ -1017,7 +1017,7 @@ export default function DepartmentsSection() {
                   className="rounded-full border-orange-200 text-orange-700 hover:bg-orange-50"
                   onClick={() => setShowAllState((v) => !v)}
                 >
-                  {showAllState ? 'Close' : 'View All'}
+                  {showAllState ? t('departments.close') : t('departments.viewAll')}
                 </Button>
               </div>
 
@@ -1025,7 +1025,7 @@ export default function DepartmentsSection() {
                 <div className="relative">
                   <button
                     type="button"
-                    aria-label="Scroll left"
+                    aria-label={t('departments.scrollLeft')}
                     onClick={() => handleStateMarqueeScroll('left')}
                     className="absolute left-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 shadow-md p-1.5 sm:p-2 hover:bg-white border border-slate-200 active:scale-95 transition-transform"
                   >
@@ -1127,7 +1127,7 @@ export default function DepartmentsSection() {
 
                   <button
                     type="button"
-                    aria-label="Scroll right"
+                    aria-label={t('departments.scrollRight')}
                     onClick={() => handleStateMarqueeScroll('right')}
                     className="absolute right-0 top-1/2 -translate-y-1/2 z-10 rounded-full bg-white/90 shadow-md p-1.5 sm:p-2 hover:bg-white border border-slate-200 active:scale-95 transition-transform"
                   >
@@ -1151,11 +1151,10 @@ export default function DepartmentsSection() {
             <div className="text-center text-slate-500 text-sm">
               {stateScope === "district" ? (
                 <>
-                  No appointments found for {selectedDistrictName || 'selected district'}. Try another district or clear
-                  the filter.
+                  {t('departments.noAppointmentsFound')} {selectedDistrictName || t('departments.selectState')}. {t('departments.tryAnotherDistrict')}
                 </>
               ) : (
-                <>No state-level appointments recorded yet for {selectedStateName}.</>
+                <>{t('departments.noStateAppointments')} {selectedStateName}.</>
               )}
             </div>
           )}

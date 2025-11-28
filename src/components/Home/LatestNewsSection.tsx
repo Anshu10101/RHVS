@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Newspaper, Share2, Calendar, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -25,6 +26,7 @@ type NewsItem = {
 };
 
 export default function LatestNewsSection() {
+  const { t } = useLanguage();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -246,19 +248,19 @@ export default function LatestNewsSection() {
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
               <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-                Latest Updates
+                {t('news.title')}
               </span>
               <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
             </div>
             <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-              नवीनतम समाचार
+              {t('news.header')}
             </h2>
             <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-              Stay informed with the latest news and updates
+              {t('news.description')}
             </p>
           </div>
           <Link href="/news" className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
-            सभी देखें →
+            {t('news.viewAll')} →
           </Link>
         </div>
 
@@ -290,13 +292,13 @@ export default function LatestNewsSection() {
                         <Image src="/rhvs_logo.png" alt="RHVS" width={24} height={24} />
                       </span>
                       <div className="leading-tight">
-                        <p className="text-sm font-semibold text-gray-900 line-clamp-1">RHVS Sangathan</p>
+                        <p className="text-sm font-semibold text-gray-900 line-clamp-1">{t('news.rhvsSangathan')}</p>
                       </div>
                     </div>
                     <button
                       className="text-orange-600 hover:text-orange-700"
                       onClick={() => handleShare(item as NewsItem)}
-                      aria-label="Share"
+                      aria-label={t('news.share')}
                     >
                       <Share2 className="w-4 h-4" />
                     </button>
@@ -362,10 +364,10 @@ export default function LatestNewsSection() {
                           <Image src="/rhvs_logo.png" alt="RHVS" width={24} height={24} />
                         </span>
                         <div className="leading-tight">
-                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">RHVS Sangathan</p>
+                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">{t('news.rhvsSangathan')}</p>
                         </div>
                       </div>
-                      <button className="text-orange-600 hover:text-orange-700" aria-label="Share">
+                      <button className="text-orange-600 hover:text-orange-700" aria-label={t('news.share')}>
                         <Share2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -417,14 +419,14 @@ export default function LatestNewsSection() {
           {!loading && news.length > 1 && (
             <>
               <button
-                aria-label="Previous"
+                aria-label={t('news.previous')}
                 onClick={() => scrollByAmount(-1)}
                 className="flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-2 shadow"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                aria-label="Next"
+                aria-label={t('news.next')}
                 onClick={() => scrollByAmount(1)}
                 className="flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-2 shadow"
               >

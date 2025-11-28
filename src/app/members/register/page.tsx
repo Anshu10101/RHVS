@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,6 +54,7 @@ interface District {
 }
 
 export default function MemberRegistrationPage() {
+  const { t } = useLanguage();
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [signature, setSignature] = useState<File | null>(null);
   const [otpSent, setOtpSent] = useState(false);
@@ -169,13 +171,13 @@ export default function MemberRegistrationPage() {
     if (file) {
       // Validate file size (max 500KB)
       if (file.size > 500 * 1024) {
-        alert('Profile photo size must be less than 500KB');
+        alert(t('register.profilePhotoSizeError'));
         return;
       }
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        alert(t('register.selectImageFile'));
         return;
       }
       
@@ -188,13 +190,13 @@ export default function MemberRegistrationPage() {
     if (file) {
       // Validate file size (max 100KB)
       if (file.size > 100 * 1024) {
-        alert('Signature image size must be less than 100KB');
+        alert(t('register.signatureSizeError'));
         return;
       }
       
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        alert(t('register.selectImageFile'));
         return;
       }
       
@@ -207,7 +209,7 @@ export default function MemberRegistrationPage() {
     const existingMemberRegNumber = form.getValues('existingMemberRegNumber');
     
     if (!existingMemberRegNumber.trim()) {
-      form.setError('existingMemberRegNumber', { message: 'Please enter existing member registration number' });
+      form.setError('existingMemberRegNumber', { message: t('register.pleaseEnterRegNumber') });
       return;
     }
     
@@ -234,7 +236,7 @@ export default function MemberRegistrationPage() {
     } catch (error) {
       console.error('Error sending OTP:', error);
       setOtpSent(false);
-      form.setError('existingMemberRegNumber', { message: 'Failed to send OTP. Please try again.' });
+      form.setError('existingMemberRegNumber', { message: t('register.failedToSendOTP') });
     }
   };
 
@@ -251,14 +253,14 @@ export default function MemberRegistrationPage() {
     try {
       // Validate profile photo is required
       if (!profilePhoto) {
-        form.setError('root', { message: 'Profile photo is required for registration' });
+        form.setError('root', { message: t('register.profilePhotoRequired') });
         setIsSubmitting(false);
         return;
       }
       
       // Validate signature is required
       if (!signature) {
-        form.setError('root', { message: 'Signature image is required for registration' });
+        form.setError('root', { message: t('register.signatureRequired') });
         setIsSubmitting(false);
         return;
       }
@@ -302,12 +304,12 @@ export default function MemberRegistrationPage() {
           if (uploadResult.success) {
             profilePhotoPath = uploadResult.url;
           } else {
-            form.setError('root', { message: 'Failed to upload profile photo: ' + uploadResult.error });
+            form.setError('root', { message: t('register.failedToUploadPhoto') + ' ' + uploadResult.error });
             setIsSubmitting(false);
             return;
           }
         } catch (error) {
-          form.setError('root', { message: 'Failed to upload profile photo' });
+          form.setError('root', { message: t('register.failedToUploadPhotoGeneric') });
           setIsSubmitting(false);
           return;
         }
@@ -330,12 +332,12 @@ export default function MemberRegistrationPage() {
           if (uploadResult.success) {
             signaturePath = uploadResult.url;
           } else {
-            form.setError('root', { message: 'Failed to upload signature: ' + uploadResult.error });
+            form.setError('root', { message: t('register.failedToUploadSignature') + ' ' + uploadResult.error });
             setIsSubmitting(false);
             return;
           }
         } catch (error) {
-          form.setError('root', { message: 'Failed to upload signature' });
+          form.setError('root', { message: t('register.failedToUploadSignatureGeneric') });
           setIsSubmitting(false);
           return;
         }
@@ -371,7 +373,7 @@ export default function MemberRegistrationPage() {
       
       if (registerResult.success) {
         // Success message for token-based registration
-        alert(`Registration token generated successfully! Please check your email for the verification token: ${registerResult.token}. Bring this token to the RHVS admin office for final verification and membership approval.`);
+        alert(`${t('register.registrationSuccess')} ${registerResult.token}. ${t('register.bringTokenToAdmin')}`);
         
         // Reset form
         form.reset();
@@ -399,7 +401,7 @@ export default function MemberRegistrationPage() {
       }
     } catch (error) {
       console.error('Registration error:', error);
-      form.setError('root', { message: 'Registration failed. Please try again.' });
+      form.setError('root', { message: t('register.registrationFailed') });
     } finally {
     setIsSubmitting(false);
     }
@@ -439,29 +441,29 @@ export default function MemberRegistrationPage() {
             <DialogHeader className="space-y-2">
               <DialogTitle className="flex items-center gap-2 text-orange-800">
                 <Bell className="h-5 w-5 text-orange-500" />
-                Already initiated?
+                {t('register.alreadyInitiated')}
               </DialogTitle>
               <DialogDescription className="text-sm text-orange-700 leading-relaxed space-y-2">
                 <span>
                   {initiatedNoticeDetails?.token ? (
                     <>
-                      A registration for this email is already pending for{' '}
-                      <span className="font-semibold">{initiatedNoticeDetails.name || 'the same member'}</span> with token{' '}
-                      <span className="font-semibold">{initiatedNoticeDetails.token}</span>. Please bring this token to the RHVS admin for verification instead of submitting the form again.
+                      {t('register.alreadyInitiatedFull')}{' '}
+                      <span className="font-semibold">{initiatedNoticeDetails.name || t('register.name')}</span> {t('register.withToken')}{' '}
+                      <span className="font-semibold">{initiatedNoticeDetails.token}</span>. {t('register.bringTokenForVerification')}
                       {initiatedNoticeDetails.expiresAt && (
                         <span className="block text-xs text-orange-600 mt-2">
-                          Valid until: {new Date(initiatedNoticeDetails.expiresAt).toLocaleDateString('en-GB')}
+                          {t('register.validUntil')} {new Date(initiatedNoticeDetails.expiresAt).toLocaleDateString('en-GB')}
                         </span>
                       )}
                     </>
                   ) : (
-                    <>A registration for this email is already pending. Please bring the previously issued token for verification—no need to submit this form again.</>
+                    <>{t('register.bringPreviousToken')}</>
                   )}
                 </span>
               </DialogDescription>
             </DialogHeader>
             <Button onClick={() => setShowInitiatedNotice(false)} className="w-full bg-orange-600 hover:bg-orange-700">
-              Got it, continue
+              {t('register.bringToken')}
             </Button>
           </DialogContent>
         </Dialog>
@@ -471,10 +473,10 @@ export default function MemberRegistrationPage() {
             <DialogHeader className="space-y-2">
               <DialogTitle className="flex items-center gap-2 text-orange-800">
                 <User className="h-5 w-5 text-orange-500" />
-                Already Registered Member
+                {t('register.alreadyRegistered')}
               </DialogTitle>
               <DialogDescription className="text-sm text-slate-700">
-                This email is already registered as a member. Please check your email for your registration details.
+                {t('register.alreadyRegisteredDesc')}
               </DialogDescription>
             </DialogHeader>
             
@@ -511,22 +513,22 @@ export default function MemberRegistrationPage() {
                     </div>
                     <div className="flex-1 space-y-2 min-w-0">
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Name</p>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('register.name')}</p>
                         <p className="text-sm font-semibold text-slate-900">{existingMemberDetails.name}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email</p>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('register.email')}</p>
                         <p className="text-sm text-slate-700 break-all">{existingMemberDetails.email}</p>
                       </div>
                       {existingMemberDetails.memberRegNumber && (
                         <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Registration Number</p>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('register.registrationNumber')}</p>
                           <p className="text-sm font-semibold text-orange-700">{existingMemberDetails.memberRegNumber}</p>
                         </div>
                       )}
                       {(existingMemberDetails.state || existingMemberDetails.district) && (
                         <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Location</p>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('register.location')}</p>
                           <p className="text-sm text-slate-700">
                             {existingMemberDetails.district && existingMemberDetails.state 
                               ? `${existingMemberDetails.district}, ${existingMemberDetails.state}`
@@ -536,7 +538,7 @@ export default function MemberRegistrationPage() {
                       )}
                       {existingMemberDetails.registrationDate && (
                         <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Registration Date</p>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{t('register.registrationDateLabel')}</p>
                           <p className="text-sm text-slate-700">
                             {new Date(existingMemberDetails.registrationDate).toLocaleDateString('en-IN', {
                               year: 'numeric',
@@ -552,8 +554,7 @@ export default function MemberRegistrationPage() {
                 
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                   <p className="text-sm text-blue-800 leading-relaxed">
-                    <strong>Note:</strong> If you need to change your district or update your information, please contact your district admin. 
-                    You can also check your registered email for your membership details and registration confirmation.
+                    <strong>{t('register.note')}</strong> {t('register.noteText')}
                   </p>
                 </div>
               </div>
@@ -564,7 +565,7 @@ export default function MemberRegistrationPage() {
                 onClick={() => setShowExistingMemberModal(false)} 
                 className="flex-1 bg-orange-600 hover:bg-orange-700"
               >
-                Understood
+                {t('register.understood')}
               </Button>
             </div>
           </DialogContent>
@@ -582,17 +583,17 @@ export default function MemberRegistrationPage() {
             />
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 px-2">
-            Member Registration
+            {t('register.title')}
           </h1>
           <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed px-2">
-            Join <span className="font-semibold text-orange-600">राष्ट्रीय हिन्दू वाहिनी संगठन</span> and represent your region with integrity. Every application is verified by an existing member to keep the community authentic and accountable.
+            {t('register.description')}
           </p>
         </div>
 
         <div className="mb-6 sm:mb-8 md:mb-10">
           <div className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white/95 shadow-sm p-4 sm:p-6 text-sm text-slate-600 leading-relaxed">
-            <div className="font-semibold text-slate-800 mb-2">Transparent, patient, trusted.</div>
-            <p>Generated Token remains active for 10 days. Share it with the RHVS admin and avoid duplicate submissions our team will guide you through the final verification.</p>
+            <div className="font-semibold text-slate-800 mb-2">{t('register.noticeTitle')}</div>
+            <p>{t('register.noticeDescription')}</p>
           </div>
         </div>
 
@@ -604,10 +605,10 @@ export default function MemberRegistrationPage() {
                 <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-lg sm:rounded-xl text-orange-600">
                   <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
                 </div>
-                Member Verification
+                {t('register.memberVerification')}
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs sm:text-sm mt-1">
-                An existing member must verify this registration
+                {t('register.memberVerificationDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
@@ -619,12 +620,12 @@ export default function MemberRegistrationPage() {
                     <FormItem>
                       <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                         <IdCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                        Existing Member Registration Number
+                        {t('register.existingMemberRegNumber')}
                       </FormLabel>
                       <FormControl>
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                           <Input
-                            placeholder="Enter existing member's registration number"
+                            placeholder={t('register.existingMemberRegNumberPlaceholder')}
                             {...field}
                             onChange={(e) => {
                               field.onChange(e);
@@ -643,13 +644,13 @@ export default function MemberRegistrationPage() {
                             {otpSent ? (
                               <div className="flex items-center gap-1.5 sm:gap-2">
                                 <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span>Sent</span>
+                                <span>{t('register.sent')}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1.5 sm:gap-2">
                                 <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span className="hidden sm:inline">Send OTP</span>
-                                <span className="sm:hidden">Send</span>
+                                <span className="hidden sm:inline">{t('register.sendOTP')}</span>
+                                <span className="sm:hidden">{t('register.send')}</span>
                               </div>
                             )}
                           </Button>
@@ -668,11 +669,11 @@ export default function MemberRegistrationPage() {
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                           <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          OTP Verification
+                          {t('register.otpVerification')}
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter 6-digit OTP"
+                            placeholder={t('register.otpPlaceholder')}
                             {...field}
                             maxLength={6}
                             className="text-center text-lg sm:text-xl tracking-[0.5em] h-11 sm:h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400/20 rounded-xl font-mono"
@@ -690,7 +691,7 @@ export default function MemberRegistrationPage() {
                   <div className="p-1 bg-green-500 rounded-full flex-shrink-0 mt-0.5 sm:mt-0">
                     <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                   </div>
-                  <span className="text-green-700 font-medium text-xs sm:text-sm">OTP sent to existing member&apos;s registered email</span>
+                  <span className="text-green-700 font-medium text-xs sm:text-sm">{t('register.otpSent')}</span>
                 </div>
               )}
             </CardContent>
@@ -704,11 +705,11 @@ export default function MemberRegistrationPage() {
                 <div className="p-2 sm:p-3 bg-orange-500/15 rounded-lg sm:rounded-xl text-orange-600">
                   <User className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-orange-500" />
                 </div>
-                <span className="flex-1">Personal Information</span>
+                <span className="flex-1">{t('register.personalInformation')}</span>
                 <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 animate-pulse hidden sm:block" />
               </CardTitle>
               <CardDescription className="text-slate-500 text-xs sm:text-sm relative z-10 mt-1">
-                Please provide accurate information for registration
+                {t('register.personalInformationDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 sm:p-6 md:p-8">
@@ -719,7 +720,7 @@ export default function MemberRegistrationPage() {
                     <div className="space-y-3 sm:space-y-4">
                       <Label className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                         <Camera className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                        Profile Photo
+                        {t('register.profilePhoto')}
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
@@ -727,7 +728,7 @@ export default function MemberRegistrationPage() {
                             {profilePhoto ? (
                               <img
                                 src={URL.createObjectURL(profilePhoto)}
-                                alt="Profile preview"
+                                alt={t('register.profilePreview')}
                                 className="w-full h-full object-cover"
                               />
                             ) : (
@@ -753,10 +754,10 @@ export default function MemberRegistrationPage() {
                             className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
                           >
                             <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            {profilePhoto ? 'Change Photo' : 'Upload Photo'}
+                            {profilePhoto ? t('register.changePhoto') : t('register.uploadPhoto')}
                           </Label>
                           <p className="text-xs sm:text-sm text-slate-500 px-2">
-                            Up to 500KB • Passport-size photo on white background
+                            {t('register.profilePhotoHint')}
                           </p>
                         </div>
                       </div>
@@ -769,7 +770,7 @@ export default function MemberRegistrationPage() {
                           <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
                           <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
                         </svg>
-                        Member Signature
+                        {t('register.memberSignature')}
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
@@ -777,7 +778,7 @@ export default function MemberRegistrationPage() {
                             {signature ? (
                               <img
                                 src={URL.createObjectURL(signature)}
-                                alt="Signature preview"
+                                alt={t('register.signaturePreview')}
                                 className="w-full h-full object-contain"
                               />
                             ) : (
@@ -807,10 +808,10 @@ export default function MemberRegistrationPage() {
                             className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border border-blue-200 text-blue-600 font-semibold bg-white hover:bg-blue-50 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto"
                           >
                             <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            {signature ? 'Change Signature' : 'Upload Signature'}
+                            {signature ? t('register.changeSignature') : t('register.uploadSignature')}
                           </Label>
                           <p className="text-xs sm:text-sm text-slate-500 px-2">
-                            Up to 100KB • Clear signature on white background
+                            {t('register.signatureHint')}
                           </p>
                         </div>
                       </div>
@@ -826,11 +827,11 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Full Name *
+                            {t('register.fullName')} *
                           </FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Enter full name"
+                              placeholder={t('register.fullNamePlaceholder')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -847,12 +848,12 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Email Address *
+                            {t('register.emailAddress')} *
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="Enter email address"
+                              placeholder={t('register.emailPlaceholder')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -872,12 +873,12 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Phone Number *
+                            {t('register.phoneNumber')} *
                           </FormLabel>
                           <FormControl>
                             <Input
                               type="tel"
-                              placeholder="Enter phone number"
+                              placeholder={t('register.phonePlaceholder')}
                               {...field}
                               className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                             />
@@ -894,7 +895,7 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            Registration Date *
+                            {t('register.registrationDate')} *
                           </FormLabel>
                           <Input
                             value={field.value ? format(field.value, 'dd MMM yyyy') : ''}
@@ -915,11 +916,11 @@ export default function MemberRegistrationPage() {
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                           <Home className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          Address *
+                          {t('register.address')} *
                         </FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder="Enter complete address"
+                            placeholder={t('register.addressPlaceholder')}
                             className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white resize-none font-medium p-3 sm:p-4 text-sm sm:text-base"
                             {...field}
                           />
@@ -938,7 +939,7 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            State *
+                            {t('register.state')} *
                           </FormLabel>
                           <FormControl>
                             <SearchableSelect
@@ -956,9 +957,9 @@ export default function MemberRegistrationPage() {
                                   setDistricts([]);
                                 }
                               }}
-                              placeholder="Search or select state..."
-                              searchPlaceholder="Type state name..."
-                              emptyText="No states found."
+                              placeholder={t('register.statePlaceholder')}
+                              searchPlaceholder={t('register.stateSearchPlaceholder')}
+                              emptyText={t('register.noStatesFound')}
                               className="w-full text-sm sm:text-base"
                             />
                           </FormControl>
@@ -974,16 +975,16 @@ export default function MemberRegistrationPage() {
                         <FormItem>
                           <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                             <Map className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                            District *
+                            {t('register.district')} *
                           </FormLabel>
                           <FormControl>
                             <AsyncSearchableSelect
                               fetchOptions={fetchDistrictsAsync}
                               value={field.value}
                               onValueChange={field.onChange}
-                              placeholder={!form.watch('stateId') ? "Select state first" : "Search or select district..."}
-                              searchPlaceholder="Type district name..."
-                              emptyText="No districts found."
+                              placeholder={!form.watch('stateId') ? t('register.districtPlaceholder') : t('register.statePlaceholder')}
+                              searchPlaceholder={t('register.districtSearchPlaceholder')}
+                              emptyText={t('register.noDistrictsFound')}
                               disabled={!form.watch('stateId')}
                               className="w-full text-sm sm:text-base"
                               maxHeight={250}
@@ -1004,11 +1005,11 @@ export default function MemberRegistrationPage() {
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                           <IdCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          Aadhar Card Number *
+                          {t('register.aadharCardNumber')} *
                         </FormLabel>
                         <FormControl>
                           <Input
-                            placeholder="Enter 12-digit Aadhar card number"
+                            placeholder={t('register.aadharPlaceholder')}
                             maxLength={12}
                             className="h-11 sm:h-12 border border-slate-200 focus-visible:ring-orange-200 focus-visible:border-orange-300 rounded-xl sm:rounded-2xl bg-white px-3 sm:px-4 text-sm sm:text-base"
                             {...field}
@@ -1022,8 +1023,8 @@ export default function MemberRegistrationPage() {
                   {/* Family Information */}
                   <div className="space-y-4 sm:space-y-6 p-4 sm:p-6 md:p-8 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm">
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <h3 className="text-base sm:text-lg font-semibold text-slate-900 uppercase tracking-wide">Family Information</h3>
-                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 sm:px-3 py-1 rounded-full">Required</span>
+                      <h3 className="text-base sm:text-lg font-semibold text-slate-900 uppercase tracking-wide">{t('register.familyInformation')}</h3>
+                      <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-2 sm:px-3 py-1 rounded-full">{t('register.required')}</span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
@@ -1034,11 +1035,11 @@ export default function MemberRegistrationPage() {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                               <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                              Father/Husband Name *
+                              {t('register.fatherHusbandName')} *
                             </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Enter father or husband name"
+                                placeholder={t('register.fatherHusbandPlaceholder')}
                                 {...field}
                                 className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                               />
@@ -1055,11 +1056,11 @@ export default function MemberRegistrationPage() {
                           <FormItem>
                             <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                               <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                              Mother/Wife Name *
+                              {t('register.motherWifeName')} *
                             </FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="Enter mother or wife name"
+                                placeholder={t('register.motherWifePlaceholder')}
                                 {...field}
                                 className="h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 bg-white focus-visible:ring-orange-200 focus-visible:border-orange-300 text-sm sm:text-base"
                               />
@@ -1087,7 +1088,7 @@ export default function MemberRegistrationPage() {
                             onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                             className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-slate-300 rounded-md text-orange-600 data-[state=checked]:bg-orange-500 data-[state=checked]:text-white"
                           />
-                          <span className="text-slate-800 font-semibold text-sm sm:text-base">I have paid the membership fee</span>
+                          <span className="text-slate-800 font-semibold text-sm sm:text-base">{t('register.feePaid')}</span>
                         </Label>
                         <FormMessage />
                       </FormItem>
@@ -1105,11 +1106,11 @@ export default function MemberRegistrationPage() {
                         {isSubmitting ? (
                           <div className="flex items-center justify-center gap-2 sm:gap-3">
                             <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 sm:border-4 border-white/60 border-t-transparent rounded-full animate-spin" />
-                            <span>Registering member…</span>
+                            <span>{t('register.registering')}</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2 sm:gap-3">
-                            <span>Register new member</span>
+                            <span>{t('register.registerButton')}</span>
                             <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                           </div>
                         )}
@@ -1119,8 +1120,8 @@ export default function MemberRegistrationPage() {
                         <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-orange-50 border border-orange-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm text-orange-800">
                           <Shield className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5 sm:mt-0" />
                           <div>
-                            <p className="font-semibold">Verification required</p>
-                            <p>Please confirm OTP with an existing member before submitting.</p>
+                            <p className="font-semibold">{t('register.verificationRequired')}</p>
+                            <p>{t('register.verificationRequiredDesc')}</p>
                           </div>
                         </div>
                       )}
@@ -1129,8 +1130,8 @@ export default function MemberRegistrationPage() {
                         <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm text-green-800">
                           <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5 sm:mt-0" />
                           <div>
-                            <p className="font-semibold">Ready to register</p>
-                            <p>Identity verification complete. Finish the form to submit.</p>
+                            <p className="font-semibold">{t('register.readyToRegister')}</p>
+                            <p>{t('register.readyToRegisterDesc')}</p>
                           </div>
                         </div>
                       )}

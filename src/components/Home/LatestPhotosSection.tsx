@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -24,6 +25,7 @@ type GalleryImage = {
 };
 
 export default function LatestPhotosSection() {
+  const { t } = useLanguage();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +33,7 @@ export default function LatestPhotosSection() {
     let isMounted = true;
     try {
       // Add cache-busting timestamp and no-store cache
-      const res = await fetch(`/api/public/photos?limit=8&_t=${Date.now()}`, { 
+      const res = await fetch(`/api/public/photos?limit=10&_t=${Date.now()}`, { 
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate'
@@ -74,50 +76,50 @@ export default function LatestPhotosSection() {
               <div className="inline-flex items-center gap-2 mb-4">
                 <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
                 <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-                  Latest from the Gallery
+                  {t('photos.title')}
                 </span>
                 <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
               </div>
               <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-                गैलरी की ताज़ा झलकियाँ
+                {t('photos.header')}
               </h2>
               <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-                हाल की गतिविधियों और आयोजनों से चुनी हुई तस्वीरें।
+                {t('photos.description')}
               </p>
             </div>
             <Link
               href="/gallery"
-              aria-label="View all photos"
+              aria-label={t('photos.viewAll')}
               className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
             >
-              <span className="hidden sm:inline">View All / सभी देखें →</span>
-              <span className="sm:hidden">View All →</span>
+              {t('photos.viewAll')} →
             </Link>
           </div>
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 8 }).map(() => undefined) : images).map((img, i) => (
-            <div key={img?.id || i} className="group relative overflow-hidden rounded-2xl bg-orange-100/60 shadow-sm ring-1 ring-orange-100">
+        <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-6">
+          {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 10 }).map(() => undefined) : images).map((img, i) => (
+            <div key={img?.id || i} className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 overflow-hidden rounded-xl sm:rounded-2xl">
               {loading ? (
-                <div className="aspect-[4/3] animate-pulse bg-orange-100" />
+                <div className="w-full h-48 sm:h-56 md:h-64 animate-pulse bg-orange-100 rounded-xl sm:rounded-2xl" />
               ) : img ? (
                 <>
-                  <div className="relative aspect-[4/3]">
+                  <div className="relative w-full">
                     <Image
                       src={img.src}
-                      alt={img.alt || "Photo"}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      alt={img.alt || t('photos.photo')}
+                      width={400}
+                      height={400}
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                       priority={i < 4}
                     />
                   </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-white text-sm font-semibold line-clamp-1">{img.title}</p>
-                    <p className="text-white/80 text-xs line-clamp-1">{img.category}</p>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-xl sm:rounded-2xl" />
+                  <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <p className="text-white text-xs sm:text-sm font-semibold line-clamp-1">{img.title}</p>
+                    <p className="text-white/80 text-[10px] sm:text-xs line-clamp-1">{img.category}</p>
                   </div>
                 </>
               ) : null}

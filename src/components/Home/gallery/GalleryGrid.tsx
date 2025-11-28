@@ -46,15 +46,11 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
-        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 md:gap-6">
           {images.map((image, index) => (
             <div
               key={image.id}
-              className={`group relative break-inside-avoid mb-6 cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl ${
-                image.aspectRatio === 'tall' ? 'h-80 md:h-96' :
-                image.aspectRatio === 'wide' ? 'h-64 md:h-72' :
-                'h-72 md:h-80'
-              }`}
+              className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
               style={{
                 animationName: 'fadeInUp',
                 animationDuration: '0.6s',
@@ -66,13 +62,14 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
               }}
               onClick={() => onImageClick(image)}
             >
-              <div className="relative h-full w-full overflow-hidden rounded-2xl bg-gradient-to-br from-orange-100 to-orange-200 shadow-lg">
+              <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl">
                 <Image
                   src={image.src}
                   alt={image.alt}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  width={400}
+                  height={400}
+                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                  className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
                   priority={index < 6}
                   quality={85}
                   placeholder="blur"
@@ -80,11 +77,11 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
                 />
                 
                 {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl sm:rounded-2xl" />
                 
                 {/* Content - Only show title */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <h3 className={`${devanagari.className} text-lg font-semibold line-clamp-1`}>
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 text-white transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 pointer-events-none">
+                  <h3 className={`${devanagari.className} text-sm sm:text-lg font-semibold line-clamp-1`}>
                     {image.title}
                   </h3>
                 </div>

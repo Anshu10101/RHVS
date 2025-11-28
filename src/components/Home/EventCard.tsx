@@ -106,28 +106,30 @@ export default function EventCard({ event, onClick }: EventCardProps) {
     <article className="group bg-white rounded-xl sm:rounded-2xl overflow-hidden border border-orange-100/60 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
       {/* Image */}
       {event.image_path && (
-        <div className="relative w-full h-40 sm:h-56 md:h-64 overflow-hidden bg-gray-100">
+        <div className="relative w-full max-h-36 sm:max-h-48 md:max-h-56 overflow-hidden bg-transparent flex items-center justify-center">
           {onClick ? (
             <button
               type="button"
               onClick={handleClick}
-              className="w-full h-full"
+              className="w-full h-full flex items-center justify-center"
             >
               <Image
                 src={event.image_path}
                 alt={displayTitle}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                width={400}
+                height={300}
+                className="w-full h-auto max-h-36 sm:max-h-48 md:max-h-56 object-contain group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </button>
           ) : (
-            <Link href={`/events/${event.id}`}>
+            <Link href={`/events/${event.id}`} className="block w-full h-full flex items-center justify-center">
               <Image
                 src={event.image_path}
                 alt={displayTitle}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                width={400}
+                height={300}
+                className="w-full h-auto max-h-36 sm:max-h-48 md:max-h-56 object-contain group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </Link>

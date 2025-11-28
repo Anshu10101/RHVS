@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import EventCard from "./EventCard";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -28,6 +29,7 @@ type EventItem = {
 };
 
 export default function LatestEventsSection() {
+  const { t } = useLanguage();
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -96,19 +98,19 @@ export default function LatestEventsSection() {
             <div className="inline-flex items-center gap-2 mb-4">
               <div className="h-px w-12 bg-gradient-to-r from-transparent to-orange-300" />
               <span className="text-xs sm:text-sm uppercase tracking-[0.2em] font-semibold text-orange-600/80">
-                Upcoming Events
+                {t('events.home.title')}
               </span>
               <div className="h-px w-12 bg-gradient-to-l from-transparent to-orange-300" />
             </div>
             <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
-              आगामी कार्यक्रम
+              {t('events.home.header')}
             </h2>
             <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
-              Join us for our upcoming events and celebrations
+              {t('events.home.description')}
             </p>
           </div>
           <Link href="/events" className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
-            सभी देखें →
+            {t('events.home.viewAll')} →
           </Link>
         </div>
 
@@ -148,14 +150,14 @@ export default function LatestEventsSection() {
           {!loading && events.length > 1 && (
             <>
               <button
-                aria-label="Previous events"
+                aria-label={t('events.home.previous')}
                 onClick={() => scrollByAmount('left')}
                 className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-2 shadow-lg transition-all hover:scale-110"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
-                aria-label="Next events"
+                aria-label={t('events.home.next')}
                 onClick={() => scrollByAmount('right')}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-2 shadow-lg transition-all hover:scale-110"
               >

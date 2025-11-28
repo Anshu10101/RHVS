@@ -21,6 +21,7 @@ import { Noto_Serif_Devanagari } from "next/font/google";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ["devanagari"],
@@ -47,6 +48,7 @@ type StateOption = { id: string; name: string };
 type DistrictOption = { id: string; name: string };
 
 export default function NewsPage() {
+  const { t } = useLanguage();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedNewsType, setSelectedNewsType] = useState<string>("all");
@@ -344,16 +346,16 @@ export default function NewsPage() {
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(`${shareData.title}\n\n${shareData.text}\n\n${shareData.url}`);
-        alert("लिंक कॉपी हो गया!");
+        alert(t('news.linkCopied'));
       }
     } catch (error) {
       console.error("Share failed:", error);
       try {
         await navigator.clipboard.writeText(shareData.url);
-        alert("लिंक कॉपी हो गया!");
+        alert(t('news.linkCopied'));
       } catch (clipboardError) {
         console.error("Clipboard error:", clipboardError);
-        alert("शेयर करने में त्रुटि हुई");
+        alert(t('news.shareError'));
       }
     }
   };
@@ -363,12 +365,12 @@ export default function NewsPage() {
       <section className="relative py-10 md:py-14 overflow-hidden bg-gradient-to-b from-orange-50/80 to-transparent">
         <div className="absolute inset-0 [background:radial-gradient(400px_200px_at_50%_-5%,rgba(253,186,116,0.08),transparent)]" />
         <div className="container mx-auto px-4 text-center relative">
-          <p className="text-sm md:text-base mb-1 text-orange-600/80">॥ नवीनतम समाचार ॥</p>
+          <p className="text-sm md:text-base mb-1 text-orange-600/80">{t('news.latestNews')}</p>
           <h1 className={`${devanagari.className} text-3xl md:text-4xl font-bold text-orange-900 mb-3`}>
-            संगठन की खबरें
+            {t('news.organizationNews')}
           </h1>
           <p className="text-sm md:text-base text-orange-700/80 max-w-2xl mx-auto">
-            राष्ट्रीय हिंदू वाहिनी संगठन के नवीनतम अपडेट, घोषणाएँ और उपलब्धियाँ
+            {t('news.newsSubtitle')}
           </p>
         </div>
       </section>
@@ -380,7 +382,7 @@ export default function NewsPage() {
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400" size={20} />
               <Input
-                placeholder="समाचार खोजें..."
+                placeholder={t('news.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2 border-orange-200 focus:border-orange-400"
@@ -392,7 +394,7 @@ export default function NewsPage() {
               </SheetTrigger>
               <SheetContent side="right" className="w-11/12 sm:max-w-sm">
                 <SheetHeader>
-                  <SheetTitle>फ़िल्टर</SheetTitle>
+                  <SheetTitle>{t('news.filter')}</SheetTitle>
                 </SheetHeader>
                 <div className="mt-4 space-y-3">
                   <div className="relative">
@@ -406,15 +408,15 @@ export default function NewsPage() {
                   </div>
                   <Select value={selectedNewsType} onValueChange={setSelectedNewsType}>
                     <SelectTrigger className="w-full border-orange-200">
-                      <SelectValue placeholder="सभी समाचार" />
+                      <SelectValue placeholder={t('news.allNews')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">सभी समाचार</SelectItem>
-                      <SelectItem value="announcement">घोषणाएं</SelectItem>
-                      <SelectItem value="update">अपडेट</SelectItem>
-                      <SelectItem value="achievement">उपलब्धियां</SelectItem>
-                      <SelectItem value="notice">सूचनाएं</SelectItem>
-                      <SelectItem value="general">सामान्य</SelectItem>
+                      <SelectItem value="all">{t('news.allNews')}</SelectItem>
+                      <SelectItem value="announcement">{t('news.announcements')}</SelectItem>
+                      <SelectItem value="update">{t('news.updates')}</SelectItem>
+                      <SelectItem value="achievement">{t('news.achievements')}</SelectItem>
+                      <SelectItem value="notice">{t('news.notices')}</SelectItem>
+                      <SelectItem value="general">{t('news.general')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select
@@ -456,10 +458,10 @@ export default function NewsPage() {
                     }}
                   >
                     <SelectTrigger className="w-full border-orange-200">
-                      <SelectValue placeholder="All States" />
+                      <SelectValue placeholder={t('news.allStates')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All States</SelectItem>
+                      <SelectItem value="all">{t('news.allStates')}</SelectItem>
                       {stateOptions.map((state) => (
                         <SelectItem key={state.id} value={state.id}>
                           {state.name}
@@ -469,7 +471,7 @@ export default function NewsPage() {
                   </Select>
                   <Select value={selectedDistrictName} onValueChange={setSelectedDistrictName}>
                     <SelectTrigger className="w-full border-orange-200">
-                      <SelectValue placeholder="All Districts" />
+                      <SelectValue placeholder={t('news.allDistricts')} />
                     </SelectTrigger>
                     <SelectContent>
                       {districtOptions.map((district) => (
@@ -569,22 +571,22 @@ export default function NewsPage() {
       <section className="py-10">
         <div className="container mx-auto px-4">
           {loading ? (
-            <div className="text-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto" />
-              <p className="mt-6 text-orange-700">समाचार लोड हो रहे हैं...</p>
-            </div>
+                  <div className="text-center py-20">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto" />
+                    <p className="mt-6 text-orange-700">{t('news.loadingNews')}</p>
+                  </div>
           ) : (
             <>
               {featuredNews.length > 0 && (
                 <div className="mb-8 sm:mb-10 md:mb-12 bg-white/85 backdrop-blur rounded-2xl md:rounded-[32px] border border-orange-100/70 shadow-xl p-4 sm:p-5 md:p-8">
                   <div className="flex flex-wrap items-center justify-between gap-3 md:gap-4 mb-6 md:mb-8">
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs md:text-sm uppercase tracking-[0.2em] text-orange-500 font-semibold">Top Stories</p>
+                      <p className="text-xs md:text-sm uppercase tracking-[0.2em] text-orange-500 font-semibold">{t('news.topStories')}</p>
                       <h2 className="text-xl md:text-3xl font-black text-orange-900 flex items-center gap-2 mt-1">
                         <Newspaper className="w-4 h-4 md:w-6 md:h-6 text-orange-500" />
-                        <span className="truncate">मुख्य समाचार</span>
+                        <span className="truncate">{t('news.mainNews')}</span>
                       </h2>
-                      <p className="text-xs md:text-sm text-orange-700/80 mt-1">संगठन द्वारा चयनित प्रमुख समाचार</p>
+                      <p className="text-xs md:text-sm text-orange-700/80 mt-1">{t('news.selectedNews')}</p>
                     </div>
                   </div>
 
@@ -619,7 +621,7 @@ export default function NewsPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-[#1b0f05]/92 via-[#2d1504]/75 to-transparent" />
                             <div className="absolute top-4 left-4 md:top-8 md:left-8">
                               <span className="inline-flex items-center px-2.5 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-[11px] uppercase tracking-widest font-semibold bg-white/15 backdrop-blur text-white/90 border border-white/20">
-                                मुख्य समाचार
+                                {t('news.mainNews')}
                               </span>
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-10 text-white text-left">
@@ -670,7 +672,7 @@ export default function NewsPage() {
                               <div className="absolute inset-0 bg-gradient-to-t from-[#1b0f05]/92 via-[#2d1504]/75 to-transparent" />
                               <div className="absolute top-4 left-4 md:top-8 md:left-8">
                                 <span className="inline-flex items-center px-2.5 py-0.5 md:px-3 md:py-1 rounded-full text-[10px] md:text-[11px] uppercase tracking-widest font-semibold bg-white/15 backdrop-blur text-white/90 border border-white/20">
-                                  मुख्य समाचार
+                                  {t('news.mainNews')}
                                 </span>
                               </div>
                               <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-10 text-white text-left">
@@ -694,7 +696,7 @@ export default function NewsPage() {
                                       href={`/news/${item.id}`}
                                       className="inline-flex items-center gap-1.5 sm:gap-2 bg-white/20 hover:bg-white/30 px-3 py-1.5 sm:px-4 sm:py-2 md:px-5 md:py-2 rounded-full text-xs sm:text-sm font-semibold"
                                     >
-                                      पढ़ें
+                                      {t('news.readMore')}
                                       <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" />
                                     </Link>
                                   </div>
@@ -708,14 +710,14 @@ export default function NewsPage() {
                     {featuredNews.length > 1 && (
                       <>
                         <button
-                          aria-label="Previous"
+                          aria-label={t('news.previous')}
                           onClick={() => scrollFeaturedByAmount(-1)}
                           className="flex absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-1.5 sm:p-2 shadow"
                         >
                           <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5" />
                         </button>
                         <button
-                          aria-label="Next"
+                          aria-label={t('news.next')}
                           onClick={() => scrollFeaturedByAmount(1)}
                           className="flex absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-orange-700 border border-orange-200 rounded-full p-1.5 sm:p-2 shadow"
                         >
@@ -728,7 +730,7 @@ export default function NewsPage() {
               )}
 
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-orange-900">सभी समाचार</h2>
+                <h2 className="text-xl font-bold text-orange-900">{t('news.allNewsTitle')}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredNews
                     .filter((item) => !item.is_featured)
@@ -755,14 +757,14 @@ export default function NewsPage() {
                             >
                               {getNewsTypeIcon(item.news_type)}
                               {item.news_type === "announcement"
-                                ? "घोषणा"
+                                ? t('news.announcement')
                                 : item.news_type === "update"
-                                ? "अपडेट"
+                                ? t('news.update')
                                 : item.news_type === "achievement"
-                                ? "उपलब्धि"
+                                ? t('news.achievement')
                                 : item.news_type === "notice"
-                                ? "सूचना"
-                                : "सामान्य"}
+                                ? t('news.notice')
+                                : t('news.generalType')}
                             </span>
                             {(item.district || item.state) && (
                               <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
@@ -788,12 +790,12 @@ export default function NewsPage() {
                                   handleShare(item);
                                 }}
                                 className="hover:text-orange-600"
-                                title="शेयर करें"
+                                title={t('news.share')}
                               >
                                 <Share2 className="w-4 h-4" />
                               </button>
                               <Link href={`/news/${item.id}`} className="text-orange-600 font-semibold">
-                                पढ़ें
+                                {t('news.readMore')}
                               </Link>
                             </div>
                           </div>
@@ -804,7 +806,7 @@ export default function NewsPage() {
                 {filteredNews.filter((item) => !item.is_featured).length === 0 && (
                   <div className="text-center py-16 bg-white/60 rounded-2xl border border-dashed border-orange-200">
                     <Newspaper className="w-10 h-10 mx-auto text-orange-400 mb-3" />
-                    <p className="text-orange-700 font-medium">समाचार उपलब्ध नहीं है</p>
+                    <p className="text-orange-700 font-medium">{t('news.noNewsAvailable')}</p>
                   </div>
                 )}
               </div>
@@ -813,9 +815,9 @@ export default function NewsPage() {
               {totalPages > 1 && (
                 <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-gray-600">
-                    Showing <span className="font-semibold">{(currentPage - 1) * 12 + 1}</span> to{' '}
-                    <span className="font-semibold">{Math.min(currentPage * 12, totalNews)}</span> of{' '}
-                    <span className="font-semibold">{totalNews}</span> news
+                    {t('news.showing')} <span className="font-semibold">{(currentPage - 1) * 12 + 1}</span> {t('news.to')}{' '}
+                    <span className="font-semibold">{Math.min(currentPage * 12, totalNews)}</span> {t('news.of')}{' '}
+                    <span className="font-semibold">{totalNews}</span> {t('news.news')}
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -825,7 +827,7 @@ export default function NewsPage() {
                       className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                     >
                       <ChevronLeft size={16} />
-                      Previous
+                      {t('news.previous')}
                     </button>
                     
                     <div className="flex items-center gap-1">
@@ -862,7 +864,7 @@ export default function NewsPage() {
                       disabled={currentPage === totalPages}
                       className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
                     >
-                      Next
+                      {t('news.next')}
                       <ChevronRight size={16} />
                     </button>
                   </div>

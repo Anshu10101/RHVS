@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { MapPin, Phone, Mail, Clock, Building2 } from 'lucide-react';
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -35,6 +36,7 @@ interface ContactOffice {
 }
 
 export default function ContactPage() {
+  const { t } = useLanguage();
   const [contactInfo, setContactInfo] = useState<ContactInfo[]>([]);
   const [offices, setOffices] = useState<ContactOffice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,9 +105,9 @@ export default function ContactPage() {
         <section className="py-12 md:py-16">
           <div className="container mx-auto px-4 text-center">
             <h1 className={`${devanagari.className} text-4xl md:text-6xl font-bold mb-4 text-orange-900`}>
-              संपर्क करें
+              {t('contact.title')}
             </h1>
-            <p className="text-orange-700">Loading...</p>
+            <p className="text-orange-700">{t('contact.loading')}</p>
           </div>
         </section>
       </div>
@@ -118,10 +120,10 @@ export default function ContactPage() {
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4 text-center">
           <h1 className={`${devanagari.className} text-4xl md:text-6xl font-bold mb-4 text-orange-900`}>
-            संपर्क करें
+            {t('contact.title')}
           </h1>
           <p className="text-lg md:text-xl text-orange-700/80 mb-6 max-w-3xl mx-auto">
-            हमसे जुड़ें और हिंदू धर्म व संस्कृति के संरक्षण में अपना योगदान दें
+            {t('contact.subtitle')}
           </p>
           
           {/* Lotus divider */}
@@ -142,10 +144,10 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="text-center lg:text-left">
                 <h2 className={`${devanagari.className} text-3xl font-bold mb-3 text-orange-900`}>
-                  हमारे कार्यालय
+                  {t('contact.ourOffices')}
                 </h2>
                 <p className="text-orange-700/80 text-lg">
-                  देश भर में फैले हुए हमारे कार्यालयों में आपका स्वागत है
+                  {t('contact.officesDescription')}
                 </p>
               </div>
 
@@ -208,7 +210,7 @@ export default function ContactPage() {
                         </div>
                         <div className="flex-1">
                           <h3 className={`${devanagari.className} text-xl font-semibold mb-2 text-orange-900`}>
-                            विशिष्ट केंद्रीय कार्यालय
+                            {t('contact.centralOffice')}
                           </h3>
                           <p className="text-orange-700/80 leading-relaxed">
                             राष्ट्रीय हिन्दू वाहिनी संगठन &quot;उत्तरायण&quot;<br/>
@@ -225,7 +227,7 @@ export default function ContactPage() {
                         </div>
                         <div className="flex-1">
                           <h3 className={`${devanagari.className} text-xl font-semibold mb-2 text-orange-900`}>
-                            केंद्रीय कार्यालय
+                            {t('contact.headOffice')}
                           </h3>
                           <p className="text-orange-700/80 leading-relaxed">
                             D–305, &quot;कान्हा कुंज&quot;<br/>
@@ -244,10 +246,10 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="text-center lg:text-left">
                 <h2 className={`${devanagari.className} text-3xl font-bold mb-3 text-orange-900`}>
-                  संपर्क सूचना
+                  {t('contact.contactInfo')}
                 </h2>
                 <p className="text-orange-700/80 text-lg">
-                  हमसे किसी भी समय संपर्क कर सकते हैं
+                  {t('contact.contactDescription')}
                 </p>
               </div>
 
@@ -260,7 +262,7 @@ export default function ContactPage() {
                       <Phone className="text-orange-600" size={28} />
                     </div>
                     <h3 className={`${devanagari.className} text-2xl font-semibold mb-4 text-orange-900`}>
-                      फोन नंबर
+                      {t('contact.phoneNumbers')}
                     </h3>
                     <div className="space-y-2">
                       {phoneNumbers.map((phone, index) => (
@@ -279,7 +281,7 @@ export default function ContactPage() {
                       <Mail className="text-orange-600" size={28} />
                     </div>
                     <h3 className={`${devanagari.className} text-2xl font-semibold mb-4 text-orange-900`}>
-                      ईमेल
+                      {t('contact.email')}
                     </h3>
                     <div className="space-y-2">
                       {emails.map((email, index) => (
@@ -298,7 +300,7 @@ export default function ContactPage() {
                       <Phone className="text-red-600" size={28} />
                     </div>
                     <h3 className={`${devanagari.className} text-2xl font-semibold mb-4 text-orange-900`}>
-                      आपातकालीन संपर्क
+                      {t('contact.emergencyContact')}
                     </h3>
                     <div className="space-y-2">
                       {emergencyContacts.map((emergency, index) => (
@@ -317,7 +319,7 @@ export default function ContactPage() {
                       <Clock className="text-orange-600" size={28} />
                     </div>
                     <h3 className={`${devanagari.className} text-2xl font-semibold mb-4 text-orange-900`}>
-                      कार्यालय समय
+                      {t('contact.officeHours')}
                     </h3>
                     <div className="space-y-2">
                       {officeHours.map((hours, index) => (
@@ -383,10 +385,10 @@ export default function ContactPage() {
       <section className="py-12 bg-gradient-to-r from-orange-100/50 to-orange-50/50">
         <div className="container mx-auto px-4 text-center">
           <h2 className={`${devanagari.className} text-3xl md:text-4xl font-bold mb-6 text-orange-900`}>
-            हमारे साथ जुड़ें
+            {t('contact.joinUs')}
           </h2>
           <p className="text-lg text-orange-700/80 mb-8 max-w-2xl mx-auto">
-            हिंदू धर्म और संस्कृति के संरक्षण में अपना योगदान दें। आज ही हमसे संपर्क करें।
+            {t('contact.joinDescription')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             {phoneNumbers.length > 0 ? (
@@ -394,14 +396,14 @@ export default function ContactPage() {
                 href={`tel:${phoneNumbers[0].value}`} 
                 className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors"
               >
-                अभी कॉल करें
+                {t('contact.callNow')}
               </a>
             ) : (
               <a 
                 href="tel:6290087054" 
                 className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-full font-semibold transition-colors"
               >
-                अभी कॉल करें
+                {t('contact.callNow')}
               </a>
             )}
             {emails.length > 0 ? (
@@ -409,14 +411,14 @@ export default function ContactPage() {
                 href={`mailto:${emails[0].value}`} 
                 className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors"
               >
-                ईमेल भेजें
+                {t('contact.sendEmail')}
               </a>
             ) : (
               <a 
                 href="mailto:help@rashtriyahinduvahinisangathan.org" 
                 className="bg-white hover:bg-orange-50 text-orange-600 border-2 border-orange-600 px-8 py-3 rounded-full font-semibold transition-colors"
               >
-                ईमेल भेजें
+                {t('contact.sendEmail')}
               </a>
             )}
           </div>

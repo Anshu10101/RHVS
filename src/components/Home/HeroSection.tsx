@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, forwardRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface HeroImage {
   id: number;
@@ -18,6 +19,16 @@ interface HeroSettings {
   auto_play: boolean;
   show_indicators: boolean;
   transition_effect: string;
+}
+
+function WelcomeMarqueeContent({ ariaHidden }: { ariaHidden?: boolean }) {
+  const { t } = useLanguage();
+  return (
+    <>
+      <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">✨ {t('hero.welcome1')} ✨</span>
+      <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">🙏 {t('hero.welcome2')} 🙏</span>
+    </>
+  );
 }
 
 export default function HeroSection() {
@@ -350,13 +361,11 @@ export default function HeroSection() {
           >
             {/* Track A */}
             <div ref={welcomeTrackRef} className="flex gap-3 sm:gap-4 whitespace-nowrap">
-              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">✨ राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - हम सनातन धर्म और संस्कृति की रक्षा, संरक्षण और प्रचार के लिए समर्पित हैं ✨</span>
-              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">🙏 राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - सनातन धर्म को मजबूत करने और समाज की सेवा करने के लिए हमारे साथ जुड़ें 🙏</span>
+              <WelcomeMarqueeContent />
             </div>
             {/* Track B (duplicate for seamless loop) */}
             <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
-              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">✨ राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - हम सनातन धर्म और संस्कृति की रक्षा, संरक्षण और प्रचार के लिए समर्पित हैं ✨</span>
-              <span className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block text-orange-900 font-bold tracking-wide text-sm sm:text-base md:text-lg">🙏 राष्ट्रीय हिन्दू वाहिनी संगठन आपका स्वागत करता है - सनातन धर्म को मजबूत करने और समाज की सेवा करने के लिए हमारे साथ जुड़ें 🙏</span>
+              <WelcomeMarqueeContent ariaHidden />
             </div>
           </div>
         </div>

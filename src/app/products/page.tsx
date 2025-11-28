@@ -29,8 +29,10 @@ import {
 } from '@/components/ui/sheet';
 
 import { Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ProductsPage() {
+  const { t } = useLanguage();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -334,7 +336,7 @@ export default function ProductsPage() {
           {/* Mobile: Stacked layout */}
           <div className="md:hidden space-y-3">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Products Store</h1>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">{t('products.store')}</h1>
               <div className="flex items-center gap-2">
                 <Link href="/cart">
                   <Button 
@@ -535,7 +537,7 @@ export default function ProductsPage() {
           
           {/* Desktop: Horizontal layout */}
           <div className="hidden md:flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Products Store</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('products.store')}</h1>
             
             <div className="flex items-center gap-3">
               {/* Desktop Search Bar */}

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserRound, ChevronDown, ChevronUp } from "lucide-react";
 import { Noto_Serif_Devanagari } from 'next/font/google';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
@@ -39,6 +40,7 @@ interface Department {
 }
 
 export default function NationalExecutiveSection() {
+  const { t } = useLanguage();
   const [department, setDepartment] = useState<Department | null>(null);
   const [members, setMembers] = useState<MemberWithPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +125,7 @@ export default function NationalExecutiveSection() {
             </h2>
             <Image
               src="/flag_logo.png"
-              alt="National Flag"
+              alt={t('nationalExecutive.nationalFlag')}
               width={48}
               height={48}
               className="h-10 w-10 md:h-12 md:w-12 object-contain flex-shrink-0"
@@ -158,7 +160,7 @@ export default function NationalExecutiveSection() {
                         {isFirst && (
                           <Image
                             src="/flag_logo.png"
-                            alt="National Flag"
+                            alt={t('nationalExecutive.nationalFlag')}
                             width={24}
                             height={24}
                             className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1 h-5 w-5 md:h-6 md:w-6 object-contain"
@@ -197,7 +199,7 @@ export default function NationalExecutiveSection() {
                                       src={heroEntry.member.photo_path.startsWith('/') 
                                         ? heroEntry.member.photo_path 
                                         : `/${heroEntry.member.photo_path}`}
-                                      alt={heroEntry.member.name || 'Member'}
+                                      alt={heroEntry.member.name || t('nationalExecutive.member')}
                                       fill
                                       className="object-cover"
                                       sizes={isFirst ? "(max-width: 768px) 144px, 180px" : "(max-width: 768px) 112px, 136px"}
@@ -225,8 +227,8 @@ export default function NationalExecutiveSection() {
                               <div className="text-center">
                                 <p className={`font-semibold text-gray-500 mb-0.5 ${
                                   isFirst ? 'text-sm md:text-base' : 'text-xs md:text-sm'
-                                }`}>Position Vacant</p>
-                                <p className={`text-gray-400 ${isFirst ? 'text-xs' : 'text-[10px]'}`}>Awaiting appointment</p>
+                                }`}>{t('nationalExecutive.positionVacant')}</p>
+                                <p className={`text-gray-400 ${isFirst ? 'text-xs' : 'text-[10px]'}`}>{t('nationalExecutive.awaitingAppointment')}</p>
                               </div>
                             )}
                           </div>
@@ -262,7 +264,7 @@ export default function NationalExecutiveSection() {
                                       <div className="absolute inset-[-4px] sm:inset-[-6px] md:inset-[-8px] rounded-full overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                         <Image
                                           src={item.member.photo_path.startsWith('/') ? item.member.photo_path : `/${item.member.photo_path}`}
-                                          alt={item.member.name || 'Member'}
+                                          alt={item.member.name || t('nationalExecutive.member')}
                                           fill
                                           className="object-cover"
                                           sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 112px"
@@ -285,8 +287,8 @@ export default function NationalExecutiveSection() {
                                   </h3>
                                 ) : (
                                   <div className="text-center">
-                                    <p className="font-semibold text-gray-500 text-[10px] sm:text-xs md:text-sm mb-0.5">Position Vacant</p>
-                                    <p className="text-gray-400 text-[9px] sm:text-[10px]">Awaiting appointment</p>
+                                    <p className="font-semibold text-gray-500 text-[10px] sm:text-xs md:text-sm mb-0.5">{t('nationalExecutive.positionVacant')}</p>
+                                    <p className="text-gray-400 text-[9px] sm:text-[10px]">{t('nationalExecutive.awaitingAppointment')}</p>
                                   </div>
                                 )}
                               </CardContent>
@@ -321,12 +323,12 @@ export default function NationalExecutiveSection() {
                 {showAll ? (
                   <>
                     <ChevronUp className="h-4 w-4 mr-2" />
-                    Show Less
+                    {t('nationalExecutive.showLess')}
                   </>
                 ) : (
                   <>
                     <ChevronDown className="h-4 w-4 mr-2" />
-                    View All
+                    {t('nationalExecutive.viewAll')}
                   </>
                 )}
               </Button>

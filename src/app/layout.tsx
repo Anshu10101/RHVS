@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Toaster } from "@/components/ui/toaster";
 import ServiceWorkerProvider from "@/components/ServiceWorkerProvider";
 import ConditionalFooter from "@/components/ConditionalFooter";
@@ -150,9 +151,11 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ServiceWorkerProvider />
+        <LanguageProvider>
         <CartProvider>
           {children}
         </CartProvider>
+        </LanguageProvider>
         <ConditionalFooter />
         <Toaster />
       </body>
