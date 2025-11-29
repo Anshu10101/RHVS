@@ -3,16 +3,12 @@
 import Link from 'next/link';
 import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState } from 'react';
 
 export default function Footer() {
   const { t, language, setLanguage } = useLanguage();
-  const [languagePopoverOpen, setLanguagePopoverOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
 
   return (
     <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50">
@@ -72,29 +68,21 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Popover open={languagePopoverOpen} onOpenChange={setLanguagePopoverOpen}>
+                <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
                   <PopoverTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-orange-700/70 hover:text-orange-600 transition-colors flex items-center gap-1.5"
-                    >
+                    <button className="text-orange-700/70 hover:text-orange-600 transition-colors flex items-center gap-1.5 w-full">
                       <span>{language === 'hi' ? 'हिंदी' : 'English'}</span>
                       <ChevronDown size={14} className="opacity-70" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent 
-                    align="start" 
-                    sideOffset={8}
-                    side="top"
-                    className="w-[140px] p-2"
-                  >
+                  <PopoverContent align="start" className="w-[140px] p-2">
                     <div className="flex flex-col gap-1">
                       <button
                         onClick={() => {
                           setLanguage('hi');
-                          setLanguagePopoverOpen(false);
+                          setLanguageOpen(false);
                         }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors text-left ${
                           language === 'hi'
                             ? 'bg-orange-50 text-orange-800 font-semibold'
                             : 'hover:bg-gray-100 text-gray-700'
@@ -106,9 +94,9 @@ export default function Footer() {
                       <button
                         onClick={() => {
                           setLanguage('en');
-                          setLanguagePopoverOpen(false);
+                          setLanguageOpen(false);
                         }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors text-left ${
                           language === 'en'
                             ? 'bg-orange-50 text-orange-800 font-semibold'
                             : 'hover:bg-gray-100 text-gray-700'

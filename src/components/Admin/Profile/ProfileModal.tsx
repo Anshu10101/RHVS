@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ interface ProfileModalProps {
 
 export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   const { currentUser, refreshData } = useAdmin();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'profile' | 'password'>('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -43,37 +45,94 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     e.preventDefault();
     setLoading(true);
     
-    // TODO: Add backend API call here
-    // await fetch('/api/admin/change-password', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     currentPassword: passwordData.currentPassword,
-    //     newPassword: passwordData.newPassword,
-    //   }),
-    // });
+    try {
+      const { getToken } = await import('@/lib/secure-storage');
+      const token = getToken();
 
-    // Reset form
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-    setLoading(false);
-    // Show success message
+      if (!token) {
+        throw new Error(t('admin.profile.notAuthenticated'));
+      }
+
+      const res = await fetch('/api/admin/password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'change-password',
+          data: {
+            currentPassword: passwordData.currentPassword,
+            newPassword: passwordData.newPassword,
+          },
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || t('admin.profile.failedToUpdatePassword'));
+      }
+
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+      
+      alert(t('admin.profile.passwordUpdatedSuccess'));
+    } catch (error) {
+      console.error('Error changing password:', error);
+      const errorMessage = error instanceof Error ? error.message : t('admin.profile.failedToUpdatePassword');
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePasswordReset = async () => {
+    if (!currentUser?.email) {
+      alert(t('admin.profile.emailNotFound'));
+      return;
+    }
+
     setLoading(true);
     
-    // TODO: Add backend API call here
-    // await fetch('/api/admin/reset-password', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    // });
+    try {
+      const res = await fetch('/api/admin/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'forgot',
+          data: { 
+            email: currentUser.email,
+            userType: currentUser.type,
+            state: currentUser.state,
+          },
+        }),
+      });
 
-    setLoading(false);
-    // Show success message
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || t('admin.profile.failedToSendResetOtp'));
+      }
+
+      // Store token in sessionStorage so reset page can use it
+      if (result.token) {
+        sessionStorage.setItem('password_reset_token', result.token);
+        sessionStorage.setItem('password_reset_email', currentUser.email);
+      }
+
+      alert(t('admin.profile.resetOtpSent'));
+      // Redirect to reset page - it will detect the token and show OTP input
+      window.location.href = '/admin/reset';
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      const errorMessage = error instanceof Error ? error.message : t('admin.profile.failedToSendResetOtp');
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatDate = (date: Date) => {
@@ -90,13 +149,14 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      alert(t('admin.profile.selectImageFile'));
       return;
     }
 
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
-      alert(`File size must be less than 2MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      alert(t('admin.profile.fileSizeError').replace('{size}', fileSizeMB));
       return;
     }
 
@@ -115,7 +175,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       const token = getToken();
 
       if (!token) {
-        throw new Error('Not authenticated. Please log in again.');
+        throw new Error(t('admin.profile.notAuthenticated'));
       }
 
       const formData = new FormData();
@@ -147,7 +207,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       const result = await saveResponse.json();
       
       if (!result.success) {
-        throw new Error(result.message || 'Failed to save profile photo');
+        throw new Error(result.message || t('admin.profile.failedToUploadPhoto'));
       }
 
       // Refresh user data to get updated photo
@@ -161,7 +221,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
       window.location.reload();
     } catch (error) {
       console.error('Error uploading photo:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to upload profile photo. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : t('admin.profile.failedToUploadPhoto');
       alert(errorMessage);
       setPhotoPreview(null);
     } finally {
@@ -177,9 +237,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Profile & Settings</DialogTitle>
+          <DialogTitle>{t('admin.profile.title')}</DialogTitle>
           <DialogDescription>
-            View your profile details and manage your password
+            {t('admin.profile.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -193,7 +253,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Profile Details
+            {t('admin.profile.profileDetails')}
           </button>
           <button
             onClick={() => setActiveTab('password')}
@@ -203,7 +263,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Password Management
+            {t('admin.profile.passwordManagement')}
           </button>
         </div>
 
@@ -260,7 +320,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     className="mt-2 text-xs text-orange-600 hover:text-orange-700 flex items-center space-x-1 disabled:opacity-50"
                   >
                     <Upload className="h-3 w-3 flex-shrink-0" />
-                    <span>{uploadingPhoto ? 'Uploading...' : 'Upload Photo'}</span>
+                    <span>{uploadingPhoto ? t('admin.profile.uploading') : t('admin.profile.uploadPhoto')}</span>
                   </button>
                 )}
               </div>
@@ -272,7 +332,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center space-x-2">
                     <Mail className="h-4 w-4 text-gray-500" />
-                    <span>Email Address</span>
+                    <span>{t('admin.profile.emailAddress')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -284,13 +344,13 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center space-x-2">
                     <Shield className="h-4 w-4 text-gray-500" />
-                    <span>Role</span>
+                    <span>{t('admin.profile.role')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-900">
-                    {currentUser.type === 'superadmin' ? 'Superadmin' : 
-                     currentUser.type === 'district_admin' ? 'District Admin' : 
+                    {currentUser.type === 'superadmin' ? t('admin.profile.superadmin') : 
+                     currentUser.type === 'district_admin' ? t('admin.profile.districtAdmin') : 
                      currentUser.role?.toUpperCase() || 'N/A'}
                   </p>
                 </CardContent>
@@ -301,7 +361,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center space-x-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>District</span>
+                      <span>{t('admin.profile.district')}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -315,7 +375,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center space-x-2">
                       <MapPin className="h-4 w-4 text-gray-500" />
-                      <span>State</span>
+                      <span>{t('admin.profile.state')}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -328,7 +388,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center space-x-2">
                     <Calendar className="h-4 w-4 text-gray-500" />
-                    <span>Account Created</span>
+                    <span>{t('admin.profile.accountCreated')}</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -343,7 +403,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm font-medium flex items-center space-x-2">
                       <User className="h-4 w-4 text-gray-500" />
-                      <span>Added By</span>
+                      <span>{t('admin.profile.addedBy')}</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -357,8 +417,8 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
             {currentUser.permissions && currentUser.permissions.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm font-medium">Permissions</CardTitle>
-                  <CardDescription>Your current permissions</CardDescription>
+                  <CardTitle className="text-sm font-medium">{t('admin.profile.permissions')}</CardTitle>
+                  <CardDescription>{t('admin.profile.yourCurrentPermissions')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
@@ -383,15 +443,15 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
             {/* Change Password */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Change Password</CardTitle>
+                <CardTitle className="text-base">{t('admin.profile.changePassword')}</CardTitle>
                 <CardDescription>
-                  Update your password to keep your account secure
+                  {t('admin.profile.updatePasswordDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                   <div>
-                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Label htmlFor="currentPassword">{t('admin.profile.currentPassword')}</Label>
                     <div className="relative mt-1">
                       <Input
                         id="currentPassword"
@@ -418,7 +478,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   </div>
 
                   <div>
-                    <Label htmlFor="newPassword">New Password</Label>
+                    <Label htmlFor="newPassword">{t('admin.profile.newPassword')}</Label>
                     <div className="relative mt-1">
                       <Input
                         id="newPassword"
@@ -444,12 +504,12 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">
-                      Password must be at least 8 characters long
+                      {t('admin.profile.passwordMinLength')}
                     </p>
                   </div>
 
                   <div>
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Label htmlFor="confirmPassword">{t('admin.profile.confirmNewPassword')}</Label>
                     <div className="relative mt-1">
                       <Input
                         id="confirmPassword"
@@ -477,7 +537,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                       passwordData.confirmPassword &&
                       passwordData.newPassword !== passwordData.confirmPassword && (
                         <p className="text-xs text-red-500 mt-1">
-                          Passwords do not match
+                          {t('admin.profile.passwordsDoNotMatch')}
                         </p>
                       )}
                   </div>
@@ -493,7 +553,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     }
                     className="w-full"
                   >
-                    {loading ? 'Updating...' : 'Update Password'}
+                    {loading ? t('admin.profile.updating') : t('admin.profile.updatePassword')}
                   </Button>
                 </form>
               </CardContent>
@@ -502,9 +562,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
             {/* Reset Password */}
             <Card className="border-orange-200 bg-orange-50">
               <CardHeader>
-                <CardTitle className="text-base text-orange-900">Reset Password</CardTitle>
+                <CardTitle className="text-base text-orange-900">{t('admin.profile.resetPassword')}</CardTitle>
                 <CardDescription className="text-orange-700">
-                  Request a password reset link to be sent to your email
+                  {t('admin.profile.requestResetLink')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -514,7 +574,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                   variant="outline"
                   className="w-full border-orange-300 text-orange-700 hover:bg-orange-100"
                 >
-                  {loading ? 'Sending...' : 'Send Password Reset Link'}
+                  {loading ? t('admin.profile.sending') : t('admin.profile.sendPasswordResetLink')}
                 </Button>
               </CardContent>
             </Card>

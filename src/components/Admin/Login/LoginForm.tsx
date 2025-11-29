@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff, Shield, Users, ArrowLeft } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, Eye, EyeOff, Shield, Users, ArrowLeft, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,6 +24,9 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
   const currentYear = new Date().getFullYear();
 
@@ -33,6 +37,53 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
       return;
     }
     await onLogin(email, password);
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast.error('Please enter your email address');
+      return;
+    }
+
+    setResetLoading(true);
+    
+    try {
+      const res = await fetch('/api/admin/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'forgot',
+          data: { 
+            email: resetEmail,
+            userType: loginType === 'superadmin' ? 'superadmin' : 'district_admin',
+          },
+        }),
+      });
+
+      const result = await res.json();
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || 'Failed to send password reset OTP');
+      }
+
+      // Store token in sessionStorage so reset page can use it
+      if (result.token) {
+        sessionStorage.setItem('password_reset_token', result.token);
+        sessionStorage.setItem('password_reset_email', resetEmail);
+      }
+
+      toast.success('Password reset OTP sent to your email');
+      setShowResetModal(false);
+      setResetEmail('');
+      // Redirect to reset page - it will detect the token and show OTP input
+      window.location.href = '/admin/reset';
+    } catch (error) {
+      console.error('Error requesting password reset:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send password reset OTP';
+      toast.error(errorMessage);
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const isSuperAdmin = loginType === 'superadmin';
@@ -167,6 +218,18 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
                     )}
                   </button>
                 </div>
+                <div className="text-right">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetEmail(email);
+                      setShowResetModal(true);
+                    }}
+                    className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
               </div>
 
               <Button
@@ -225,6 +288,67 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
           <p>© {currentYear} Rashtriya Hindu Vahini Sangathan. All rights reserved.</p>
         </div>
       </div>
+
+      {/* Password Reset Modal */}
+      <Dialog open={showResetModal} onOpenChange={setShowResetModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-orange-600" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Enter your email address and we'll send you an OTP to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resetEmail">Email Address</Label>
+              <Input
+                id="resetEmail"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                placeholder="Enter your email address"
+                required
+                className="h-11"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setShowResetModal(false);
+                  setResetEmail('');
+                }}
+                className="flex-1"
+                disabled={resetLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-1 bg-orange-600 hover:bg-orange-700"
+                disabled={resetLoading || !resetEmail}
+              >
+                {resetLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Reset Link
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -74,10 +74,15 @@ export function clearSessionCookie(): string {
   return attrs.join('; ');
 }
 
-export async function signPasswordResetJwt(email: string, superadminId: number, ttlSeconds: number = 15 * 60): Promise<string> {
+export async function signPasswordResetJwt(
+  email: string, 
+  adminId: number, 
+  userType: 'superadmin' | 'district_admin',
+  ttlSeconds: number = 15 * 60
+): Promise<string> {
   const key = getJwtKey();
   const now = Math.floor(Date.now() / 1000);
-  return new SignJWT({ purpose: 'admin_password_reset', email, sub: String(superadminId) })
+  return new SignJWT({ purpose: 'admin_password_reset', email, sub: String(adminId), userType })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt(now)
     .setIssuer(ADMIN_JWT_ISSUER)
@@ -86,12 +91,17 @@ export async function signPasswordResetJwt(email: string, superadminId: number, 
     .sign(key);
 }
 
-export async function verifyPasswordResetJwt(token: string): Promise<{ email: string; superadminId: number } | null> {
+export async function verifyPasswordResetJwt(token: string): Promise<{ email: string; adminId: number; userType: 'superadmin' | 'district_admin' } | null> {
   try {
     const key = getJwtKey();
     const { payload } = await jwtVerify(token, key, { issuer: ADMIN_JWT_ISSUER, audience: ADMIN_JWT_AUDIENCE });
     if ((payload as { purpose?: string }).purpose !== 'admin_password_reset') return null;
-    return { email: String((payload as { email?: string }).email || ''), superadminId: Number(payload.sub) };
+    const userType = (payload as { userType?: string }).userType || 'superadmin';
+    return { 
+      email: String((payload as { email?: string }).email || ''), 
+      adminId: Number(payload.sub),
+      userType: (userType === 'district_admin' ? 'district_admin' : 'superadmin') as 'superadmin' | 'district_admin'
+    };
   } catch {
     return null;
   }

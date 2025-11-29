@@ -2842,9 +2842,17 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'स्क्रीन रीडर के लिए विवरण',
     en: 'Description for screen readers'
   },
+  'admin.content.heroImages.titleField': {
+    hi: 'शीर्षक',
+    en: 'Title'
+  },
   'admin.content.heroImages.titlePlaceholder': {
     hi: 'छवि शीर्षक',
     en: 'Image title'
+  },
+  'admin.content.heroImages.descriptionField': {
+    hi: 'विवरण',
+    en: 'Description'
   },
   'admin.content.heroImages.descriptionPlaceholder': {
     hi: 'छवि विवरण',
@@ -3088,6 +3096,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'स्थान',
     en: 'Location'
   },
+  'admin.photos.descriptionField': {
+    hi: 'विवरण',
+    en: 'Description'
+  },
   'admin.photos.makeEventPublic': {
     hi: 'इवेंट को सार्वजनिक बनाएं',
     en: 'Make event public'
@@ -3159,6 +3171,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.photos.uploading': {
     hi: 'अपलोड हो रहा है...',
     en: 'Uploading...'
+  },
+  'admin.photos.uploadPhotosButton': {
+    hi: 'फोटो अपलोड करें',
+    en: 'Upload'
   },
   'admin.photos.seeMore': {
     hi: 'और देखें...',
@@ -3839,6 +3855,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.contact.valuePlaceholder': {
     hi: 'जैसे, +91 9876543210, info@example.com',
     en: 'e.g., +91 9876543210, info@example.com'
+  },
+  'admin.contact.descriptionField': {
+    hi: 'विवरण',
+    en: 'Description'
   },
   'admin.contact.descriptionPlaceholder': {
     hi: 'वैकल्पिक विवरण',
@@ -4828,6 +4848,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'कृपया <strong>विभाग प्रबंधित करें</strong> पर जाएं और पहले एक विभाग को राष्ट्रीय कार्यकारी के रूप में सेट करें।',
     en: 'Please go to <strong>Manage Departments</strong> and set a department as National Executive first.'
   },
+  'admin.departments.assign.levelLabel': {
+    hi: 'स्तर',
+    en: 'level'
+  },
   'admin.departments.assign.stepAssignMembersLabel': {
     hi: 'सदस्य असाइन करें',
     en: 'Assign Members'
@@ -4922,9 +4946,17 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'नाम (अंग्रेजी) *',
     en: 'Name (English) *'
   },
+  'admin.certificates.signs.nameHiLabel': {
+    hi: 'नाम (हिंदी)',
+    en: 'Name (Hindi)'
+  },
   'admin.certificates.signs.designationEnRequired': {
     hi: 'पदनाम (अंग्रेजी) *',
     en: 'Designation (English) *'
+  },
+  'admin.certificates.signs.designationHiLabel': {
+    hi: 'पदनाम (हिंदी)',
+    en: 'Designation (Hindi)'
   },
   'admin.certificates.signs.signatureImage': {
     hi: 'हस्ताक्षर छवि * (अधिकतम 100KB)',
@@ -5110,7 +5142,276 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'पद:',
     en: 'Post:'
   },
-  // Admin Sidebar
+
+  // Admin Profile & Settings
+  'admin.profile.title': {
+    hi: 'प्रोफ़ाइल और सेटिंग्स',
+    en: 'Profile & Settings'
+  },
+  'admin.profile.description': {
+    hi: 'अपने प्रोफ़ाइल विवरण देखें और अपना पासवर्ड प्रबंधित करें',
+    en: 'View your profile details and manage your password'
+  },
+  'admin.profile.profileDetails': {
+    hi: 'प्रोफ़ाइल विवरण',
+    en: 'Profile Details'
+  },
+  'admin.profile.passwordManagement': {
+    hi: 'पासवर्ड प्रबंधन',
+    en: 'Password Management'
+  },
+  'admin.profile.profile': {
+    hi: 'प्रोफ़ाइल',
+    en: 'Profile'
+  },
+  'admin.profile.emailAddress': {
+    hi: 'ईमेल पता',
+    en: 'Email Address'
+  },
+  'admin.profile.role': {
+    hi: 'भूमिका',
+    en: 'Role'
+  },
+  'admin.profile.superadmin': {
+    hi: 'सुपरएडमिन',
+    en: 'Superadmin'
+  },
+  'admin.profile.districtAdmin': {
+    hi: 'जिला व्यवस्थापक',
+    en: 'District Admin'
+  },
+  'admin.profile.district': {
+    hi: 'जिला',
+    en: 'District'
+  },
+  'admin.profile.state': {
+    hi: 'राज्य',
+    en: 'State'
+  },
+  'admin.profile.accountCreated': {
+    hi: 'खाता बनाया गया',
+    en: 'Account Created'
+  },
+  'admin.profile.addedBy': {
+    hi: 'द्वारा जोड़ा गया',
+    en: 'Added By'
+  },
+  'admin.profile.permissions': {
+    hi: 'अनुमतियां',
+    en: 'Permissions'
+  },
+  'admin.profile.yourCurrentPermissions': {
+    hi: 'आपकी वर्तमान अनुमतियां',
+    en: 'Your current permissions'
+  },
+  'admin.profile.uploadPhoto': {
+    hi: 'फोटो अपलोड करें',
+    en: 'Upload Photo'
+  },
+  'admin.profile.uploading': {
+    hi: 'अपलोड हो रहा है...',
+    en: 'Uploading...'
+  },
+  'admin.profile.selectImageFile': {
+    hi: 'कृपया एक छवि फ़ाइल चुनें',
+    en: 'Please select an image file'
+  },
+  'admin.profile.fileSizeError': {
+    hi: 'फ़ाइल का आकार 2MB से कम होना चाहिए। आपकी फ़ाइल {size}MB है',
+    en: 'File size must be less than 2MB. Your file is {size}MB'
+  },
+  'admin.profile.changePassword': {
+    hi: 'पासवर्ड बदलें',
+    en: 'Change Password'
+  },
+  'admin.profile.updatePasswordDescription': {
+    hi: 'अपने खाते को सुरक्षित रखने के लिए अपना पासवर्ड अपडेट करें',
+    en: 'Update your password to keep your account secure'
+  },
+  'admin.profile.currentPassword': {
+    hi: 'वर्तमान पासवर्ड',
+    en: 'Current Password'
+  },
+  'admin.profile.newPassword': {
+    hi: 'नया पासवर्ड',
+    en: 'New Password'
+  },
+  'admin.profile.passwordMinLength': {
+    hi: 'पासवर्ड कम से कम 8 अक्षर लंबा होना चाहिए',
+    en: 'Password must be at least 8 characters long'
+  },
+  'admin.profile.confirmNewPassword': {
+    hi: 'नया पासवर्ड पुष्टि करें',
+    en: 'Confirm New Password'
+  },
+  'admin.profile.passwordsDoNotMatch': {
+    hi: 'पासवर्ड मेल नहीं खाते',
+    en: 'Passwords do not match'
+  },
+  'admin.profile.updatePassword': {
+    hi: 'पासवर्ड अपडेट करें',
+    en: 'Update Password'
+  },
+  'admin.profile.updating': {
+    hi: 'अपडेट हो रहा है...',
+    en: 'Updating...'
+  },
+  'admin.profile.passwordUpdatedSuccess': {
+    hi: 'पासवर्ड सफलतापूर्वक अपडेट किया गया!',
+    en: 'Password updated successfully!'
+  },
+  'admin.profile.resetPassword': {
+    hi: 'पासवर्ड रीसेट करें',
+    en: 'Reset Password'
+  },
+  'admin.profile.requestResetLink': {
+    hi: 'अपने ईमेल पर पासवर्ड रीसेट लिंक भेजने का अनुरोध करें',
+    en: 'Request a password reset link to be sent to your email'
+  },
+  'admin.profile.sendPasswordResetLink': {
+    hi: 'पासवर्ड रीसेट लिंक भेजें',
+    en: 'Send Password Reset Link'
+  },
+  'admin.profile.sending': {
+    hi: 'भेज रहे हैं...',
+    en: 'Sending...'
+  },
+  'admin.profile.emailNotFound': {
+    hi: 'ईमेल नहीं मिला। कृपया सहायता से संपर्क करें।',
+    en: 'Email not found. Please contact support.'
+  },
+  'admin.profile.resetOtpSent': {
+    hi: 'पासवर्ड रीसेट OTP आपके ईमेल पर भेजा गया है। कृपया अपना इनबॉक्स देखें और जारी रखने के लिए OTP दर्ज करें।',
+    en: 'Password reset OTP has been sent to your email. Please check your inbox and enter the OTP to continue.'
+  },
+  'admin.profile.failedToUpdatePassword': {
+    hi: 'पासवर्ड अपडेट करने में विफल। कृपया पुनः प्रयास करें।',
+    en: 'Failed to update password. Please try again.'
+  },
+  'admin.profile.failedToUploadPhoto': {
+    hi: 'प्रोफ़ाइल फोटो अपलोड करने में विफल। कृपया पुनः प्रयास करें।',
+    en: 'Failed to upload profile photo. Please try again.'
+  },
+  'admin.profile.notAuthenticated': {
+    hi: 'प्रमाणित नहीं। कृपया फिर से लॉगिन करें।',
+    en: 'Not authenticated. Please log in again.'
+  },
+  'admin.profile.failedToSendResetOtp': {
+    hi: 'रीसेट OTP भेजने में विफल। कृपया पुनः प्रयास करें।',
+    en: 'Failed to send reset OTP. Please try again.'
+  },
+
+  // Admin Password Reset (OTP Page)
+  'admin.reset.title': {
+    hi: 'एडमिन पासवर्ड रीसेट करें',
+    en: 'Reset Admin Password'
+  },
+  'admin.reset.followSteps': {
+    hi: 'अपना पासवर्ड रीसेट करने के लिए चरणों का पालन करें',
+    en: 'Follow the steps to reset your password'
+  },
+  'admin.reset.enterEmail': {
+    hi: 'अपना ईमेल पता दर्ज करें',
+    en: 'Please enter your email address'
+  },
+  'admin.reset.emailAddress': {
+    hi: 'ईमेल पता',
+    en: 'Email Address'
+  },
+  'admin.reset.enterEmailPlaceholder': {
+    hi: 'अपना ईमेल दर्ज करें',
+    en: 'Enter your email'
+  },
+  'admin.reset.sendOtp': {
+    hi: 'OTP भेजें',
+    en: 'Send OTP'
+  },
+  'admin.reset.sendingOtp': {
+    hi: 'OTP भेज रहे हैं...',
+    en: 'Sending OTP…'
+  },
+  'admin.reset.backToLogin': {
+    hi: 'लॉगिन पर वापस',
+    en: 'Back to Login'
+  },
+  'admin.reset.enterSixDigitOtp': {
+    hi: '6-अंकीय OTP दर्ज करें',
+    en: 'Enter 6-Digit OTP'
+  },
+  'admin.reset.checkEmailForOtp': {
+    hi: 'OTP कोड के लिए अपना ईमेल देखें',
+    en: 'Check your email for the OTP code'
+  },
+  'admin.reset.otpSentToEmail': {
+    hi: 'OTP आपके ईमेल पर भेजा गया है। कृपया इसे नीचे दर्ज करें।',
+    en: 'OTP has been sent to your email. Please enter it below.'
+  },
+  'admin.reset.verifyOtp': {
+    hi: 'OTP सत्यापित करें',
+    en: 'Verify OTP'
+  },
+  'admin.reset.verifying': {
+    hi: 'सत्यापित हो रहा है...',
+    en: 'Verifying…'
+  },
+  'admin.reset.back': {
+    hi: 'वापस',
+    en: 'Back'
+  },
+  'admin.reset.enterValidOtp': {
+    hi: 'कृपया एक वैध 6-अंकीय OTP दर्ज करें',
+    en: 'Please enter a valid 6-digit OTP'
+  },
+  'admin.reset.invalidOtp': {
+    hi: 'अमान्य OTP',
+    en: 'Invalid OTP'
+  },
+  'admin.reset.newPassword': {
+    hi: 'नया पासवर्ड',
+    en: 'New Password'
+  },
+  'admin.reset.enterNewPassword': {
+    hi: 'नया पासवर्ड दर्ज करें',
+    en: 'Enter new password'
+  },
+  'admin.reset.mustBeEightCharacters': {
+    hi: 'कम से कम 8 अक्षर लंबा होना चाहिए',
+    en: 'Must be at least 8 characters long'
+  },
+  'admin.reset.confirmNewPassword': {
+    hi: 'नया पासवर्ड पुष्टि करें',
+    en: 'Confirm New Password'
+  },
+  'admin.reset.confirmNewPasswordPlaceholder': {
+    hi: 'नया पासवर्ड पुष्टि करें',
+    en: 'Confirm new password'
+  },
+  'admin.reset.passwordsMatch': {
+    hi: '✓ पासवर्ड मेल खाते हैं',
+    en: '✓ Passwords match'
+  },
+  'admin.reset.resettingPassword': {
+    hi: 'पासवर्ड रीसेट हो रहा है...',
+    en: 'Resetting Password…'
+  },
+  'admin.reset.resetPassword': {
+    hi: 'पासवर्ड रीसेट करें',
+    en: 'Reset Password'
+  },
+  'admin.reset.passwordResetSuccess': {
+    hi: 'पासवर्ड सफलतापूर्वक रीसेट किया गया! लॉगिन पर पुनर्निर्देशित हो रहा है...',
+    en: 'Password reset successfully! Redirecting to login...'
+  },
+  'admin.reset.failedToSendOtp': {
+    hi: 'OTP भेजने में विफल',
+    en: 'Failed to send OTP'
+  },
+  'admin.reset.failedToResetPassword': {
+    hi: 'पासवर्ड रीसेट करने में विफल',
+    en: 'Failed to reset password'
+  },
+
+  // Admin Sidebar Navigation
   'admin.sidebar.dashboard': {
     hi: 'डैशबोर्ड',
     en: 'Dashboard'
@@ -5128,7 +5429,7 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Add Member'
   },
   'admin.sidebar.districtAdmins': {
-    hi: 'जिला प्रशासक',
+    hi: 'जिला व्यवस्थापक',
     en: 'District Admins'
   },
   'admin.sidebar.tokenVerification': {
@@ -5140,7 +5441,7 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Permission Management'
   },
   'admin.sidebar.assignPermissions': {
-    hi: 'अनुमति असाइन करें',
+    hi: 'अनुमतियां असाइन करें',
     en: 'Assign Permissions'
   },
   'admin.sidebar.permissionHistory': {
@@ -5214,6 +5515,14 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.sidebar.logout': {
     hi: 'लॉगआउट',
     en: 'Logout'
+  },
+  'admin.sidebar.adminPanel': {
+    hi: 'एडमिन पैनल',
+    en: 'Admin Panel'
+  },
+  'admin.sidebar.district': {
+    hi: 'जिला:',
+    en: 'District:'
   }
 };
 

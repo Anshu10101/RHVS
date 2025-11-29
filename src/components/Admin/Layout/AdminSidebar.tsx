@@ -42,224 +42,204 @@ interface AdminSidebarProps {
   onClose: () => void;
 }
 
-const getNavigationItems = (t: (key: string) => string) => [
-  {
-    name: 'Dashboard',
-    nameKey: 'admin.sidebar.dashboard',
-    href: '/admin/dashboard',
-    icon: BarChart3,
-    roles: ['superadmin', 'admin', 'verified_member'],
-  },
-  {
-    name: 'Members',
-    nameKey: 'admin.sidebar.members',
-    href: '/admin/members',
-    icon: Users,
-    roles: ['superadmin', 'admin', 'verified_member', 'district_admin'],
-    children: [
-      {
-        name: 'All Members',
-        nameKey: 'admin.sidebar.allMembers',
-        href: '/admin/members',
-        icon: Users,
-        permission: 'view_members',
-      },
-      {
-        name: 'Add Member',
-        nameKey: 'admin.sidebar.addMember',
-        href: '/admin/members/add',
-        icon: UserPlus,
-        permission: 'add_members',
-      },
-      {
-        name: 'District Admins',
-        nameKey: 'admin.sidebar.districtAdmins',
-        href: '/admin/members/admins',
-        icon: Shield,
-        roles: ['superadmin'],
-      },
-      {
-        name: 'Token Verification',
-        nameKey: 'admin.sidebar.tokenVerification',
-        href: '/admin/members/tokens',
-        icon: Shield,
-        permission: 'verify_tokens', // District admins can verify tokens for their district
-      },
-    ],
-  },
-  {
-    name: 'Permission Management',
-    nameKey: 'admin.sidebar.permissionManagement',
-    href: '/admin/permissions',
-    icon: Shield,
-    roles: ['superadmin'],
-    children: [
-      {
-        name: 'Assign Permissions',
-        nameKey: 'admin.sidebar.assignPermissions',
-        href: '/admin/permissions/assign',
-        icon: UserCheck,
-        roles: ['superadmin'],
-      },
-      {
-        name: 'Permission History',
-        nameKey: 'admin.sidebar.permissionHistory',
-        href: '/admin/permissions/history',
-        icon: Activity,
-        roles: ['superadmin'],
-      },
-    ],
-  },
-  {
-    name: 'Content Management',
-    nameKey: 'admin.sidebar.contentManagement',
-    href: '/admin/content',
-    icon: FileText,
-    roles: ['superadmin', 'admin', 'district_admin'],
-    children: [
-      {
-        name: 'About Page',
-        nameKey: 'admin.sidebar.aboutPage',
-        href: '/admin/content/about',
-        icon: Globe,
-        permission: 'edit_about',
-      },
-      {
-        name: 'Hero Images',
-        nameKey: 'admin.sidebar.heroImages',
-        href: '/admin/content/hero-images',
-        icon: Camera,
-        permission: 'manage_hero_images',
-      },
-      {
-        name: 'Photo Management',
-        nameKey: 'admin.sidebar.photoManagement',
-        href: '/admin/photos',
-        icon: Camera,
-        permission: 'manage_gallery', // This matches the database permission name
-      },
-      {
-        name: 'Product Store',
-        nameKey: 'admin.sidebar.productStore',
-        href: '/admin/content/store',
-        icon: Store,
-        permission: 'add_products',
-      },
-      {
-        name: 'News & Events',
-        nameKey: 'admin.sidebar.newsEvents',
-        href: '/admin/content/news-events',
-        icon: CalendarIcon,
-        permission: 'edit_news_events',
-      },
-      {
-        name: 'Contact Info',
-        nameKey: 'admin.sidebar.contactInfo',
-        href: '/admin/content/contact',
-        icon: Phone,
-        roles: ['superadmin'],
-      },
-    ],
-  },
-  {
-    name: 'Departments',
-    nameKey: 'admin.sidebar.departments',
-    href: '/admin/departments',
-    icon: Building2,
-    roles: ['superadmin', 'district_admin'],
-    children: [
-      {
-        name: 'Create Department',
-        nameKey: 'admin.sidebar.createDepartment',
-        href: '/admin/departments/create',
-        icon: UserPlus,
-        roles: ['superadmin'],
-      },
-      {
-        name: 'Manage Departments',
-        nameKey: 'admin.sidebar.manageDepartments',
-        href: '/admin/departments/manage',
-        icon: Settings,
-        roles: ['superadmin'],
-      },
-      {
-        name: 'Assign Members',
-        nameKey: 'admin.sidebar.assignMembers',
-        href: '/admin/departments/assign',
-        icon: UserCheck,
-        permission: 'assign_members_to_departments', // District admins need this permission, superadmins have it by default
-      },
-    ],
-  },
-  {
-    name: 'Certificates',
-    nameKey: 'admin.sidebar.certificates',
-    href: '/admin/certificates',
-    icon: FileText,
-    roles: ['superadmin'],
-    children: [
-      {
-        name: 'Add Sign',
-        nameKey: 'admin.sidebar.addSign',
-        href: '/admin/certificates/signs',
-        icon: FileText,
-        roles: ['superadmin'],
-      },
-    ],
-  },
-  {
-    name: 'Analytics',
-    nameKey: 'admin.sidebar.analytics',
-    href: '/admin/analytics',
-    icon: BarChart3,
-    roles: ['superadmin', 'admin', 'district_admin'],
-    permission: 'view_analytics',
-  },
-  {
-    name: 'Activity Logs',
-    nameKey: 'admin.sidebar.activityLogs',
-    href: '/admin/logs',
-    icon: Activity,
-    roles: ['superadmin'],
-    permission: 'view_logs',
-  },
-  {
-    name: 'Settings',
-    nameKey: 'admin.sidebar.settings',
-    href: '/admin/settings',
-    icon: Settings,
-    roles: ['superadmin'],
-    permission: 'manage_settings',
-  },
-];
-
 export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const { currentUser, hasPermission, logout } = useAdmin();
   const { t } = useLanguage();
+
+  const navigationItems = [
+    {
+      name: t('admin.sidebar.dashboard'),
+      nameKey: 'dashboard',
+      href: '/admin/dashboard',
+      icon: BarChart3,
+      roles: ['superadmin', 'admin', 'verified_member'],
+    },
+    {
+      name: t('admin.sidebar.members'),
+      nameKey: 'members',
+      href: '/admin/members',
+      icon: Users,
+      roles: ['superadmin', 'admin', 'verified_member', 'district_admin'],
+      children: [
+        {
+          name: t('admin.sidebar.allMembers'),
+          href: '/admin/members',
+          icon: Users,
+          permission: 'view_members',
+        },
+        {
+          name: t('admin.sidebar.addMember'),
+          href: '/admin/members/add',
+          icon: UserPlus,
+          permission: 'add_members',
+        },
+        {
+          name: t('admin.sidebar.districtAdmins'),
+          href: '/admin/members/admins',
+          icon: Shield,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.tokenVerification'),
+          href: '/admin/members/tokens',
+          icon: Shield,
+          permission: 'verify_tokens', // District admins can verify tokens for their district
+        },
+      ],
+    },
+    {
+      name: t('admin.sidebar.permissionManagement'),
+      nameKey: 'permissionManagement',
+      href: '/admin/permissions',
+      icon: Shield,
+      roles: ['superadmin'],
+      children: [
+        {
+          name: t('admin.sidebar.assignPermissions'),
+          href: '/admin/permissions/assign',
+          icon: UserCheck,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.permissionHistory'),
+          href: '/admin/permissions/history',
+          icon: Activity,
+          roles: ['superadmin'],
+        },
+      ],
+    },
+    {
+      name: t('admin.sidebar.contentManagement'),
+      nameKey: 'contentManagement',
+      href: '/admin/content',
+      icon: FileText,
+      roles: ['superadmin', 'admin', 'district_admin'],
+      children: [
+        {
+          name: t('admin.sidebar.aboutPage'),
+          href: '/admin/content/about',
+          icon: Globe,
+          permission: 'edit_about',
+        },
+        {
+          name: t('admin.sidebar.heroImages'),
+          href: '/admin/content/hero-images',
+          icon: Camera,
+          permission: 'manage_hero_images',
+        },
+        {
+          name: t('admin.sidebar.photoManagement'),
+          href: '/admin/photos',
+          icon: Camera,
+          permission: 'manage_gallery', // This matches the database permission name
+        },
+        {
+          name: t('admin.sidebar.productStore'),
+          href: '/admin/content/store',
+          icon: Store,
+          permission: 'add_products',
+        },
+        {
+          name: t('admin.sidebar.newsEvents'),
+          href: '/admin/content/news-events',
+          icon: CalendarIcon,
+          permission: 'edit_news_events',
+        },
+        {
+          name: t('admin.sidebar.contactInfo'),
+          href: '/admin/content/contact',
+          icon: Phone,
+          roles: ['superadmin'],
+        },
+      ],
+    },
+    {
+      name: t('admin.sidebar.departments'),
+      nameKey: 'departments',
+      href: '/admin/departments',
+      icon: Building2,
+      roles: ['superadmin', 'district_admin'],
+      children: [
+        {
+          name: t('admin.sidebar.createDepartment'),
+          href: '/admin/departments/create',
+          icon: UserPlus,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.manageDepartments'),
+          href: '/admin/departments/manage',
+          icon: Settings,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.assignMembers'),
+          href: '/admin/departments/assign',
+          icon: UserCheck,
+          permission: 'assign_members_to_departments', // District admins need this permission, superadmins have it by default
+        },
+      ],
+    },
+    {
+      name: t('admin.sidebar.certificates'),
+      nameKey: 'certificates',
+      href: '/admin/certificates',
+      icon: FileText,
+      roles: ['superadmin'],
+      children: [
+        {
+          name: t('admin.sidebar.addSign'),
+          href: '/admin/certificates/signs',
+          icon: FileText,
+          roles: ['superadmin'],
+        },
+      ],
+    },
+    {
+      name: t('admin.sidebar.analytics'),
+      nameKey: 'analytics',
+      href: '/admin/analytics',
+      icon: BarChart3,
+      roles: ['superadmin', 'admin', 'district_admin'],
+      permission: 'view_analytics',
+    },
+    {
+      name: t('admin.sidebar.activityLogs'),
+      nameKey: 'activityLogs',
+      href: '/admin/logs',
+      icon: Activity,
+      roles: ['superadmin'],
+      permission: 'view_logs',
+    },
+    {
+      name: t('admin.sidebar.settings'),
+      nameKey: 'settings',
+      href: '/admin/settings',
+      icon: Settings,
+      roles: ['superadmin'],
+      permission: 'manage_settings',
+    },
+  ];
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
-
-  const navigationItems = getNavigationItems(t);
 
   // Auto-expand Members and Departments sections for district admins (only once on mount)
   useEffect(() => {
     if (currentUser?.type === 'district_admin' && !hasAutoExpanded) {
       setExpandedItems(prev => {
         const newItems = [...prev];
-        const membersItem = navigationItems.find(item => item.name === 'Members');
-        const departmentsItem = navigationItems.find(item => item.name === 'Departments');
-        if (membersItem && !newItems.includes(membersItem.name)) {
-          newItems.push(membersItem.name);
+        if (!newItems.includes('members')) {
+          newItems.push('members');
         }
-        if (departmentsItem && !newItems.includes(departmentsItem.name)) {
-          newItems.push(departmentsItem.name);
+        if (!newItems.includes('departments')) {
+          newItems.push('departments');
         }
         return newItems;
       });
       setHasAutoExpanded(true);
     }
-  }, [currentUser, hasAutoExpanded, navigationItems]);
+  }, [currentUser, hasAutoExpanded]);
 
   if (!currentUser) {
     return null;
@@ -267,11 +247,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
   // const isSuperAdmin = currentUser?.role === 'superadmin';
 
-  const toggleExpanded = (itemName: string) => {
+  const toggleExpanded = (itemKey: string) => {
     setExpandedItems(prev =>
-      prev.includes(itemName)
-        ? prev.filter(item => item !== itemName)
-        : [...prev, itemName]
+      prev.includes(itemKey)
+        ? prev.filter(item => item !== itemKey)
+        : [...prev, itemKey]
     );
   };
 
@@ -297,12 +277,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     // For district admins, check permissions and show member management
     if (currentUser.type === 'district_admin') {
       // Always show Members section for district admins
-      if (item.nameKey === 'admin.sidebar.members') {
+      if (item.nameKey === 'members') {
         return true;
       }
       
       // Always show Departments section for district admins (they can assign members)
-      if (item.nameKey === 'admin.sidebar.departments') {
+      if (item.nameKey === 'departments') {
         return true;
       }
       
@@ -364,7 +344,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                 priority 
               />
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">{t('footer.adminPanel')}</h1>
+                <h1 className="text-lg font-semibold text-gray-900">{t('admin.sidebar.adminPanel')}</h1>
                 <p className="text-xs text-gray-500">{t('admin.sidebar.dashboard')}</p>
               </div>
             </div>
@@ -403,7 +383,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                   </p>
                   {currentUser.district && (
                     <p className="text-xs text-blue-600 truncate">
-                      District: {currentUser.district}
+                      {t('admin.sidebar.district')} {currentUser.district}
                     </p>
                   )}
                   <span
@@ -424,10 +404,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
             {filteredItems.map((item) => {
               const isActive = pathname === item.href;
               const hasChildren = item.children && item.children.length > 0;
-              const isExpanded = expandedItems.includes(item.name);
+              const itemKey = item.nameKey || item.name;
+              const isExpanded = expandedItems.includes(itemKey);
 
               return (
-                <div key={item.name}>
+                <div key={itemKey}>
                   {hasChildren ? (
                   <div
                     className={cn(
@@ -437,12 +418,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                     )}
                     onClick={() => {
-                        toggleExpanded(item.name);
+                        toggleExpanded(itemKey);
                     }}
                   >
                     <div className="flex items-center space-x-3">
                       <item.icon className="h-5 w-5" />
-                      <span>{t(item.nameKey)}</span>
+                      <span>{item.name}</span>
                     </div>
                       <Menu className="h-4 w-4" />
                     </div>
@@ -459,7 +440,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     >
                       <div className="flex items-center space-x-3">
                         <item.icon className="h-5 w-5" />
-                        <span>{t(item.nameKey)}</span>
+                        <span>{item.name}</span>
                   </div>
                     </Link>
                   )}
@@ -490,7 +471,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                             canAccess = true;
                           }
                           // For Members section children, show them for district admins
-                          else if (item.nameKey === 'admin.sidebar.members') {
+                          else if (item.nameKey === 'members') {
                             canAccess = true; // Always show member management options for district admins
                           }
                           // Default permission check
@@ -518,7 +499,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                             onClick={onClose}
                           >
                             <child.icon className="h-4 w-4" />
-                            <span>{t(child.nameKey)}</span>
+                            <span>{child.name}</span>
                           </Link>
                         );
                       })}
