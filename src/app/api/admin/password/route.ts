@@ -3,6 +3,7 @@ import { executeQuery } from '@/lib/database';
 import { generateOTP } from '@/lib/email';
 import { signPasswordResetJwt, verifyPasswordResetJwt, getAdminToken, verifyAdminJwt } from '@/lib/auth-jwt';
 import { hashPassword, verifyPassword } from '@/lib/password';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 import nodemailer from 'nodemailer';
 
 // Generate password reset email content based on language
@@ -117,21 +118,21 @@ export async function POST(req: NextRequest) {
     if (action === 'change-password') {
       const token = getAdminToken(req);
       if (!token) {
-        return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+        return noCacheJsonResponse({ success: false, message: 'Unauthorized' }, { status: 401 });
       }
 
       const claims = await verifyAdminJwt(token);
       if (!claims) {
-        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
+        return noCacheJsonResponse({ success: false, message: 'Invalid token' }, { status: 401 });
       }
 
       const { currentPassword, newPassword } = data || {};
       if (!currentPassword || !newPassword) {
-        return NextResponse.json({ success: false, message: 'Current password and new password required' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Current password and new password required' }, { status: 400 });
       }
 
       if (newPassword.length < 8) {
-        return NextResponse.json({ success: false, message: 'Password must be at least 8 characters long' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Password must be at least 8 characters long' }, { status: 400 });
       }
 
       const adminId = Number(claims.sub);
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
           [adminId]
         ) as Array<{ password_hash: string }>;
         if (rows.length === 0) {
-          return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+          return noCacheJsonResponse({ success: false, message: 'User not found' }, { status: 404 });
         }
         currentHash = rows[0].password_hash;
       } else {
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
           [adminId]
         ) as Array<{ password_hash: string }>;
         if (rows.length === 0) {
-          return NextResponse.json({ success: false, message: 'User not found' }, { status: 404 });
+          return noCacheJsonResponse({ success: false, message: 'User not found' }, { status: 404 });
         }
         currentHash = rows[0].password_hash;
       }
@@ -162,7 +163,7 @@ export async function POST(req: NextRequest) {
       // Verify current password
       const isValid = await verifyPassword(currentPassword, currentHash);
       if (!isValid) {
-        return NextResponse.json({ success: false, message: 'Current password is incorrect' }, { status: 401 });
+        return noCacheJsonResponse({ success: false, message: 'Current password is incorrect' }, { status: 401 });
       }
 
       // Update password
@@ -173,13 +174,13 @@ export async function POST(req: NextRequest) {
         await executeQuery('UPDATE district_admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [newHash, adminId]);
       }
 
-      return NextResponse.json({ success: true, message: 'Password updated successfully' });
+      return noCacheJsonResponse({ success: true, message: 'Password updated successfully' });
     }
 
     // Request password reset (forgot password)
     if (action === 'forgot') {
       const { email, userType: requestedUserType, state: requestedState } = data || {};
-      if (!email) return NextResponse.json({ success: false, message: 'Email required' }, { status: 400 });
+      if (!email) return noCacheJsonResponse({ success: false, message: 'Email required' }, { status: 400 });
 
       // Check superadmin first
       let adminId: number | null = null;
@@ -216,7 +217,7 @@ export async function POST(req: NextRequest) {
 
       // Do not reveal account existence - return success even if not found
       if (!adminId) {
-        return NextResponse.json({ success: true, message: 'If the email exists, a reset OTP has been sent' });
+        return noCacheJsonResponse({ success: true, message: 'If the email exists, a reset OTP has been sent' });
       }
 
       const otp = generateOTP();
@@ -277,18 +278,18 @@ export async function POST(req: NextRequest) {
       });
       console.log('Sent admin reset OTP:', result.messageId);
 
-      return NextResponse.json({ success: true, token });
+      return noCacheJsonResponse({ success: true, token });
     }
 
     // Verify OTP
     if (action === 'verify-otp') {
       const { token, otp } = data || {};
-      if (!token || !otp) return NextResponse.json({ success: false, message: 'Token and OTP required' }, { status: 400 });
+      if (!token || !otp) return noCacheJsonResponse({ success: false, message: 'Token and OTP required' }, { status: 400 });
 
       // First verify JWT token expiration
       const payload = await verifyPasswordResetJwt(token);
       if (!payload) {
-        return NextResponse.json({ success: false, message: 'Invalid or expired token. Please request a new OTP.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Invalid or expired token. Please request a new OTP.' }, { status: 400 });
       }
 
       // Then check database record
@@ -298,7 +299,7 @@ export async function POST(req: NextRequest) {
       ) as Array<{ id: number; used: boolean; expires_at: string }>;
       
       if (rows.length === 0) {
-        return NextResponse.json({ success: false, message: 'Invalid OTP' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Invalid OTP' }, { status: 400 });
       }
       
       const rec = rows[0];
@@ -306,11 +307,11 @@ export async function POST(req: NextRequest) {
       const expiresAt = new Date(rec.expires_at).getTime();
       
       if (rec.used) {
-        return NextResponse.json({ success: false, message: 'This OTP has already been used. Please request a new one.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'This OTP has already been used. Please request a new one.' }, { status: 400 });
       }
       
       if (expiresAt < now) {
-        return NextResponse.json({ success: false, message: 'OTP has expired. Please request a new one.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'OTP has expired. Please request a new one.' }, { status: 400 });
       }
 
       // Mark OTP as verified but don't mark token as used yet
@@ -318,22 +319,22 @@ export async function POST(req: NextRequest) {
       // Update the OTP to 'VERIFIED' to mark that OTP verification is complete
       const updateResult = await executeQuery('UPDATE admin_password_resets SET otp = ? WHERE id = ?', ['VERIFIED', rec.id]);
       console.log('OTP verification update result:', updateResult);
-      return NextResponse.json({ success: true });
+      return noCacheJsonResponse({ success: true });
     }
 
     // Reset password with token
     if (action === 'reset') {
       const { token, newPassword } = data || {};
-      if (!token || !newPassword) return NextResponse.json({ success: false, message: 'Token and password required' }, { status: 400 });
+      if (!token || !newPassword) return noCacheJsonResponse({ success: false, message: 'Token and password required' }, { status: 400 });
 
       if (newPassword.length < 8) {
-        return NextResponse.json({ success: false, message: 'Password must be at least 8 characters long' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Password must be at least 8 characters long' }, { status: 400 });
       }
 
       // First verify JWT token expiration
       const payload = await verifyPasswordResetJwt(token);
       if (!payload) {
-        return NextResponse.json({ success: false, message: 'Invalid or expired token. Please request a new password reset.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Invalid or expired token. Please request a new password reset.' }, { status: 400 });
       }
 
       // Then check database record - verify that OTP was verified
@@ -343,7 +344,7 @@ export async function POST(req: NextRequest) {
       ) as Array<{ id: number; used: boolean; expires_at: string; otp: string }>;
       
       if (rows.length === 0) {
-        return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Invalid token' }, { status: 400 });
       }
       
       const rec = rows[0];
@@ -351,11 +352,11 @@ export async function POST(req: NextRequest) {
       const expiresAt = new Date(rec.expires_at).getTime();
       
       if (rec.used) {
-        return NextResponse.json({ success: false, message: 'This reset token has already been used. Please request a new password reset.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'This reset token has already been used. Please request a new password reset.' }, { status: 400 });
       }
       
       if (expiresAt < now) {
-        return NextResponse.json({ success: false, message: 'Reset token has expired. Please request a new password reset.' }, { status: 400 });
+        return noCacheJsonResponse({ success: false, message: 'Reset token has expired. Please request a new password reset.' }, { status: 400 });
       }
 
       // If we reach here, the token is valid and not expired
@@ -374,13 +375,13 @@ export async function POST(req: NextRequest) {
         await executeQuery('UPDATE district_admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, payload.adminId]);
       }
       await executeQuery('UPDATE admin_password_resets SET used = 1 WHERE id = ?', [rec.id]);
-      return NextResponse.json({ success: true, message: 'Password reset successfully' });
+      return noCacheJsonResponse({ success: true, message: 'Password reset successfully' });
     }
 
-    return NextResponse.json({ success: false, message: 'Unknown action' }, { status: 400 });
+    return noCacheJsonResponse({ success: false, message: 'Unknown action' }, { status: 400 });
   } catch (e) {
     console.error('admin/password error', e);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 

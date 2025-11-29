@@ -51,9 +51,14 @@ export default function AdminPasswordResetPage() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch('/api/admin/password', {
+      const res = await fetch(`/api/admin/password?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({ action: 'forgot', data: { email } }),
       });
       const data = await res.json();
@@ -78,9 +83,14 @@ export default function AdminPasswordResetPage() {
     setLoading(true); 
     setError(null);
     try {
-      const res = await fetch('/api/admin/password', {
+      const res = await fetch(`/api/admin/password?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({ action: 'verify-otp', data: { token, otp } }),
       });
       const data = await res.json();
@@ -108,9 +118,14 @@ export default function AdminPasswordResetPage() {
     setLoading(true); 
     setError(null);
     try {
-      const res = await fetch('/api/admin/password', {
+      const res = await fetch(`/api/admin/password?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({ action: 'reset', data: { token, newPassword } }),
       });
       const data = await res.json();

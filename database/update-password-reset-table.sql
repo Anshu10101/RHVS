@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS admin_password_resets (
   admin_id INT NOT NULL,
   user_type ENUM('superadmin', 'district_admin') DEFAULT 'superadmin',
   email VARCHAR(255) NOT NULL,
-  otp VARCHAR(6) NOT NULL,
+  otp VARCHAR(20) NOT NULL,
   token VARCHAR(512) NOT NULL,
   expires_at TIMESTAMP NOT NULL,
   used BOOLEAN DEFAULT FALSE,

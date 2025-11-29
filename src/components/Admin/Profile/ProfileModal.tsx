@@ -53,12 +53,15 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         throw new Error(t('admin.profile.notAuthenticated'));
       }
 
-      const res = await fetch('/api/admin/password', {
+      const res = await fetch(`/api/admin/password?_t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
         },
+        cache: 'no-store',
         body: JSON.stringify({
           action: 'change-password',
           data: {
@@ -99,9 +102,14 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     setLoading(true);
     
     try {
-      const res = await fetch('/api/admin/password', {
+      const res = await fetch(`/api/admin/password?_t=${Date.now()}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
+        cache: 'no-store',
         body: JSON.stringify({
           action: 'forgot',
           data: { 
