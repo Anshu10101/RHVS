@@ -338,6 +338,13 @@ export class ContentService {
     updatedBy: string
   ): Promise<boolean> {
     try {
+      // Helper function to convert Date to MySQL datetime format
+      const toMySQLDateTime = (date: Date | undefined): string => {
+        if (!date) return new Date().toISOString().slice(0, 19).replace('T', ' ');
+        const d = date instanceof Date ? date : new Date(date);
+        return d.toISOString().slice(0, 19).replace('T', ' ');
+      };
+
       await pool.execute('START TRANSACTION');
       
       // Clear existing contact info
@@ -358,7 +365,7 @@ export class ContentService {
             info.description || null,
             info.order,
             info.isVisible ? 1 : 0,
-            info.createdAt || new Date(),
+            toMySQLDateTime(info.createdAt),
             updatedBy
           ]
         );
@@ -385,7 +392,7 @@ export class ContentService {
             office.officeType,
             office.order,
             office.isVisible ? 1 : 0,
-            office.createdAt || new Date(),
+            toMySQLDateTime(office.createdAt),
             updatedBy
           ]
         );
