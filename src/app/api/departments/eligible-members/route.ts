@@ -123,14 +123,55 @@ export async function GET(request: NextRequest) {
       params.push(searchTerm, searchTerm, searchTerm);
     }
 
-    // Exclude members already assigned to this department if departmentId is provided
+    // Exclude members already assigned to this department at the SAME level if departmentId is provided
+    // For National Executive departments, national level, and state level: 
+    //   - Allow members who are already assigned to OTHER posts in the same department
+    //   - Only exclude if they're assigned to the SAME post
+    // For district level: Exclude all members already assigned (only one post per member per department)
     if (departmentId) {
-      query += `
-        AND m.id NOT IN (
-          SELECT member_id FROM department_members WHERE department_id = ?
-        )
-      `;
-      params.push(departmentId);
+      // Check if this is a National Executive department
+      const deptInfo = await executeQuery(
+        'SELECT is_national_executive FROM departments WHERE id = ?',
+        [departmentId]
+      ) as Array<{ is_national_executive: number | boolean | null }>;
+      
+      const isNationalExecutive = deptInfo.length > 0 && (
+        deptInfo[0].is_national_executive === 1 || 
+        deptInfo[0].is_national_executive === true
+      );
+      
+      // Allow multiple posts for: National Executive departments, national level, or state level
+      const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state';
+      
+      if (allowsMultiplePosts) {
+        // For multiple post assignments: Only exclude if member is assigned to the SAME post
+        // (This will be handled by the backend when assigning, so we don't need to exclude here)
+        // Actually, we should still show all members - the backend will prevent duplicate assignments to the same post
+        // So we don't add any exclusion query for multiple post scenarios
+        console.log(`[Eligible Members] Allowing multiple post assignments for department ${departmentId} at ${level} level`);
+      } else {
+        // For district level (and non-National Executive departments): Exclude all members already assigned
+        let exclusionQuery = `
+          AND m.id NOT IN (
+            SELECT member_id FROM department_members 
+            WHERE department_id = ? AND level = ?
+        `;
+        const exclusionParams: any[] = [departmentId, level];
+        
+        // Add level-specific state/district matching for exclusion
+        if (level === 'state' && state) {
+          exclusionQuery += ' AND state = ?';
+          exclusionParams.push(state);
+        } else if (level === 'district' && state && district) {
+          exclusionQuery += ' AND state = ? AND district = ?';
+          exclusionParams.push(state, district);
+        }
+        // For national level, no additional filters needed
+        
+        exclusionQuery += ')';
+        query += exclusionQuery;
+        params.push(...exclusionParams);
+      }
     }
 
     query += ' ORDER BY m.name ASC LIMIT 100';

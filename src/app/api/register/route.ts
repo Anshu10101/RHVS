@@ -5,6 +5,7 @@ import { generateMemberRegistrationNumber } from '@/lib/member-registration';
 import { generateCertificate } from '@/lib/certificate';
 import { generateIDCard } from '@/lib/id-card-generator';
 import { consumeStagedBlob } from '@/lib/blob-storage';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 
 const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
@@ -108,12 +109,15 @@ export async function POST(request: NextRequest) {
       }
 
       // Get state and district names from IDs
-      const stateQuery = 'SELECT state_name_english, language_pref FROM states WHERE id = ?';
-      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string; language_pref: number | null }>;
+      const stateQuery = 'SELECT state_name_english FROM states WHERE id = ?';
+      const stateResult = await executeQuery(stateQuery, [stateId]) as Array<{ state_name_english: string }>;
       const stateName = stateResult.length > 0 ? stateResult[0].state_name_english : '';
-      const languagePreference = stateResult.length > 0
-        ? (stateResult[0].language_pref === 0 ? 'en' : 'hi')
-        : 'hi';
+      
+      console.log(`[Register API] Getting language preference for stateId: ${stateId} (type: ${typeof stateId}), stateName: ${stateName}`);
+      const languagePreference = await getStateLanguagePreference({
+        stateId: stateId
+      });
+      console.log(`[Register API] Language preference determined: ${languagePreference} for stateId: ${stateId}`);
 
       const districtQuery = 'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1';
       const districtResult = await executeQuery(districtQuery, [districtId]) as Array<{ district_name_english: string }>;

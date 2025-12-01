@@ -2,7 +2,8 @@ import { executeQuery } from './database';
 
 /**
  * Generates the next sequential member registration number
- * Maintains the sequential flow: RHVS0000007, RHVS0000008, etc.
+ * New members start from RHVS1111111 going forward
+ * Maintains the sequential flow: RHVS1111111, RHVS1111112, etc.
  * 
  * @returns Promise<string> - Next registration number in sequence
  */
@@ -17,7 +18,11 @@ export async function generateMemberRegistrationNumber(): Promise<string> {
     
     const countResult: Array<{ max_num: number }> = await executeQuery(countQuery) as Array<{ max_num: number }>;
     const maxNumber = countResult[0].max_num || 0;
-    const nextNumber = maxNumber + 1;
+    
+    // Start new registrations from 1111111 if max number is less than that
+    // Otherwise continue from max number + 1
+    const startNumber = 1111111;
+    const nextNumber = maxNumber < startNumber ? startNumber : maxNumber + 1;
     
     // Format with 7 digits to maintain consistency
     const memberRegNumber = `RHVS${nextNumber.toString().padStart(7, '0')}`;
@@ -35,8 +40,7 @@ export async function generateMemberRegistrationNumber(): Promise<string> {
     return memberRegNumber;
   } catch (error) {
     console.error('Error generating member registration number:', error);
-    // Fallback to timestamp-based number if database query fails
-    const timestamp = Date.now().toString().slice(-7);
-    return `RHVS${timestamp}`;
+    // Fallback to start from 1111111 if database query fails
+    return 'RHVS1111111';
   }
 }

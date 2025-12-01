@@ -188,6 +188,7 @@ export default function ProductStoreEditor() {
     try {
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/content/store/categories?_t=${Date.now()}`, {
+        cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();

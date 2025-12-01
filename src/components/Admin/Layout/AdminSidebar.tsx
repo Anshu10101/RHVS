@@ -35,6 +35,7 @@ import {
   Shield as ShieldIcon,
   LogOut as LogOutIcon,
   Phone,
+  BookOpen,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -512,6 +513,16 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
           {/* Footer */}
           <div className="px-4 py-4 border-t border-gray-200 space-y-2 mt-auto flex-shrink-0">
+            {/* Help Guide Link */}
+            <Link
+              href="/admin/help"
+              className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              onClick={onClose}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>{t('admin.sidebar.helpGuide')}</span>
+            </Link>
+            
             {/* Language Toggle */}
             <LanguageSwitcher variant="sidebar" />
             

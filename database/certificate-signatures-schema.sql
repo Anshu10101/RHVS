@@ -1,11 +1,11 @@
 -- Certificate Signatures Table
--- Stores signatures for both membership and appointment certificates
+-- Stores signatures for membership certificates, appointment certificates, and ID cards
 -- Note: Foreign keys are not included to avoid dependency issues
 -- Referential integrity is maintained at the application level
 
 CREATE TABLE IF NOT EXISTS certificate_signatures (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  certificate_type ENUM('membership', 'appointment') NOT NULL COMMENT 'Type of certificate this signature is for',
+  certificate_type ENUM('membership', 'appointment', 'membership_id_card', 'appointment_id_card') NOT NULL COMMENT 'Type of certificate this signature is for',
   name_en VARCHAR(255) NOT NULL COMMENT 'Name in English',
   name_hi VARCHAR(255) COMMENT 'Name in Hindi',
   designation_en VARCHAR(255) NOT NULL COMMENT 'Designation/Title in English',

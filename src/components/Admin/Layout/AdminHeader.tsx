@@ -8,8 +8,11 @@ import {
   User,
   LogOut,
   ChevronDown,
+  BookOpen,
 } from 'lucide-react';
+import Link from 'next/link';
 import { ProfileModal } from '@/components/Admin/Profile/ProfileModal';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AdminHeaderProps {
   onMenuClick: () => void;
@@ -17,6 +20,7 @@ interface AdminHeaderProps {
 
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { currentUser, logout } = useAdmin();
+  const { t } = useLanguage();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,6 +67,27 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
 
         {/* Right side */}
         <div className="flex items-center space-x-3">
+          {/* Help Guide Link */}
+          <Link href="/admin/help">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex items-center gap-2 text-gray-600 hover:text-gray-900"
+              title={t('admin.sidebar.helpGuide')}
+            >
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden md:inline">{t('admin.sidebar.help')}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="sm:hidden p-2 text-gray-600 hover:text-gray-900"
+              title={t('admin.sidebar.helpGuide')}
+            >
+              <BookOpen className="h-4 w-4" />
+            </Button>
+          </Link>
+          
           {/* User avatar */}
           {currentUser && (
           <div 

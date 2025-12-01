@@ -20,6 +20,7 @@ interface IDCardData {
   district?: string | null;
   appointmentDate?: string | null;
   language?: 'hi' | 'en';
+  isNationalExecutive?: boolean;
 }
 
 interface IDCardResult {
@@ -160,6 +161,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
           appointmentDateLabel: 'नियुक्ति दिनांक',
           placeholderNoPhoto: 'फोटो उपलब्ध नहीं',
           bottomOrgName: ORG_NAME,
+          officeAddress: 'केंद्रीय कार्यालय - गुरुकुल तिराहा, दतिया म.प्र.',
         }
       : {
           orgName: ORG_NAME,
@@ -172,6 +174,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
           appointmentDateLabel: 'Date of Appointment',
           placeholderNoPhoto: 'No Photo',
           bottomOrgName: ORG_NAME,
+          officeAddress: 'Central Office - Gurukul tiraha, Datia M.P.',
         };
 
     const fonts = isHindi
@@ -203,7 +206,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     const ctx = canvas.getContext('2d');
 
     // Colors inspired by the appointment certificate
-    const headerColor = '#B91C1C'; // Deep red
+    const headerColor = '#E30303'; // Red
     const borderColor = '#D97706'; // Rich gold
     const textColor = '#0F172A'; // Deep slate
     const accentColor = '#7C2D12'; // Darker accent red
@@ -252,6 +255,20 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       console.error('Error loading Ram image for ID card:', error);
     }
 
+    // Organization registration number in header (top right corner)
+    // Position it high up to avoid overlap with organization name
+    const headerRegLabel = isHindi ? 'पंजीकरण संख्या: 169' : 'Reg. No: 169';
+    ctx.fillStyle = '#FDE68A';
+    // Use a smaller font size for registration number to avoid overlap
+    const regFont = isHindi 
+      ? 'bold 18px "Mangal", "Noto Sans Devanagari", sans-serif'
+      : 'bold 16px "Arial", sans-serif';
+    ctx.font = regFont;
+    ctx.textAlign = 'right';
+    // Position at top right, well above the organization name and logo
+    ctx.fillText(headerRegLabel, width - 25, 20);
+    ctx.textAlign = 'center';
+
     // Organization name in header (bold & larger)
     ctx.fillStyle = '#FDE68A';
     ctx.font = fonts.header;
@@ -278,6 +295,49 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     ctx.font = fonts.decorative;
     ctx.textAlign = 'center';
     ctx.fillText('◆', width / 2, lineY + 10);
+
+    // === LOAD ID CARD SIGNATURES ===
+    // Load signatures based on card type: membership_id_card for membership cards, appointment_id_card for appointment cards
+    let idCardSignatures: Array<{
+      name: string;
+      title: string;
+      signaturePath: string | null;
+    }> = [];
+    
+    try {
+      const idCardType = cardType === 'membership' ? 'membership_id_card' : 'appointment_id_card';
+      const signatureRows = await executeQuery(
+        `SELECT name_en, name_hi, designation_en, designation_hi, 
+                CASE 
+                  WHEN signature_blob IS NOT NULL THEN CONCAT('/api/media/certificate-signatures/', id, '/signature')
+                  ELSE signature_path
+                END AS signature_path
+         FROM certificate_signatures
+         WHERE certificate_type = ? AND is_active = TRUE
+         ORDER BY display_order ASC
+         LIMIT 4`,
+        [idCardType]
+      ) as Array<{
+        name_en: string;
+        name_hi: string | null;
+        designation_en: string;
+        designation_hi: string | null;
+        signature_path: string | null;
+      }>;
+      
+      idCardSignatures = signatureRows.map(sig => ({
+        name: isHindi && sig.name_hi ? sig.name_hi : sig.name_en,
+        title: isHindi && sig.designation_hi ? sig.designation_hi : sig.designation_en,
+        signaturePath: sig.signature_path
+      }));
+      
+      console.log(`[ID Card] Loaded ${idCardSignatures.length} signatures from database for ${idCardType} (cardType: ${cardType})`);
+      if (idCardSignatures.length > 0) {
+        console.log(`[ID Card] Signature details:`, idCardSignatures.map(s => ({ name: s.name, title: s.title, hasPath: !!s.signaturePath })));
+      }
+    } catch (error) {
+      console.error('[ID Card] Error loading signatures from database:', error);
+    }
 
     // === MEMBER PHOTO ===
     const photoSize = 180;
@@ -336,6 +396,103 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       ctx.fillText(strings.placeholderNoPhoto, photoX + photoSize / 2, photoY + photoSize / 2);
     }
 
+    // === SIGNATURES BELOW PHOTO ===
+    // Display signatures for both membership and appointment cards
+    console.log(`[ID Card] Checking signatures for display: ${idCardSignatures.length} signatures available, cardType: ${cardType}`);
+    if (idCardSignatures.length > 0) {
+      const signatureStartY = photoY + photoSize + 15;
+      const signatureAreaWidth = photoSize + 10;
+      const signatureAreaX = photoX - 5;
+      const maxSignaturesToShow = Math.min(idCardSignatures.length, 2); // Show max 2 signatures due to space
+      const signatureHeight = 50; // Height per signature block (increased from 35)
+      const spacing = 8; // Spacing between signatures (increased from 5)
+      
+      // Small but readable fonts for signatures on ID cards
+      const signatureNameFont = isHindi
+        ? '600 10px "Mangal", "Noto Sans Devanagari", sans-serif'
+        : '600 9px "Arial", sans-serif';
+      const signatureTitleFont = isHindi
+        ? '500 9px "Mangal", "Noto Sans Devanagari", sans-serif'
+        : '500 8px "Arial", sans-serif';
+      
+      for (let i = 0; i < maxSignaturesToShow; i++) {
+        const sig = idCardSignatures[i];
+        const sigY = signatureStartY + (i * (signatureHeight + spacing));
+        
+        // Draw signature image if available
+        if (sig.signaturePath) {
+          try {
+            // Try to load signature from blob endpoint or file path
+            let signatureImage = null;
+            const sigMatch = sig.signaturePath.match(/^\/api\/media\/certificate-signatures\/(\d+)\/signature/);
+            if (sigMatch) {
+              const sigId = Number(sigMatch[1]);
+              if (!Number.isNaN(sigId)) {
+                const sigRows = await executeQuery(
+                  'SELECT signature_blob FROM certificate_signatures WHERE id = ? LIMIT 1',
+                  [sigId]
+                ) as Array<{ signature_blob: Buffer | null }>;
+                const sigBuffer = sigRows[0]?.signature_blob;
+                if (sigBuffer && sigBuffer.length > 0) {
+                  signatureImage = await loadImage(sigBuffer);
+                }
+              }
+            } else {
+              // Try to load from file path
+              const normalizedPath = sig.signaturePath.startsWith('/') ? sig.signaturePath.slice(1) : sig.signaturePath;
+              const absolutePath = path.join(process.cwd(), 'public', normalizedPath);
+              if (fs.existsSync(absolutePath)) {
+                signatureImage = await loadImage(absolutePath);
+              }
+            }
+            
+            if (signatureImage) {
+              const sigImgWidth = 60; // Increased from 40
+              const sigImgHeight = 30; // Increased from 20
+              const sigImgX = signatureAreaX + (signatureAreaWidth - sigImgWidth) / 2;
+              ctx.drawImage(signatureImage, sigImgX, sigY, sigImgWidth, sigImgHeight);
+            }
+          } catch (error) {
+            console.error(`Error loading signature ${i + 1}:`, error);
+          }
+        }
+        
+        // Draw name
+        ctx.font = signatureNameFont;
+        ctx.fillStyle = textColor;
+        ctx.textAlign = 'center';
+        const nameY = sigY + (sig.signaturePath ? 35 : 10); // Adjusted for larger signature image
+        // Truncate name if too long
+        let displayName = sig.name;
+        const maxNameWidth = signatureAreaWidth - 10;
+        let nameWidth = ctx.measureText(displayName).width;
+        while (nameWidth > maxNameWidth && displayName.length > 0) {
+          displayName = displayName.slice(0, -1);
+          nameWidth = ctx.measureText(displayName + '...').width;
+        }
+        if (displayName !== sig.name && sig.name.length > displayName.length) {
+          displayName += '...';
+        }
+        ctx.fillText(displayName, signatureAreaX + signatureAreaWidth / 2, nameY);
+        
+        // Draw title/designation
+        ctx.font = signatureTitleFont;
+        ctx.fillStyle = accentColor;
+        const titleY = nameY + 10; // Increased spacing from 8 to 10
+        // Truncate title if too long
+        let displayTitle = sig.title;
+        let titleWidth = ctx.measureText(displayTitle).width;
+        while (titleWidth > maxNameWidth && displayTitle.length > 0) {
+          displayTitle = displayTitle.slice(0, -1);
+          titleWidth = ctx.measureText(displayTitle + '...').width;
+        }
+        if (displayTitle !== sig.title && sig.title.length > displayTitle.length) {
+          displayTitle += '...';
+        }
+        ctx.fillText(displayTitle, signatureAreaX + signatureAreaWidth / 2, titleY);
+      }
+    }
+
     // === MEMBER INFORMATION ===
     const infoX = 60;
     let currentY = lineY + 90;
@@ -377,7 +534,18 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       const department = data.departmentName && data.departmentName.trim().length > 0
         ? data.departmentName
         : '—';
-      const post = translateDesignation(data.postName || data.designation, 'appointment', language);
+      let post = translateDesignation(data.postName || data.designation, 'appointment', language);
+      
+      // Add level prefix to post name, but NOT if department is National Executive
+      // National Executive departments should not have "National" prefix
+      const isNationalExecutive = data.isNationalExecutive === true;
+      if (!isNationalExecutive) {
+        const levelPrefix = isHindi
+          ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+          : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+        post = `${levelPrefix} ${post}`.trim();
+      }
+      
       const departmentAndPost = department !== '—' ? `${department} ${post}` : post;
       const appointmentDate = data.appointmentDate
         ? new Date(data.appointmentDate).toLocaleDateString(isHindi ? 'hi-IN' : 'en-IN')
@@ -422,11 +590,27 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     ctx.lineTo(width - 50, bottomLineY);
     ctx.stroke();
 
-    // Organization name at bottom
+    // Organization name and office address on same line at bottom
+    // Use smaller font to ensure it fits within card width
+    const bottomFont = isHindi
+      ? 'bold 18px "Mangal", "Noto Sans Devanagari", sans-serif'
+      : '700 16px "Arial", sans-serif';
     ctx.fillStyle = accentColor;
-    ctx.font = fonts.bottom;
+    ctx.font = bottomFont;
     ctx.textAlign = 'center';
-    ctx.fillText(strings.bottomOrgName, width / 2, bottomLineY + 25);
+    const bottomText = `${strings.bottomOrgName} | ${strings.officeAddress}`;
+    
+    // Check if text fits, if not use even smaller font
+    const maxWidth = width - 100; // Leave 50px margin on each side
+    const textMetrics = ctx.measureText(bottomText);
+    const finalFont = textMetrics.width > maxWidth
+      ? (isHindi
+          ? 'bold 16px "Mangal", "Noto Sans Devanagari", sans-serif'
+          : '700 14px "Arial", sans-serif')
+      : bottomFont;
+    
+    ctx.font = finalFont;
+    ctx.fillText(bottomText, width / 2, bottomLineY + 25);
 
     // === BORDER ===
     ctx.strokeStyle = borderColor;

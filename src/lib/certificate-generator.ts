@@ -19,6 +19,7 @@ interface CertificateData {
     dept_name_hi: string;
     post_name_en: string;
     post_name_hi: string;
+    is_national_executive?: boolean;
   };
   level: 'national' | 'state' | 'district';
   state?: string | null;
@@ -92,14 +93,14 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         header: 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         tagline: 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         ribbon: 'bold 84px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        appointment: 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        motivational: 'italic 56px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
+        appointment: 'bold 80px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        motivational: 'italic 72px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
         quote: 'bold 150px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         footerAddress: 'bold 40px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         reg: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         regLine: 'bold 36px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        paragraph: 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+        paragraph: 'bold 80px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         signatureName: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         signatureTitle: 'bold 52px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         placeholder: 'bold 24px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
@@ -108,14 +109,14 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         header: 'bold 160px "Arial Black", "Arial", sans-serif',
         tagline: 'bold 72px "Arial", sans-serif',
         ribbon: 'bold 70px "Arial Black", "Arial", sans-serif',
-        appointment: '700 48px "Arial", sans-serif',
-        motivational: 'italic 56px "Georgia", serif',
+        appointment: '700 64px "Arial", sans-serif',
+        motivational: 'italic 72px "Georgia", serif',
         quote: 'bold 140px "Georgia", serif',
         footer: '700 48px "Arial", sans-serif',
         footerAddress: '600 36px "Arial", sans-serif',
         reg: '700 42px "Arial", sans-serif',
         regLine: '700 34px "Arial", sans-serif',
-        paragraph: '700 56px "Arial", sans-serif',
+        paragraph: '700 72px "Arial", sans-serif',
         signatureName: '700 42px "Arial", sans-serif',
         signatureTitle: '600 40px "Arial", sans-serif',
         placeholder: '600 22px "Arial", sans-serif',
@@ -126,7 +127,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const ctx = canvas.getContext('2d');
 
   // Colors
-  const headerColor = '#DC2626'; // Red
+  const headerColor = '#E30303'; // Red
   const borderColor = '#FCD34D'; // Yellow/Gold
   const textColor = '#1F2937'; // Dark gray
   const accentOrange = '#D97706'; // Orange
@@ -239,16 +240,16 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
 
   // === MEMBER APPOINTMENT INFO ===
-  const appointmentBoxY = ribbonY + 180;
+  const appointmentBoxY = ribbonY + 150; // Moved up by 30px
   
   // === MEMBER PHOTO === (define before using photoX for text layout)
   const photoSize = 480;
   const photoX = width - 600;
-  const photoY = appointmentBoxY + 200;
+  const photoY = appointmentBoxY + 150; // Moved up by 50px
 
   const textStartX = borderMargin + 80;
   const textAreaWidth = photoX - textStartX - 120;
-  const messageStartY = appointmentBoxY + 320;
+  const messageStartY = appointmentBoxY + 250; // Moved up by 70px
   ctx.textAlign = 'left';
   ctx.fillStyle = accentOrange;
   ctx.font = fonts.paragraph;
@@ -256,9 +257,20 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const departmentName = isHindi
     ? (data.department.dept_name_hi || data.department.dept_name_en || '').trim()
     : (data.department.dept_name_en || data.department.dept_name_hi || '').trim();
-  const postName = isHindi
+  let postName = isHindi
     ? (data.department.post_name_hi || data.department.post_name_en || '').trim()
     : (data.department.post_name_en || data.department.post_name_hi || '').trim();
+  
+  // Add level prefix to post name, but NOT if department is National Executive
+  // National Executive departments should not have "National" prefix
+  const isNationalExecutive = data.department.is_national_executive === true;
+  if (!isNationalExecutive) {
+    const levelPrefix = isHindi
+      ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+      : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+    postName = `${levelPrefix} ${postName}`.trim();
+  }
+  
   const deptPostPhrase = isHindi
     ? `${departmentName} ${postName}`.trim()
     : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
@@ -388,7 +400,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   const memberInfoY = photoY + photoSize + 50;
   ctx.font = fonts.regLine || fonts.reg;
-  ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = '#E30303';
   ctx.textAlign = 'center';
   
   // Registration number - keep on one line, use larger width to prevent wrapping
@@ -402,7 +414,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
   // Calculate based on registration number (always one line now)
-  const motTextY = memberInfoY + 50 + 300; // Much more space after member info
+  const motTextY = memberInfoY + 50 + 200; // Reduced spacing by 100px to move up
 
   // Add quote marks around motivational text
   ctx.font = fonts.quote;
@@ -428,7 +440,9 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // === CENTRAL EMBLEM (REMOVED - No more Shri Ram Hindu Rashtra round UI) ===
 
   // === SIGNATURES SECTION (Much lower on certificate) ===
-  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
+  // For English, add moderate extra spacing to prevent signatures from merging with footer
+  const extraSpacingForEnglish = isHindi ? 0 : 40; // Reduced to 40px for better balance
+  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 200 + extraSpacingForEnglish; // Reduced base spacing from 280 to 200
   
   // Dynamically center 1–4 signatures within the inner golden border.
   // The group of signatures is always centered on the inner content area.
@@ -609,7 +623,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   const ctx = canvas.getContext('2d');
 
   // Colors
-  const headerColor = '#DC2626'; // Red
+  const headerColor = '#E30303'; // Red
   const borderColor = '#FCD34D'; // Yellow/Gold
   const textColor = '#1F2937'; // Dark gray
   const accentOrange = '#D97706'; // Orange
@@ -718,7 +732,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   ctx.fillText('MEMBERSHIP CERTIFICATE', width / 2, ribbonY + 55);
 
   // === MEMBER MEMBERSHIP INFO ===
-  const membershipBoxY = ribbonY + 180;
+  const membershipBoxY = ribbonY + 150; // Moved up by 30px
   
   const membershipText = `${data.member.name} is now a proud member of राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS)`;
   const fullMembershipText = `${membershipText} and is committed to serve the organization with dedication and devotion to Sanatan Dharma.`;
@@ -736,7 +750,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   
   // Draw text and selectively underline
   membershipLines.forEach((line, index) => {
-    const lineY = membershipBoxY + 350 + (index * lineHeight); // Moved much further down
+    const lineY = membershipBoxY + 250 + (index * lineHeight); // Moved up by 100px
     ctx.fillText(line, width / 2, lineY);
     
     // Only underline if line contains member name
@@ -754,7 +768,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   // === MEMBER PHOTO ===
   const photoSize = 300; // Bigger photo
   const photoX = width - 450; // Moved more left
-  const photoY = membershipBoxY + 200; // Moved even more down
+  const photoY = membershipBoxY + 150; // Moved up by 50px
   
   try {
     const memberPhoto = await loadProfilePhotoImage(data.member.profile_photo_path);
@@ -777,7 +791,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   }
 
   // === MEMBER NAME AND MEMBER INFO (Right below photo, centered and underlined) ===
-  const memberInfoY = photoY + photoSize + 50; // More space below photo
+  const memberInfoY = photoY + photoSize + 30; // Moved up by 20px
   
   // Member name (much larger font, centered, underlined)
   ctx.fillStyle = '#1F2937'; // Dark gray for better readability
@@ -795,12 +809,12 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   
   // Registration Number (much larger font, centered, not underlined)
   const regNumberY = memberInfoY + 60;
-  ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = '#E30303';
   ctx.font = 'bold 36px Arial';
   ctx.fillText(`Reg: ${data.member.member_reg_number}`, photoX + photoSize/2, regNumberY);
 
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
-  const motTextY = memberInfoY + 350; // Much more space after member info
+  const motTextY = memberInfoY + 200; // Reduced spacing by 150px to move up
   const motivationalText = "Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.";
   
 
@@ -828,7 +842,9 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   // === CENTRAL EMBLEM (REMOVED - No more Shri Ram Hindu Rashtra round UI) ===
 
   // === SIGNATURES SECTION (Much lower on certificate) ===
-  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
+  // For English, add moderate extra spacing to prevent signatures from merging with footer
+  const extraSpacingForEnglishMembership = isHindi ? 0 : 40; // Reduced to 40px for better balance
+  const signaturesY = motTextY + (motLines.length * motLineSpacing) + 200 + extraSpacingForEnglishMembership; // Reduced base spacing from 280 to 200
   
 
   // Center the signatures properly
@@ -1073,7 +1089,7 @@ async function drawSignatureBlock(
   }
   
   // Draw horizontal line (always draw, either below signature or at default position)
-  ctx.strokeStyle = '#DC2626';
+  ctx.strokeStyle = '#E30303';
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(x + 20, lineY);
@@ -1095,7 +1111,7 @@ async function drawSignatureBlock(
   
   // Title/Designation (bigger font)
   ctx.font = titleFont;
-  ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = '#E30303';
   
   // Handle multi-line titles with text wrapping to prevent overflow
   const maxTitleWidth = blockWidth - 40; // Leave some padding

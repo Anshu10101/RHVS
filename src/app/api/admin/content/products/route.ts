@@ -253,6 +253,7 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
         (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
+        scope.adminId ? scope.adminId.toString() : 'admin',
         scope.adminId ? scope.adminId.toString() : 'admin'
       ];
 
@@ -262,12 +263,12 @@ export async function POST(req: NextRequest) {
           (id, name, description, price, original_price, category, seller_id,
            image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
            isVisible, is_featured, stock, tags, features, specifications,
-           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
+           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by, created_by)
         VALUES (
           ?, ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           1, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, 0, NOW(), NOW(), ?
+          ?, ?, ?, ?, 0, NOW(), NOW(), ?, ?
         )
       `,
         [
@@ -301,6 +302,7 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
         (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
+        scope.adminId ? scope.adminId.toString() : 'admin',
         scope.adminId ? scope.adminId.toString() : 'admin'
       ];
 
@@ -310,12 +312,12 @@ export async function POST(req: NextRequest) {
           (name, description, price, original_price, category, seller_id,
            image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
            isVisible, is_featured, stock, tags, features, specifications,
-           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by)
+           district_id, state_id, added_by, owner_admin_id, \`order\`, created_at, updated_at, updated_by, created_by)
         VALUES (
           ?, ?, ?, ?, ?, ?,
           ?, ?, ?, ?, ?, ?,
           1, ?, ?, ?, ?, ?,
-          ?, ?, ?, ?, 0, NOW(), NOW(), ?
+          ?, ?, ?, ?, 0, NOW(), NOW(), ?, ?
         )
       `,
         productParams

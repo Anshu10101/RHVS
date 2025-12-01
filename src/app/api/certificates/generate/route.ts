@@ -61,10 +61,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Member not found or not verified' }, { status: 404 });
     }
 
-    // Validate department and post exist
+    // Validate department and post exist (including is_national_executive flag)
     const departmentPost = await executeQuery(`
       SELECT d.name_en as dept_name_en, d.name_hi as dept_name_hi,
-             dp.name_en as post_name_en, dp.name_hi as post_name_hi
+             dp.name_en as post_name_en, dp.name_hi as post_name_hi,
+             d.is_national_executive
       FROM departments d
       JOIN department_posts dp ON d.id = dp.department_id
       WHERE d.id = ? AND dp.id = ?
@@ -73,13 +74,15 @@ export async function POST(request: NextRequest) {
       dept_name_hi: string | null;
       post_name_en: string | null;
       post_name_hi: string | null;
+      is_national_executive: number | boolean | null;
     }>;
 
     if (departmentPost.length === 0) {
       return NextResponse.json({ error: 'Department or post not found' }, { status: 404 });
     }
 
-    // Check if certificate already exists for this exact assignment
+    // Check if certificate already exists for this EXACT assignment (same member, department, post, AND level)
+    // This allows the same member to be appointed to the same department/post at different levels (national, state, district)
     const existingCertificate = await executeQuery(`
       SELECT * FROM certificates 
       WHERE member_id = ? 
@@ -135,7 +138,8 @@ export async function POST(request: NextRequest) {
         dept_name_en: departmentPost[0].dept_name_en ?? '',
         dept_name_hi: departmentPost[0].dept_name_hi ?? '',
         post_name_en: departmentPost[0].post_name_en ?? '',
-        post_name_hi: departmentPost[0].post_name_hi ?? ''
+        post_name_hi: departmentPost[0].post_name_hi ?? '',
+        is_national_executive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true
       },
       level,
       state,
@@ -195,7 +199,8 @@ export async function POST(request: NextRequest) {
         state,
         district,
         appointmentDate: resolvedAppointmentDate,
-        language: languagePreference
+        language: languagePreference,
+        isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true
       });
 
       appointmentIdCardPath = idCardResult.idCardPath;

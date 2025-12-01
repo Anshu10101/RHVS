@@ -352,7 +352,9 @@ export async function POST(
       }
     }
 
-    // Check if this specific member is already assigned to this same post at this level/state/district
+    // Check if this specific member is already assigned to this SAME post at this EXACT level/state/district
+    // This prevents duplicate assignments to the exact same post (regardless of department type or level)
+    // Members can be assigned to DIFFERENT posts in the same department, but NOT to the same post twice
     const existingAssignment = await executeQuery(
       'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
       [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict]
@@ -360,29 +362,92 @@ export async function POST(
     
     if (existingAssignment.length > 0) {
       return NextResponse.json({ 
-        error: 'This member is already assigned to this post at this level.' 
+        error: 'This member is already assigned to this specific post at this level. A member cannot be assigned to the same post twice. You can assign them to a different post in the same department instead.' 
       }, { status: 409 });
     }
-
-    // Check if member is already assigned to another post in this department at this level/state/district
-    const memberInDepartment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
-      [departmentId, member_id, level, normalizedState, normalizedDistrict]
-    ) as any[];
     
-    if (memberInDepartment.length > 0) {
-      return NextResponse.json({ 
-        error: 'This member is already assigned to another post in this department at this level' 
-      }, { status: 409 });
+    console.log(`[Appointment] Member ${member_id} is not assigned to post ${post_id} at ${level} level - proceeding with assignment check`);
+
+    // Check if member is already assigned to another post in this department at this EXACT level/state/district
+    // Allow multiple post assignments for same member in same department ONLY at:
+    // - National Executive departments (is_national_executive = 1)
+    // - National level
+    // - State level
+    // District level: Only one post per member per department (restriction remains)
+    const isNationalExecutive = department[0].is_national_executive === 1 || department[0].is_national_executive === true || department[0].is_national_executive === '1';
+    const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state';
+    
+    console.log(`[Appointment] Department ID: ${departmentId}, is_national_executive: ${department[0].is_national_executive}, level: ${level}, allowsMultiplePosts: ${allowsMultiplePosts}`);
+    
+    if (!allowsMultiplePosts) {
+      // For district level (and non-National Executive departments), enforce one post per member per department
+      const memberInDepartment = await executeQuery(
+        'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
+        [departmentId, member_id, level, normalizedState, normalizedDistrict]
+      ) as any[];
+      
+      if (memberInDepartment.length > 0) {
+        return NextResponse.json({ 
+          error: 'This member is already assigned to another post in this department at this level. Multiple post assignments are only allowed at national level, state level, or in National Executive departments.' 
+        }, { status: 409 });
+      }
+    } else {
+      // If allowsMultiplePosts is true, explicitly allow multiple post assignments
+      // Only check that it's not the exact same post (already checked above)
+      console.log(`[Appointment] Allowing multiple post assignments for member ${member_id} in department ${departmentId} at ${level} level`);
     }
 
     // Assign the member to the post
     // assigned_by must be a district_admin ID (FK constraint), so set to NULL for superadmins
     const assignedById = scope.isSuperAdmin ? null : scope.adminId;
-    const result = await executeQuery(
-      'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, assignedById]
-    ) as any;
+    
+    let result: any;
+    try {
+      result = await executeQuery(
+        'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, assignedById]
+      ) as any;
+      
+      console.log(`[Appointment] Successfully assigned member ${member_id} to post ${post_id} in department ${departmentId} at ${level} level`);
+    } catch (insertError: any) {
+      console.error(`[Appointment] Error inserting assignment:`, insertError);
+      
+      // Check if it's a duplicate key error from the database constraint
+      const errorMessage = insertError?.message || insertError?.toString() || '';
+      const isDuplicateError = insertError?.code === 'ER_DUP_ENTRY' || 
+                               errorMessage.includes('Duplicate entry') || 
+                               errorMessage.includes('unique_member_in_dept_level') ||
+                               errorMessage.includes('Duplicate key');
+      
+      if (isDuplicateError) {
+        // Check if it's a duplicate of the same post (unique_member_assignment constraint)
+        // vs duplicate member in department (unique_member_in_dept_level constraint)
+        if (errorMessage.includes('unique_member_assignment')) {
+          // This is the constraint on (department_id, post_id, level, state, district)
+          // which prevents assigning the same member to the same post twice - this is correct behavior
+          return NextResponse.json({ 
+            error: 'This member is already assigned to this specific post at this level. A member cannot be assigned to the same post twice. You can assign them to a different post in the same department instead.' 
+          }, { status: 409 });
+        }
+        
+        // If we're allowing multiple posts but still getting a duplicate error from unique_member_in_dept_level,
+        // it means the database constraint still exists and needs to be removed
+        if (allowsMultiplePosts) {
+          return NextResponse.json({ 
+            error: 'Database constraint error: The unique constraint on department_members table still exists. Please run the migration script to remove it: ALTER TABLE department_members DROP INDEX IF EXISTS unique_member_in_dept_level;',
+            details: errorMessage,
+            hint: 'Run this SQL: ALTER TABLE department_members DROP INDEX IF EXISTS unique_member_in_dept_level;'
+          }, { status: 500 });
+        } else {
+          return NextResponse.json({ 
+            error: 'This member is already assigned to another post in this department at this level. Multiple post assignments are only allowed at national level, state level, or in National Executive departments.' 
+          }, { status: 409 });
+        }
+      }
+      
+      // Re-throw other errors
+      throw insertError;
+    }
 
     // Generate certificate automatically
     try {
@@ -410,10 +475,11 @@ export async function POST(
         console.warn('Member not found or not verified, skipping certificate generation');
         // Continue to return success response below
       } else {
-        // Get department and post details
+        // Get department and post details (including is_national_executive flag)
         const departmentPost = await executeQuery(`
           SELECT d.name_en as dept_name_en, d.name_hi as dept_name_hi,
-                 dp.name_en as post_name_en, dp.name_hi as post_name_hi
+                 dp.name_en as post_name_en, dp.name_hi as post_name_hi,
+                 d.is_national_executive
           FROM departments d
           JOIN department_posts dp ON d.id = dp.department_id
           WHERE d.id = ? AND dp.id = ?
@@ -422,6 +488,7 @@ export async function POST(
           dept_name_hi: string | null;
           post_name_en: string | null;
           post_name_hi: string | null;
+          is_national_executive: number | boolean | null;
         }>;
 
         if (departmentPost.length === 0) {
@@ -448,7 +515,8 @@ export async function POST(
               dept_name_en: departmentPost[0].dept_name_en ?? '',
               dept_name_hi: departmentPost[0].dept_name_hi ?? '',
               post_name_en: departmentPost[0].post_name_en ?? '',
-              post_name_hi: departmentPost[0].post_name_hi ?? ''
+              post_name_hi: departmentPost[0].post_name_hi ?? '',
+              is_national_executive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true
             },
             level,
             state,
@@ -474,6 +542,7 @@ export async function POST(
               departmentName: languagePreference === 'hi'
                 ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || undefined)
                 : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || undefined),
+              isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
               postName: languagePreference === 'hi'
                 ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
                 : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),

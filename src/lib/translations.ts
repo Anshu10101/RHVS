@@ -5516,6 +5516,14 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'लॉगआउट',
     en: 'Logout'
   },
+  'admin.sidebar.helpGuide': {
+    hi: 'सहायता गाइड',
+    en: 'Help Guide'
+  },
+  'admin.sidebar.help': {
+    hi: 'सहायता',
+    en: 'Help'
+  },
   'admin.sidebar.adminPanel': {
     hi: 'एडमिन पैनल',
     en: 'Admin Panel'
@@ -5523,6 +5531,1864 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.sidebar.district': {
     hi: 'जिला:',
     en: 'District:'
+  },
+  
+  // Help Guide Translations
+  'admin.help.title': {
+    hi: 'एडमिन पैनल सहायता गाइड',
+    en: 'Admin Panel Help Guide'
+  },
+  'admin.help.subtitle': {
+    hi: 'एडमिन पैनल का उपयोग करने के लिए आपको जो कुछ भी जानना होगा - सरल शब्दों में समझाया गया',
+    en: 'Everything you need to know to use the admin panel - explained in simple terms'
+  },
+  'admin.help.backToDashboard': {
+    hi: 'डैशबोर्ड पर वापस जाएं',
+    en: 'Back to Dashboard'
+  },
+  'admin.help.welcome': {
+    hi: 'सहायता गाइड में आपका स्वागत है!',
+    en: 'Welcome to the Help Guide!'
+  },
+  'admin.help.welcomeDesc': {
+    hi: 'यह गाइड एडमिन पैनल के बारे में सब कुछ कवर करती है। अधिक जानने के लिए नीचे किसी भी सेक्शन पर क्लिक करें। प्रत्येक सेक्शन में चरण-दर-चरण निर्देश हैं जिनका पालन करना आसान है।',
+    en: 'This guide covers everything about the admin panel. Click on any section below to expand it and learn more. Each section has step-by-step instructions that are easy to follow.'
+  },
+  'admin.help.yourRole': {
+    hi: 'आपकी भूमिका:',
+    en: 'Your Role:'
+  },
+  'admin.help.stillNeedHelp': {
+    hi: 'अभी भी मदद चाहिए?',
+    en: 'Still need help?'
+  },
+  'admin.help.contactSuperAdmin': {
+    hi: 'अपने सुपर एडमिन या तकनीकी सहायता टीम से संपर्क करें।',
+    en: 'Contact your Super Admin or technical support team.'
+  },
+  'admin.help.bookmarkNote': {
+    hi: 'यह गाइड हमेशा एडमिन पैनल से उपलब्ध है। आसान पहुंच के लिए इस पेज को बुकमार्क करें!',
+    en: 'This guide is always available from the admin panel. Bookmark this page for easy access!'
+  },
+  
+  // Help Guide Sections
+  'admin.help.sections.gettingStarted': {
+    hi: '🚀 शुरुआत करना',
+    en: '🚀 Getting Started'
+  },
+  'admin.help.sections.dashboard': {
+    hi: '📊 डैशबोर्ड',
+    en: '📊 Dashboard'
+  },
+  'admin.help.sections.members': {
+    hi: '👥 सदस्य प्रबंधन',
+    en: '👥 Members Management'
+  },
+  'admin.help.sections.permissions': {
+    hi: '🔐 अनुमति प्रबंधन',
+    en: '🔐 Permission Management'
+  },
+  'admin.help.sections.content': {
+    hi: '📝 सामग्री प्रबंधन',
+    en: '📝 Content Management'
+  },
+  'admin.help.sections.departments': {
+    hi: '🏢 विभाग',
+    en: '🏢 Departments'
+  },
+  'admin.help.sections.certificates': {
+    hi: '🏆 प्रमाणपत्र',
+    en: '🏆 Certificates'
+  },
+  'admin.help.sections.analytics': {
+    hi: '📈 विश्लेषण',
+    en: '📈 Analytics'
+  },
+  'admin.help.sections.activityLogs': {
+    hi: '📋 गतिविधि लॉग',
+    en: '📋 Activity Logs'
+  },
+  'admin.help.sections.settings': {
+    hi: '⚙️ सेटिंग्स',
+    en: '⚙️ Settings'
+  },
+  'admin.help.sections.profile': {
+    hi: '👤 आपकी प्रोफ़ाइल',
+    en: '👤 Your Profile'
+  },
+  'admin.help.sections.logout': {
+    hi: '🚪 लॉगआउट करना',
+    en: '🚪 Logging Out'
+  },
+  'admin.help.sections.tips': {
+    hi: '💡 सुझाव और समस्या निवारण',
+    en: '💡 Tips & Troubleshooting'
+  },
+  
+  // Getting Started Section
+  'admin.help.gettingStarted.welcome': {
+    hi: 'एडमिन पैनल में आपका स्वागत है!',
+    en: 'Welcome to the Admin Panel!'
+  },
+  'admin.help.gettingStarted.welcomeDesc': {
+    hi: 'यह गाइड आपको एडमिन पैनल का प्रभावी ढंग से उपयोग करने के लिए आवश्यक सभी चीजों के माध्यम से चलाएगी। चिंता न करें अगर आप तकनीक-प्रेमी नहीं हैं - हमने इसे बहुत सरल बनाया है!',
+    en: 'This guide will walk you through everything you need to know to use the admin panel effectively. Don\'t worry if you\'re not tech-savvy - we\'ve made it super simple!'
+  },
+  'admin.help.gettingStarted.step1': {
+    hi: 'चरण 1: लॉगिन करना',
+    en: 'Step 1: Logging In'
+  },
+  'admin.help.gettingStarted.step1Desc': {
+    hi: 'एडमिन लॉगिन पेज पर जाएं, अपना ईमेल पता दर्ज करें, अपना पासवर्ड दर्ज करें, "लॉगिन" बटन पर क्लिक करें। यदि आप अपना पासवर्ड भूल गए हैं, तो "पासवर्ड भूल गए" पर क्लिक करें और निर्देशों का पालन करें।',
+    en: 'Go to the admin login page, enter your email address, enter your password, click the "Login" button. If you forgot your password, click "Forgot Password" and follow the instructions.'
+  },
+  'admin.help.gettingStarted.step2': {
+    hi: 'चरण 2: लेआउट को समझना',
+    en: 'Step 2: Understanding the Layout'
+  },
+  'admin.help.gettingStarted.sidebar': {
+    hi: 'साइडबार मेनू (बाईं ओर)',
+    en: 'Sidebar Menu (Left Side)'
+  },
+  'admin.help.gettingStarted.sidebarDesc': {
+    hi: 'यह आपका मुख्य नेविगेशन है। उस सेक्शन पर जाने के लिए किसी भी आइटम पर क्लिक करें।',
+    en: 'This is your main navigation. Click on any item to go to that section.'
+  },
+  'admin.help.gettingStarted.header': {
+    hi: 'शीर्ष हेडर',
+    en: 'Top Header'
+  },
+  'admin.help.gettingStarted.headerDesc': {
+    hi: 'आपकी प्रोफ़ाइल तस्वीर और नाम दिखाता है। प्रोफ़ाइल विकल्प देखने या लॉगआउट करने के लिए उस पर क्लिक करें।',
+    en: 'Shows your profile picture and name. Click it to see profile options or logout.'
+  },
+  'admin.help.gettingStarted.content': {
+    hi: 'मुख्य सामग्री क्षेत्र',
+    en: 'Main Content Area'
+  },
+  'admin.help.gettingStarted.contentDesc': {
+    hi: 'यह वह जगह है जहां सभी कार्रवाई होती है - आप यहां फॉर्म, सूचियां और जानकारी देखेंगे।',
+    en: 'This is where all the action happens - you\'ll see forms, lists, and information here.'
+  },
+  'admin.help.gettingStarted.step3': {
+    hi: 'चरण 3: नेविगेशन सुझाव',
+    en: 'Step 3: Navigation Tips'
+  },
+  'admin.help.gettingStarted.navTip1': {
+    hi: 'मेनू आइटम पर क्लिक करें उन्हें खोलने के लिए',
+    en: 'Click on menu items to open them'
+  },
+  'admin.help.gettingStarted.navTip2': {
+    hi: 'कुछ मेनू आइटम में तीर (▼) होते हैं - अधिक विकल्प देखने के लिए उन पर क्लिक करें',
+    en: 'Some menu items have arrows (▼) - click them to see more options'
+  },
+  'admin.help.gettingStarted.navTip3': {
+    hi: 'मोबाइल फोन पर, साइडबार खोलने के लिए ☰ मेनू आइकन (ऊपर बाईं ओर) पर टैप करें',
+    en: 'On mobile phones, tap the ☰ menu icon (top left) to open the sidebar'
+  },
+  'admin.help.gettingStarted.navTip4': {
+    hi: 'पिछले पृष्ठों पर वापस जाने के लिए अपने ब्राउज़र में बैक बटन का उपयोग करें',
+    en: 'Use the back button in your browser to go back to previous pages'
+  },
+  'admin.help.gettingStarted.navTip5': {
+    hi: 'डैशबोर्ड आपका होम पेज है - यह सब कुछ का अवलोकन दिखाता है',
+    en: 'The Dashboard is your home page - it shows an overview of everything'
+  },
+  
+  // Dashboard Section
+  'admin.help.dashboard.whatIs': {
+    hi: 'डैशबोर्ड क्या है?',
+    en: 'What is the Dashboard?'
+  },
+  'admin.help.dashboard.whatIsDesc': {
+    hi: 'डैशबोर्ड आपका नियंत्रण केंद्र जैसा है। यह आपको सभी मुख्य सुविधाओं तक त्वरित पहुंच दिखाता है और सिस्टम में क्या हो रहा है इसका अवलोकन देता है।',
+    en: 'The Dashboard is like your control center. It shows you quick access to all the main features and gives you an overview of what\'s happening in the system.'
+  },
+  'admin.help.dashboard.whatYouSee': {
+    hi: 'आप क्या देखेंगे:',
+    en: 'What You\'ll See:'
+  },
+  'admin.help.dashboard.quickStats': {
+    hi: 'त्वरित आंकड़े: कुल सदस्य, जिले, और गतिविधि संख्याएं',
+    en: 'Quick Stats: Total members, districts, and activity numbers'
+  },
+  'admin.help.dashboard.sectionCards': {
+    hi: 'सेक्शन कार्ड: विभिन्न क्षेत्रों पर ले जाने वाले बड़े रंगीन बॉक्स',
+    en: 'Section Cards: Big colorful boxes that take you to different areas'
+  },
+  'admin.help.dashboard.roleBadge': {
+    hi: 'आपका भूमिका बैज: दिखाता है कि आप सुपर एडमिन हैं या जिला एडमिन',
+    en: 'Your Role Badge: Shows if you\'re a Super Admin or District Admin'
+  },
+  'admin.help.dashboard.welcomeMsg': {
+    hi: 'स्वागत संदेश: आपके नाम के साथ व्यक्तिगत अभिवादन',
+    en: 'Welcome Message: Personalized greeting with your name'
+  },
+  'admin.help.dashboard.howToUse': {
+    hi: 'इसका उपयोग कैसे करें:',
+    en: 'How to Use It:'
+  },
+  'admin.help.dashboard.useStep1': {
+    hi: 'विभिन्न रंगीन बॉक्स (नीला, हरा, लाल, आदि) देखें',
+    en: 'Look at the different colored boxes (blue, green, red, etc.)'
+  },
+  'admin.help.dashboard.useStep2': {
+    hi: 'प्रत्येक बॉक्स एक सेक्शन (सदस्य, सामग्री, विभाग, आदि) का प्रतिनिधित्व करता है',
+    en: 'Each box represents a section (Members, Content, Departments, etc.)'
+  },
+  'admin.help.dashboard.useStep3': {
+    hi: 'उस सेक्शन पर जाने के लिए किसी भी बॉक्स पर क्लिक करें',
+    en: 'Click on any box to go to that section'
+  },
+  'admin.help.dashboard.useStep4': {
+    hi: 'कुछ बॉक्स के अंदर कई विकल्प होते हैं - उन्हें देखने के लिए बॉक्स पर क्लिक करें',
+    en: 'Some boxes have multiple options inside - click the box to see them'
+  },
+  'admin.help.dashboard.tip': {
+    hi: '💡 सुझाव: साइडबार मेनू में "डैशबोर्ड" पर क्लिक करके डैशबोर्ड हमेशा सुलभ है।',
+    en: '💡 Tip: The Dashboard is always accessible by clicking "Dashboard" in the sidebar menu.'
+  },
+  
+  // Members Section - I'll add key translations, but due to length, I'll focus on the most important ones
+  'admin.help.members.whatIs': {
+    hi: 'सदस्य प्रबंधन क्या है?',
+    en: 'What is Members Management?'
+  },
+  'admin.help.members.whatIsDesc': {
+    hi: 'यह वह जगह है जहां आप अपने संगठन के सभी सदस्यों का प्रबंधन करते हैं। आप सदस्यों को देख सकते हैं, नए जोड़ सकते हैं, पंजीकरण टोकन सत्यापित कर सकते हैं, और जिला एडमिन का प्रबंधन कर सकते हैं।',
+    en: 'This is where you manage all the members of your organization. You can view members, add new ones, verify registration tokens, and manage district admins.'
+  },
+  'admin.help.members.viewAll': {
+    hi: 'सभी सदस्य देखें',
+    en: 'View All Members'
+  },
+  'admin.help.members.addNew': {
+    hi: 'नया सदस्य जोड़ें',
+    en: 'Add a New Member'
+  },
+  'admin.help.members.tokenVerification': {
+    hi: 'टोकन सत्यापन',
+    en: 'Token Verification'
+  },
+  'admin.help.members.districtAdmins': {
+    hi: 'जिला एडमिन (केवल सुपर एडमिन)',
+    en: 'District Admins (Super Admin Only)'
+  },
+  'admin.help.members.important': {
+    hi: '⚠️ महत्वपूर्ण: सबमिट करने से पहले सुनिश्चित करें कि सभी जानकारी सही है। बाद में आवश्यकता पड़ने पर आप सदस्य विवरण संपादित कर सकते हैं।',
+    en: '⚠️ Important: Make sure all information is correct before submitting. You can edit member details later if needed.'
+  },
+  
+  // I'll continue with more key translations but keep it manageable
+  'admin.help.permissions.whatAre': {
+    hi: 'अनुमतियां क्या हैं?',
+    en: 'What are Permissions?'
+  },
+  'admin.help.permissions.whatAreDesc': {
+    hi: 'अनुमतियां नियंत्रित करती हैं कि विभिन्न एडमिन सिस्टम में क्या कर सकते हैं। सुपर एडमिन के रूप में, आप जिला एडमिन को विशिष्ट अनुमतियां दे सकते हैं ताकि वे कुछ सुविधाओं का प्रबंधन कर सकें।',
+    en: 'Permissions control what different admins can do in the system. As a Super Admin, you can give specific permissions to District Admins so they can manage certain features.'
+  },
+  'admin.help.permissions.onlySuperAdmin': {
+    hi: 'अनुमति प्रबंधन केवल सुपर एडमिन के लिए उपलब्ध है। यदि आपको कुछ अनुमतियों की आवश्यकता है, तो कृपया अपने सुपर एडमिन से संपर्क करें।',
+    en: 'Permission Management is only available to Super Admins. If you need certain permissions, please contact your Super Admin.'
+  },
+  
+  // Content Management
+  'admin.help.content.whatIs': {
+    hi: 'सामग्री प्रबंधन क्या है?',
+    en: 'What is Content Management?'
+  },
+  'admin.help.content.whatIsDesc': {
+    hi: 'यह वह जगह है जहां आप अपनी वेबसाइट पर सभी सामग्री का प्रबंधन करते हैं - अबाउट पेज, होमपेज छवियां, फोटो, उत्पाद, समाचार, कार्यक्रम, और संपर्क जानकारी।',
+    en: 'This is where you manage all the content on your website - the about page, homepage images, photos, products, news, events, and contact information.'
+  },
+  
+  // General help text
+  'admin.help.general.tip': {
+    hi: '💡 सुझाव:',
+    en: '💡 Tip:'
+  },
+  'admin.help.general.warning': {
+    hi: '⚠️ चेतावनी:',
+    en: '⚠️ Warning:'
+  },
+  'admin.help.general.remember': {
+    hi: '✅ याद रखें:',
+    en: '✅ Remember:'
+  },
+  'admin.help.general.onlySuperAdmin': {
+    hi: 'यह सुविधा केवल सुपर एडमिन के लिए उपलब्ध है।',
+    en: 'This feature is only available to Super Admins.'
+  },
+  'admin.help.general.contactSuperAdmin': {
+    hi: 'यदि आपको कुछ अनुमतियों की आवश्यकता है, तो कृपया अपने सुपर एडमिन से संपर्क करें।',
+    en: 'If you need certain permissions, please contact your Super Admin.'
+  },
+  'admin.help.general.superAdmin': {
+    hi: 'सुपर एडमिन',
+    en: 'Super Admin'
+  },
+  'admin.help.general.districtAdmin': {
+    hi: 'जिला एडमिन',
+    en: 'District Admin'
+  },
+  'admin.help.general.admin': {
+    hi: 'एडमिन',
+    en: 'Admin'
+  },
+  'admin.help.general.click': {
+    hi: 'क्लिक करें',
+    en: 'Click'
+  },
+  'admin.help.general.save': {
+    hi: 'सहेजें',
+    en: 'Save'
+  },
+  'admin.help.general.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.help.general.edit': {
+    hi: 'संपादित करें',
+    en: 'Edit'
+  },
+  'admin.help.general.delete': {
+    hi: 'हटाएं',
+    en: 'Delete'
+  },
+  'admin.help.general.upload': {
+    hi: 'अपलोड करें',
+    en: 'Upload'
+  },
+  'admin.help.general.search': {
+    hi: 'खोजें',
+    en: 'Search'
+  },
+  'admin.help.general.filter': {
+    hi: 'फ़िल्टर करें',
+    en: 'Filter'
+  },
+  'admin.help.general.submit': {
+    hi: 'सबमिट करें',
+    en: 'Submit'
+  },
+  'admin.help.general.back': {
+    hi: 'वापस',
+    en: 'Back'
+  },
+  'admin.help.general.next': {
+    hi: 'अगला',
+    en: 'Next'
+  },
+  'admin.help.general.previous': {
+    hi: 'पिछला',
+    en: 'Previous'
+  },
+  'admin.help.general.close': {
+    hi: 'बंद करें',
+    en: 'Close'
+  },
+  'admin.help.general.open': {
+    hi: 'खोलें',
+    en: 'Open'
+  },
+  'admin.help.general.view': {
+    hi: 'देखें',
+    en: 'View'
+  },
+  'admin.help.general.create': {
+    hi: 'बनाएं',
+    en: 'Create'
+  },
+  'admin.help.general.update': {
+    hi: 'अपडेट करें',
+    en: 'Update'
+  },
+  'admin.help.general.remove': {
+    hi: 'हटाएं',
+    en: 'Remove'
+  },
+  'admin.help.general.add': {
+    hi: 'जोड़ें',
+    en: 'Add'
+  },
+  'admin.help.general.select': {
+    hi: 'चुनें',
+    en: 'Select'
+  },
+  'admin.help.general.enter': {
+    hi: 'दर्ज करें',
+    en: 'Enter'
+  },
+  'admin.help.general.required': {
+    hi: 'आवश्यक',
+    en: 'Required'
+  },
+  'admin.help.general.optional': {
+    hi: 'वैकल्पिक',
+    en: 'Optional'
+  },
+  'admin.help.general.yes': {
+    hi: 'हाँ',
+    en: 'Yes'
+  },
+  'admin.help.general.no': {
+    hi: 'नहीं',
+    en: 'No'
+  },
+  'admin.help.general.or': {
+    hi: 'या',
+    en: 'or'
+  },
+  'admin.help.general.and': {
+    hi: 'और',
+    en: 'and'
+  },
+  'admin.help.general.step': {
+    hi: 'चरण',
+    en: 'Step'
+  },
+  'admin.help.general.steps': {
+    hi: 'चरण',
+    en: 'Steps'
+  },
+  'admin.help.general.example': {
+    hi: 'उदाहरण',
+    en: 'Example'
+  },
+  'admin.help.general.note': {
+    hi: 'नोट',
+    en: 'Note'
+  },
+  'admin.help.general.important': {
+    hi: 'महत्वपूर्ण',
+    en: 'Important'
+  },
+  'admin.help.general.info': {
+    hi: 'जानकारी',
+    en: 'Info'
+  },
+  'admin.help.general.success': {
+    hi: 'सफलता',
+    en: 'Success'
+  },
+  'admin.help.general.error': {
+    hi: 'त्रुटि',
+    en: 'Error'
+  },
+  'admin.help.general.loading': {
+    hi: 'लोड हो रहा है...',
+    en: 'Loading...'
+  },
+  'admin.help.general.processing': {
+    hi: 'प्रसंस्करण...',
+    en: 'Processing...'
+  },
+  'admin.help.general.pleaseWait': {
+    hi: 'कृपया प्रतीक्षा करें',
+    en: 'Please wait'
+  },
+  'admin.help.general.done': {
+    hi: 'पूर्ण',
+    en: 'Done'
+  },
+  'admin.help.general.failed': {
+    hi: 'असफल',
+    en: 'Failed'
+  },
+  'admin.help.general.tryAgain': {
+    hi: 'पुनः प्रयास करें',
+    en: 'Try again'
+  },
+  'admin.help.general.contactSupport': {
+    hi: 'सहायता से संपर्क करें',
+    en: 'Contact support'
+  },
+  'admin.help.general.learnMore': {
+    hi: 'अधिक जानें',
+    en: 'Learn more'
+  },
+  'admin.help.general.readMore': {
+    hi: 'अधिक पढ़ें',
+    en: 'Read more'
+  },
+  'admin.help.general.seeMore': {
+    hi: 'अधिक देखें',
+    en: 'See more'
+  },
+  'admin.help.general.showLess': {
+    hi: 'कम दिखाएं',
+    en: 'Show less'
+  },
+  'admin.help.general.showMore': {
+    hi: 'अधिक दिखाएं',
+    en: 'Show more'
+  },
+  'admin.help.general.expand': {
+    hi: 'विस्तार करें',
+    en: 'Expand'
+  },
+  'admin.help.general.collapse': {
+    hi: 'संकुचित करें',
+    en: 'Collapse'
+  },
+  'admin.help.general.more': {
+    hi: 'अधिक',
+    en: 'More'
+  },
+  'admin.help.general.less': {
+    hi: 'कम',
+    en: 'Less'
+  },
+  'admin.help.general.all': {
+    hi: 'सभी',
+    en: 'All'
+  },
+  'admin.help.general.none': {
+    hi: 'कोई नहीं',
+    en: 'None'
+  },
+  'admin.help.general.some': {
+    hi: 'कुछ',
+    en: 'Some'
+  },
+  'admin.help.general.many': {
+    hi: 'कई',
+    en: 'Many'
+  },
+  'admin.help.general.few': {
+    hi: 'कुछ',
+    en: 'Few'
+  },
+  'admin.help.general.most': {
+    hi: 'अधिकांश',
+    en: 'Most'
+  },
+  'admin.help.general.least': {
+    hi: 'कम से कम',
+    en: 'Least'
+  },
+  'admin.help.general.best': {
+    hi: 'सर्वश्रेष्ठ',
+    en: 'Best'
+  },
+  'admin.help.general.worst': {
+    hi: 'सबसे खराब',
+    en: 'Worst'
+  },
+  'admin.help.general.better': {
+    hi: 'बेहतर',
+    en: 'Better'
+  },
+  'admin.help.general.worse': {
+    hi: 'बदतर',
+    en: 'Worse'
+  },
+  'admin.help.general.good': {
+    hi: 'अच्छा',
+    en: 'Good'
+  },
+  'admin.help.general.bad': {
+    hi: 'बुरा',
+    en: 'Bad'
+  },
+  'admin.help.general.great': {
+    hi: 'महान',
+    en: 'Great'
+  },
+  'admin.help.general.excellent': {
+    hi: 'उत्कृष्ट',
+    en: 'Excellent'
+  },
+  'admin.help.general.perfect': {
+    hi: 'पूर्ण',
+    en: 'Perfect'
+  },
+  'admin.help.general.awesome': {
+    hi: 'शानदार',
+    en: 'Awesome'
+  },
+  'admin.help.general.amazing': {
+    hi: 'अद्भुत',
+    en: 'Amazing'
+  },
+  'admin.help.general.fantastic': {
+    hi: 'शानदार',
+    en: 'Fantastic'
+  },
+  'admin.help.general.incredible': {
+    hi: 'अविश्वसनीय',
+    en: 'Incredible'
+  },
+  'admin.help.general.outstanding': {
+    hi: 'उत्कृष्ट',
+    en: 'Outstanding'
+  },
+  'admin.help.general.remarkable': {
+    hi: 'उल्लेखनीय',
+    en: 'Remarkable'
+  },
+  'admin.help.general.impressive': {
+    hi: 'प्रभावशाली',
+    en: 'Impressive'
+  },
+  'admin.help.general.magnificent': {
+    hi: 'शानदार',
+    en: 'Magnificent'
+  },
+  'admin.help.general.splendid': {
+    hi: 'शानदार',
+    en: 'Splendid'
+  },
+  'admin.help.general.wonderful': {
+    hi: 'अद्भुत',
+    en: 'Wonderful'
+  },
+  'admin.help.general.marvelous': {
+    hi: 'अद्भुत',
+    en: 'Marvelous'
+  },
+  'admin.help.general.terrific': {
+    hi: 'शानदार',
+    en: 'Terrific'
+  },
+  'admin.help.general.superb': {
+    hi: 'उत्कृष्ट',
+    en: 'Superb'
+  },
+  'admin.help.general.brilliant': {
+    hi: 'शानदार',
+    en: 'Brilliant'
+  },
+  'admin.help.general.extraordinary': {
+    hi: 'असाधारण',
+    en: 'Extraordinary'
+  },
+  'admin.help.general.exceptional': {
+    hi: 'असाधारण',
+    en: 'Exceptional'
+  },
+  'admin.help.general.phenomenal': {
+    hi: 'असाधारण',
+    en: 'Phenomenal'
+  },
+  'admin.help.general.spectacular': {
+    hi: 'शानदार',
+    en: 'Spectacular'
+  },
+  'admin.help.general.stunning': {
+    hi: 'लुभावना',
+    en: 'Stunning'
+  },
+  'admin.help.general.breathtaking': {
+    hi: 'लुभावना',
+    en: 'Breathtaking'
+  },
+  'admin.help.general.mesmerizing': {
+    hi: 'मंत्रमुग्ध करने वाला',
+    en: 'Mesmerizing'
+  },
+  'admin.help.general.captivating': {
+    hi: 'मनोरम',
+    en: 'Captivating'
+  },
+  'admin.help.general.fascinating': {
+    hi: 'आकर्षक',
+    en: 'Fascinating'
+  },
+  'admin.help.general.engaging': {
+    hi: 'आकर्षक',
+    en: 'Engaging'
+  },
+  'admin.help.general.enticing': {
+    hi: 'आकर्षक',
+    en: 'Enticing'
+  },
+  'admin.help.general.alluring': {
+    hi: 'आकर्षक',
+    en: 'Alluring'
+  },
+  'admin.help.general.tempting': {
+    hi: 'आकर्षक',
+    en: 'Tempting'
+  },
+  'admin.help.general.irresistible': {
+    hi: 'अप्रतिरोध्य',
+    en: 'Irresistible'
+  },
+  'admin.help.general.unforgettable': {
+    hi: 'अविस्मरणीय',
+    en: 'Unforgettable'
+  },
+  'admin.help.general.memorable': {
+    hi: 'यादगार',
+    en: 'Memorable'
+  },
+  
+  // Members section detailed translations
+  'admin.help.members.viewAllTitle': {
+    hi: 'सभी सदस्य देखें',
+    en: 'View All Members'
+  },
+  'admin.help.members.viewAllStep1': {
+    hi: 'साइडबार में "सदस्य" पर क्लिक करें',
+    en: 'Click on "Members" in the sidebar'
+  },
+  'admin.help.members.viewAllStep2': {
+    hi: 'फिर "सभी सदस्य" पर क्लिक करें',
+    en: 'Then click "All Members"'
+  },
+  'admin.help.members.viewAllStep3': {
+    hi: 'आप सभी सदस्यों की सूची उनकी तस्वीरों, नामों और विवरणों के साथ देखेंगे',
+    en: 'You\'ll see a list of all members with their photos, names, and details'
+  },
+  'admin.help.members.viewAllStep4': {
+    hi: 'विशिष्ट सदस्य खोजने के लिए शीर्ष पर खोज बॉक्स का उपयोग करें',
+    en: 'Use the search box at the top to find specific members'
+  },
+  'admin.help.members.viewAllStep5': {
+    hi: 'केवल सत्यापित सदस्य, लंबित सदस्य, आदि दिखाने के लिए फ़िल्टर का उपयोग करें',
+    en: 'Use filters to show only verified members, pending members, etc.'
+  },
+  'admin.help.members.viewAllStep6': {
+    hi: 'उनके पूर्ण विवरण देखने के लिए किसी भी सदस्य कार्ड पर क्लिक करें',
+    en: 'Click on any member card to see their full details'
+  },
+  'admin.help.members.addNewTitle': {
+    hi: 'नया सदस्य जोड़ें',
+    en: 'Add a New Member'
+  },
+  'admin.help.members.addNewStep1': {
+    hi: 'साइडबार में "सदस्य" पर क्लिक करें',
+    en: 'Click on "Members" in the sidebar'
+  },
+  'admin.help.members.addNewStep2': {
+    hi: '"सदस्य जोड़ें" पर क्लिक करें',
+    en: 'Click "Add Member"'
+  },
+  'admin.help.members.addNewStep3': {
+    hi: 'सभी आवश्यक जानकारी भरें:',
+    en: 'Fill in all the required information:'
+  },
+  'admin.help.members.addNewInfo1': {
+    hi: 'पूरा नाम',
+    en: 'Full Name'
+  },
+  'admin.help.members.addNewInfo2': {
+    hi: 'ईमेल पता',
+    en: 'Email Address'
+  },
+  'admin.help.members.addNewInfo3': {
+    hi: 'फोन नंबर',
+    en: 'Phone Number'
+  },
+  'admin.help.members.addNewInfo4': {
+    hi: 'पता',
+    en: 'Address'
+  },
+  'admin.help.members.addNewInfo5': {
+    hi: 'राज्य और जिला',
+    en: 'State and District'
+  },
+  'admin.help.members.addNewInfo6': {
+    hi: 'आधार कार्ड नंबर',
+    en: 'Aadhar Card Number'
+  },
+  'admin.help.members.addNewInfo7': {
+    hi: 'पिता/पति का नाम',
+    en: 'Father/Husband Name'
+  },
+  'admin.help.members.addNewInfo8': {
+    hi: 'माता/पत्नी का नाम',
+    en: 'Mother/Wife Name'
+  },
+  'admin.help.members.addNewInfo9': {
+    hi: 'पंजीकरण दिनांक',
+    en: 'Registration Date'
+  },
+  'admin.help.members.addNewInfo10': {
+    hi: 'मौजूदा सदस्य पंजीकरण संख्या',
+    en: 'Existing Member Registration Number'
+  },
+  'admin.help.members.addNewStep4': {
+    hi: 'एक प्रोफ़ाइल फोटो अपलोड करें ("फ़ाइल चुनें" पर क्लिक करें और एक फोटो चुनें)',
+    en: 'Upload a Profile Photo (click "Choose File" and select a photo)'
+  },
+  'admin.help.members.addNewStep5': {
+    hi: 'एक हस्ताक्षर अपलोड करें (वैकल्पिक लेकिन अनुशंसित)',
+    en: 'Upload a Signature (optional but recommended)'
+  },
+  'admin.help.members.addNewStep6': {
+    hi: 'सदस्य के ईमेल पर भेजे गए OTP को दर्ज करें',
+    en: 'Enter the OTP sent to the member\'s email'
+  },
+  'admin.help.members.addNewStep7': {
+    hi: 'यदि सदस्य ने पंजीकरण शुल्क का भुगतान किया है तो बॉक्स को चेक करें',
+    en: 'Check the box if the member has paid the registration fee'
+  },
+  'admin.help.members.addNewStep8': {
+    hi: '"सबमिट" या "सदस्य पंजीकृत करें" पर क्लिक करें',
+    en: 'Click "Submit" or "Register Member"'
+  },
+  'admin.help.members.tokenVerificationTitle': {
+    hi: 'टोकन सत्यापन',
+    en: 'Token Verification'
+  },
+  'admin.help.members.tokenVerificationDesc': {
+    hi: 'जब कोई सदस्य के रूप में पंजीकरण करना चाहता है, तो उन्हें एक पंजीकरण टोकन मिलता है। आपको इन टोकन को सत्यापित करने की आवश्यकता है।',
+    en: 'When someone wants to register as a member, they get a registration token. You need to verify these tokens.'
+  },
+  'admin.help.members.tokenVerificationStep1': {
+    hi: 'साइडबार में "सदस्य" पर क्लिक करें',
+    en: 'Click on "Members" in the sidebar'
+  },
+  'admin.help.members.tokenVerificationStep2': {
+    hi: '"टोकन सत्यापन" पर क्लिक करें',
+    en: 'Click "Token Verification"'
+  },
+  'admin.help.members.tokenVerificationStep3': {
+    hi: 'आप लंबित टोकन की सूची देखेंगे',
+    en: 'You\'ll see a list of pending tokens'
+  },
+  'admin.help.members.tokenVerificationStep4': {
+    hi: 'टोकन विवरण (नाम, ईमेल, जिला, आदि) की समीक्षा करें',
+    en: 'Review the token details (name, email, district, etc.)'
+  },
+  'admin.help.members.tokenVerificationStep5': {
+    hi: 'अनुमोदन के लिए "सत्यापित करें" या अस्वीकार करने के लिए "अस्वीकार" पर क्लिक करें',
+    en: 'Click "Verify" to approve or "Reject" to deny'
+  },
+  'admin.help.members.tokenVerificationStep6': {
+    hi: 'आप खोज बॉक्स का उपयोग करके विशिष्ट टोकन भी खोज सकते हैं',
+    en: 'You can also search for specific tokens using the search box'
+  },
+  'admin.help.members.districtAdminsTitle': {
+    hi: 'जिला एडमिन (केवल सुपर एडमिन)',
+    en: 'District Admins (Super Admin Only)'
+  },
+  'admin.help.members.districtAdminsDesc': {
+    hi: 'सुपर एडमिन के रूप में, आप जिला एडमिन बना और प्रबंधित कर सकते हैं जो अपने विशिष्ट जिले में सदस्यों का प्रबंधन कर सकते हैं।',
+    en: 'As a Super Admin, you can create and manage District Admins who can manage members in their specific district.'
+  },
+  'admin.help.members.districtAdminsStep1': {
+    hi: 'साइडबार में "सदस्य" पर क्लिक करें',
+    en: 'Click on "Members" in the sidebar'
+  },
+  'admin.help.members.districtAdminsStep2': {
+    hi: '"जिला एडमिन" पर क्लिक करें',
+    en: 'Click "District Admins"'
+  },
+  'admin.help.members.districtAdminsStep3': {
+    hi: '"जिला एडमिन जोड़ें" बटन पर क्लिक करें',
+    en: 'Click "Add District Admin" button'
+  },
+  'admin.help.members.districtAdminsStep4': {
+    hi: 'सूची से एक मौजूदा सदस्य चुनें',
+    en: 'Select an existing member from the list'
+  },
+  'admin.help.members.districtAdminsStep5': {
+    hi: 'उनका जिला चुनें',
+    en: 'Choose their district'
+  },
+  'admin.help.members.districtAdminsStep6': {
+    hi: '"जिला एडमिन बनाएं" पर क्लिक करें',
+    en: 'Click "Create District Admin"'
+  },
+  'admin.help.members.districtAdminsStep7': {
+    hi: 'आप इस पेज से जिला एडमिन को संपादित या हटा भी सकते हैं',
+    en: 'You can also edit or remove district admins from this page'
+  },
+  'admin.help.members.searchTip': {
+    hi: '💡 सुझाव: आप नाम, ईमेल, फोन नंबर, या पंजीकरण संख्या से सदस्यों को खोज सकते हैं। स्थिति (सत्यापित, लंबित, आदि) या जिले से सदस्यों को खोजने के लिए फ़िल्टर का उपयोग करें।',
+    en: '💡 Tip: You can search for members by name, email, phone number, or registration number. Use filters to find members by status (verified, pending, etc.) or district.'
+  },
+  
+  // Permissions section
+  'admin.help.permissions.assignTitle': {
+    hi: 'अनुमतियां असाइन करें',
+    en: 'Assign Permissions'
+  },
+  'admin.help.permissions.assignStep1': {
+    hi: 'साइडबार में "अनुमति प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Permission Management" in the sidebar'
+  },
+  'admin.help.permissions.assignStep2': {
+    hi: '"अनुमतियां असाइन करें" पर क्लिक करें',
+    en: 'Click "Assign Permissions"'
+  },
+  'admin.help.permissions.assignStep3': {
+    hi: 'ड्रॉपडाउन से एक जिला एडमिन चुनें',
+    en: 'Select a District Admin from the dropdown'
+  },
+  'admin.help.permissions.assignStep4': {
+    hi: 'आप उन्हें देना चाहते हैं अनुमतियों के लिए बॉक्स को चेक करें:',
+    en: 'Check the boxes for permissions you want to give them:'
+  },
+  'admin.help.permissions.viewMembers': {
+    hi: 'सदस्य देखें: सभी सदस्य देख सकते हैं',
+    en: 'View Members: Can see all members'
+  },
+  'admin.help.permissions.addMembers': {
+    hi: 'सदस्य जोड़ें: नए सदस्य जोड़ सकते हैं',
+    en: 'Add Members: Can add new members'
+  },
+  'admin.help.permissions.manageGallery': {
+    hi: 'गैलरी प्रबंधन: फोटो अपलोड और प्रबंधन कर सकते हैं',
+    en: 'Manage Gallery: Can upload and manage photos'
+  },
+  'admin.help.permissions.editAbout': {
+    hi: 'अबाउट पेज संपादित करें: अबाउट पेज सामग्री संपादित कर सकते हैं',
+    en: 'Edit About Page: Can edit the about page content'
+  },
+  'admin.help.permissions.manageHeroImages': {
+    hi: 'हीरो इमेज प्रबंधन: होमपेज छवियां बदल सकते हैं',
+    en: 'Manage Hero Images: Can change homepage images'
+  },
+  'admin.help.permissions.addProducts': {
+    hi: 'उत्पाद जोड़ें: स्टोर में उत्पाद जोड़ सकते हैं',
+    en: 'Add Products: Can add products to the store'
+  },
+  'admin.help.permissions.editNewsEvents': {
+    hi: 'समाचार/कार्यक्रम संपादित करें: समाचार और कार्यक्रम बना और संपादित कर सकते हैं',
+    en: 'Edit News/Events: Can create and edit news and events'
+  },
+  'admin.help.permissions.viewAnalytics': {
+    hi: 'विश्लेषण देखें: आंकड़े और रिपोर्ट देख सकते हैं',
+    en: 'View Analytics: Can see statistics and reports'
+  },
+  'admin.help.permissions.andMore': {
+    hi: 'और अधिक...',
+    en: 'And more...'
+  },
+  'admin.help.permissions.assignStep5': {
+    hi: 'यदि आप चाहते हैं कि अनुमतियां स्वचालित रूप से समाप्त हो जाएं तो आप समाप्ति दिनांक सेट कर सकते हैं',
+    en: 'You can set an expiration date if you want permissions to expire automatically'
+  },
+  'admin.help.permissions.assignStep6': {
+    hi: '"अनुमतियां सहेजें" पर क्लिक करें',
+    en: 'Click "Save Permissions"'
+  },
+  'admin.help.permissions.historyTitle': {
+    hi: 'अनुमति इतिहास',
+    en: 'Permission History'
+  },
+  'admin.help.permissions.historyDesc': {
+    hi: 'यह आपको सभी अनुमति परिवर्तनों का इतिहास दिखाता है - किसे कब क्या अनुमतियां मिलीं।',
+    en: 'This shows you a history of all permission changes - who got what permissions and when.'
+  },
+  'admin.help.permissions.historyStep1': {
+    hi: 'साइडबार में "अनुमति प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Permission Management" in the sidebar'
+  },
+  'admin.help.permissions.historyStep2': {
+    hi: '"अनुमति इतिहास" पर क्लिक करें',
+    en: 'Click "Permission History"'
+  },
+  'admin.help.permissions.historyStep3': {
+    hi: 'आप सभी अनुमति असाइनमेंट और परिवर्तनों की सूची देखेंगे',
+    en: 'You\'ll see a list of all permission assignments and changes'
+  },
+  'admin.help.permissions.historyStep4': {
+    hi: 'आप एडमिन, दिनांक, या अनुमति प्रकार से फ़िल्टर कर सकते हैं',
+    en: 'You can filter by admin, date, or permission type'
+  },
+  
+  // Content Management section
+  'admin.help.content.aboutTitle': {
+    hi: 'अबाउट पेज',
+    en: 'About Page'
+  },
+  'admin.help.content.aboutDesc': {
+    hi: 'अपनी वेबसाइट पर आगंतुकों द्वारा देखे जाने वाले "हमारे बारे में" पेज को संपादित करें।',
+    en: 'Edit the "About Us" page that visitors see on your website.'
+  },
+  'admin.help.content.aboutStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.aboutStep2': {
+    hi: '"अबाउट पेज" पर क्लिक करें',
+    en: 'Click "About Page"'
+  },
+  'admin.help.content.aboutStep3': {
+    hi: 'आप टेक्स्ट एडिटर में वर्तमान सामग्री देखेंगे',
+    en: 'You\'ll see the current content in a text editor'
+  },
+  'admin.help.content.aboutStep4': {
+    hi: 'परिवर्तन करने के लिए "संपादित करें" पर क्लिक करें',
+    en: 'Click "Edit" to make changes'
+  },
+  'admin.help.content.aboutStep5': {
+    hi: 'अपनी नई सामग्री टाइप या पेस्ट करें',
+    en: 'Type or paste your new content'
+  },
+  'admin.help.content.aboutStep6': {
+    hi: 'आप टूलबार का उपयोग करके टेक्स्ट को फ़ॉर्मेट कर सकते हैं (बोल्ड, इटैलिक, सूचियां, आदि)',
+    en: 'You can format text (bold, italic, lists, etc.) using the toolbar'
+  },
+  'admin.help.content.aboutStep7': {
+    hi: 'होने पर "सहेजें" पर क्लिक करें',
+    en: 'Click "Save" when done'
+  },
+  'admin.help.content.heroImagesTitle': {
+    hi: 'हीरो इमेज (होमपेज छवियां)',
+    en: 'Hero Images (Homepage Images)'
+  },
+  'admin.help.content.heroImagesDesc': {
+    hi: 'ये बड़ी छवियां हैं जो आपकी वेबसाइट के होमपेज पर दिखाई देती हैं।',
+    en: 'These are the big images that appear on your website\'s homepage.'
+  },
+  'admin.help.content.heroImagesStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.heroImagesStep2': {
+    hi: '"हीरो इमेज" पर क्लिक करें',
+    en: 'Click "Hero Images"'
+  },
+  'admin.help.content.heroImagesStep3': {
+    hi: 'आप वर्तमान हीरो इमेज देखेंगे',
+    en: 'You\'ll see current hero images'
+  },
+  'admin.help.content.heroImagesStep4': {
+    hi: 'नई इमेज जोड़ने के लिए:',
+    en: 'To add a new image:'
+  },
+  'admin.help.content.heroImagesStep4a': {
+    hi: '"इमेज जोड़ें" या "अपलोड" पर क्लिक करें',
+    en: 'Click "Add Image" or "Upload"'
+  },
+  'admin.help.content.heroImagesStep4b': {
+    hi: 'अपने कंप्यूटर से एक इमेज चुनें (JPG, PNG प्रारूप)',
+    en: 'Select an image from your computer (JPG, PNG format)'
+  },
+  'admin.help.content.heroImagesStep4c': {
+    hi: 'अपलोड होने की प्रतीक्षा करें',
+    en: 'Wait for it to upload'
+  },
+  'admin.help.content.heroImagesStep4d': {
+    hi: 'आप एक शीर्षक या विवरण जोड़ सकते हैं',
+    en: 'You can add a title or description'
+  },
+  'admin.help.content.heroImagesStep5': {
+    hi: 'एक इमेज को हटाने के लिए, इमेज पर ट्रैश आइकन (🗑️) पर क्लिक करें',
+    en: 'To remove an image, click the trash icon (🗑️) on the image'
+  },
+  'admin.help.content.heroImagesStep6': {
+    hi: 'एक इमेज को मुख्य के रूप में सेट करने के लिए, "प्राथमिक के रूप में सेट करें" पर क्लिक करें',
+    en: 'To set an image as the main one, click "Set as Primary"'
+  },
+  'admin.help.content.heroImagesTip': {
+    hi: '💡 सुझाव: सर्वोत्तम परिणामों के लिए कम से कम 1920 पिक्सेल चौड़ी उच्च-गुणवत्ता वाली छवियों का उपयोग करें।',
+    en: '💡 Tip: Use high-quality images that are at least 1920 pixels wide for best results.'
+  },
+  'admin.help.content.photoManagementTitle': {
+    hi: 'फोटो प्रबंधन (गैलरी)',
+    en: 'Photo Management (Gallery)'
+  },
+  'admin.help.content.photoManagementDesc': {
+    hi: 'अपनी गैलरी में सभी फोटो का प्रबंधन करें। आप उन्हें कार्यक्रमों और गैलरी द्वारा व्यवस्थित कर सकते हैं।',
+    en: 'Manage all the photos in your gallery. You can organize them by events and galleries.'
+  },
+  'admin.help.content.photoManagementStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.photoManagementStep2': {
+    hi: '"फोटो प्रबंधन" पर क्लिक करें',
+    en: 'Click "Photo Management"'
+  },
+  'admin.help.content.photoManagementStep3': {
+    hi: 'आप कार्यक्रमों की सूची देखेंगे (जैसे "वार्षिक बैठक 2024")',
+    en: 'You\'ll see a list of events (like "Annual Meeting 2024")'
+  },
+  'admin.help.content.photoManagementStep4': {
+    hi: 'किसी कार्यक्रम में फोटो जोड़ने के लिए:',
+    en: 'To add photos to an event:'
+  },
+  'admin.help.content.photoManagementStep4a': {
+    hi: 'कार्यक्रम नाम पर क्लिक करें',
+    en: 'Click on an event name'
+  },
+  'admin.help.content.photoManagementStep4b': {
+    hi: '"फोटो अपलोड करें" पर क्लिक करें या छवियों को खींचें और छोड़ें',
+    en: 'Click "Upload Photos" or drag and drop images'
+  },
+  'admin.help.content.photoManagementStep4c': {
+    hi: 'एक साथ कई फोटो चुनें (Ctrl/Cmd दबाएं और क्लिक करें)',
+    en: 'Select multiple photos at once (hold Ctrl/Cmd and click)'
+  },
+  'admin.help.content.photoManagementStep4d': {
+    hi: 'यदि आप चाहते हैं तो कैप्शन, फोटोग्राफर नाम, और टैग जोड़ें',
+    en: 'Add captions, photographer name, and tags if you want'
+  },
+  'admin.help.content.photoManagementStep4e': {
+    hi: '"अपलोड" पर क्लिक करें',
+    en: 'Click "Upload"'
+  },
+  'admin.help.content.photoManagementStep5': {
+    hi: 'नया कार्यक्रम बनाने के लिए:',
+    en: 'To create a new event:'
+  },
+  'admin.help.content.photoManagementStep5a': {
+    hi: '"नया कार्यक्रम बनाएं" पर क्लिक करें',
+    en: 'Click "Create New Event"'
+  },
+  'admin.help.content.photoManagementStep5b': {
+    hi: 'कार्यक्रम नाम, दिनांक, और विवरण दर्ज करें',
+    en: 'Enter event name, date, and description'
+  },
+  'admin.help.content.photoManagementStep5c': {
+    hi: '"बनाएं" पर क्लिक करें',
+    en: 'Click "Create"'
+  },
+  'admin.help.content.photoManagementStep6': {
+    hi: 'फोटो को हटाने के लिए, फोटो पर ट्रैश आइकन पर क्लिक करें',
+    en: 'To delete a photo, click the trash icon on the photo'
+  },
+  'admin.help.content.photoManagementStep7': {
+    hi: 'फोटो विवरण संपादित करने के लिए, संपादन आइकन पर क्लिक करें',
+    en: 'To edit photo details, click the edit icon'
+  },
+  'admin.help.content.productStoreTitle': {
+    hi: 'उत्पाद स्टोर',
+    en: 'Product Store'
+  },
+  'admin.help.content.productStoreDesc': {
+    hi: 'अपनी वेबसाइट पर बेचे जा सकने वाले उत्पादों को जोड़ें और प्रबंधित करें।',
+    en: 'Add and manage products that can be sold on your website.'
+  },
+  'admin.help.content.productStoreStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.productStoreStep2': {
+    hi: '"उत्पाद स्टोर" पर क्लिक करें',
+    en: 'Click "Product Store"'
+  },
+  'admin.help.content.productStoreStep3': {
+    hi: 'नया उत्पाद जोड़ने के लिए:',
+    en: 'To add a new product:'
+  },
+  'admin.help.content.productStoreStep3a': {
+    hi: '"उत्पाद जोड़ें" या "उत्पाद बनाएं" पर क्लिक करें',
+    en: 'Click "Add Product" or "Create Product"'
+  },
+  'admin.help.content.productStoreStep3b': {
+    hi: 'उत्पाद नाम दर्ज करें',
+    en: 'Enter product name'
+  },
+  'admin.help.content.productStoreStep3c': {
+    hi: 'विवरण दर्ज करें',
+    en: 'Enter description'
+  },
+  'admin.help.content.productStoreStep3d': {
+    hi: 'मूल्य दर्ज करें',
+    en: 'Enter price'
+  },
+  'admin.help.content.productStoreStep3e': {
+    hi: 'उत्पाद छवियां अपलोड करें (आप कई जोड़ सकते हैं)',
+    en: 'Upload product images (you can add multiple)'
+  },
+  'admin.help.content.productStoreStep3f': {
+    hi: 'स्टॉक मात्रा सेट करें',
+    en: 'Set stock quantity'
+  },
+  'admin.help.content.productStoreStep3g': {
+    hi: 'श्रेणी/टैग जोड़ें',
+    en: 'Add category/tags'
+  },
+  'admin.help.content.productStoreStep3h': {
+    hi: '"सहेजें" या "उत्पाद बनाएं" पर क्लिक करें',
+    en: 'Click "Save" or "Create Product"'
+  },
+  'admin.help.content.productStoreStep4': {
+    hi: 'उत्पाद को संपादित करने के लिए, उस पर क्लिक करें और फिर "संपादित करें" पर क्लिक करें',
+    en: 'To edit a product, click on it and then click "Edit"'
+  },
+  'admin.help.content.productStoreStep5': {
+    hi: 'उत्पाद को हटाने के लिए, ट्रैश आइकन पर क्लिक करें',
+    en: 'To delete a product, click the trash icon'
+  },
+  'admin.help.content.newsEventsTitle': {
+    hi: 'समाचार और कार्यक्रम',
+    en: 'News & Events'
+  },
+  'admin.help.content.newsEventsDesc': {
+    hi: 'समाचार लेख और आगामी कार्यक्रम बनाएं और प्रबंधित करें।',
+    en: 'Create and manage news articles and upcoming events.'
+  },
+  'admin.help.content.newsEventsStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.newsEventsStep2': {
+    hi: '"समाचार और कार्यक्रम" पर क्लिक करें',
+    en: 'Click "News & Events"'
+  },
+  'admin.help.content.newsEventsStep3': {
+    hi: 'आप "समाचार" और "कार्यक्रम" के लिए टैब देखेंगे',
+    en: 'You\'ll see tabs for "News" and "Events"'
+  },
+  'admin.help.content.newsEventsStep4': {
+    hi: 'समाचार जोड़ने के लिए:',
+    en: 'To add news:'
+  },
+  'admin.help.content.newsEventsStep4a': {
+    hi: '"समाचार जोड़ें" पर क्लिक करें',
+    en: 'Click "Add News"'
+  },
+  'admin.help.content.newsEventsStep4b': {
+    hi: 'हेडलाइन/शीर्षक दर्ज करें',
+    en: 'Enter headline/title'
+  },
+  'admin.help.content.newsEventsStep4c': {
+    hi: 'समाचार सामग्री लिखें',
+    en: 'Write the news content'
+  },
+  'admin.help.content.newsEventsStep4d': {
+    hi: 'एक फीचर्ड इमेज अपलोड करें (वैकल्पिक)',
+    en: 'Upload a featured image (optional)'
+  },
+  'admin.help.content.newsEventsStep4e': {
+    hi: 'प्रकाशन दिनांक सेट करें',
+    en: 'Set publish date'
+  },
+  'admin.help.content.newsEventsStep4f': {
+    hi: '"प्रकाशित करें" पर क्लिक करें',
+    en: 'Click "Publish"'
+  },
+  'admin.help.content.newsEventsStep5': {
+    hi: 'कार्यक्रम जोड़ने के लिए:',
+    en: 'To add an event:'
+  },
+  'admin.help.content.newsEventsStep5a': {
+    hi: '"कार्यक्रम जोड़ें" पर क्लिक करें',
+    en: 'Click "Add Event"'
+  },
+  'admin.help.content.newsEventsStep5b': {
+    hi: 'कार्यक्रम नाम दर्ज करें',
+    en: 'Enter event name'
+  },
+  'admin.help.content.newsEventsStep5c': {
+    hi: 'विवरण दर्ज करें',
+    en: 'Enter description'
+  },
+  'admin.help.content.newsEventsStep5d': {
+    hi: 'कार्यक्रम दिनांक और समय सेट करें',
+    en: 'Set event date and time'
+  },
+  'admin.help.content.newsEventsStep5e': {
+    hi: 'स्थान दर्ज करें',
+    en: 'Enter location'
+  },
+  'admin.help.content.newsEventsStep5f': {
+    hi: 'कार्यक्रम छवि अपलोड करें',
+    en: 'Upload event image'
+  },
+  'admin.help.content.newsEventsStep5g': {
+    hi: '"कार्यक्रम बनाएं" पर क्लिक करें',
+    en: 'Click "Create Event"'
+  },
+  'admin.help.content.contactTitle': {
+    hi: 'संपर्क जानकारी',
+    en: 'Contact Information'
+  },
+  'admin.help.content.contactDesc': {
+    hi: 'अपनी वेबसाइट पर दिखाई देने वाली संपर्क जानकारी अपडेट करें।',
+    en: 'Update the contact information that appears on your website.'
+  },
+  'admin.help.content.contactStep1': {
+    hi: 'साइडबार में "सामग्री प्रबंधन" पर क्लिक करें',
+    en: 'Click on "Content Management" in the sidebar'
+  },
+  'admin.help.content.contactStep2': {
+    hi: '"संपर्क जानकारी" पर क्लिक करें',
+    en: 'Click "Contact Info"'
+  },
+  'admin.help.content.contactStep3': {
+    hi: 'फोन नंबर, ईमेल पते, पते, आदि अपडेट करें',
+    en: 'Update phone numbers, email addresses, addresses, etc.'
+  },
+  'admin.help.content.contactStep4': {
+    hi: 'होने पर "सहेजें" पर क्लिक करें',
+    en: 'Click "Save" when done'
+  },
+  
+  // Departments section
+  'admin.help.departments.whatAre': {
+    hi: 'विभाग क्या हैं?',
+    en: 'What are Departments?'
+  },
+  'admin.help.departments.whatAreDesc': {
+    hi: 'विभाग आपके संगठन में विभिन्न अनुभाग या प्रभाग हैं। आप सदस्यों को विभागों में व्यवस्थित कर सकते हैं और सदस्यों को विशिष्ट विभागों में असाइन कर सकते हैं।',
+    en: 'Departments are different sections or divisions in your organization. You can organize members into departments and assign members to specific departments.'
+  },
+  'admin.help.departments.createTitle': {
+    hi: 'विभाग बनाएं',
+    en: 'Create a Department'
+  },
+  'admin.help.departments.createStep1': {
+    hi: 'साइडबार में "विभाग" पर क्लिक करें',
+    en: 'Click on "Departments" in the sidebar'
+  },
+  'admin.help.departments.createStep2': {
+    hi: '"विभाग बनाएं" पर क्लिक करें',
+    en: 'Click "Create Department"'
+  },
+  'admin.help.departments.createStep3': {
+    hi: 'विभाग नाम दर्ज करें (उदाहरण: "वित्त", "मार्केटिंग", "संचालन")',
+    en: 'Enter department name (e.g., "Finance", "Marketing", "Operations")'
+  },
+  'admin.help.departments.createStep4': {
+    hi: 'विवरण दर्ज करें (वैकल्पिक)',
+    en: 'Enter description (optional)'
+  },
+  'admin.help.departments.createStep5': {
+    hi: '"बनाएं" पर क्लिक करें',
+    en: 'Click "Create"'
+  },
+  'admin.help.departments.manageTitle': {
+    hi: 'विभाग प्रबंधन',
+    en: 'Manage Departments'
+  },
+  'admin.help.departments.manageStep1': {
+    hi: 'साइडबार में "विभाग" पर क्लिक करें',
+    en: 'Click on "Departments" in the sidebar'
+  },
+  'admin.help.departments.manageStep2': {
+    hi: '"विभाग प्रबंधन" पर क्लिक करें',
+    en: 'Click "Manage Departments"'
+  },
+  'admin.help.departments.manageStep3': {
+    hi: 'आप सभी विभागों की सूची देखेंगे',
+    en: 'You\'ll see a list of all departments'
+  },
+  'admin.help.departments.manageStep4': {
+    hi: 'विभाग नाम या विवरण बदलने के लिए "संपादित करें" पर क्लिक करें',
+    en: 'Click "Edit" to change department name or details'
+  },
+  'admin.help.departments.manageStep5': {
+    hi: 'विभाग को हटाने के लिए "हटाएं" पर क्लिक करें (सावधान रहें!)',
+    en: 'Click "Delete" to remove a department (be careful!)'
+  },
+  'admin.help.departments.assignTitle': {
+    hi: 'सदस्यों को विभागों में असाइन करें',
+    en: 'Assign Members to Departments'
+  },
+  'admin.help.departments.assignDescSuper': {
+    hi: 'आप सदस्यों को विभागों में असाइन कर सकते हैं ताकि वे ठीक से व्यवस्थित हों।',
+    en: 'You can assign members to departments so they\'re organized properly.'
+  },
+  'admin.help.departments.assignDescDistrict': {
+    hi: 'जिला एडमिन के रूप में, आप अपने जिले के सदस्यों को विभागों में असाइन कर सकते हैं।',
+    en: 'As a District Admin, you can assign members in your district to departments.'
+  },
+  'admin.help.departments.assignStep1': {
+    hi: 'साइडबार में "विभाग" पर क्लिक करें',
+    en: 'Click on "Departments" in the sidebar'
+  },
+  'admin.help.departments.assignStep2': {
+    hi: '"सदस्य असाइन करें" पर क्लिक करें',
+    en: 'Click "Assign Members"'
+  },
+  'admin.help.departments.assignStep3': {
+    hi: 'ड्रॉपडाउन से एक विभाग चुनें',
+    en: 'Select a department from the dropdown'
+  },
+  'admin.help.departments.assignStep4': {
+    hi: 'आप सदस्यों की सूची देखेंगे',
+    en: 'You\'ll see a list of members'
+  },
+  'admin.help.departments.assignStep5': {
+    hi: 'आप जिन सदस्यों को असाइन करना चाहते हैं उनके बगल में बॉक्स को चेक करें',
+    en: 'Check the boxes next to members you want to assign'
+  },
+  'admin.help.departments.assignStep6': {
+    hi: '"चयनित सदस्य असाइन करें" पर क्लिक करें',
+    en: 'Click "Assign Selected Members"'
+  },
+  'admin.help.departments.assignStep7': {
+    hi: 'किसी सदस्य को विभाग से हटाने के लिए, उनके बॉक्स को अनचेक करें और "अपडेट" पर क्लिक करें',
+    en: 'To remove a member from a department, uncheck their box and click "Update"'
+  },
+  
+  // Certificates section
+  'admin.help.certificates.whatAre': {
+    hi: 'प्रमाणपत्र क्या हैं?',
+    en: 'What are Certificates?'
+  },
+  'admin.help.certificates.whatAreDesc': {
+    hi: 'प्रमाणपत्र दस्तावेज हैं जो सदस्यों के लिए उत्पन्न किए जा सकते हैं। आप हस्ताक्षर जोड़ सकते हैं जो प्रमाणपत्रों पर दिखाई देंगे।',
+    en: 'Certificates are documents that can be generated for members. You can add signatures that will appear on certificates.'
+  },
+  'admin.help.certificates.addSignTitle': {
+    hi: 'हस्ताक्षर जोड़ें',
+    en: 'Add Signatures'
+  },
+  'admin.help.certificates.addSignStep1': {
+    hi: 'साइडबार में "प्रमाणपत्र" पर क्लिक करें',
+    en: 'Click on "Certificates" in the sidebar'
+  },
+  'admin.help.certificates.addSignStep2': {
+    hi: '"हस्ताक्षर जोड़ें" या "हस्ताक्षर" पर क्लिक करें',
+    en: 'Click "Add Sign" or "Signatures"'
+  },
+  'admin.help.certificates.addSignStep3': {
+    hi: '"नया हस्ताक्षर जोड़ें" पर क्लिक करें',
+    en: 'Click "Add New Signature"'
+  },
+  'admin.help.certificates.addSignStep4': {
+    hi: 'हस्ताक्षरकर्ता का नाम दर्ज करें (उदाहरण: "अध्यक्ष", "सचिव")',
+    en: 'Enter the signer\'s name (e.g., "President", "Secretary")'
+  },
+  'admin.help.certificates.addSignStep5': {
+    hi: 'एक हस्ताक्षर छवि अपलोड करें (वास्तविक हस्ताक्षर का स्कैन या फोटो)',
+    en: 'Upload a signature image (scan or photo of the actual signature)'
+  },
+  'admin.help.certificates.addSignStep6': {
+    hi: 'स्थिति/भूमिका सेट करें',
+    en: 'Set the position/role'
+  },
+  'admin.help.certificates.addSignStep7': {
+    hi: '"सहेजें" पर क्लिक करें',
+    en: 'Click "Save"'
+  },
+  'admin.help.certificates.signTip': {
+    hi: '💡 सुझाव: हस्ताक्षर की एक स्पष्ट, उच्च-गुणवत्ता वाली छवि का उपयोग करें। सफेद पृष्ठभूमि सबसे अच्छा काम करती है।',
+    en: '💡 Tip: Use a clear, high-quality image of the signature. A white background works best.'
+  },
+  
+  // Analytics section
+  'admin.help.analytics.whatIs': {
+    hi: 'विश्लेषण क्या है?',
+    en: 'What is Analytics?'
+  },
+  'admin.help.analytics.whatIsDesc': {
+    hi: 'विश्लेषण आपको अपने संगठन के बारे में आंकड़े और रिपोर्ट दिखाता है - आपके पास कितने सदस्य हैं, गतिविधि स्तर, और अन्य महत्वपूर्ण मेट्रिक्स।',
+    en: 'Analytics shows you statistics and reports about your organization - how many members you have, activity levels, and other important metrics.'
+  },
+  'admin.help.analytics.whatYouSee': {
+    hi: 'आप क्या देखेंगे:',
+    en: 'What You\'ll See:'
+  },
+  'admin.help.analytics.memberStats': {
+    hi: 'सदस्य आंकड़े: कुल सदस्य, इस महीने नए सदस्य, आदि।',
+    en: 'Member Statistics: Total members, new members this month, etc.'
+  },
+  'admin.help.analytics.activityCharts': {
+    hi: 'गतिविधि चार्ट: समय के साथ गतिविधि दिखाने वाले ग्राफ।',
+    en: 'Activity Charts: Graphs showing activity over time.'
+  },
+  'admin.help.analytics.districtData': {
+    hi: 'जिला-वार डेटा: जिले के अनुसार विभाजन (यदि आप सुपर एडमिन हैं)।',
+    en: 'District-wise Data: Breakdown by district (if you\'re a Super Admin).'
+  },
+  'admin.help.analytics.registrationTrends': {
+    hi: 'पंजीकरण रुझान: समय के साथ कितने नए सदस्य शामिल हुए।',
+    en: 'Registration Trends: How many new members joined over time.'
+  },
+  'admin.help.analytics.howToUse': {
+    hi: 'इसका उपयोग कैसे करें:',
+    en: 'How to Use It:'
+  },
+  'admin.help.analytics.useStep1': {
+    hi: 'साइडबार में "विश्लेषण" पर क्लिक करें',
+    en: 'Click on "Analytics" in the sidebar'
+  },
+  'admin.help.analytics.useStep2': {
+    hi: 'आप विभिन्न चार्ट और आंकड़े देखेंगे',
+    en: 'You\'ll see various charts and statistics'
+  },
+  'admin.help.analytics.useStep3': {
+    hi: 'विशिष्ट समय अवधि के लिए डेटा देखने के लिए दिनांक फ़िल्टर का उपयोग करें',
+    en: 'Use date filters to see data for specific time periods'
+  },
+  'admin.help.analytics.useStep4': {
+    hi: 'यदि आवश्यक हो तो आप रिपोर्ट निर्यात कर सकते हैं',
+    en: 'You can export reports if needed'
+  },
+  'admin.help.analytics.tip': {
+    hi: '💡 सुझाव: यह समझने के लिए नियमित रूप से विश्लेषण देखें कि आपका संगठन कैसे बढ़ रहा है और आपको अपने प्रयासों पर ध्यान केंद्रित करने की आवश्यकता हो सकती है।',
+    en: '💡 Tip: Check analytics regularly to understand how your organization is growing and where you might need to focus your efforts.'
+  },
+  
+  // Activity Logs section
+  'admin.help.activityLogs.whatAre': {
+    hi: 'गतिविधि लॉग क्या हैं?',
+    en: 'What are Activity Logs?'
+  },
+  'admin.help.activityLogs.whatAreDesc': {
+    hi: 'गतिविधि लॉग एडमिन पैनल में होने वाली हर चीज का रिकॉर्ड रखते हैं - किसने क्या और कब किया। यह परिवर्तनों को ट्रैक करने और समस्याओं का निवारण करने के लिए उपयोगी है।',
+    en: 'Activity Logs keep a record of everything that happens in the admin panel - who did what and when. This is useful for tracking changes and troubleshooting issues.'
+  },
+  'admin.help.activityLogs.whatYouSee': {
+    hi: 'आप क्या देखेंगे:',
+    en: 'What You\'ll See:'
+  },
+  'admin.help.activityLogs.whoLoggedIn': {
+    hi: 'कौन लॉग इन हुआ और कब',
+    en: 'Who logged in and when'
+  },
+  'admin.help.activityLogs.memberChanges': {
+    hi: 'किसने सदस्यों को जोड़ा, संपादित किया, या हटाया',
+    en: 'Who added, edited, or deleted members'
+  },
+  'admin.help.activityLogs.contentChanges': {
+    hi: 'किसने सामग्री में परिवर्तन किए',
+    en: 'Who made changes to content'
+  },
+  'admin.help.activityLogs.permissionChanges': {
+    hi: 'अनुमति परिवर्तन',
+    en: 'Permission changes'
+  },
+  'admin.help.activityLogs.muchMore': {
+    hi: 'और बहुत कुछ...',
+    en: 'And much more...'
+  },
+  'admin.help.activityLogs.howToUse': {
+    hi: 'इसका उपयोग कैसे करें:',
+    en: 'How to Use It:'
+  },
+  'admin.help.activityLogs.useStep1': {
+    hi: 'साइडबार में "गतिविधि लॉग" पर क्लिक करें',
+    en: 'Click on "Activity Logs" in the sidebar'
+  },
+  'admin.help.activityLogs.useStep2': {
+    hi: 'आप सभी गतिविधियों की सूची देखेंगे, नवीनतम पहले',
+    en: 'You\'ll see a list of all activities, newest first'
+  },
+  'admin.help.activityLogs.useStep3': {
+    hi: 'विशिष्ट गतिविधियों को खोजने के लिए फ़िल्टर का उपयोग करें:',
+    en: 'Use filters to find specific activities:'
+  },
+  'admin.help.activityLogs.useStep3a': {
+    hi: 'उपयोगकर्ता द्वारा फ़िल्टर करें (किसने किया)',
+    en: 'Filter by user (who did it)'
+  },
+  'admin.help.activityLogs.useStep3b': {
+    hi: 'क्रिया द्वारा फ़िल्टर करें (उन्होंने क्या किया)',
+    en: 'Filter by action (what they did)'
+  },
+  'admin.help.activityLogs.useStep3c': {
+    hi: 'दिनांक द्वारा फ़िल्टर करें',
+    en: 'Filter by date'
+  },
+  'admin.help.activityLogs.useStep4': {
+    hi: 'अधिक विवरण देखने के लिए किसी भी लॉग प्रविष्टि पर क्लिक करें',
+    en: 'Click on any log entry to see more details'
+  },
+  
+  // Settings section
+  'admin.help.settings.whatAre': {
+    hi: 'सेटिंग्स क्या हैं?',
+    en: 'What are Settings?'
+  },
+  'admin.help.settings.whatAreDesc': {
+    hi: 'सेटिंग्स आपको सिस्टम-व्यापी विकल्प और प्राथमिकताएं कॉन्फ़िगर करने की अनुमति देती हैं।',
+    en: 'Settings allow you to configure system-wide options and preferences.'
+  },
+  'admin.help.settings.available': {
+    hi: 'उपलब्ध सेटिंग्स:',
+    en: 'Available Settings:'
+  },
+  'admin.help.settings.general': {
+    hi: 'सामान्य सेटिंग्स: बुनियादी सिस्टम कॉन्फ़िगरेशन',
+    en: 'General Settings: Basic system configuration'
+  },
+  'admin.help.settings.security': {
+    hi: 'सुरक्षा सेटिंग्स: पासवर्ड नीतियां, सत्र समय सीमा, आदि।',
+    en: 'Security Settings: Password policies, session timeouts, etc.'
+  },
+  'admin.help.settings.email': {
+    hi: 'ईमेल सेटिंग्स: ईमेल सूचनाएं कॉन्फ़िगर करें',
+    en: 'Email Settings: Configure email notifications'
+  },
+  'admin.help.settings.appearance': {
+    hi: 'उपस्थिति: चीजों को कैसे दिखना है इसे अनुकूलित करें',
+    en: 'Appearance: Customize how things look'
+  },
+  'admin.help.settings.howToUse': {
+    hi: 'इसका उपयोग कैसे करें:',
+    en: 'How to Use It:'
+  },
+  'admin.help.settings.useStep1': {
+    hi: 'साइडबार में "सेटिंग्स" पर क्लिक करें',
+    en: 'Click on "Settings" in the sidebar'
+  },
+  'admin.help.settings.useStep2': {
+    hi: 'विभिन्न सेटिंग श्रेणियों के माध्यम से नेविगेट करें',
+    en: 'Navigate through different setting categories'
+  },
+  'admin.help.settings.useStep3': {
+    hi: 'अपने परिवर्तन करें',
+    en: 'Make your changes'
+  },
+  'admin.help.settings.useStep4': {
+    hi: 'परिवर्तन लागू करने के लिए "सहेजें" पर क्लिक करें',
+    en: 'Click "Save" to apply changes'
+  },
+  'admin.help.settings.warning': {
+    hi: '⚠️ चेतावनी: सेटिंग्स बदलते समय सावधान रहें। कुछ परिवर्तन पूरे सिस्टम के काम करने के तरीके को प्रभावित कर सकते हैं। यदि आप निश्चित नहीं हैं, तो मदद मांगें।',
+    en: '⚠️ Warning: Be careful when changing settings. Some changes can affect how the entire system works. If you\'re not sure, ask for help.'
+  },
+  
+  // Profile section
+  'admin.help.profile.managing': {
+    hi: 'अपनी प्रोफ़ाइल का प्रबंधन',
+    en: 'Managing Your Profile'
+  },
+  'admin.help.profile.managingDesc': {
+    hi: 'आप अपनी स्वयं की प्रोफ़ाइल जानकारी देख और अपडेट कर सकते हैं।',
+    en: 'You can view and update your own profile information.'
+  },
+  'admin.help.profile.howToAccess': {
+    hi: 'अपनी प्रोफ़ाइल तक कैसे पहुंचें:',
+    en: 'How to Access Your Profile:'
+  },
+  'admin.help.profile.accessStep1': {
+    hi: 'पृष्ठ के शीर्ष दाएं कोने को देखें',
+    en: 'Look at the top right corner of the page'
+  },
+  'admin.help.profile.accessStep2': {
+    hi: 'आप अपनी प्रोफ़ाइल तस्वीर (या एक वृत्त में आपका प्रारंभिक) देखेंगे',
+    en: 'You\'ll see your profile picture (or your initial in a circle)'
+  },
+  'admin.help.profile.accessStep3': {
+    hi: 'उस पर क्लिक करें',
+    en: 'Click on it'
+  },
+  'admin.help.profile.accessStep4': {
+    hi: 'एक मेनू दिखाई देगा',
+    en: 'A menu will appear'
+  },
+  'admin.help.profile.accessStep5': {
+    hi: '"प्रोफ़ाइल" पर क्लिक करें',
+    en: 'Click "Profile"'
+  },
+  'admin.help.profile.whatYouCanDo': {
+    hi: 'आप क्या कर सकते हैं:',
+    en: 'What You Can Do:'
+  },
+  'admin.help.profile.viewInfo': {
+    hi: 'अपना नाम, ईमेल, और भूमिका देखें',
+    en: 'View your name, email, and role'
+  },
+  'admin.help.profile.updatePhoto': {
+    hi: 'अपनी प्रोफ़ाइल फोटो अपडेट करें',
+    en: 'Update your profile photo'
+  },
+  'admin.help.profile.changePassword': {
+    hi: 'अपना पासवर्ड बदलें',
+    en: 'Change your password'
+  },
+  'admin.help.profile.updateContact': {
+    hi: 'अपनी संपर्क जानकारी अपडेट करें',
+    en: 'Update your contact information'
+  },
+  'admin.help.profile.changingPassword': {
+    hi: 'अपना पासवर्ड बदलना:',
+    en: 'Changing Your Password:'
+  },
+  'admin.help.profile.passwordStep1': {
+    hi: 'अपनी प्रोफ़ाइल खोलें',
+    en: 'Open your profile'
+  },
+  'admin.help.profile.passwordStep2': {
+    hi: '"पासवर्ड बदलें" पर क्लिक करें',
+    en: 'Click "Change Password"'
+  },
+  'admin.help.profile.passwordStep3': {
+    hi: 'अपना वर्तमान पासवर्ड दर्ज करें',
+    en: 'Enter your current password'
+  },
+  'admin.help.profile.passwordStep4': {
+    hi: 'अपना नया पासवर्ड दर्ज करें (इसे मजबूत बनाएं!)',
+    en: 'Enter your new password (make it strong!)'
+  },
+  'admin.help.profile.passwordStep5': {
+    hi: 'अपना नया पासवर्ड पुष्टि करें',
+    en: 'Confirm your new password'
+  },
+  'admin.help.profile.passwordStep6': {
+    hi: '"पासवर्ड अपडेट करें" पर क्लिक करें',
+    en: 'Click "Update Password"'
+  },
+  'admin.help.profile.passwordTip': {
+    hi: '💡 सुझाव: कम से कम 8 वर्णों वाला एक मजबूत पासवर्ड उपयोग करें, जिसमें अपरकेस, लोअरकेस, संख्याएं, और विशेष वर्ण शामिल हों।',
+    en: '💡 Tip: Use a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters.'
+  },
+  
+  // Logout section
+  'admin.help.logout.howTo': {
+    hi: 'कैसे लॉगआउट करें:',
+    en: 'How to Log Out:'
+  },
+  'admin.help.logout.step1': {
+    hi: 'पृष्ठ के शीर्ष दाएं कोने को देखें',
+    en: 'Look at the top right corner of the page'
+  },
+  'admin.help.logout.step2': {
+    hi: 'अपनी प्रोफ़ाइल तस्वीर पर क्लिक करें',
+    en: 'Click on your profile picture'
+  },
+  'admin.help.logout.step3': {
+    hi: 'मेनू में "लॉगआउट" पर क्लिक करें',
+    en: 'Click "Logout" in the menu'
+  },
+  'admin.help.logout.step4': {
+    hi: 'आप लॉगआउट हो जाएंगे और लॉगिन पेज पर ले जाए जाएंगे',
+    en: 'You\'ll be logged out and taken to the login page'
+  },
+  'admin.help.logout.tip': {
+    hi: '💡 सुझाव: जब आप काम पूरा कर लें, तो हमेशा लॉगआउट करें, खासकर यदि आप साझा कंप्यूटर का उपयोग कर रहे हैं। यह आपके खाते को सुरक्षित रखता है।',
+    en: '💡 Tip: Always log out when you\'re done, especially if you\'re using a shared computer. This keeps your account secure.'
+  },
+  'admin.help.logout.alternative': {
+    hi: 'लॉगआउट करने के वैकल्पिक तरीके:',
+    en: 'Alternative Ways to Log Out:'
+  },
+  'admin.help.logout.sidebar': {
+    hi: 'साइडबार में "लॉगआउट" पर क्लिक करें (नीचे)',
+    en: 'Click "Logout" in the sidebar (at the bottom)'
+  },
+  'admin.help.logout.browser': {
+    hi: 'अपना ब्राउज़र टैब/विंडो बंद करें (लेकिन ठीक से लॉगआउट करना बेहतर है)',
+    en: 'Close your browser tab/window (but logging out properly is better)'
+  },
+  
+  // Tips & Troubleshooting section
+  'admin.help.tips.generalTips': {
+    hi: 'सामान्य सुझाव:',
+    en: 'General Tips:'
+  },
+  'admin.help.tips.saveFrequently': {
+    hi: 'अक्सर सहेजें: सामग्री संपादित करते समय, अपना काम अक्सर सहेजें',
+    en: 'Save Frequently: When editing content, save your work often'
+  },
+  'admin.help.tips.doubleCheck': {
+    hi: 'दोबारा जांचें: कुछ भी हटाने से पहले, सुनिश्चित करें कि आप वास्तव में इसे हटाना चाहते हैं',
+    en: 'Double-Check: Before deleting anything, make sure you really want to delete it'
+  },
+  'admin.help.tips.useSearch': {
+    hi: 'खोज का उपयोग करें: सदस्यों या सामग्री की तलाश करते समय, खोज बॉक्स का उपयोग करें - यह तेज़ है!',
+    en: 'Use Search: When looking for members or content, use the search box - it\'s faster!'
+  },
+  'admin.help.tips.checkPermissions': {
+    hi: 'अनुमतियां जांचें: यदि आप कुछ नहीं कर सकते, तो आपके पास अनुमति नहीं हो सकती - अपने सुपर एडमिन से संपर्क करें',
+    en: 'Check Permissions: If you can\'t do something, you might not have permission - contact your Super Admin'
+  },
+  'admin.help.tips.mobileFriendly': {
+    hi: 'मोबाइल अनुकूल: एडमिन पैनल फोन और टैबलेट पर भी काम करता है - साइडबार खोलने के लिए मेनू आइकन (☰) पर टैप करें',
+    en: 'Mobile Friendly: The admin panel works on phones and tablets too - tap the menu icon (☰) to open the sidebar'
+  },
+  'admin.help.tips.commonIssues': {
+    hi: 'सामान्य समस्याएं और समाधान:',
+    en: 'Common Issues & Solutions:'
+  },
+  'admin.help.tips.cantLogin': {
+    hi: 'समस्या: "मैं लॉग इन नहीं कर सकता"',
+    en: 'Problem: "I can\'t log in"'
+  },
+  'admin.help.tips.cantLoginSolution1': {
+    hi: 'जांचें कि आपका ईमेल और पासवर्ड सही हैं',
+    en: 'Check that your email and password are correct'
+  },
+  'admin.help.tips.cantLoginSolution2': {
+    hi: 'सुनिश्चित करें कि Caps Lock बंद है',
+    en: 'Make sure Caps Lock is off'
+  },
+  'admin.help.tips.cantLoginSolution3': {
+    hi: 'इसे रीसेट करने के लिए "पासवर्ड भूल गए" पर क्लिक करने का प्रयास करें',
+    en: 'Try clicking "Forgot Password" to reset it'
+  },
+  'admin.help.tips.cantLoginSolution4': {
+    hi: 'अपने ब्राउज़र कैश और कुकीज़ साफ़ करें',
+    en: 'Clear your browser cache and cookies'
+  },
+  'admin.help.tips.cantSeeFeature': {
+    hi: 'समस्या: "मैं एक सुविधा नहीं देख सकता"',
+    en: 'Problem: "I can\'t see a feature"'
+  },
+  'admin.help.tips.cantSeeFeatureSolution1': {
+    hi: 'आपके पास अनुमति नहीं हो सकती - अपने सुपर एडमिन से संपर्क करें',
+    en: 'You might not have permission - contact your Super Admin'
+  },
+  'admin.help.tips.cantSeeFeatureSolution2': {
+    hi: 'कुछ सुविधाएं केवल सुपर एडमिन के लिए हैं',
+    en: 'Some features are only for Super Admins'
+  },
+  'admin.help.tips.cantSeeFeatureSolution3': {
+    hi: 'पृष्ठ को ताज़ा करने का प्रयास करें (F5 या रीलोड बटन)',
+    en: 'Try refreshing the page (F5 or reload button)'
+  },
+  'admin.help.tips.uploadFailed': {
+    hi: 'समस्या: "अपलोड विफल" या "छवि अपलोड नहीं होगी"',
+    en: 'Problem: "Upload failed" or "Image won\'t upload"'
+  },
+  'admin.help.tips.uploadFailedSolution1': {
+    hi: 'जांचें कि फ़ाइल एक छवि है (JPG, PNG, आदि)',
+    en: 'Check that the file is an image (JPG, PNG, etc.)'
+  },
+  'admin.help.tips.uploadFailedSolution2': {
+    hi: 'सुनिश्चित करें कि फ़ाइल बहुत बड़ी नहीं है (10MB से कम)',
+    en: 'Make sure the file is not too large (under 10MB)'
+  },
+  'admin.help.tips.uploadFailedSolution3': {
+    hi: 'एक अलग छवि आज़माएं',
+    en: 'Try a different image'
+  },
+  'admin.help.tips.uploadFailedSolution4': {
+    hi: 'अपने इंटरनेट कनेक्शन की जांच करें',
+    en: 'Check your internet connection'
+  },
+  'admin.help.tips.changesNotSaved': {
+    hi: 'समस्या: "परिवर्तन सहेजे नहीं गए"',
+    en: 'Problem: "Changes didn\'t save"'
+  },
+  'admin.help.tips.changesNotSavedSolution1': {
+    hi: 'सुनिश्चित करें कि आपने "सहेजें" या "सबमिट" पर क्लिक किया है',
+    en: 'Make sure you clicked "Save" or "Submit"'
+  },
+  'admin.help.tips.changesNotSavedSolution2': {
+    hi: 'त्रुटि संदेशों की जांच करें (आमतौर पर लाल रंग में)',
+    en: 'Check for error messages (usually in red)'
+  },
+  'admin.help.tips.changesNotSavedSolution3': {
+    hi: 'सभी आवश्यक फ़ील्ड भरें (चिह्नित *) के साथ',
+    en: 'Fill in all required fields (marked with *)'
+  },
+  'admin.help.tips.changesNotSavedSolution4': {
+    hi: 'फिर से कोशिश करें - कभी-कभी यह एक अस्थायी समस्या है',
+    en: 'Try again - sometimes it\'s a temporary issue'
+  },
+  'admin.help.tips.gettingHelp': {
+    hi: 'मदद मिल रही है:',
+    en: 'Getting Help:'
+  },
+  'admin.help.tips.gettingHelpStep1': {
+    hi: 'यदि आप अटके हुए हैं, तो अपने सुपर एडमिन से संपर्क करें',
+    en: 'If you\'re stuck, contact your Super Admin'
+  },
+  'admin.help.tips.gettingHelpStep2': {
+    hi: 'किसी भी त्रुटि संदेश का स्क्रीनशॉट लें',
+    en: 'Take a screenshot of any error messages'
+  },
+  'admin.help.tips.gettingHelpStep3': {
+    hi: 'नोट करें कि समस्या होने पर आप क्या करने की कोशिश कर रहे थे',
+    en: 'Note down what you were trying to do when the problem occurred'
+  },
+  'admin.help.tips.gettingHelpStep4': {
+    hi: 'इस गाइड को फिर से देखें - आपने एक कदम याद किया हो सकता है',
+    en: 'Check this guide again - you might have missed a step'
+  },
+  'admin.help.tips.remember': {
+    hi: '✅ याद रखें: खोजने से डरो मत! आप केवल चारों ओर देखकर कुछ नहीं तोड़ सकते। और यदि आप गलती करते हैं, तो अधिकांश चीजें ठीक या पूर्ववत की जा सकती हैं।',
+    en: '✅ Remember: Don\'t be afraid to explore! You can\'t break anything by just looking around. And if you make a mistake, most things can be fixed or undone.'
+  },
+  'admin.help.general.someFeaturesNotAvailable': {
+    hi: 'आपकी भूमिका के आधार पर कुछ सुविधाएं उपलब्ध नहीं हो सकती हैं।',
+    en: 'Some features may not be available based on your role.'
   }
 };
 

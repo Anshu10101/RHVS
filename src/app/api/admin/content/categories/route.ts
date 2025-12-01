@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeQuery } from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
+
+// Force dynamic rendering to prevent Next.js caching
+export const dynamic = 'force-dynamic';
 
 // GET all categories (admin)
 export async function GET() {
@@ -10,10 +14,10 @@ export async function GET() {
        FROM product_categories
        ORDER BY name ASC`
     ) as Array<{ id: number; name: string; description: string; isVisible: boolean; created_at: string; updated_at: string }>;
-    return NextResponse.json({ success: true, categories: rows });
+    return noCacheJsonResponse({ success: true, categories: rows });
   } catch (e) {
     console.error('categories GET error', e);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 
@@ -22,12 +26,12 @@ export async function POST(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
     if (!scope.isSuperAdmin && !ensurePermission(scope, ['add_products','edit_store','manage_store'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+      return noCacheJsonResponse({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
     const { id, name, description, isVisible } = await req.json();
     if (!id || !name) {
-      return NextResponse.json({ success: false, message: 'Missing fields' }, { status: 400 });
+      return noCacheJsonResponse({ success: false, message: 'Missing fields' }, { status: 400 });
     }
 
     await executeQuery(
@@ -37,10 +41,10 @@ export async function POST(req: NextRequest) {
       [id, name, description ?? null, isVisible ? 1 : 0]
     );
 
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (e) {
     console.error('categories POST error', e);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 
@@ -49,12 +53,12 @@ export async function PUT(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
     if (!scope.isSuperAdmin && !ensurePermission(scope, ['add_products','edit_store','manage_store'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+      return noCacheJsonResponse({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
     const { id, name, description, isVisible } = await req.json();
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Category id is required' }, { status: 400 });
+      return noCacheJsonResponse({ success: false, message: 'Category id is required' }, { status: 400 });
     }
 
     await executeQuery(
@@ -67,10 +71,10 @@ export async function PUT(req: NextRequest) {
       [name ?? null, description ?? null, typeof isVisible === 'boolean' ? (isVisible ? 1 : 0) : null, id]
     );
 
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (e) {
     console.error('categories PUT error', e);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 
@@ -79,13 +83,13 @@ export async function DELETE(req: NextRequest) {
   try {
     const scope = await getAdminScope(req);
     if (!scope.isSuperAdmin && !ensurePermission(scope, ['add_products','edit_store','manage_store'])) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 403 });
+      return noCacheJsonResponse({ success: false, message: 'Unauthorized' }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ success: false, message: 'Category id is required' }, { status: 400 });
+      return noCacheJsonResponse({ success: false, message: 'Category id is required' }, { status: 400 });
     }
 
     // Optional: set products with this category to NULL to keep referential integrity in some schemas
@@ -94,10 +98,10 @@ export async function DELETE(req: NextRequest) {
     } catch {}
 
     await executeQuery(`DELETE FROM product_categories WHERE id = ?`, [id]);
-    return NextResponse.json({ success: true });
+    return noCacheJsonResponse({ success: true });
   } catch (e) {
     console.error('categories DELETE error', e);
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 

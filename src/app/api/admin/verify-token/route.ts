@@ -265,9 +265,11 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    console.log(`[Verify Token] Getting language preference for stateName: ${tokenData.state}`);
     const languagePreference = await getStateLanguagePreference({
       stateName: tokenData.state
     });
+    console.log(`[Verify Token] Language preference determined: ${languagePreference} for stateName: ${tokenData.state}`);
 
     if (action === 'reject') {
       // Reject the token

@@ -109,10 +109,10 @@ export async function POST(request: NextRequest) {
     const signatureFile = formData.get('signature') as File | null;
 
     // Validate certificate type
-    if (!certificateType || !['membership', 'appointment'].includes(certificateType)) {
+    if (!certificateType || !['membership', 'appointment', 'membership_id_card', 'appointment_id_card'].includes(certificateType)) {
       return NextResponse.json({ 
         success: false,
-        error: 'Invalid certificate type. Must be "membership" or "appointment"' 
+        error: 'Invalid certificate type. Must be "membership", "appointment", "membership_id_card", or "appointment_id_card"' 
       }, { status: 400 });
     }
 

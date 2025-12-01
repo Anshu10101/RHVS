@@ -88,7 +88,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const headerRegLabel = isHindi ? 'पंजीकरण संख्या: 169' : 'Reg. No: 169';
     const membershipTitle = isHindi ? 'सदस्यता प्रमाणपत्र' : 'MEMBERSHIP CERTIFICATE';
     const membershipText = isHindi
-      ? `${data.memberName} अब राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) का गर्वित सदस्य है और संगठन की सेवा में पूर्ण निष्ठा तथा समर्पण के साथ सनातन धर्म की रक्षा हेतु प्रतिबद्ध है।`
+      ? `${data.memberName} राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) के सदस्य हैं और संगठन की सेवा में पूर्ण निष्ठा तथा समर्पण के साथ सनातन धर्म की रक्षा हेतु प्रतिबद्ध हैं।`
       : `${data.memberName} is now a proud member of Rashtriya Hindu Vahini Sangathan (RHVS) and is committed to serve the organization with dedication and devotion to Sanatan Dharma.`;
     const motivationalText = isHindi
       ? 'हम आपको राष्ट्रीय हिन्दू वाहिनी संगठन के परिवार में हार्दिक स्वागत करते हैं। हमें विश्वास है कि आप संगठन को और सशक्त बनाने में महत्वपूर्ण योगदान देंगे। संगठन, राष्ट्र एवं सनातन धर्म के हित में आप अपने दायित्वों का पूर्ण निष्ठा, अनुशासन और ईमानदारी से निर्वहन करेंगे।'
@@ -107,8 +107,8 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
           header: 'bold 160px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           tagline: 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           ribbon: 'bold 84px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-          membership: 'bold 64px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-          motivational: 'italic 64px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
+          membership: 'bold 80px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
+          motivational: 'italic 80px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
           quote: 'bold 150px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           regLine: 'bold 36px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
           footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
@@ -120,8 +120,8 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
           header: 'bold 160px "Arial Black", "Arial", sans-serif',
           tagline: 'bold 72px "Arial", sans-serif',
           ribbon: 'bold 70px "Arial Black", "Arial", sans-serif',
-          membership: '700 52px "Arial", sans-serif',
-          motivational: 'italic 58px "Georgia", serif',
+          membership: '700 68px "Arial", sans-serif',
+          motivational: 'italic 74px "Georgia", serif',
           quote: 'bold 140px "Georgia", serif',
           regLine: '700 34px "Arial", sans-serif',
           footer: '700 48px "Arial", sans-serif',
@@ -206,7 +206,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     const ctx = canvas.getContext('2d');
 
     // Colors
-    const headerColor = '#DC2626';
+    const headerColor = '#E30303';
     const borderColor = '#FCD34D';
     const textColor = '#1F2937';
     const accentOrange = '#D97706';
@@ -313,7 +313,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     // === MEMBER PHOTO ===
     const photoSize = 480; // Even bigger photo
     const photoX = width - 600; // Moved more left to avoid text overlap
-    const photoY = ribbonY + 200; // Moved even more down
+    const photoY = ribbonY + 150; // Moved up by 50px
     
     let photoLoaded = false;
     try {
@@ -404,17 +404,17 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     }
 
     // === MEMBER INFO (Right below photo, centered) ===
-    const memberInfoY = photoY + photoSize + 80; // More space below photo to avoid collision with border
+    const memberInfoY = photoY + photoSize + 50; // Moved up by 30px
     
     // Registration Number (much larger font, centered, not underlined)
     const regNumberY = memberInfoY;
-    ctx.fillStyle = '#DC2626';
+    ctx.fillStyle = '#E30303';
     ctx.font = fonts.regLine;
     ctx.textAlign = 'center';
     ctx.fillText(profileRegLabel, photoX + photoSize / 2, regNumberY);
 
     // === MEMBERSHIP TEXT (Left side, clean formatting) ===
-    const membershipBoxY = ribbonY + 280;
+    const membershipBoxY = ribbonY + 230; // Moved up by 50px
     const textBoxX = borderMargin + 80;
     const textBoxWidth = photoX - textBoxX - 120;
     
@@ -448,7 +448,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     });
 
     // === MOTIVATIONAL TEXT ===
-    const motTextY = memberInfoY + 450;
+    const motTextY = memberInfoY + 300; // Reduced spacing by 150px to move up
 
     // Motivational text
     ctx.fillStyle = textColor;
@@ -466,7 +466,9 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
 
     // === SIGNATURES SECTION ===
     const lineSpacing = isHindi ? 90 : 100;
-    const signaturesY = motTextY + (motLines.length * lineSpacing) + 280; // Increased spacing to accommodate larger signature and better spacing
+    // For English, add moderate extra spacing to prevent signatures from merging with footer
+    const extraSpacingForEnglish = isHindi ? 0 : 40; // Reduced to 40px for better balance
+    const signaturesY = motTextY + (motLines.length * lineSpacing) + 200 + extraSpacingForEnglish; // Reduced base spacing from 280 to 200
     
     // Dynamically center 1–4 signatures within the inner golden border.
     // The group of signatures is always centered on the inner content area.
@@ -630,7 +632,7 @@ async function drawSignatureBlock(
   }
   
   // Draw horizontal line (always draw, either below signature or at default position)
-  ctx.strokeStyle = '#DC2626';
+  ctx.strokeStyle = '#E30303';
   ctx.lineWidth = 5;
   ctx.beginPath();
   ctx.moveTo(x + 20, lineY);
@@ -652,7 +654,7 @@ async function drawSignatureBlock(
   
   // Title/Designation (bigger font) - wrap if too long
   ctx.font = fonts.signatureTitle;
-  ctx.fillStyle = '#DC2626';
+  ctx.fillStyle = '#E30303';
   
   // Handle multi-line titles with text wrapping to prevent overflow
   const maxTitleWidth = blockWidth - 40; // Leave some padding

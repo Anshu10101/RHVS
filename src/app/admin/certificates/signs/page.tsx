@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 interface Signature {
   id: number;
-  certificateType: 'membership' | 'appointment';
+  certificateType: 'membership' | 'appointment' | 'membership_id_card' | 'appointment_id_card';
   nameEn: string;
   nameHi?: string;
   designationEn: string;
@@ -66,7 +66,7 @@ export default function AddSignPage() {
   const { currentUser } = useAdmin();
   const { t } = useLanguage();
   
-  const [certificateType, setCertificateType] = useState<'membership' | 'appointment'>('membership');
+  const [certificateType, setCertificateType] = useState<'membership' | 'appointment' | 'membership_id_card' | 'appointment_id_card'>('membership');
   const [method, setMethod] = useState<'manual' | 'member'>('manual');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingSignatures, setExistingSignatures] = useState<Signature[]>([]);
@@ -165,7 +165,18 @@ export default function AddSignPage() {
 
   const fetchOtherTypeSignatures = async () => {
     try {
-      const otherType = certificateType === 'membership' ? 'appointment' : 'membership';
+      // For ID cards, copy from corresponding certificate type
+      // For certificates, copy from the other certificate type
+      let otherType: 'membership' | 'appointment' | 'membership_id_card' | 'appointment_id_card';
+      if (certificateType === 'membership_id_card') {
+        otherType = 'membership';
+      } else if (certificateType === 'appointment_id_card') {
+        otherType = 'appointment';
+      } else if (certificateType === 'membership') {
+        otherType = 'appointment';
+      } else {
+        otherType = 'membership';
+      }
       const token = localStorage.getItem('admin_token');
       const response = await fetch(`/api/admin/certificates/signatures?type=${otherType}&_t=${Date.now()}`, {
         cache: 'no-store',
@@ -590,7 +601,7 @@ export default function AddSignPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="certificate_type">{t('admin.certificates.signs.certificateType')}</Label>
-                <Select value={certificateType} onValueChange={(value: 'membership' | 'appointment') => {
+                <Select value={certificateType} onValueChange={(value: 'membership' | 'appointment' | 'membership_id_card' | 'appointment_id_card') => {
                   setCertificateType(value);
                   setMethod('manual');
                   setSelectedMember(null);
@@ -602,6 +613,8 @@ export default function AddSignPage() {
                   <SelectContent>
                     <SelectItem value="membership">{t('admin.certificates.signs.membershipCertificate')}</SelectItem>
                     <SelectItem value="appointment">{t('admin.certificates.signs.appointmentCertificate')}</SelectItem>
+                    <SelectItem value="membership_id_card">Membership ID Card</SelectItem>
+                    <SelectItem value="appointment_id_card">Appointment ID Card</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -641,7 +654,19 @@ export default function AddSignPage() {
                   htmlFor="copy_from_other"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                 >
-                  {t('admin.certificates.signs.copyFromOther').replace('{otherType}', certificateType === 'membership' ? t('admin.certificates.signs.appointmentCertificate') : t('admin.certificates.signs.membershipCertificate'))}
+                  {(() => {
+                    let otherTypeLabel = '';
+                    if (certificateType === 'membership') {
+                      otherTypeLabel = t('admin.certificates.signs.appointmentCertificate');
+                    } else if (certificateType === 'appointment') {
+                      otherTypeLabel = t('admin.certificates.signs.membershipCertificate');
+                    } else if (certificateType === 'membership_id_card') {
+                      otherTypeLabel = 'Membership Certificate';
+                    } else if (certificateType === 'appointment_id_card') {
+                      otherTypeLabel = 'Appointment Certificate';
+                    }
+                    return t('admin.certificates.signs.copyFromOther').replace('{otherType}', otherTypeLabel);
+                  })()}
                 </Label>
               </div>
 
@@ -652,7 +677,19 @@ export default function AddSignPage() {
                     {otherTypeSignatures.length === 0 ? (
                       <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800">
-                          {t('admin.certificates.signs.noSignaturesFound').replace('{type}', certificateType === 'membership' ? t('admin.certificates.signs.appointmentCertificate') : t('admin.certificates.signs.membershipCertificate'))}
+                          {(() => {
+                            let otherTypeLabel = '';
+                            if (certificateType === 'membership') {
+                              otherTypeLabel = t('admin.certificates.signs.appointmentCertificate');
+                            } else if (certificateType === 'appointment') {
+                              otherTypeLabel = t('admin.certificates.signs.membershipCertificate');
+                            } else if (certificateType === 'membership_id_card') {
+                              otherTypeLabel = 'Membership Certificate';
+                            } else if (certificateType === 'appointment_id_card') {
+                              otherTypeLabel = 'Appointment Certificate';
+                            }
+                            return t('admin.certificates.signs.noSignaturesFound').replace('{type}', otherTypeLabel);
+                          })()}
                         </p>
                       </div>
                     ) : (
