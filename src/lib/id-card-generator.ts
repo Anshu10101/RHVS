@@ -21,6 +21,8 @@ interface IDCardData {
   appointmentDate?: string | null;
   language?: 'hi' | 'en';
   isNationalExecutive?: boolean;
+  valid_from?: string | null;
+  valid_until?: string | null;
 }
 
 interface IDCardResult {
@@ -398,22 +400,24 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     // === SIGNATURES BELOW PHOTO ===
     // Display signatures for both membership and appointment cards
-    console.log(`[ID Card] Checking signatures for display: ${idCardSignatures.length} signatures available, cardType: ${cardType}`);
+    console.log(
+      `[ID Card] Checking signatures for display: ${idCardSignatures.length} signatures available, cardType: ${cardType}`
+    );
     if (idCardSignatures.length > 0) {
-      const signatureStartY = photoY + photoSize + 15;
-      const signatureAreaWidth = photoSize + 10;
-      const signatureAreaX = photoX - 5;
+      const signatureStartY = photoY + photoSize + 18;
+      const signatureAreaWidth = photoSize + 20;
+      const signatureAreaX = photoX - 10;
       const maxSignaturesToShow = Math.min(idCardSignatures.length, 2); // Show max 2 signatures due to space
-      const signatureHeight = 50; // Height per signature block (increased from 35)
-      const spacing = 8; // Spacing between signatures (increased from 5)
+      const signatureHeight = 65; // Taller blocks so signatures are clearly visible
+      const spacing = 10; // More spacing between signatures
       
-      // Small but readable fonts for signatures on ID cards
+      // Slightly larger but still compact fonts for signatures on ID cards
       const signatureNameFont = isHindi
-        ? '600 10px "Mangal", "Noto Sans Devanagari", sans-serif'
-        : '600 9px "Arial", sans-serif';
+        ? '600 12px "Mangal", "Noto Sans Devanagari", sans-serif'
+        : '600 11px "Arial", sans-serif';
       const signatureTitleFont = isHindi
-        ? '500 9px "Mangal", "Noto Sans Devanagari", sans-serif'
-        : '500 8px "Arial", sans-serif';
+        ? '500 11px "Mangal", "Noto Sans Devanagari", sans-serif'
+        : '500 10px "Arial", sans-serif';
       
       for (let i = 0; i < maxSignaturesToShow; i++) {
         const sig = idCardSignatures[i];
@@ -447,8 +451,8 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
             }
             
             if (signatureImage) {
-              const sigImgWidth = 60; // Increased from 40
-              const sigImgHeight = 30; // Increased from 20
+              const sigImgWidth = 80; // Wider signature image
+              const sigImgHeight = 40; // Taller signature image
               const sigImgX = signatureAreaX + (signatureAreaWidth - sigImgWidth) / 2;
               ctx.drawImage(signatureImage, sigImgX, sigY, sigImgWidth, sigImgHeight);
             }
@@ -461,7 +465,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         ctx.font = signatureNameFont;
         ctx.fillStyle = textColor;
         ctx.textAlign = 'center';
-        const nameY = sigY + (sig.signaturePath ? 35 : 10); // Adjusted for larger signature image
+        const nameY = sigY + (sig.signaturePath ? 48 : 14); // Push text further below larger image
         // Truncate name if too long
         let displayName = sig.name;
         const maxNameWidth = signatureAreaWidth - 10;
@@ -478,7 +482,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         // Draw title/designation
         ctx.font = signatureTitleFont;
         ctx.fillStyle = accentColor;
-        const titleY = nameY + 10; // Increased spacing from 8 to 10
+        const titleY = nameY + 12; // Slightly more gap between name and title
         // Truncate title if too long
         let displayTitle = sig.title;
         let titleWidth = ctx.measureText(displayTitle).width;
@@ -582,7 +586,9 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     });
 
     // === BOTTOM DECORATIVE LINE ===
-    const bottomLineY = height - 40;
+    // Adjust bottom line position to accommodate validity text if needed
+    const hasValidity = data.valid_from && data.valid_until;
+    const bottomLineY = hasValidity ? height - 60 : height - 40; // More space if validity text exists
     ctx.strokeStyle = borderColor;
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -610,7 +616,40 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       : bottomFont;
     
     ctx.font = finalFont;
-    ctx.fillText(bottomText, width / 2, bottomLineY + 25);
+    const orgTextY = bottomLineY + 20; // Adjusted position
+    ctx.fillText(bottomText, width / 2, orgTextY);
+    
+    // Add validity period below organization address (if validity dates are provided)
+    if (hasValidity && data.valid_from && data.valid_until) {
+      // Simple date formatting function
+      const formatDate = (dateStr: string): string => {
+        try {
+          const date = new Date(dateStr);
+          const day = date.getDate();
+          const month = date.getMonth() + 1;
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        } catch {
+          return dateStr;
+        }
+      };
+      
+      const validityText = isHindi
+        ? `मान्यता: ${formatDate(data.valid_from)} - ${formatDate(data.valid_until)}`
+        : `Validity: ${formatDate(data.valid_from)} - ${formatDate(data.valid_until)}`;
+      
+      // Use larger font for validity (slightly smaller than organization address but still readable)
+      const validityFont = isHindi
+        ? 'bold 16px "Mangal", "Noto Sans Devanagari", sans-serif'
+        : '700 15px "Arial", sans-serif';
+      
+      // Set text color and alignment for validity text
+      ctx.fillStyle = accentColor; // Use same color as organization address
+      ctx.font = validityFont;
+      ctx.textAlign = 'center';
+      const validityY = orgTextY + 20; // Position below organization address
+      ctx.fillText(validityText, width / 2, validityY);
+    }
 
     // === BORDER ===
     ctx.strokeStyle = borderColor;

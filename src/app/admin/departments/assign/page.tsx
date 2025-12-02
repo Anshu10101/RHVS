@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ArrowLeft, Loader2, Search, UserPlus, Trash2, UserCheck } from 'lucide-react';
+import { ArrowLeft, Loader2, Search, UserPlus, Trash2, UserCheck, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Image from 'next/image';
@@ -60,6 +60,8 @@ type DepartmentMember = {
   level: 'national' | 'state' | 'district';
   state: string | null;
   district: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
 };
 
 export default function AssignMembersPage() {
@@ -95,6 +97,8 @@ export default function AssignMembersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAssigning, setIsAssigning] = useState(false);
   const [activeTab, setActiveTab] = useState('select');
+  const [customValidUntil, setCustomValidUntil] = useState<string>('');
+  const [useCustomValidity, setUseCustomValidity] = useState(false);
 
   // Check if user is superadmin or district admin with permission
   useEffect(() => {
@@ -464,6 +468,7 @@ export default function AssignMembersPage() {
               level: selectedLevel,
               state: selectedLevel !== 'national' ? selectedState : null,
               district: selectedLevel === 'district' ? selectedDistrict : null,
+              valid_until: useCustomValidity && customValidUntil ? customValidUntil : undefined,
             }),
           });
 
@@ -473,11 +478,20 @@ export default function AssignMembersPage() {
             throw new Error(data.error || `Failed to assign ${member.name}`);
           }
 
+          const assignedDate = new Date().toISOString().split('T')[0];
+          const validUntil = useCustomValidity && customValidUntil 
+            ? customValidUntil 
+            : (() => {
+                const date = new Date();
+                date.setFullYear(date.getFullYear() + 1);
+                return date.toISOString().split('T')[0];
+              })();
+
           return {
             id: data.assignment_id,
             post_id: selectedPost.id,
             member_id: member.id,
-            assigned_at: new Date().toISOString(),
+            assigned_at: assignedDate,
             post_name_en: selectedPost.name_en,
             post_name_hi: selectedPost.name_hi,
             position_order: selectedPost.position_order,
@@ -488,6 +502,8 @@ export default function AssignMembersPage() {
             level: selectedLevel,
             state: selectedLevel !== 'national' ? selectedState : null,
             district: selectedLevel === 'district' ? selectedDistrict : null,
+            valid_from: assignedDate,
+            valid_until: validUntil,
           };
         })
       );
@@ -513,6 +529,8 @@ export default function AssignMembersPage() {
       setSelectedPost(null);
       setSelectedMembers([]);
       setSearchQuery('');
+      setCustomValidUntil('');
+      setUseCustomValidity(false);
 
       toast({
         title: t('admin.departments.assign.success'),
@@ -583,6 +601,56 @@ export default function AssignMembersPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to format date as DD/MM/YYYY
+  const formatDateDDMMYYYY = (dateString: string | null | undefined): string => {
+    if (!dateString) return '';
+    try {
+      const date = new Date(dateString);
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Helper function to calculate days until expiry
+  const getDaysUntilExpiry = (validUntil: string | null | undefined): number | null => {
+    if (!validUntil) return null;
+    const expiryDate = new Date(validUntil);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    expiryDate.setHours(0, 0, 0, 0);
+    const diffTime = expiryDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Helper function to format expiry badge
+  const getExpiryBadge = (validUntil: string | null | undefined) => {
+    if (!validUntil) return null;
+    const days = getDaysUntilExpiry(validUntil);
+    if (days === null) return null;
+    
+    if (days < 0) {
+      return { text: 'Expired', color: 'bg-red-100 text-red-800 border-red-300' };
+    } else if (days <= 30) {
+      return { text: `Expires in ${days} day${days !== 1 ? 's' : ''}`, color: 'bg-orange-100 text-orange-800 border-orange-300' };
+    } else if (days <= 90) {
+      return { text: `Expires in ${days} days`, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' };
+    } else {
+      return { text: `Valid until ${formatDateDDMMYYYY(validUntil)}`, color: 'bg-green-100 text-green-800 border-green-300' };
+    }
+  };
+
+  // Calculate default validity date (1 year from today)
+  const getDefaultValidUntil = (): string => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 1);
+    return date.toISOString().split('T')[0];
   };
 
   if (!currentUser || (currentUser.type !== 'superadmin' && currentUser.type !== 'district_admin')) {
@@ -784,6 +852,8 @@ export default function AssignMembersPage() {
                                       setSelectedLevel('national');
                                       setSelectedState('');
                                       setSelectedDistrict('');
+                                      setCustomValidUntil('');
+                                      setUseCustomValidity(false);
                                       setIsAssignDialogOpen(true);
                                     }}
                                     className="shrink-0"
@@ -826,6 +896,19 @@ export default function AssignMembersPage() {
                                               <p>{assignment.member_reg_number}</p>
                                               <p>• {assignment.level}</p>
                                             </div>
+                                            {assignment.valid_until && (
+                                              <div className="mt-1">
+                                                {(() => {
+                                                  const badge = getExpiryBadge(assignment.valid_until);
+                                                  return badge ? (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
+                                                      <Clock className="h-3 w-3" />
+                                                      {badge.text}
+                                                    </span>
+                                                  ) : null;
+                                                })()}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                         <Button
@@ -1110,6 +1193,8 @@ export default function AssignMembersPage() {
                                   <Button
                                     onClick={() => {
                                       setSelectedPost(post);
+                                      setCustomValidUntil('');
+                                      setUseCustomValidity(false);
                                       setIsAssignDialogOpen(true);
                                     }}
                                     className="shrink-0"
@@ -1154,6 +1239,19 @@ export default function AssignMembersPage() {
                                               {assignment.state && <p>• {assignment.state}</p>}
                                               {assignment.district && <p>• {assignment.district}</p>}
                                             </div>
+                                            {assignment.valid_until && (
+                                              <div className="mt-1">
+                                                {(() => {
+                                                  const badge = getExpiryBadge(assignment.valid_until);
+                                                  return badge ? (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
+                                                      <Clock className="h-3 w-3" />
+                                                      {badge.text}
+                                                    </span>
+                                                  ) : null;
+                                                })()}
+                                              </div>
+                                            )}
                                           </div>
                                         </div>
                                         <Button
@@ -1227,6 +1325,52 @@ export default function AssignMembersPage() {
               <Button variant="outline" onClick={() => setSearchQuery('')}>
                 <Search className="h-4 w-4" />
               </Button>
+            </div>
+            
+            {/* Validity Date Configuration */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="validity-toggle" className="text-sm font-medium flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Post Validity Period
+                </Label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="validity-toggle"
+                    checked={useCustomValidity}
+                    onChange={(e) => {
+                      setUseCustomValidity(e.target.checked);
+                      if (e.target.checked && !customValidUntil) {
+                        setCustomValidUntil(getDefaultValidUntil());
+                      }
+                    }}
+                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                  />
+                  <Label htmlFor="validity-toggle" className="text-xs text-gray-600 cursor-pointer">
+                    Custom validity
+                  </Label>
+                </div>
+              </div>
+              {useCustomValidity ? (
+                <div className="space-y-2">
+                  <Input
+                    type="date"
+                    value={customValidUntil}
+                    onChange={(e) => setCustomValidUntil(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="text-sm"
+                  />
+                  <p className="text-xs text-gray-500">
+                    Default: 1 year from assignment date. Choose a custom date if needed (e.g., 2 years, 18 months).
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  Default validity: <strong>1 year</strong> from assignment date
+                  {customValidUntil && ` (will be ${formatDateDDMMYYYY(customValidUntil)})`}
+                </p>
+              )}
             </div>
             
             {/* Status message for incomplete level selection */}

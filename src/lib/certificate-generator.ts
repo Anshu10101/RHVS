@@ -27,6 +27,8 @@ interface CertificateData {
   appointment_date: string;
   certificate_number: string;
   language?: 'hi' | 'en';
+  valid_from?: string | null;
+  valid_until?: string | null;
 }
 
 async function loadProfilePhotoImage(profilePhotoPath?: string | null) {
@@ -265,10 +267,10 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // National Executive departments should not have "National" prefix
   const isNationalExecutive = data.department.is_national_executive === true;
   if (!isNationalExecutive) {
-    const levelPrefix = isHindi
-      ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-      : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
-    postName = `${levelPrefix} ${postName}`.trim();
+  const levelPrefix = isHindi
+    ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+    : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+  postName = `${levelPrefix} ${postName}`.trim();
   }
   
   const deptPostPhrase = isHindi
@@ -350,6 +352,14 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const footerDateLine = isHindi
     ? `दिनांक - ${formatDateHindi(data.appointment_date)}`
     : `Date - ${formatDate(data.appointment_date)}`;
+  
+  // Validity period line (if validity dates are provided)
+  let footerValidityLine: string | null = null;
+  if (data.valid_from && data.valid_until) {
+    footerValidityLine = isHindi
+      ? `मान्यता अवधि - ${formatDateHindi(data.valid_from)} से ${formatDateHindi(data.valid_until)} तक`
+      : `Validity Period - From ${formatDate(data.valid_from)} to ${formatDate(data.valid_until)}`;
+  }
 
   const appointmentLines = wrapText(ctx, appointmentMessage, textAreaWidth);
   appointmentLines.forEach((line, index) => {
@@ -492,6 +502,13 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ctx.textAlign = 'right';
   ctx.fillText(footerDateLine, width - borderMargin - 50, footerY + 100); // Adjusted Y position
 
+  // Validity period line (below the date, if provided)
+  if (footerValidityLine) {
+    ctx.font = fonts.footerAddress;
+    ctx.textAlign = 'right';
+    ctx.fillText(footerValidityLine, width - borderMargin - 50, footerY + 150);
+  }
+
   // Footer text (much larger font)
   ctx.font = fonts.footerAddress;
   ctx.textAlign = 'left';
@@ -502,8 +519,9 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     'Head Office -: Shri Rameshwaram Dham, Ganga Surajpur Colony, Harpurkala, Haridwar (Uttarakhand) - 249205'
   ];
   
+  const addressStartY = footerValidityLine ? footerY + 200 : footerY + 180;
   footerTexts.forEach((text, index) => {
-    ctx.fillText(text, borderMargin + 60, footerY + 180 + (index * 60));
+    ctx.fillText(text, borderMargin + 60, addressStartY + (index * 60));
   });
 
   // === DRAW GOLDEN BORDERS ON TOP OF EVERYTHING ===

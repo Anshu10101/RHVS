@@ -937,7 +937,8 @@ export default function ProductStoreEditor() {
         const current = categories.find(c => c.id === id);
         if (!current) continue;
         const token = localStorage.getItem('admin_token');
-        await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
+        console.log('[Save Changes] Updating category:', id, updates);
+        const resp = await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
           method: 'PUT',
           headers: { 
             'Content-Type': 'application/json',
@@ -948,14 +949,30 @@ export default function ProductStoreEditor() {
             name: updates.name ?? current.name,
             description: updates.description ?? current.description ?? '',
             isVisible: typeof updates.isVisible === 'boolean' ? updates.isVisible : current.isVisible
-          })
+          }),
+          cache: 'no-store'
         });
+        
+        if (!resp.ok) {
+          const errorData = await resp.json().catch(() => ({ message: 'Unknown error' }));
+          console.error('[Save Changes] Failed to update category:', id, errorData);
+          throw new Error(`Failed to update category: ${errorData.message || 'Unknown error'}`);
+        }
+        
+        const result = await resp.json();
+        if (!result.success) {
+          console.error('[Save Changes] Category update returned success=false:', id, result);
+          throw new Error(`Failed to update category: ${result.message || 'Server returned error'}`);
+        }
+        
+        console.log('[Save Changes] Successfully updated category:', id);
       }
 
       // Creates
       for (const cat of pendingCategoryCreates) {
         const token = localStorage.getItem('admin_token');
-        await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
+        console.log('[Save Changes] Creating category:', cat);
+        const resp = await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
@@ -966,8 +983,23 @@ export default function ProductStoreEditor() {
             name: cat.name,
             description: cat.description ?? '',
             isVisible: cat.isVisible
-          })
+          }),
+          cache: 'no-store'
         });
+        
+        if (!resp.ok) {
+          const errorData = await resp.json().catch(() => ({ message: 'Unknown error' }));
+          console.error('[Save Changes] Failed to create category:', cat.id, errorData);
+          throw new Error(`Failed to create category "${cat.name}": ${errorData.message || 'Unknown error'}`);
+        }
+        
+        const result = await resp.json();
+        if (!result.success) {
+          console.error('[Save Changes] Category creation returned success=false:', cat.id, result);
+          throw new Error(`Failed to create category "${cat.name}": ${result.message || 'Server returned error'}`);
+        }
+        
+        console.log('[Save Changes] Successfully created category:', cat.id, result);
       }
 
       // 2) Persist new products (the editor already stages only creates here)

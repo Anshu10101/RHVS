@@ -11,6 +11,7 @@ const assignMemberSchema = z.object({
   level: z.enum(['national', 'state', 'district']),
   state: z.string().min(1).nullable().optional(),
   district: z.string().min(1).nullable().optional(),
+  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // Optional custom validity end date (YYYY-MM-DD), defaults to 1 year
 });
 
 // GET all members assigned to a department
@@ -127,9 +128,11 @@ export async function GET(
     }
 
     // Get members assigned to posts in this department (optionally filtered)
+    // Only show active assignments (valid_until IS NULL or valid_until >= today)
     const members = await executeQuery(`
       SELECT dm.id, dm.post_id, dm.member_id, dm.assigned_at,
              dm.level, dm.state, dm.district,
+             dm.valid_from, dm.valid_until,
              dp.name_en as post_name_en, dp.name_hi as post_name_hi, dp.position_order,
              m.name as member_name, m.email as member_email, m.member_reg_number,
              CASE 
@@ -140,6 +143,7 @@ export async function GET(
       JOIN department_posts dp ON dm.post_id = dp.id
       JOIN members m ON dm.member_id = m.id
       WHERE dm.department_id = ?${levelClause}
+        AND (dm.valid_until IS NULL OR dm.valid_until >= CURDATE())
       ORDER BY dp.position_order ASC
     `, queryParams) as any[];
 
@@ -196,7 +200,28 @@ export async function POST(
       return NextResponse.json({ error: validationResult.error.format() }, { status: 400 });
     }
 
-    const { post_id, member_id } = validationResult.data;
+    const { post_id, member_id, valid_until: customValidUntil } = validationResult.data;
+    
+    // Calculate validity dates: default to 1 year from now, or use custom date
+    const assignedAt = new Date();
+    const validFrom = assignedAt.toISOString().split('T')[0]; // YYYY-MM-DD
+    
+    let validUntil: string;
+    if (customValidUntil) {
+      // Validate custom date is in the future
+      const customDate = new Date(customValidUntil);
+      if (customDate <= assignedAt) {
+        return NextResponse.json({ 
+          error: 'valid_until must be a future date' 
+        }, { status: 400 });
+      }
+      validUntil = customValidUntil;
+    } else {
+      // Default: 1 year from assignment date
+      const oneYearLater = new Date(assignedAt);
+      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+      validUntil = oneYearLater.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
 
     // Check if post exists and belongs to this department
     const post = await executeQuery(
@@ -381,15 +406,15 @@ export async function POST(
     
     if (!allowsMultiplePosts) {
       // For district level (and non-National Executive departments), enforce one post per member per department
-      const memberInDepartment = await executeQuery(
-        'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
-        [departmentId, member_id, level, normalizedState, normalizedDistrict]
-      ) as any[];
-      
-      if (memberInDepartment.length > 0) {
-        return NextResponse.json({ 
+    const memberInDepartment = await executeQuery(
+      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
+      [departmentId, member_id, level, normalizedState, normalizedDistrict]
+    ) as any[];
+    
+    if (memberInDepartment.length > 0) {
+      return NextResponse.json({ 
           error: 'This member is already assigned to another post in this department at this level. Multiple post assignments are only allowed at national level, state level, or in National Executive departments.' 
-        }, { status: 409 });
+      }, { status: 409 });
       }
     } else {
       // If allowsMultiplePosts is true, explicitly allow multiple post assignments
@@ -404,9 +429,9 @@ export async function POST(
     let result: any;
     try {
       result = await executeQuery(
-        'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, assignedById]
-      ) as any;
+      'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by, valid_from, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, assignedById, validFrom, validUntil]
+    ) as any;
       
       console.log(`[Appointment] Successfully assigned member ${member_id} to post ${post_id} in department ${departmentId} at ${level} level`);
     } catch (insertError: any) {
@@ -503,7 +528,7 @@ export async function POST(
             stateName: member[0].state ?? state ?? null
           });
 
-          // Generate certificate
+          // Generate certificate (with validity dates)
           const certificatePath = await generateAppointmentCertificate({
             member: {
               ...member[0],
@@ -523,7 +548,9 @@ export async function POST(
             district,
             appointment_date: appointmentDate,
             certificate_number: certificateNumber,
-            language: languagePreference
+            language: languagePreference,
+            valid_from: validFrom,
+            valid_until: validUntil
           });
 
           // Generate ID card
@@ -550,21 +577,23 @@ export async function POST(
               state,
               district,
               appointmentDate,
-              language: languagePreference
+              language: languagePreference,
+              valid_from: validFrom,
+              valid_until: validUntil
             });
             appointmentIdCardPath = idCardResult.idCardPath;
           } catch (idCardError) {
             console.warn('ID card generation failed, continuing without it:', idCardError);
           }
 
-          // Save certificate record
+          // Save certificate record (including ID card path)
           const certResult = await executeQuery(`
             INSERT INTO certificates 
-            (member_id, department_id, post_id, level, state, district, certificate_number, appointment_date, generated_by, certificate_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (member_id, department_id, post_id, level, state, district, certificate_number, appointment_date, generated_by, certificate_path, id_card_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
             member_id, departmentId, post_id, level, state, district, 
-            certificateNumber, appointmentDate, scope.adminId, certificatePath
+            certificateNumber, appointmentDate, scope.adminId, certificatePath, appointmentIdCardPath
           ]) as { insertId: number };
 
           // Send email
