@@ -8,8 +8,8 @@
 API_URL="https://rashtriyahinduvahinisangathan.in/api/cron/cleanup-expired-posts"
 CRON_SECRET="hqisYzfLH9T4Gv60e3XQZ8uRalWDdEVM"
 
-# Log file location
-LOG_FILE="${LOG_FILE:-/var/log/rhvs-cron.log}"
+# Log file location (logs to home directory of user running the script)
+LOG_FILE="${LOG_FILE:-${HOME}/rhvs-cron.log}"
 
 # Function to log messages
 log_message() {
