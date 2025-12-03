@@ -187,14 +187,24 @@ export default function ProductStoreEditor() {
   const loadCategories = useCallback(async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/content/store/categories?_t=${Date.now()}`, {
+      // Use admin endpoint for consistency with creation endpoint
+      const response = await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
         cache: 'no-store',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const data = await response.json();
       if (data.success) {
         const categoriesData = data.categories || [];
-        setCategories(categoriesData);
+        // Map the response to match ProductCategory interface
+        const mappedCategories = categoriesData.map((cat: any) => ({
+          id: String(cat.id),
+          name: cat.name,
+          description: cat.description || '',
+          isVisible: Boolean(cat.isVisible),
+          createdAt: cat.created_at ? new Date(cat.created_at) : new Date(),
+          updatedAt: cat.updated_at ? new Date(cat.updated_at) : new Date()
+        }));
+        setCategories(mappedCategories);
       } else {
         console.error('Failed to load categories:', data.error);
         // Set default categories as fallback
@@ -586,12 +596,49 @@ export default function ProductStoreEditor() {
       updatedAt: new Date()
     };
     
-    // Stage create and only persist on Save Changes
-    setPendingCategoryCreates(prev => [...prev, newCategory]);
-    const optimistic = [...categories, newCategory];
-    setCategories(optimistic);
-    saveToHistory(products, optimistic);
-    setEditingCategory(newCategory.id);
+    // Save immediately to database instead of staging
+    try {
+      const token = localStorage.getItem('admin_token');
+      const resp = await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          id: newCategory.id,
+          name: newCategory.name,
+          description: newCategory.description || '',
+          isVisible: newCategory.isVisible
+        }),
+        cache: 'no-store'
+      });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ message: 'Unknown error' }));
+        console.error('[Add Category] Failed to create category:', errorData);
+        alert(`Failed to create category: ${errorData.message || 'Unknown error'}`);
+        return;
+      }
+      
+      const result = await resp.json();
+      if (!result.success) {
+        console.error('[Add Category] Category creation returned success=false:', result);
+        alert(`Failed to create category: ${result.message || 'Server returned error'}`);
+        return;
+      }
+      
+      // Add to local state after successful save
+      const optimistic = [...categories, newCategory];
+      setCategories(optimistic);
+      saveToHistory(products, optimistic);
+      setEditingCategory(newCategory.id);
+      
+      console.log('[Add Category] Successfully created category:', newCategory.id);
+    } catch (error) {
+      console.error('[Add Category] Error creating category:', error);
+      alert('Failed to create category. Please try again.');
+    }
   };
 
   const updateProduct = (id: string, updates: Partial<Product>) => {

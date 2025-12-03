@@ -3,31 +3,22 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ImageIcon } from "lucide-react";
 import { Noto_Serif_Devanagari } from 'next/font/google';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ImageModal from '@/components/Home/gallery/ImageModal';
+import type { GalleryImage } from '@/components/Home/gallery/types';
 
 const devanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
   weight: ['400', '600', '700'],
 });
 
-type GalleryImage = {
-  id: number;
-  src: string;
-  alt: string;
-  title: string;
-  description: string;
-  category: string;
-  aspectRatio: "tall" | "wide" | "square";
-  date: string;
-  tags: string[];
-};
-
 export default function LatestPhotosSection() {
   const { t } = useLanguage();
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [favorites, setFavorites] = useState<number[]>([]);
 
   const loadPhotos = useCallback(async () => {
     let isMounted = true;
@@ -65,6 +56,63 @@ export default function LatestPhotosSection() {
     };
   }, [loadPhotos]);
 
+  // Load favorites from localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('gallery-favorites');
+      if (saved) {
+        try {
+          setFavorites(JSON.parse(saved));
+        } catch (e) {
+          console.error('Error loading favorites:', e);
+        }
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('gallery-favorites', JSON.stringify(favorites));
+    }
+  }, [favorites]);
+
+  const openModal = (image: GalleryImage) => {
+    setSelectedImage(image);
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeModal = () => {
+    setSelectedImage(null);
+    document.body.style.overflow = 'unset';
+  };
+
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (!selectedImage || images.length === 0) return;
+    
+    const currentIndex = images.findIndex(img => img.id === selectedImage.id);
+    if (currentIndex === -1) return;
+
+    let newIndex: number;
+    if (direction === 'prev') {
+      // Wrap around: if at first image, go to last
+      newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+    } else {
+      // Wrap around: if at last image, go to first
+      newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
+    }
+
+    setSelectedImage(images[newIndex]);
+  };
+
+  const toggleFavorite = (id: number) => {
+    setFavorites(prev => 
+      prev.includes(id) 
+        ? prev.filter(favId => favId !== id)
+        : [...prev, id]
+    );
+  };
+
   if (!loading && images.length === 0) return null;
 
   return (
@@ -100,7 +148,11 @@ export default function LatestPhotosSection() {
         {/* Grid */}
         <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-6">
           {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 10 }).map(() => undefined) : images).map((img, i) => (
-            <div key={img?.id || i} className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 overflow-hidden rounded-xl sm:rounded-2xl">
+            <div 
+              key={img?.id || i} 
+              className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
+              onClick={() => img && openModal(img)}
+            >
               {loading ? (
                 <div className="w-full h-48 sm:h-56 md:h-64 animate-pulse bg-orange-100 rounded-xl sm:rounded-2xl" />
               ) : img ? (
@@ -127,6 +179,17 @@ export default function LatestPhotosSection() {
           ))}
         </div>
       </div>
+
+      {/* Image Modal */}
+      <ImageModal
+        image={selectedImage}
+        images={images}
+        isOpen={!!selectedImage}
+        onClose={closeModal}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
+        onNavigate={handleNavigate}
+      />
     </section>
   );
 }

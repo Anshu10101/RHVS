@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Mail, Phone, MapPin, Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState } from 'react';
@@ -148,24 +148,16 @@ export default function Footer() {
           <div className="col-span-1">
             <h4 className="text-lg font-semibold mb-4 text-orange-800/90">{t('footer.contactUs')}</h4>
             <div className="space-y-4">
-              <p className="text-orange-700/70 text-sm leading-relaxed">
-                केंद्रीय कार्यालय – D–305, &quot;कान्हा कुंज&quot;, इंदिरा पार्क, नजफगढ़, नई दिल्ली – 110043
+              <p className="text-orange-700/70 text-sm leading-relaxed mb-4">
+                {t('footer.contactDescription') || 'For contact information, please visit our contact page.'}
               </p>
-              <div className="flex items-start space-x-3">
-                <Phone size={16} className="text-orange-600/60 mt-0.5 flex-shrink-0" />
-                <span className="text-orange-700/70 text-sm">8081964556 &nbsp;&nbsp; 9415073269</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <Mail size={16} className="text-orange-600/60 mt-0.5 flex-shrink-0" />
-                <span className="text-orange-700/70 text-sm">help@rashtriyahinduvahinisangathan.org</span>
-              </div>
-              <div className="flex items-start space-x-3">
-                <MapPin size={16} className="text-orange-600/60 mt-1 flex-shrink-0" />
-                <span className="text-orange-700/70 text-sm leading-relaxed">
-                  मुख्य कार्यालय – 883, श्री वैदेही वल्लभ कुंज, बावन मंदिर, अयोध्या (उत्तर प्रदेश) - 224001<br/>
-                  प्रधान कार्यालय – श्री रामेश्वरम धाम, गंगा सूरजपुर कॉलोनी, हरपुरकला, हरिद्वार (उत्तराखंड) - 249205
-                </span>
-              </div>
+              <Link 
+                href="/contact" 
+                className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors group"
+              >
+                <span>{t('footer.viewContactPage') || 'View Contact Page'}</span>
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
           </div>
         </div>

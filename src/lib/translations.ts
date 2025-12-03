@@ -434,6 +434,14 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'संपर्क करें',
     en: 'Contact Us'
   },
+  'footer.contactDescription': {
+    hi: 'संपर्क जानकारी के लिए कृपया हमारे संपर्क पृष्ठ पर जाएं।',
+    en: 'For contact information, please visit our contact page.'
+  },
+  'footer.viewContactPage': {
+    hi: 'संपर्क पृष्ठ देखें',
+    en: 'View Contact Page'
+  },
   'footer.duty': {
     hi: 'कर्तव्य',
     en: 'Duty'

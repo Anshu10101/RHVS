@@ -309,25 +309,25 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     }
   } else {
     // Default method: [level_prefix] [post] [department]
-    const departmentName = isHindi
-      ? (data.department.dept_name_hi || data.department.dept_name_en || '').trim()
-      : (data.department.dept_name_en || data.department.dept_name_hi || '').trim();
-    let postName = isHindi
-      ? (data.department.post_name_hi || data.department.post_name_en || '').trim()
-      : (data.department.post_name_en || data.department.post_name_hi || '').trim();
-    
-    // Add level prefix to post name, but NOT if department is National Executive
-    const isNationalExecutive = data.department.is_national_executive === true;
-    if (!isNationalExecutive) {
-      const levelPrefix = isHindi
-        ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-        : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
-      postName = `${levelPrefix} ${postName}`.trim();
-    }
-    
+  const departmentName = isHindi
+    ? (data.department.dept_name_hi || data.department.dept_name_en || '').trim()
+    : (data.department.dept_name_en || data.department.dept_name_hi || '').trim();
+  let postName = isHindi
+    ? (data.department.post_name_hi || data.department.post_name_en || '').trim()
+    : (data.department.post_name_en || data.department.post_name_hi || '').trim();
+  
+  // Add level prefix to post name, but NOT if department is National Executive
+  const isNationalExecutive = data.department.is_national_executive === true;
+  if (!isNationalExecutive) {
+  const levelPrefix = isHindi
+    ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+    : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+  postName = `${levelPrefix} ${postName}`.trim();
+  }
+  
     deptPostPhrase = isHindi
       ? `${postName} ${departmentName}`.trim()
-      : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
+    : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
   }
   
   // Get location names (state/district) with correct language and add to designation
@@ -909,7 +909,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   // === MOTIVATIONAL TEXT/OATH (Much lower on certificate) ===
   const motTextY = memberInfoY + 200; // Reduced spacing by 150px to move up
   const motivationalText = "Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.";
-  
+
   // Motivational text (MUCH larger font with better wrapping)
   ctx.fillStyle = textColor;
   ctx.font = '56px "Georgia", serif'; // MUCH larger font

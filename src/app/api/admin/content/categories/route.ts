@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeQuery } from '@/lib/database';
+import { executeQuery, getConnection } from '@/lib/database';
 import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { noCacheJsonResponse } from '@/lib/api-helpers';
 
@@ -39,55 +39,73 @@ export async function POST(req: NextRequest) {
       return noCacheJsonResponse({ success: false, message: 'Missing required fields: id and name are required' }, { status: 400 });
     }
 
-    // Use INSERT IGNORE or proper INSERT to ensure new category is created
-    // Check if category already exists first
-    const existing = await executeQuery(
-      'SELECT id FROM product_categories WHERE id = ?',
-      [id]
-    ) as Array<{ id: string }>;
-
-    if (existing.length > 0) {
-      console.log('[Category POST] Category already exists, updating:', id);
-      // Update existing category
-      await executeQuery(
-        `UPDATE product_categories 
-         SET name = ?, description = ?, isVisible = ?, updated_at = NOW()
-         WHERE id = ?`,
-        [name, description ?? null, isVisible ? 1 : 0, id]
-      );
-    } else {
-      console.log('[Category POST] Creating new category:', id);
-      // Insert new category
-      const result = await executeQuery(
-        `INSERT INTO product_categories (id, name, description, isVisible, created_at, updated_at)
-         VALUES (?, ?, ?, ?, NOW(), NOW())`,
-        [id, name, description ?? null, isVisible ? 1 : 0]
-      ) as any;
+    // Use explicit connection with transaction to ensure data is committed
+    const connection = await getConnection();
+    
+    try {
+      // Start transaction
+      await connection.beginTransaction();
       
-      console.log('[Category POST] Insert result:', result);
-    }
+      // Check if category already exists
+      const [existingRows] = await connection.execute(
+        'SELECT id FROM product_categories WHERE id = ?',
+        [id]
+      ) as [Array<{ id: string }>, unknown];
 
-    // Verify the category was created/updated
-    const verify = await executeQuery(
-      'SELECT id, name, description, isVisible FROM product_categories WHERE id = ?',
-      [id]
-    ) as Array<{ id: string; name: string; description: string | null; isVisible: number }>;
-
-    if (verify.length === 0) {
-      console.error('[Category POST] Category not found after insert/update:', id);
-      return noCacheJsonResponse({ success: false, message: 'Failed to create category - category not found after insertion' }, { status: 500 });
-    }
-
-    console.log('[Category POST] Successfully created/updated category:', verify[0]);
-    return noCacheJsonResponse({ 
-      success: true, 
-      category: {
-        id: verify[0].id,
-        name: verify[0].name,
-        description: verify[0].description,
-        isVisible: verify[0].isVisible === 1
+      if (existingRows.length > 0) {
+        console.log('[Category POST] Category already exists, updating:', id);
+        // Update existing category
+        await connection.execute(
+          `UPDATE product_categories 
+           SET name = ?, description = ?, isVisible = ?, updated_at = NOW()
+           WHERE id = ?`,
+          [name, description ?? null, isVisible ? 1 : 0, id]
+        );
+      } else {
+        console.log('[Category POST] Creating new category:', id);
+        // Insert new category
+        await connection.execute(
+          `INSERT INTO product_categories (id, name, description, isVisible, created_at, updated_at)
+           VALUES (?, ?, ?, ?, NOW(), NOW())`,
+          [id, name, description ?? null, isVisible ? 1 : 0]
+        );
+        console.log('[Category POST] Category inserted successfully');
       }
-    });
+
+      // Commit the transaction
+      await connection.commit();
+      console.log('[Category POST] Transaction committed successfully');
+
+      // Verify the category was created/updated (use a new query after commit)
+      const [verifyRows] = await connection.execute(
+        'SELECT id, name, description, isVisible FROM product_categories WHERE id = ?',
+        [id]
+      ) as [Array<{ id: string; name: string; description: string | null; isVisible: number }>, unknown];
+
+      if (verifyRows.length === 0) {
+        console.error('[Category POST] Category not found after insert/update:', id);
+        return noCacheJsonResponse({ success: false, message: 'Failed to create category - category not found after insertion' }, { status: 500 });
+      }
+
+      console.log('[Category POST] Successfully created/updated category:', verifyRows[0]);
+      return noCacheJsonResponse({ 
+        success: true, 
+        category: {
+          id: verifyRows[0].id,
+          name: verifyRows[0].name,
+          description: verifyRows[0].description,
+          isVisible: verifyRows[0].isVisible === 1
+        }
+      });
+    } catch (transactionError) {
+      // Rollback on error
+      await connection.rollback();
+      console.error('[Category POST] Transaction error, rolled back:', transactionError);
+      throw transactionError;
+    } finally {
+      // Always release the connection
+      connection.release();
+    }
   } catch (e) {
     console.error('[Category POST] Error details:', e);
     const errorMessage = e instanceof Error ? e.message : 'Unknown error';
@@ -114,19 +132,50 @@ export async function PUT(req: NextRequest) {
       return noCacheJsonResponse({ success: false, message: 'Category id is required' }, { status: 400 });
     }
 
-    await executeQuery(
-      `UPDATE product_categories
-       SET name = COALESCE(?, name),
-           description = COALESCE(?, description),
-           isVisible = COALESCE(?, isVisible),
-           updated_at = NOW()
-       WHERE id = ?`,
-      [name ?? null, description ?? null, typeof isVisible === 'boolean' ? (isVisible ? 1 : 0) : null, id]
-    );
+    const connection = await getConnection();
+    
+    try {
+      await connection.beginTransaction();
+      
+      await connection.execute(
+        `UPDATE product_categories
+         SET name = COALESCE(?, name),
+             description = COALESCE(?, description),
+             isVisible = COALESCE(?, isVisible),
+             updated_at = NOW()
+         WHERE id = ?`,
+        [name ?? null, description ?? null, typeof isVisible === 'boolean' ? (isVisible ? 1 : 0) : null, id]
+      );
 
-    return noCacheJsonResponse({ success: true });
+      await connection.commit();
+      
+      // Verify update
+      const [verifyRows] = await connection.execute(
+        'SELECT id, name, description, isVisible FROM product_categories WHERE id = ?',
+        [id]
+      ) as [Array<{ id: string; name: string; description: string | null; isVisible: number }>, unknown];
+      
+      if (verifyRows.length === 0) {
+        throw new Error('Category not found after update');
+      }
+      
+      return noCacheJsonResponse({ 
+        success: true,
+        category: {
+          id: verifyRows[0].id,
+          name: verifyRows[0].name,
+          description: verifyRows[0].description,
+          isVisible: verifyRows[0].isVisible === 1
+        }
+      });
+    } catch (transactionError) {
+      await connection.rollback();
+      throw transactionError;
+    } finally {
+      connection.release();
+    }
   } catch (e) {
-    console.error('categories PUT error', e);
+    console.error('[Category PUT] Error:', e);
     return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
@@ -145,13 +194,27 @@ export async function DELETE(req: NextRequest) {
       return noCacheJsonResponse({ success: false, message: 'Category id is required' }, { status: 400 });
     }
 
-    // Optional: set products with this category to NULL to keep referential integrity in some schemas
+    const connection = await getConnection();
+    
     try {
-      await executeQuery(`UPDATE products SET category = NULL WHERE category = ?`, [id]);
-    } catch {}
+      await connection.beginTransaction();
+      
+      // Optional: set products with this category to NULL to keep referential integrity
+      try {
+        await connection.execute(`UPDATE products SET category = NULL WHERE category = ?`, [id]);
+      } catch {}
 
-    await executeQuery(`DELETE FROM product_categories WHERE id = ?`, [id]);
-    return noCacheJsonResponse({ success: true });
+      await connection.execute(`DELETE FROM product_categories WHERE id = ?`, [id]);
+      
+      await connection.commit();
+      
+      return noCacheJsonResponse({ success: true });
+    } catch (transactionError) {
+      await connection.rollback();
+      throw transactionError;
+    } finally {
+      connection.release();
+    }
   } catch (e) {
     console.error('categories DELETE error', e);
     return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });

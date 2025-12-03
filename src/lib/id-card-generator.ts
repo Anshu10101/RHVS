@@ -589,20 +589,20 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         }
       } else {
         // Default method: [level_prefix] [post] [department]
-        const department = data.departmentName && data.departmentName.trim().length > 0
-          ? data.departmentName
-          : '—';
-        let post = translateDesignation(data.postName || data.designation, 'appointment', language);
-        
-        // Add level prefix to post name, but NOT if department is National Executive
-        const isNationalExecutive = data.isNationalExecutive === true;
-        if (!isNationalExecutive) {
-          const levelPrefix = isHindi
-            ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-            : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
-          post = `${levelPrefix} ${post}`.trim();
-        }
-        
+      const department = data.departmentName && data.departmentName.trim().length > 0
+        ? data.departmentName
+        : '—';
+      let post = translateDesignation(data.postName || data.designation, 'appointment', language);
+      
+      // Add level prefix to post name, but NOT if department is National Executive
+      const isNationalExecutive = data.isNationalExecutive === true;
+      if (!isNationalExecutive) {
+        const levelPrefix = isHindi
+          ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+          : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+        post = `${levelPrefix} ${post}`.trim();
+      }
+      
         departmentAndPost = department !== '—' ? `${post} ${department}` : post;
       }
 

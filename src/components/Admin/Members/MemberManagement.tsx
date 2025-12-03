@@ -89,12 +89,16 @@ export function MemberManagement() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [regNumberSearch, setRegNumberSearch] = useState('');
+  // Local states for immediate input updates (prevents focus loss during typing)
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
+  const [localRegNumberSearch, setLocalRegNumberSearch] = useState('');
   const [selectedState, setSelectedState] = useState('all');
   const [selectedDistrict, setSelectedDistrict] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalMembers, setTotalMembers] = useState(0);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -107,6 +111,8 @@ export function MemberManagement() {
   const clearFilters = () => {
     setSearchTerm('');
     setRegNumberSearch('');
+    setLocalSearchTerm('');
+    setLocalRegNumberSearch('');
     setSelectedState('all');
     setSelectedDistrict('all');
     setSelectedDepartment('all');
@@ -174,6 +180,7 @@ export function MemberManagement() {
       if (data.success) {
         setMembers(data.data.members);
         setTotalPages(data.data.pagination.totalPages);
+        setTotalMembers(data.data.pagination.total || 0);
       } else {
         setError(data.error || 'Failed to fetch members');
       }
@@ -258,11 +265,6 @@ export function MemberManagement() {
     }
   };
 
-  // Load data on component mount and when filters change
-  useEffect(() => {
-    fetchMembers();
-  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment, fetchMembers]);
-
   useEffect(() => {
     fetchStats();
     fetchStates();
@@ -278,18 +280,28 @@ export function MemberManagement() {
     }
   }, [selectedState]);
 
-  // Handle search with debounce
+  // Debounce search terms to prevent excessive API calls and focus loss
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (currentPage !== 1) {
+      setSearchTerm(localSearchTerm);
         setCurrentPage(1);
-      } else {
-        fetchMembers();
-      }
     }, 500);
-
     return () => clearTimeout(timer);
-  }, [searchTerm, regNumberSearch, currentPage, fetchMembers]);
+  }, [localSearchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRegNumberSearch(localRegNumberSearch);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [localRegNumberSearch]);
+
+  // Load data when filters change (excluding search terms which are debounced above)
+  useEffect(() => {
+    fetchMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment]);
 
 
   const handleUpdateMember = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -527,8 +539,8 @@ export function MemberManagement() {
                 <Input
                   id="search"
                   placeholder={t('admin.members.searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={localSearchTerm}
+                  onChange={(e) => setLocalSearchTerm(e.target.value)}
                   className="pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
@@ -541,8 +553,8 @@ export function MemberManagement() {
                 <Input
                   id="regNumber"
                   placeholder={t('admin.members.searchByRegNumberPlaceholder')}
-                  value={regNumberSearch}
-                  onChange={(e) => setRegNumberSearch(e.target.value)}
+                  value={localRegNumberSearch}
+                  onChange={(e) => setLocalRegNumberSearch(e.target.value)}
                   className="pl-10 h-9 sm:h-10 text-sm"
                 />
               </div>
@@ -951,29 +963,153 @@ export function MemberManagement() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 sm:mt-6 pt-4 border-t border-gray-200">
-              <div className="text-xs sm:text-sm text-gray-700">
-                {t('admin.members.page')} {currentPage} {t('admin.members.pageOf')} {totalPages}
+            <div className="flex flex-col gap-4 mt-6 pt-4 border-t border-gray-200">
+              {/* Page info */}
+              <div className="flex items-center justify-center text-sm text-gray-600">
+                {t('admin.members.showing')} {totalMembers > 0 ? ((currentPage - 1) * 10) + 1 : 0} - {Math.min(currentPage * 10, totalMembers)} {t('admin.members.of')} {totalMembers} {t('admin.members.results')} ({t('admin.members.page')} {currentPage} {t('admin.members.pageOf')} {totalPages})
               </div>
-              <div className="flex space-x-2 w-full sm:w-auto">
+              
+              {/* Pagination controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
+                {/* Previous button */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onClick={() => {
+                    if (currentPage > 1 && !loading) {
+                      setCurrentPage(prev => prev - 1);
+                    }
+                  }}
                   disabled={currentPage === 1 || loading}
-                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
+                  className="w-full sm:w-auto min-w-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('admin.members.previous')}
                 </Button>
+
+                {/* Page numbers - Desktop view */}
+                <div className="hidden sm:flex items-center gap-1">
+                  {/* First page */}
+                  {currentPage > 3 && totalPages > 5 && (
+                    <>
+                      <Button
+                        variant={currentPage === 1 ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => !loading && setCurrentPage(1)}
+                        disabled={loading}
+                        className="min-w-[40px] h-9 disabled:opacity-50"
+                      >
+                        1
+                      </Button>
+                      {currentPage > 4 && (
+                        <span className="px-2 text-gray-400">...</span>
+                      )}
+                    </>
+                  )}
+
+                  {/* Page range around current page */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    if (pageNum < 1 || pageNum > totalPages) return null;
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          if (pageNum !== currentPage && !loading) {
+                            setCurrentPage(pageNum);
+                          }
+                        }}
+                        disabled={loading}
+                        className="min-w-[40px] h-9 disabled:opacity-50"
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+
+                  {/* Last page */}
+                  {currentPage < totalPages - 2 && totalPages > 5 && (
+                    <>
+                      {currentPage < totalPages - 3 && (
+                        <span className="px-2 text-gray-400">...</span>
+                      )}
+                      <Button
+                        variant={currentPage === totalPages ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => !loading && setCurrentPage(totalPages)}
+                        disabled={loading}
+                        className="min-w-[40px] h-9 disabled:opacity-50"
+                      >
+                        {totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Mobile view - Current page indicator */}
+                <div className="sm:hidden flex items-center gap-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    {t('admin.members.page')} {currentPage} / {totalPages}
+                  </span>
+                </div>
+
+                {/* Next button */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onClick={() => {
+                    if (currentPage < totalPages && !loading) {
+                      setCurrentPage(prev => prev + 1);
+                    }
+                  }}
                   disabled={currentPage === totalPages || loading}
-                  className="flex-1 sm:flex-none cursor-pointer disabled:cursor-not-allowed text-xs sm:text-sm"
+                  className="w-full sm:w-auto min-w-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {t('admin.members.next')}
                 </Button>
+              </div>
+
+              {/* Quick jump for mobile */}
+              <div className="sm:hidden flex items-center justify-center gap-2">
+                <span className="text-xs text-gray-500">Go to page:</span>
+                <Input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '') return; // Allow empty input while typing
+                    const page = parseInt(value);
+                    if (!isNaN(page) && page >= 1 && page <= totalPages && !loading) {
+                      setCurrentPage(page);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const value = e.target.value;
+                    const page = parseInt(value);
+                    if (value === '' || isNaN(page) || page < 1) {
+                      e.target.value = currentPage.toString();
+                    } else if (page > totalPages) {
+                      e.target.value = totalPages.toString();
+                      setCurrentPage(totalPages);
+                    }
+                  }}
+                  className="w-20 h-8 text-center text-sm"
+                  disabled={loading}
+                />
               </div>
             </div>
           )}
