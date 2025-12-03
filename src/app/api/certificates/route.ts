@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
         c.level, c.state, c.district, c.email_status, c.email_sent_at,
         m.name as member_name, m.member_reg_number, m.profile_photo_path,
         d.name_en as dept_name_en, d.name_hi as dept_name_hi,
-        dp.name_en as post_name_en, dp.name_hi as post_name_hi
+        COALESCE(dp.print_as_name_en, dp.name_en) as post_name_en,
+        COALESCE(dp.print_as_name_hi, dp.name_hi) as post_name_hi
       FROM certificates c
       JOIN members m ON c.member_id = m.id
       JOIN departments d ON c.department_id = d.id

@@ -32,6 +32,8 @@ type Post = {
   name_hi: string;
   position_order: number;
   created_at: string;
+  print_as_name_en?: string | null;
+  print_as_name_hi?: string | null;
 };
 
 export default function ManageDepartmentsPage() {
@@ -57,6 +59,8 @@ export default function ManageDepartmentsPage() {
   const [isNewPostDialogOpen, setIsNewPostDialogOpen] = useState(false);
   const [newPostNameEn, setNewPostNameEn] = useState('');
   const [newPostNameHi, setNewPostNameHi] = useState('');
+  const [newPostPrintAsNameEn, setNewPostPrintAsNameEn] = useState('');
+  const [newPostPrintAsNameHi, setNewPostPrintAsNameHi] = useState('');
   const [isAddingPost, setIsAddingPost] = useState(false);
   
   // Edit post dialog
@@ -64,6 +68,8 @@ export default function ManageDepartmentsPage() {
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [editPostNameEn, setEditPostNameEn] = useState('');
   const [editPostNameHi, setEditPostNameHi] = useState('');
+  const [editPostPrintAsNameEn, setEditPostPrintAsNameEn] = useState('');
+  const [editPostPrintAsNameHi, setEditPostPrintAsNameHi] = useState('');
   const [isEditingPost, setIsEditingPost] = useState(false);
 
   // Edit department dialog
@@ -303,6 +309,8 @@ export default function ManageDepartmentsPage() {
         body: JSON.stringify({
           name_en: newPostNameEn,
           name_hi: newPostNameHi,
+          print_as_name_en: newPostPrintAsNameEn.trim() || null,
+          print_as_name_hi: newPostPrintAsNameHi.trim() || null,
         }),
       });
 
@@ -319,6 +327,8 @@ export default function ManageDepartmentsPage() {
       setIsNewPostDialogOpen(false);
       setNewPostNameEn('');
       setNewPostNameHi('');
+      setNewPostPrintAsNameEn('');
+      setNewPostPrintAsNameHi('');
 
       toast({
         title: t('admin.departments.manage.success'),
@@ -361,6 +371,8 @@ export default function ManageDepartmentsPage() {
         body: JSON.stringify({
           name_en: editPostNameEn,
           name_hi: editPostNameHi,
+          print_as_name_en: editPostPrintAsNameEn.trim() || null,
+          print_as_name_hi: editPostPrintAsNameHi.trim() || null,
         }),
       });
 
@@ -378,6 +390,8 @@ export default function ManageDepartmentsPage() {
       setEditingPost(null);
       setEditPostNameEn('');
       setEditPostNameHi('');
+      setEditPostPrintAsNameEn('');
+      setEditPostPrintAsNameHi('');
 
       toast({
         title: t('admin.departments.manage.success'),
@@ -930,6 +944,8 @@ export default function ManageDepartmentsPage() {
                                             setEditingPost(post);
                                             setEditPostNameEn(post.name_en);
                                             setEditPostNameHi(post.name_hi);
+                                            setEditPostPrintAsNameEn(post.print_as_name_en || '');
+                                            setEditPostPrintAsNameHi(post.print_as_name_hi || '');
                                             setIsEditPostDialogOpen(true);
                                           }}
                                         >
@@ -994,6 +1010,26 @@ export default function ManageDepartmentsPage() {
                 onChange={(e) => setNewPostNameHi(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="post_print_as_name_en">Print As (English) - Complete Designation</Label>
+              <Input
+                id="post_print_as_name_en"
+                placeholder="e.g., President, National Executive Department"
+                value={newPostPrintAsNameEn}
+                onChange={(e) => setNewPostPrintAsNameEn(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="post_print_as_name_hi">Print As (Hindi) - Complete Designation</Label>
+              <Input
+                id="post_print_as_name_hi"
+                placeholder="e.g., अध्यक्ष, राष्ट्रीय कार्यकारणी"
+                value={newPostPrintAsNameHi}
+                onChange={(e) => setNewPostPrintAsNameHi(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNewPostDialogOpen(false)}>
@@ -1040,6 +1076,26 @@ export default function ManageDepartmentsPage() {
                 value={editPostNameHi}
                 onChange={(e) => setEditPostNameHi(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_post_print_as_name_en">Print As (English) - Complete Designation</Label>
+              <Input
+                id="edit_post_print_as_name_en"
+                placeholder="e.g., President, National Executive Department"
+                value={editPostPrintAsNameEn}
+                onChange={(e) => setEditPostPrintAsNameEn(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_post_print_as_name_hi">Print As (Hindi) - Complete Designation</Label>
+              <Input
+                id="edit_post_print_as_name_hi"
+                placeholder="e.g., अध्यक्ष, राष्ट्रीय कार्यकारणी"
+                value={editPostPrintAsNameHi}
+                onChange={(e) => setEditPostPrintAsNameHi(e.target.value)}
+              />
+              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
             </div>
           </div>
           <DialogFooter>

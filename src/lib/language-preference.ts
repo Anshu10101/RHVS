@@ -31,9 +31,7 @@ export async function getStateLanguagePreference(
     }
   }
 
-  console.log(`[Language Preference] Resolving language for stateId: ${stateId} (numeric: ${numericStateId}), stateName: ${stateName}`);
-
-  // Try stateId first (more reliable)
+  // Try stateId first (more reliable) if provided
   if (numericStateId !== null && !Number.isNaN(numericStateId)) {
     try {
       const rows = await executeQuery(
@@ -61,9 +59,8 @@ export async function getStateLanguagePreference(
     } catch (error) {
       console.error('[Language Preference] ❌ Error querying by stateId:', error);
     }
-  } else {
-    console.log(`[Language Preference] ⚠️ Invalid stateId: ${stateId} (could not convert to number)`);
   }
+  // Note: If stateId is not provided/invalid, we'll fall back to stateName (this is expected behavior)
 
   // Try stateName as fallback
   if (stateName) {

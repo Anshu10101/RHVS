@@ -500,10 +500,12 @@ export async function POST(
         console.warn('Member not found or not verified, skipping certificate generation');
         // Continue to return success response below
       } else {
-        // Get department and post details (including is_national_executive flag)
+        // Get department and post details (including is_national_executive flag and print_as fields)
+        // print_as contains the complete designation (post + department) if provided
         const departmentPost = await executeQuery(`
           SELECT d.name_en as dept_name_en, d.name_hi as dept_name_hi,
                  dp.name_en as post_name_en, dp.name_hi as post_name_hi,
+                 dp.print_as_name_en, dp.print_as_name_hi,
                  d.is_national_executive
           FROM departments d
           JOIN department_posts dp ON d.id = dp.department_id
@@ -513,6 +515,8 @@ export async function POST(
           dept_name_hi: string | null;
           post_name_en: string | null;
           post_name_hi: string | null;
+          print_as_name_en: string | null;
+          print_as_name_hi: string | null;
           is_national_executive: number | boolean | null;
         }>;
 
@@ -541,6 +545,8 @@ export async function POST(
               dept_name_hi: departmentPost[0].dept_name_hi ?? '',
               post_name_en: departmentPost[0].post_name_en ?? '',
               post_name_hi: departmentPost[0].post_name_hi ?? '',
+              print_as_name_en: departmentPost[0].print_as_name_en,
+              print_as_name_hi: departmentPost[0].print_as_name_hi,
               is_national_executive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true
             },
             level,
@@ -556,6 +562,11 @@ export async function POST(
           // Generate ID card
           let appointmentIdCardPath: string | null = null;
           try {
+            // Determine print_as value if available
+            const printAsName = languagePreference === 'hi'
+              ? (departmentPost[0].print_as_name_hi?.trim() || null)
+              : (departmentPost[0].print_as_name_en?.trim() || null);
+            
             const idCardResult = await generateIDCard({
               memberId: member_id,
               memberName: member[0].name,
@@ -573,6 +584,7 @@ export async function POST(
               postName: languagePreference === 'hi'
                 ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || undefined)
                 : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || undefined),
+              printAsName: printAsName || undefined,
               level,
               state,
               district,

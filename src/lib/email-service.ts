@@ -138,7 +138,7 @@ const generateEmailTemplate = (data: EmailData) => {
           प्रिय <strong>${memberName}</strong> जी,
         </p>
         <p style="font-size: 16px; line-height: 1.6;">
-          आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${departmentName}</strong> के <strong>${postName}</strong> पद पर ${levelText} नियुक्त किया गया है।
+          आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${postName}</strong> पद (<strong>${departmentName}</strong>) में ${levelText} नियुक्त किया गया है।
         </p>
         <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
           <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">

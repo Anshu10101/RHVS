@@ -404,7 +404,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     }
 
     // === MEMBER INFO (Right below photo, centered) ===
-    const memberInfoY = photoY + photoSize + 50; // Moved up by 30px
+    const memberInfoY = photoY + photoSize + 90; // Increased spacing to prevent merging with photo
     
     // Registration Number (much larger font, centered, not underlined)
     const regNumberY = memberInfoY;
@@ -414,7 +414,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     ctx.fillText(profileRegLabel, photoX + photoSize / 2, regNumberY);
 
     // === MEMBERSHIP TEXT (Left side, clean formatting) ===
-    const membershipBoxY = ribbonY + 230; // Moved up by 50px
+    const membershipBoxY = ribbonY + 280; // Lowered to match appointment certificate positioning
     const textBoxX = borderMargin + 80;
     const textBoxWidth = photoX - textBoxX - 120;
     
@@ -428,7 +428,7 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     
     // Draw each line
     membershipLines.forEach((line, index) => {
-      const lineY = membershipBoxY + (index * 80); // Increased line spacing from 60 to 80
+      const lineY = membershipBoxY + (index * 105); // Increased line spacing for better visibility
       ctx.fillText(line, textBoxX, lineY);
       
       // Underline only the member name, not the entire line
@@ -460,12 +460,12 @@ export async function generateCertificate(data: CertificateData): Promise<Certif
     
     motLines.forEach((line, index) => {
       // Adjust line spacing based on language (English has larger font, needs more spacing)
-      const lineSpacing = isHindi ? 90 : 100;
+      const lineSpacing = isHindi ? 100 : 110;
       ctx.fillText(line, width / 2, motTextY + (index * lineSpacing));
     });
 
     // === SIGNATURES SECTION ===
-    const lineSpacing = isHindi ? 90 : 100;
+    const lineSpacing = isHindi ? 100 : 110;
     // For English, add moderate extra spacing to prevent signatures from merging with footer
     const extraSpacingForEnglish = isHindi ? 0 : 40; // Reduced to 40px for better balance
     const signaturesY = motTextY + (motLines.length * lineSpacing) + 200 + extraSpacingForEnglish; // Reduced base spacing from 280 to 200

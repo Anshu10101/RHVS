@@ -7,6 +7,8 @@ import { z } from 'zod';
 const updatePostSchema = z.object({
   name_en: z.string().min(2, 'English name is required and must be at least 2 characters'),
   name_hi: z.string().min(2, 'Hindi name is required and must be at least 2 characters'),
+  print_as_name_en: z.string().optional().nullable(), // Optional print-as name in English
+  print_as_name_hi: z.string().optional().nullable(), // Optional print-as name in Hindi
 });
 
 // GET a specific post
@@ -90,12 +92,12 @@ export async function PATCH(
       return NextResponse.json({ error: validationResult.error.format() }, { status: 400 });
     }
 
-    const { name_en, name_hi } = validationResult.data;
+    const { name_en, name_hi, print_as_name_en, print_as_name_hi } = validationResult.data;
 
-    // Update the post
+    // Update the post (print_as fields can be NULL to use default format)
     await executeQuery(
-      'UPDATE department_posts SET name_en = ?, name_hi = ? WHERE id = ? AND department_id = ?',
-      [name_en, name_hi, postId, departmentId]
+      'UPDATE department_posts SET name_en = ?, name_hi = ?, print_as_name_en = ?, print_as_name_hi = ? WHERE id = ? AND department_id = ?',
+      [name_en, name_hi, print_as_name_en?.trim() || null, print_as_name_hi?.trim() || null, postId, departmentId]
     );
 
     return NextResponse.json({

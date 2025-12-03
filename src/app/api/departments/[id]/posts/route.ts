@@ -9,6 +9,8 @@ const createPostSchema = z.object({
   name_en: z.string().min(2, 'English name is required and must be at least 2 characters'),
   name_hi: z.string().min(2, 'Hindi name is required and must be at least 2 characters'),
   position_order: z.number().optional(), // Optional because it will be auto-assigned for new posts
+  print_as_name_en: z.string().optional().nullable(), // Optional print-as name in English
+  print_as_name_hi: z.string().optional().nullable(), // Optional print-as name in Hindi
 });
 
 // Schema for updating posts order
@@ -106,7 +108,7 @@ export async function POST(
       return NextResponse.json({ error: validationResult.error.format() }, { status: 400 });
     }
 
-    const { name_en, name_hi } = validationResult.data;
+    const { name_en, name_hi, print_as_name_en, print_as_name_hi } = validationResult.data;
 
     // Get the current max position_order
     const maxPositionResult = await executeQuery(
@@ -121,10 +123,10 @@ export async function POST(
     const isFirstPost = newPosition === 1;
     const position_order = isFirstPost ? 1 : newPosition;
 
-    // Insert the new post
+    // Insert the new post (print_as fields are optional - NULL if not provided)
     const result = await executeQuery(
-      'INSERT INTO department_posts (department_id, name_en, name_hi, position_order) VALUES (?, ?, ?, ?)',
-      [departmentId, name_en, name_hi, position_order]
+      'INSERT INTO department_posts (department_id, name_en, name_hi, position_order, print_as_name_en, print_as_name_hi) VALUES (?, ?, ?, ?, ?, ?)',
+      [departmentId, name_en, name_hi, position_order, print_as_name_en?.trim() || null, print_as_name_hi?.trim() || null]
     ) as any;
 
     return NextResponse.json({

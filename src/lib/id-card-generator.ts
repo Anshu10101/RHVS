@@ -4,6 +4,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { executeQuery } from '@/lib/database';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 
 interface IDCardData {
   memberId: number;
@@ -15,6 +16,7 @@ interface IDCardData {
   cardType?: 'membership' | 'appointment';
   departmentName?: string | null;
   postName?: string | null;
+  printAsName?: string | null; // Complete designation (post + department) if provided
   level?: 'national' | 'state' | 'district';
   state?: string | null;
   district?: string | null;
@@ -129,6 +131,34 @@ async function getHindiLocationName(
   }
   
   return null;
+}
+
+// Helper function to get state name in correct language (Hindi or English)
+async function getStateNameForIDCard(stateName: string | null | undefined, isHindi: boolean): Promise<string | null> {
+  if (!stateName || !stateName.trim()) return null;
+  
+  try {
+    // Get language preference for the state
+    const languagePreference = await getStateLanguagePreference({ stateName: stateName.trim() });
+    
+    // If ID card is in Hindi and state prefers Hindi, get Hindi name
+    if (isHindi && languagePreference === 'hi') {
+      const result = await executeQuery(
+        'SELECT state_name_hindi FROM states WHERE state_name_english = ? LIMIT 1',
+        [stateName.trim()]
+      ) as Array<{ state_name_hindi: string | null }>;
+      
+      if (result.length > 0 && result[0].state_name_hindi) {
+        return result[0].state_name_hindi;
+      }
+    }
+    
+    // Otherwise return English name (or fallback to provided name)
+    return stateName.trim();
+  } catch (error) {
+    console.warn(`Error fetching state name for ${stateName}:`, error);
+    return stateName.trim(); // Fallback to provided name
+  }
 }
 
 export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
@@ -252,7 +282,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       const ramImage = await loadImage(path.join(process.cwd(), 'public', 'certificates', 'Ram.png'));
       const ramHeight = headerHeight - 30;
       const ramWidth = (ramImage.width / ramImage.height) * ramHeight;
-      ctx.drawImage(ramImage, width - ramWidth - 30, 15, ramWidth, ramHeight);
+      ctx.drawImage(ramImage, width - ramWidth - 30, 25, ramWidth, ramHeight); // Lowered by 10px to avoid overlap with reg number
     } catch (error) {
       console.error('Error loading Ram image for ID card:', error);
     }
@@ -343,7 +373,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
 
     // === MEMBER PHOTO ===
     const photoSize = 180;
-    const photoX = width - 220;
+    const photoX = width - 220; // Photo X position (defined here for use in info section)
     const photoY = lineY + 25; // Moved slightly lower
     
     let photoLoaded = false;
@@ -501,7 +531,11 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     const infoX = 60;
     let currentY = lineY + 90;
     const lineSpacing = 40;
-    const infoMaxWidth = width - 120;
+    // Calculate max width based on photo position to prevent overlap
+    // Photo is positioned at photoX (width - 220), so text should stop before that with a margin
+    const photoMargin = 30; // Margin between text and photo
+    const textMaxEndX = photoX - photoMargin; // Text should not go beyond this point
+    const infoMaxWidth = textMaxEndX - infoX; // Maximum width for text area
 
     ctx.textAlign = 'left';
 
@@ -535,38 +569,65 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
     })();
 
     if (cardType === 'appointment') {
-      const department = data.departmentName && data.departmentName.trim().length > 0
-        ? data.departmentName
-        : '—';
-      let post = translateDesignation(data.postName || data.designation, 'appointment', language);
-      
-      // Add level prefix to post name, but NOT if department is National Executive
-      // National Executive departments should not have "National" prefix
-      const isNationalExecutive = data.isNationalExecutive === true;
-      if (!isNationalExecutive) {
-        const levelPrefix = isHindi
-          ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-          : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
-        post = `${levelPrefix} ${post}`.trim();
-      }
-      
-      const departmentAndPost = department !== '—' ? `${department} ${post}` : post;
       const appointmentDate = data.appointmentDate
         ? new Date(data.appointmentDate).toLocaleDateString(isHindi ? 'hi-IN' : 'en-IN')
         : '—';
 
-      lines.push({ label: strings.designationLabel, value: departmentAndPost });
-      // Add address right after designation (like membership card) - always show if district or state exists
-      if (displayAddress) {
-        lines.push({ label: strings.addressLabel, value: displayAddress });
+      let departmentAndPost: string;
+      
+      // Check if print_as is provided (complete designation including post + department)
+      if (data.printAsName && data.printAsName.trim().length > 0) {
+        // Use print_as directly with level prefix only
+        const isNationalExecutive = data.isNationalExecutive === true;
+        if (!isNationalExecutive) {
+          const levelPrefix = isHindi
+            ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+            : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+          departmentAndPost = `${levelPrefix} ${data.printAsName.trim()}`;
+        } else {
+          departmentAndPost = data.printAsName.trim();
+        }
+      } else {
+        // Default method: [level_prefix] [post] [department]
+        const department = data.departmentName && data.departmentName.trim().length > 0
+          ? data.departmentName
+          : '—';
+        let post = translateDesignation(data.postName || data.designation, 'appointment', language);
+        
+        // Add level prefix to post name, but NOT if department is National Executive
+        const isNationalExecutive = data.isNationalExecutive === true;
+        if (!isNationalExecutive) {
+          const levelPrefix = isHindi
+            ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+            : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+          post = `${levelPrefix} ${post}`.trim();
+        }
+        
+        departmentAndPost = department !== '—' ? `${post} ${department}` : post;
       }
+
+      // Add location names (state/district) for state and district level appointments
+      // Get state name in correct language (Hindi for Hindi states, English for English states)
+      if (data.level === 'state' && data.state) {
+        // For state level: get state name in correct language
+        const stateName = await getStateNameForIDCard(data.state, isHindi);
+        if (stateName) {
+          departmentAndPost = `${departmentAndPost}, ${stateName}`;
+        }
+      } else if (data.level === 'district' && data.district && data.state) {
+        // For district level: get state name in correct language, district stays as is
+        const stateName = await getStateNameForIDCard(data.state, isHindi);
+        if (stateName) {
+          departmentAndPost = `${departmentAndPost}, ${data.district}, ${stateName}`;
+        }
+      }
+      // For national level: no location added
+
+      lines.push({ label: strings.designationLabel, value: departmentAndPost });
       lines.push({ label: strings.appointmentDateLabel, value: appointmentDate });
     } else {
       const designation = translateDesignation(data.designation, 'membership', language);
       lines.push({ label: strings.designationLabel, value: designation });
-      if (displayAddress) {
-        lines.push({ label: strings.addressLabel, value: displayAddress });
-      }
     }
 
     lines.forEach(({ label, value }) => {
@@ -576,6 +637,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
         x: infoX,
         baseline: currentY,
         maxWidth: infoMaxWidth,
+        maxTextEndX: textMaxEndX, // Maximum X position where text can end (already calculated above)
         lineSpacing,
         labelFont: fonts.label,
         valueFont: fonts.value,
@@ -616,7 +678,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       : bottomFont;
     
     ctx.font = finalFont;
-    const orgTextY = bottomLineY + 20; // Adjusted position
+    const orgTextY = bottomLineY + 25; // Increased spacing for better visibility
     ctx.fillText(bottomText, width / 2, orgTextY);
     
     // Add validity period below organization address (if validity dates are provided)
@@ -647,7 +709,7 @@ export async function generateIDCard(data: IDCardData): Promise<IDCardResult> {
       ctx.fillStyle = accentColor; // Use same color as organization address
       ctx.font = validityFont;
       ctx.textAlign = 'center';
-      const validityY = orgTextY + 20; // Position below organization address
+      const validityY = orgTextY + 25; // Increased spacing between org name and validity line
       ctx.fillText(validityText, width / 2, validityY);
     }
 
@@ -746,6 +808,7 @@ interface LabelValueOptions {
   x: number;
   baseline: number;
   maxWidth: number;
+  maxTextEndX?: number; // Optional: Maximum X position where text can end (to prevent overlap with photo)
   lineSpacing: number;
   labelFont: string;
   valueFont: string;
@@ -760,6 +823,7 @@ function drawLabelValue(ctx: CanvasRenderingContext2D, options: LabelValueOption
     x,
     baseline,
     maxWidth,
+    maxTextEndX,
     lineSpacing,
     labelFont,
     valueFont,
@@ -775,9 +839,22 @@ function drawLabelValue(ctx: CanvasRenderingContext2D, options: LabelValueOption
 
   ctx.font = valueFont;
   ctx.fillStyle = valueColor;
-  const availableWidth = Math.max(maxWidth - labelWidth - 20, maxWidth * 0.4);
-  const valueLines = wrapTextLines(ctx, value, availableWidth);
   const valueStartX = x + labelWidth + 20;
+  
+  // Calculate available width for value text
+  // If maxTextEndX is provided, use it to ensure text doesn't overlap with photo
+  let availableWidth: number;
+  if (maxTextEndX !== undefined) {
+    // Available width is the space between value start and max end position
+    availableWidth = maxTextEndX - valueStartX;
+    // Ensure minimum width (at least 40% of maxWidth for readability)
+    availableWidth = Math.max(availableWidth, maxWidth * 0.4);
+  } else {
+    // Fallback to original calculation
+    availableWidth = Math.max(maxWidth - labelWidth - 20, maxWidth * 0.4);
+  }
+  
+  const valueLines = wrapTextLines(ctx, value, availableWidth);
 
   valueLines.forEach((line, index) => {
     const drawX = valueStartX;

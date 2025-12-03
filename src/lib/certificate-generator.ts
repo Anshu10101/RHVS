@@ -4,6 +4,7 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import { executeQuery } from '@/lib/database';
+import { getStateLanguagePreference } from '@/lib/language-preference';
 
 interface CertificateData {
   member: {
@@ -19,6 +20,8 @@ interface CertificateData {
     dept_name_hi: string;
     post_name_en: string;
     post_name_hi: string;
+    print_as_name_en?: string | null;
+    print_as_name_hi?: string | null;
     is_national_executive?: boolean;
   };
   level: 'national' | 'state' | 'district';
@@ -29,6 +32,34 @@ interface CertificateData {
   language?: 'hi' | 'en';
   valid_from?: string | null;
   valid_until?: string | null;
+}
+
+// Helper function to get state name in correct language (Hindi or English)
+async function getStateName(stateName: string | null | undefined, isHindi: boolean): Promise<string | null> {
+  if (!stateName || !stateName.trim()) return null;
+  
+  try {
+    // Get language preference for the state
+    const languagePreference = await getStateLanguagePreference({ stateName: stateName.trim() });
+    
+    // If certificate is in Hindi and state prefers Hindi, get Hindi name
+    if (isHindi && languagePreference === 'hi') {
+      const result = await executeQuery(
+        'SELECT state_name_hindi FROM states WHERE state_name_english = ? LIMIT 1',
+        [stateName.trim()]
+      ) as Array<{ state_name_hindi: string | null }>;
+      
+      if (result.length > 0 && result[0].state_name_hindi) {
+        return result[0].state_name_hindi;
+      }
+    }
+    
+    // Otherwise return English name (or fallback to provided name)
+    return stateName.trim();
+  } catch (error) {
+    console.warn(`Error fetching state name for ${stateName}:`, error);
+    return stateName.trim(); // Fallback to provided name
+  }
 }
 
 async function loadProfilePhotoImage(profilePhotoPath?: string | null) {
@@ -96,7 +127,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         tagline: 'bold 72px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         ribbon: 'bold 84px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         appointment: 'bold 80px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
-        motivational: 'italic 72px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
+        motivational: '72px "Mangal", "Noto Sans Devanagari", "Georgia", serif',
         quote: 'bold 150px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         footer: 'bold 48px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
         footerAddress: 'bold 40px "Mangal", "Noto Sans Devanagari", "Arial Unicode MS", sans-serif',
@@ -112,7 +143,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
         tagline: 'bold 72px "Arial", sans-serif',
         ribbon: 'bold 70px "Arial Black", "Arial", sans-serif',
         appointment: '700 64px "Arial", sans-serif',
-        motivational: 'italic 72px "Georgia", serif',
+        motivational: '72px "Georgia", serif',
         quote: 'bold 140px "Georgia", serif',
         footer: '700 48px "Arial", sans-serif',
         footerAddress: '600 36px "Arial", sans-serif',
@@ -256,26 +287,65 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   ctx.fillStyle = accentOrange;
   ctx.font = fonts.paragraph;
 
-  const departmentName = isHindi
-    ? (data.department.dept_name_hi || data.department.dept_name_en || '').trim()
-    : (data.department.dept_name_en || data.department.dept_name_hi || '').trim();
-  let postName = isHindi
-    ? (data.department.post_name_hi || data.department.post_name_en || '').trim()
-    : (data.department.post_name_en || data.department.post_name_hi || '').trim();
+  // Check if print_as is provided (complete designation including post + department)
+  const printAsEn = data.department.print_as_name_en?.trim() || null;
+  const printAsHi = data.department.print_as_name_hi?.trim() || null;
+  const hasPrintAs = (isHindi && printAsHi) || (!isHindi && printAsEn);
   
-  // Add level prefix to post name, but NOT if department is National Executive
-  // National Executive departments should not have "National" prefix
-  const isNationalExecutive = data.department.is_national_executive === true;
-  if (!isNationalExecutive) {
-  const levelPrefix = isHindi
-    ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-    : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
-  postName = `${levelPrefix} ${postName}`.trim();
+  let deptPostPhrase: string;
+  
+  if (hasPrintAs) {
+    // Use print_as directly with level prefix only (print_as already contains post + department)
+    const printAs = isHindi ? printAsHi! : printAsEn!;
+    const isNationalExecutive = data.department.is_national_executive === true;
+    
+    if (!isNationalExecutive) {
+      const levelPrefix = isHindi
+        ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+        : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+      deptPostPhrase = `${levelPrefix} ${printAs}`.trim();
+    } else {
+      deptPostPhrase = printAs;
+    }
+  } else {
+    // Default method: [level_prefix] [post] [department]
+    const departmentName = isHindi
+      ? (data.department.dept_name_hi || data.department.dept_name_en || '').trim()
+      : (data.department.dept_name_en || data.department.dept_name_hi || '').trim();
+    let postName = isHindi
+      ? (data.department.post_name_hi || data.department.post_name_en || '').trim()
+      : (data.department.post_name_en || data.department.post_name_hi || '').trim();
+    
+    // Add level prefix to post name, but NOT if department is National Executive
+    const isNationalExecutive = data.department.is_national_executive === true;
+    if (!isNationalExecutive) {
+      const levelPrefix = isHindi
+        ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
+        : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+      postName = `${levelPrefix} ${postName}`.trim();
+    }
+    
+    deptPostPhrase = isHindi
+      ? `${postName} ${departmentName}`.trim()
+      : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
   }
   
-  const deptPostPhrase = isHindi
-    ? `${departmentName} ${postName}`.trim()
-    : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
+  // Get location names (state/district) with correct language and add to designation
+  if (data.level === 'state' && data.state) {
+    // For state level: get state name in correct language
+    const stateName = await getStateName(data.state, isHindi);
+    if (stateName) {
+      deptPostPhrase = `${deptPostPhrase}, ${stateName}`;
+    }
+  } else if (data.level === 'district' && data.district && data.state) {
+    // For district level: get state name in correct language, district stays as is
+    const stateName = await getStateName(data.state, isHindi);
+    if (stateName) {
+      deptPostPhrase = `${deptPostPhrase}, ${data.district}, ${stateName}`;
+    }
+  }
+  // For national level: no location added
+  
   const appointmentMessage = isHindi
     ? `${data.member.name} को ${deptPostPhrase} पद पर नियुक्त किया जाता है और संगठन अपेक्षा करता है कि आप अनुशासन तथा राष्ट्रधर्म को सर्वोपरि रखेंगे।`
     : `${data.member.name} is hereby appointed to the position of ${deptPostPhrase} and is expected to uphold discipline and national dharma above everything else.`;
@@ -363,13 +433,24 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
 
   const appointmentLines = wrapText(ctx, appointmentMessage, textAreaWidth);
   appointmentLines.forEach((line, index) => {
-    const lineY = messageStartY + index * 80;
+    const lineY = messageStartY + index * 105;
     ctx.fillText(line, textStartX, lineY);
 
     underlinePhrase(ctx, line, data.member.name, textStartX, lineY, accentOrange, 4);
-    // Underline the complete designation phrase (department + post) - same for both Hindi and English
-    underlinePhrase(ctx, line, deptPostPhrase, textStartX, lineY, accentOrange, 4);
   });
+  
+  // Underline the complete designation across all lines (handles multi-line wrapping)
+  underlinePhraseAcrossLines(
+    ctx,
+    appointmentMessage,
+    appointmentLines,
+    deptPostPhrase,
+    textStartX,
+    messageStartY,
+    105, // line spacing
+    accentOrange,
+    4
+  );
 
   // Address intentionally omitted per requirements
 
@@ -426,12 +507,6 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   // Calculate based on registration number (always one line now)
   const motTextY = memberInfoY + 50 + 200; // Reduced spacing by 100px to move up
 
-  // Add quote marks around motivational text
-  ctx.font = fonts.quote;
-  ctx.fillStyle = 'rgba(220, 38, 38, 0.15)';
-  ctx.fillText('"', 80, motTextY - 60);
-  ctx.fillText('"', width - 80, motTextY + 220);
-
   // Motivational text (MUCH larger font with better wrapping)
   ctx.fillStyle = textColor;
   ctx.font = fonts.motivational;
@@ -442,7 +517,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const motLines = wrapText(ctx, motivationalText, maxWidth);
   
   // Adjust line spacing based on language (English has larger font, needs more spacing)
-  const motLineSpacing = isHindi ? 85 : 95;
+  const motLineSpacing = isHindi ? 100 : 110;
   motLines.forEach((line, index) => {
     ctx.fillText(line, width / 2, motTextY + (index * motLineSpacing));
   });
@@ -759,7 +834,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   const membershipLines = wrapText(ctx, fullMembershipText, width - 600);
   
   // Draw membership text (no background, centered, selective underlining)
-  const lineHeight = 85; // Increased line height for bigger font
+  const lineHeight = 95; // Increased line height for better visibility
   
   // Membership text in orange/accent color (much larger font, centered)
   ctx.fillStyle = accentOrange;
@@ -835,16 +910,9 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   const motTextY = memberInfoY + 200; // Reduced spacing by 150px to move up
   const motivationalText = "Hearty congratulations to you. We hope you will make a significant contribution to strengthening the organization by giving it even more momentum. You are expected to fulfill your responsibilities with complete devotion and honesty, in the interest of the organization, the nation, and the protection of Sanatan Dharma.";
   
-
-  // Add quote marks around motivational text
-  ctx.font = 'bold 150px Arial'; // Much larger quote marks
-  ctx.fillStyle = 'rgba(220, 38, 38, 0.15)';
-  ctx.fillText('"', 80, motTextY - 60);
-  ctx.fillText('"', width - 80, motTextY + 220);
-
   // Motivational text (MUCH larger font with better wrapping)
   ctx.fillStyle = textColor;
-  ctx.font = 'italic 56px "Georgia", serif'; // MUCH larger font
+  ctx.font = '56px "Georgia", serif'; // MUCH larger font
   ctx.textAlign = 'center';
   
   // Split text into fewer, longer lines
@@ -852,7 +920,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   const motLines = wrapText(ctx, motivationalText, maxWidth);
   
   // Adjust line spacing based on language (English has larger font, needs more spacing)
-  const motLineSpacing = isHindi ? 85 : 95;
+  const motLineSpacing = isHindi ? 100 : 110;
   motLines.forEach((line, index) => {
     ctx.fillText(line, width / 2, motTextY + (index * motLineSpacing));
   });
@@ -1249,4 +1317,58 @@ function underlinePhrase(
   ctx.moveTo(startX + beforeWidth, baselineY + 10);
   ctx.lineTo(startX + beforeWidth + phraseWidth, baselineY + 10);
   ctx.stroke();
+}
+
+// Underline a phrase that may span across multiple wrapped lines
+// Finds each word from the designation and underlines it wherever it appears
+function underlinePhraseAcrossLines(
+  ctx: CanvasRenderingContext2D,
+  fullText: string,
+  lines: string[],
+  phrase: string,
+  startX: number,
+  startY: number,
+  lineSpacing: number,
+  color: string,
+  lineWidth: number
+) {
+  if (!phrase || phrase.trim().length === 0) return;
+  
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  
+  // Split phrase into words, preserving punctuation with words
+  // Split by spaces but keep commas/punctuation attached to words
+  const words = phrase.split(/\s+/).filter(word => word.trim().length > 0);
+  
+  if (words.length === 0) return;
+  
+  // For each wrapped line, find and underline each word from the designation
+  lines.forEach((line, lineIndex) => {
+    const lineY = startY + lineIndex * lineSpacing;
+    
+    // Find and underline each word from the designation in this line
+    words.forEach((word) => {
+      // Find the word in the line (exact match)
+      let searchIndex = 0;
+      while (true) {
+        const wordIndex = line.indexOf(word, searchIndex);
+        if (wordIndex === -1) break;
+        
+        // Calculate position to underline
+        const before = line.substring(0, wordIndex);
+        const beforeWidth = ctx.measureText(before).width;
+        const wordWidth = ctx.measureText(word).width;
+        
+        // Underline this word
+        ctx.beginPath();
+        ctx.moveTo(startX + beforeWidth, lineY + 10);
+        ctx.lineTo(startX + beforeWidth + wordWidth, lineY + 10);
+        ctx.stroke();
+        
+        // Move forward to find next occurrence
+        searchIndex = wordIndex + word.length;
+      }
+    });
+  });
 }
