@@ -253,8 +253,8 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
         (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
-        scope.adminId ? scope.adminId.toString() : 'admin',
-        scope.adminId ? scope.adminId.toString() : 'admin'
+        scope.adminId ? scope.adminId.toString() : 'admin', // updated_by
+        scope.adminId ? scope.adminId.toString() : 'admin'  // created_by
       ];
 
       await executeQuery(
@@ -302,8 +302,8 @@ export async function POST(req: NextRequest) {
         scope.adminId || null,
         // Only set owner_admin_id for district admins (superadmins are not in district_admins table)
         (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) ? scope.adminId : null,
-        scope.adminId ? scope.adminId.toString() : 'admin',
-        scope.adminId ? scope.adminId.toString() : 'admin'
+        scope.adminId ? scope.adminId.toString() : 'admin', // updated_by
+        scope.adminId ? scope.adminId.toString() : 'admin'  // created_by
       ];
 
       const insert = await executeQuery(

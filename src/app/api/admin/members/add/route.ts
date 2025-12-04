@@ -143,6 +143,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if aadhar card number already exists (and is not empty/placeholder)
+    if (aadharCardNumber && aadharCardNumber.trim() !== '' && aadharCardNumber !== '000000000000') {
+      const existingAadharQuery = 'SELECT id FROM members WHERE aadhar_card_number = ?';
+      const existingAadhar = await executeQuery(existingAadharQuery, [aadharCardNumber]) as Array<{ id: number }>;
+      
+      if (existingAadhar.length > 0) {
+        return NextResponse.json(
+          { success: false, message: 'Aadhar card number already registered' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Automatically set existing member registration number based on admin type
     let verifierId = null;
     let existingMemberRegNumberFinal = 'RHVS000000'; // Default superadmin reference

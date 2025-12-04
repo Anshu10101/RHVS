@@ -15,6 +15,9 @@ export async function GET() {
     // Use a fresh connection to avoid stale data
     const connection = await getConnection();
     try {
+      // Set isolation level to READ COMMITTED to ensure we see committed data
+      await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+      
       const [rows] = await connection.execute(
         `SELECT id, name, description, isVisible, created_at, updated_at
          FROM product_categories
@@ -54,6 +57,8 @@ export async function POST(req: NextRequest) {
     let transactionCommitted = false;
     
     try {
+      // Set isolation level to READ COMMITTED to ensure connections see committed data
+      await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
       // Start transaction
       await connection.beginTransaction();
       
@@ -106,8 +111,10 @@ export async function POST(req: NextRequest) {
     // Get a fresh connection for verification to avoid any connection-level caching
     const verifyConnection = await getConnection();
     try {
+      // Set isolation level to ensure we see committed data
+      await verifyConnection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
       // Small delay to ensure commit is fully processed
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Verify the category was created/updated (use a fresh connection after commit)
       const [verifyRows] = await verifyConnection.execute(
@@ -162,6 +169,8 @@ export async function PUT(req: NextRequest) {
     const connection = await getConnection();
     
     try {
+      // Set isolation level to READ COMMITTED to ensure connections see committed data
+      await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
       await connection.beginTransaction();
       
       await connection.execute(
@@ -221,9 +230,14 @@ export async function DELETE(req: NextRequest) {
       return noCacheJsonResponse({ success: false, message: 'Category id is required' }, { status: 400 });
     }
 
+    console.log('[Category DELETE] Deleting category:', id);
+
     const connection = await getConnection();
+    let transactionCommitted = false;
     
     try {
+      // Set isolation level to READ COMMITTED to ensure we see committed data
+      await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
       await connection.beginTransaction();
       
       // Optional: set products with this category to NULL to keep referential integrity
@@ -234,17 +248,52 @@ export async function DELETE(req: NextRequest) {
       await connection.execute(`DELETE FROM product_categories WHERE id = ?`, [id]);
       
       await connection.commit();
-      
-      return noCacheJsonResponse({ success: true });
+      transactionCommitted = true;
+      console.log('[Category DELETE] Transaction committed successfully');
     } catch (transactionError) {
-      await connection.rollback();
+      if (!transactionCommitted) {
+        try {
+          await connection.rollback();
+        } catch (rollbackError) {
+          console.error('[Category DELETE] Rollback error:', rollbackError);
+        }
+      }
+      console.error('[Category DELETE] Transaction error:', transactionError);
       throw transactionError;
     } finally {
       connection.release();
     }
+    
+    // Get a fresh connection for verification to avoid any connection-level caching
+    const verifyConnection = await getConnection();
+    try {
+      // Small delay to ensure commit is fully processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify the category was deleted (use a fresh connection after commit)
+      const [verifyRows] = await verifyConnection.execute(
+        'SELECT id FROM product_categories WHERE id = ?',
+        [id]
+      ) as [Array<{ id: string }>, unknown];
+
+      if (verifyRows.length > 0) {
+        console.error('[Category DELETE] Category still exists after deletion:', id);
+        return noCacheJsonResponse({ success: false, message: 'Failed to delete category - category still exists after deletion' }, { status: 500 });
+      }
+
+      console.log('[Category DELETE] Successfully deleted category:', id);
+      return noCacheJsonResponse({ success: true });
+    } finally {
+      verifyConnection.release();
+    }
   } catch (e) {
-    console.error('categories DELETE error', e);
-    return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
+    console.error('[Category DELETE] Error details:', e);
+    const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+    return noCacheJsonResponse({ 
+      success: false, 
+      message: 'Server error',
+      error: errorMessage
+    }, { status: 500 });
   }
 }
 

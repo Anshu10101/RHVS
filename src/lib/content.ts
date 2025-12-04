@@ -1017,16 +1017,24 @@ export class ContentService {
 
   static async getProductCategories(): Promise<ProductCategory[]> {
     try {
-      const [rows] = await pool.execute('SELECT * FROM product_categories WHERE isVisible = TRUE ORDER BY name ASC');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (rows as any[]).map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        isVisible: Boolean(row.isVisible),
-        createdAt: new Date(row.created_at as string),
-        updatedAt: new Date(row.updated_at as string)
-      }));
+      // Use a fresh connection with proper isolation level to ensure we see committed data
+      const connection = await pool.getConnection();
+      try {
+        // Set isolation level to READ COMMITTED to ensure we see committed data
+        await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
+        const [rows] = await connection.execute('SELECT * FROM product_categories WHERE isVisible = TRUE ORDER BY name ASC');
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (rows as any[]).map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          description: row.description,
+          isVisible: Boolean(row.isVisible),
+          createdAt: new Date(row.created_at as string),
+          updatedAt: new Date(row.updated_at as string)
+        }));
+      } finally {
+        connection.release();
+      }
     } catch (error) {
       console.error('Error fetching product categories:', error);
       return [];
