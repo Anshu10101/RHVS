@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,12 +15,18 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Shield, 
   UserCheck, 
-  // Clock, 
-  // Calendar,
-  // Users,
   Save,
-  // X,
-  AlertCircle
+  AlertCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  SortAsc,
+  SortDesc,
+  Maximize2,
+  Minimize2,
+  Filter
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -73,13 +79,24 @@ export default function AssignPermissionsPage() {
   // Gallery-style filtering state
   const [availableStates, setAvailableStates] = useState<{id: number, name: string, code: string}[]>([]);
   const [availableDistricts, setAvailableDistricts] = useState<{id: number, name: string, code: string, state_code: string}[]>([]);
+  
+  // UI state for managing large lists
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterState, setFilterState] = useState<string>('');
+  const [filterDistrict, setFilterDistrict] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'name' | 'permissions' | 'state' | 'district'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [compactMode, setCompactMode] = useState(false);
+  const [expandedAdmins, setExpandedAdmins] = useState<Set<number>>(new Set());
 
   // Load filters on component mount
   useEffect(() => {
     loadFilters();
   }, []);
 
-  // Load districts when state changes
+  // Load districts when state changes (for form)
   useEffect(() => {
     if (selectedState) {
       loadDistricts(selectedState);
@@ -87,6 +104,13 @@ export default function AssignPermissionsPage() {
       setAvailableDistricts([]);
     }
   }, [selectedState]);
+
+  // Load districts when filter state changes
+  useEffect(() => {
+    if (filterState) {
+      loadDistricts(filterState);
+    }
+  }, [filterState]);
 
   // Reset admin selection when district changes
   useEffect(() => {
@@ -383,6 +407,95 @@ export default function AssignPermissionsPage() {
     acc[permission.category].push(permission);
     return acc;
   }, {} as { [key: string]: AvailablePermission[] });
+
+  // Flatten district admins for filtering and sorting
+  const flattenedAdmins = useMemo(() => {
+    const admins: Array<{
+      admin: DistrictAdmin;
+      state: string;
+      district: string;
+    }> = [];
+    
+    districtAdmins
+      .filter(admin => admin.isActive)
+      .forEach(admin => {
+        const parts = admin.district?.split(',');
+        const adminDistrict = parts && parts.length >= 2 ? parts[0].trim() : admin.district;
+        admins.push({
+          admin,
+          state: admin.state || '',
+          district: adminDistrict || ''
+        });
+      });
+    
+    return admins;
+  }, [districtAdmins]);
+
+  // Filter and sort admins
+  const filteredAndSortedAdmins = useMemo(() => {
+    let filtered = flattenedAdmins.filter(({ admin, state, district }) => {
+      // Search filter
+      const matchesSearch = searchQuery === '' ||
+        admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        district.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // State filter
+      const matchesState = filterState === '' ||
+        (availableStates.find(s => s.id.toString() === filterState)?.name === state);
+      
+      // District filter
+      const matchesDistrict = filterDistrict === '' ||
+        (availableDistricts.find(d => d.id.toString() === filterDistrict)?.name === district);
+      
+      return matchesSearch && matchesState && matchesDistrict;
+    });
+
+    // Sort
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'name') {
+        comparison = a.admin.name.localeCompare(b.admin.name);
+      } else if (sortBy === 'permissions') {
+        comparison = (a.admin.permissions?.length || 0) - (b.admin.permissions?.length || 0);
+      } else if (sortBy === 'state') {
+        comparison = a.state.localeCompare(b.state);
+      } else if (sortBy === 'district') {
+        comparison = a.district.localeCompare(b.district);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [flattenedAdmins, searchQuery, filterState, filterDistrict, sortBy, sortOrder, availableStates, availableDistricts]);
+
+  // Paginated admins
+  const paginatedAdmins = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedAdmins.slice(startIndex, endIndex);
+  }, [filteredAndSortedAdmins, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredAndSortedAdmins.length / itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterState, filterDistrict, sortBy, sortOrder]);
+
+  // Toggle admin expansion
+  const toggleAdminExpansion = useCallback((adminId: number) => {
+    setExpandedAdmins(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(adminId)) {
+        newSet.delete(adminId);
+      } else {
+        newSet.add(adminId);
+      }
+      return newSet;
+    });
+  }, []);
 
   if (currentUser?.type !== 'superadmin') {
     return (
@@ -758,82 +871,239 @@ export default function AssignPermissionsPage() {
         {/* Current Assignments Preview */}
         <Card>
           <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-              {t('admin.permissions.assign.currentAssignments')}
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm">
-              {t('admin.permissions.assign.viewExisting')}
-            </CardDescription>
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                  {t('admin.permissions.assign.currentAssignments')} ({filteredAndSortedAdmins.length})
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  {t('admin.permissions.assign.viewExisting')}
+                </CardDescription>
+              </div>
+              <button
+                onClick={() => setCompactMode(!compactMode)}
+                className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+                title={compactMode ? 'Normal View' : 'Compact View'}
+              >
+                {compactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+              </button>
+            </div>
+            
+            {/* Search and Filters */}
+            <div className="space-y-3 mt-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search admins..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-9 text-sm"
+                />
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <Select value={filterState || undefined} onValueChange={(value) => {
+                  if (value === 'clear') {
+                    setFilterState('');
+                  } else {
+                    setFilterState(value);
+                  }
+                }}>
+                  <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
+                    <SelectValue placeholder="All States" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clear">All States</SelectItem>
+                    {availableStates.map(state => (
+                      <SelectItem key={state.id} value={state.id.toString()}>
+                        {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={filterDistrict || undefined} onValueChange={(value) => {
+                  if (value === 'clear') {
+                    setFilterDistrict('');
+                  } else {
+                    setFilterDistrict(value);
+                  }
+                }} disabled={!filterState}>
+                  <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
+                    <SelectValue placeholder={filterState ? "All Districts" : "Select State First"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="clear">All Districts</SelectItem>
+                    {filterState && availableDistricts
+                      .filter(d => {
+                        const selectedStateObj = availableStates.find(s => s.id.toString() === filterState);
+                        return selectedStateObj && d.state_code === selectedStateObj.code;
+                      })
+                      .map(district => (
+                        <SelectItem key={district.id} value={district.id.toString()}>
+                          {district.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                  <SelectTrigger className="h-8 text-xs min-w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="name">Sort by Name</SelectItem>
+                    <SelectItem value="permissions">Sort by Permissions</SelectItem>
+                    <SelectItem value="state">Sort by State</SelectItem>
+                    <SelectItem value="district">Sort by District</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <button
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center gap-1 h-8"
+                  title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+                >
+                  {sortOrder === 'asc' ? <SortAsc className="w-3 h-3" /> : <SortDesc className="w-3 h-3" />}
+                </button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-             <div className="space-y-3 sm:space-y-4 max-h-[600px] sm:max-h-[800px] overflow-y-auto">
-               {districtAdmins.length === 0 ? (
+             <div className={`${compactMode ? 'space-y-2' : 'space-y-3'} max-h-[600px] sm:max-h-[800px] overflow-y-auto`}>
+               {filteredAndSortedAdmins.length === 0 ? (
                  <div className="text-center py-8 text-sm text-gray-500">
-                   {t('admin.permissions.assign.noDistrictAdmins')}
+                   {districtAdmins.length === 0 
+                     ? t('admin.permissions.assign.noDistrictAdmins')
+                     : 'No admins found matching your filters'}
                  </div>
                ) : (
-                 <div className="space-y-3 sm:space-y-4">
-                   {availableStates.map((state) => (
-                     <div key={state.id} className="space-y-2 sm:space-y-3">
-                       <h4 className="font-medium text-sm sm:text-base text-gray-700 border-b pb-2">
-                         {state.name}
-                       </h4>
-                       {districtAdmins
-                         .filter(admin => admin.state === state.name && admin.isActive)
-                         .reduce((districts, admin) => {
-                           const parts = admin.district?.split(',');
-                           const adminDistrict = parts && parts.length >= 2 ? parts[0].trim() : admin.district;
-                           if (!districts.includes(adminDistrict)) {
-                             districts.push(adminDistrict);
-                           }
-                           return districts;
-                         }, [] as string[])
-                         .map((district) => (
-                         <div key={district} className="ml-2 sm:ml-4 space-y-2 sm:space-y-3">
-                           <h5 className="font-medium text-xs sm:text-sm text-gray-600">
-                             {district}
-                           </h5>
-                           {districtAdmins
-                             .filter(admin => {
-                               if (!admin.isActive) return false;
-                               const parts = admin.district?.split(',');
-                               const adminDistrict = parts && parts.length >= 2 ? parts[0].trim() : admin.district;
-                               return adminDistrict === district && admin.state === state.name;
-                             })
-                             .map((admin) => (
-                               <div key={admin.id} className="border rounded-lg p-3 sm:p-4 ml-2 sm:ml-4">
-                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3">
-                                   <div className="min-w-0 flex-1">
-                                     <h6 className="font-medium text-sm sm:text-base truncate">{admin.name}</h6>
-                                     <p className="text-xs sm:text-sm text-gray-600 truncate">{admin.email}</p>
-                                   </div>
-                                   <div className="flex items-center gap-2 flex-shrink-0">
-                                     <Badge variant="outline" className="text-xs">
-                                       {admin.permissions?.length || 0} {t('admin.permissions.assign.permissions')}
-                                     </Badge>
-                                     <Button size="sm" variant="destructive" onClick={() => revokeAll(admin.id)} className="text-xs h-8 px-2 sm:px-3">
-                                       {t('admin.permissions.assign.revokeAll')}
-                                     </Button>
-                                   </div>
-                                 </div>
-                                 {admin.permissions && admin.permissions.length > 0 && (
-                                   <div className="mt-3 flex flex-wrap gap-2">
-                                     {[...new Set(admin.permissions)].map((permission, index) => (
-                                       <div key={`${admin.id}-${permission}-${index}`} className="flex items-center gap-1">
-                                         <Badge variant="secondary" className="text-xs">{permission}</Badge>
-                                         <Button size="icon" variant="destructive" className="h-6 w-6 sm:h-7 sm:w-7 text-xs" onClick={() => revokePermission(admin.id, permission)}>×</Button>
-                                       </div>
-                                     ))}
-                                   </div>
-                                 )}
+                 <>
+                   {paginatedAdmins.map(({ admin, state, district }) => {
+                     const isExpanded = expandedAdmins.has(admin.id);
+                     const permissionCount = admin.permissions?.length || 0;
+                     
+                     return (
+                       <div key={admin.id} className={`border rounded-lg ${compactMode ? 'p-2' : 'p-3 sm:p-4'} transition-colors hover:bg-gray-50`}>
+                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                           <div className="min-w-0 flex-1">
+                             <div className="flex items-center gap-2 flex-wrap">
+                               <h6 className={`font-medium ${compactMode ? 'text-sm' : 'text-base'} truncate`}>
+                                 {admin.name}
+                               </h6>
+                               <Badge variant="outline" className={`${compactMode ? 'text-xs px-1.5 py-0' : 'text-xs'}`}>
+                                 {permissionCount} {t('admin.permissions.assign.permissions')}
+                               </Badge>
+                             </div>
+                             <p className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-600 truncate`}>
+                               {admin.email}
+                             </p>
+                             {!compactMode && (
+                               <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                 <span className="text-xs text-gray-500">{state}</span>
+                                 {district && <span className="text-xs text-gray-500">• {district}</span>}
+                               </div>
+                             )}
+                           </div>
+                           
+                           <div className="flex items-center gap-2 flex-shrink-0">
+                             {permissionCount > 0 && (
+                               <Button
+                                 size="sm"
+                                 variant="outline"
+                                 onClick={() => toggleAdminExpansion(admin.id)}
+                                 className={`text-xs h-7 px-2`}
+                               >
+                                 {isExpanded ? 'Hide' : 'Show'} Permissions
+                               </Button>
+                             )}
+                             <Button
+                               size="sm"
+                               variant="destructive"
+                               onClick={() => revokeAll(admin.id)}
+                               className={`text-xs h-7 px-2`}
+                             >
+                               {t('admin.permissions.assign.revokeAll')}
+                             </Button>
+                           </div>
+                         </div>
+                         
+                         {isExpanded && admin.permissions && admin.permissions.length > 0 && (
+                           <div className={`mt-3 pt-3 border-t flex flex-wrap gap-2`}>
+                             {[...new Set(admin.permissions)].map((permission, index) => (
+                               <div key={`${admin.id}-${permission}-${index}`} className="flex items-center gap-1">
+                                 <Badge variant="secondary" className="text-xs">{permission}</Badge>
+                                 <Button
+                                   size="icon"
+                                   variant="ghost"
+                                   className="h-6 w-6 text-xs hover:bg-red-100 hover:text-red-600"
+                                   onClick={() => revokePermission(admin.id, permission)}
+                                 >
+                                   ×
+                                 </Button>
                                </div>
                              ))}
+                           </div>
+                         )}
+                       </div>
+                     );
+                   })}
+                   
+                   {/* Pagination */}
+                   {totalPages > 1 && (
+                     <div className={`${compactMode ? 'p-2' : 'p-3'} border-t border-gray-200 bg-gray-50 sticky bottom-0 mt-4`}>
+                       <div className="flex items-center justify-between gap-2">
+                         <div className="text-xs text-gray-600">
+                           Page {currentPage} of {totalPages} ({filteredAndSortedAdmins.length} admins)
                          </div>
-                       ))}
+                         <div className="flex gap-1">
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(1)}
+                             disabled={currentPage === 1}
+                             className="h-7 w-7 p-0"
+                             title="First page"
+                           >
+                             <ChevronsLeft className="w-4 h-4" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                             disabled={currentPage === 1}
+                             className="h-7 w-7 p-0"
+                             title="Previous page"
+                           >
+                             <ChevronLeft className="w-4 h-4" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                             disabled={currentPage === totalPages}
+                             className="h-7 w-7 p-0"
+                             title="Next page"
+                           >
+                             <ChevronRight className="w-4 h-4" />
+                           </Button>
+                           <Button
+                             size="sm"
+                             variant="outline"
+                             onClick={() => setCurrentPage(totalPages)}
+                             disabled={currentPage === totalPages}
+                             className="h-7 w-7 p-0"
+                             title="Last page"
+                           >
+                             <ChevronsRight className="w-4 h-4" />
+                           </Button>
+                         </div>
+                       </div>
                      </div>
-                   ))}
-                 </div>
+                   )}
+                 </>
                )}
              </div>
           </CardContent>

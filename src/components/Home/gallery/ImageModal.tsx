@@ -138,10 +138,22 @@ export default function ImageModal({ image, images, isOpen, onClose, favorites, 
           </div>
         )}
 
-        {/* Image container - full screen */}
+        {/* Image/Video container - full screen */}
         <div className="w-full h-full flex items-center justify-center p-2 sm:p-4 overflow-auto">
           <div className="relative inline-block max-w-full">
-            {image.src.startsWith('/api/') ? (
+            {image.isVideo && image.youtubeVideoId ? (
+              <div className="relative w-full" style={{ width: '95vw', maxWidth: '1600px', aspectRatio: '16/9' }}>
+                <iframe
+                  key={image.id}
+                  src={`https://www.youtube.com/embed/${image.youtubeVideoId}?rel=0&modestbranding=1&enablejsapi=1&autoplay=1`}
+                  title={image.title}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full rounded-lg"
+                  style={{ border: 'none' }}
+                />
+              </div>
+            ) : image.src.startsWith('/api/') ? (
               <img
                 key={image.id}
                 src={image.src}
@@ -216,13 +228,15 @@ export default function ImageModal({ image, images, isOpen, onClose, favorites, 
                </div>
               
               <div className="flex gap-1.5 sm:gap-2 ml-0 sm:ml-6 shrink-0">
-                <button
-                  onClick={() => handleDownload(image.src, image.title)}
-                  className="p-2 sm:p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"
-                  aria-label="Download"
-                >
-                  <Download size={16} className="sm:w-5 sm:h-5 text-white" />
-                </button>
+                {!image.isVideo && (
+                  <button
+                    onClick={() => handleDownload(image.src, image.title)}
+                    className="p-2 sm:p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"
+                    aria-label="Download"
+                  >
+                    <Download size={16} className="sm:w-5 sm:h-5 text-white" />
+                  </button>
+                )}
                 <button
                   onClick={() => handleShare(image)}
                   className="p-2 sm:p-3 rounded-full hover:bg-white/20 transition-colors bg-black/30"

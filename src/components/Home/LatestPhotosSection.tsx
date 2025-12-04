@@ -20,18 +20,50 @@ export default function LatestPhotosSection() {
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [favorites, setFavorites] = useState<number[]>([]);
 
+  // Helper function to shuffle array randomly
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const loadPhotos = useCallback(async () => {
     let isMounted = true;
     try {
-      // Add cache-busting timestamp and no-store cache
-      const res = await fetch(`/api/public/photos?limit=10&_t=${Date.now()}`, { 
+      // Fetch all photos and videos for randomization
+      const res = await fetch(`/api/public/photos?random=true&_t=${Date.now()}`, { 
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate'
         }
       });
+      
       const data = await res.json();
-      if (isMounted && data?.success) setImages(data.images || []);
+      
+      if (isMounted && data?.success) {
+        const allImages = data.images || [];
+        
+        // Separate photos and videos
+        const allPhotos = allImages.filter((img: GalleryImage) => !img.isVideo);
+        const allVideos = allImages.filter((img: GalleryImage) => img.isVideo);
+        
+        // Shuffle both arrays randomly
+        const shuffledPhotos = shuffleArray<GalleryImage>(allPhotos);
+        const shuffledVideos = shuffleArray<GalleryImage>(allVideos);
+        
+        // Randomly select 8 photos and 5 videos
+        const selectedPhotos = shuffledPhotos.slice(0, 8);
+        const selectedVideos = shuffledVideos.slice(0, 5);
+        
+        // Combine and shuffle to mix photos and videos randomly
+        const combined: GalleryImage[] = [...selectedPhotos, ...selectedVideos];
+        const finalShuffled = shuffleArray<GalleryImage>(combined);
+        
+        setImages(finalShuffled);
+      }
     } catch (e) {
       console.error("Failed to load latest photos", e);
     } finally {
@@ -147,7 +179,7 @@ export default function LatestPhotosSection() {
 
         {/* Grid */}
         <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3 sm:gap-4 md:gap-6">
-          {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 10 }).map(() => undefined) : images).map((img, i) => (
+          {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 13 }).map(() => undefined) : images).map((img, i) => (
             <div 
               key={img?.id || i} 
               className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
@@ -167,6 +199,16 @@ export default function LatestPhotosSection() {
                       className="w-full h-auto object-contain transition-transform duration-500 group-hover:scale-105"
                       priority={i < 4}
                     />
+                    {/* Minimal Play Button Overlay for Videos */}
+                    {img.isVideo && img.youtubeVideoId && (
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-xl sm:rounded-2xl">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 backdrop-blur-sm bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all duration-300">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-xl sm:rounded-2xl" />
                   <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-3 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">

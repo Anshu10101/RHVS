@@ -49,7 +49,7 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
         <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-3 sm:gap-4 md:gap-6">
           {images.map((image, index) => (
             <div
-              key={image.id}
+              key={`${image.id}-${index}-${image.isVideo ? 'video' : 'photo'}`}
               className="group relative break-inside-avoid mb-3 sm:mb-4 md:mb-6 cursor-pointer transform transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
               style={{
                 animationName: 'fadeInUp',
@@ -63,18 +63,41 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
               onClick={() => onImageClick(image)}
             >
               <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl">
-                <Image
-                  src={image.src}
-                  alt={image.alt}
-                  width={400}
-                  height={400}
-                  sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
-                  className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
-                  priority={index < 6}
-                  quality={85}
-                  placeholder="blur"
-                  blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
-                />
+                {image.isVideo && image.youtubeVideoId ? (
+                  <>
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      width={400}
+                      height={400}
+                      sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                      className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                      priority={index < 6}
+                      quality={85}
+                    />
+                    {/* Minimal Play Button Overlay for Videos */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-xl sm:rounded-2xl">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-white/90 backdrop-blur-sm bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-all duration-300">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <Image
+                    src={image.src}
+                    alt={image.alt}
+                    width={400}
+                    height={400}
+                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+                    className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
+                    priority={index < 6}
+                    quality={85}
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
+                  />
+                )}
                 
                 {/* Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl sm:rounded-2xl" />

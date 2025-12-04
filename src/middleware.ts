@@ -37,6 +37,7 @@ export async function middleware(req: NextRequest) {
     "img-src 'self' data: https: blob:", // Only HTTPS images, no HTTP
     "font-src 'self' data: https:", // Only HTTPS fonts, no HTTP
     "connect-src 'self' https:", // Only HTTPS connections, no HTTP
+    "frame-src 'self' https://www.youtube.com https://youtube.com", // Allow YouTube embeds
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +27,16 @@ import {
   MoveDown,
   Search,
   Filter,
+  SortAsc,
+  SortDesc,
+  Maximize2,
+  Minimize2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Grid3X3,
+  List,
 } from 'lucide-react';
 
 interface ContactInfo {
@@ -73,6 +83,14 @@ export function ContactPageEditor() {
   const [isCreatingOffice, setIsCreatingOffice] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+
+  // List management state (pagination, sorting, compact mode)
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  const [itemsSortBy, setItemsSortBy] = useState<'date' | 'title' | 'type' | 'order'>('order');
+  const [itemsSortOrder, setItemsSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [compactMode, setCompactMode] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
@@ -342,19 +360,83 @@ export function ContactPageEditor() {
     }
   };
 
-  const filteredContacts = contactInfo.filter(item => {
-    if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !item.value.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (filterType !== 'all' && item.contactType !== filterType) return false;
-    return true;
-  });
+  // Filter and sort contacts
+  const filteredAndSortedContacts = useMemo(() => {
+    let filtered = contactInfo.filter(item => {
+      if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
+          !item.value.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (filterType !== 'all' && item.contactType !== filterType) return false;
+      return true;
+    });
 
-  const filteredOffices = offices.filter(office => {
-    if (searchQuery && !office.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !office.city.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (filterType !== 'all' && office.officeType !== filterType) return false;
-    return true;
-  });
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (itemsSortBy === 'title') {
+        comparison = a.title.localeCompare(b.title);
+      } else if (itemsSortBy === 'date') {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        comparison = aTime - bTime;
+      } else if (itemsSortBy === 'type') {
+        comparison = a.contactType.localeCompare(b.contactType);
+      } else if (itemsSortBy === 'order') {
+        comparison = a.order - b.order;
+      }
+      return itemsSortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [contactInfo, searchQuery, filterType, itemsSortBy, itemsSortOrder]);
+
+  // Filter and sort offices
+  const filteredAndSortedOffices = useMemo(() => {
+    let filtered = offices.filter(office => {
+      if (searchQuery && !office.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
+          !office.city.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (filterType !== 'all' && office.officeType !== filterType) return false;
+      return true;
+    });
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (itemsSortBy === 'title') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (itemsSortBy === 'date') {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        comparison = aTime - bTime;
+      } else if (itemsSortBy === 'type') {
+        comparison = a.officeType.localeCompare(b.officeType);
+      } else if (itemsSortBy === 'order') {
+        comparison = a.order - b.order;
+      }
+      return itemsSortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [offices, searchQuery, filterType, itemsSortBy, itemsSortOrder]);
+
+  // Get current filtered items based on active tab
+  const filteredAndSortedItems = activeTab === 'contact-info' 
+    ? filteredAndSortedContacts 
+    : filteredAndSortedOffices;
+
+  const totalItemsPages = Math.ceil(
+    filteredAndSortedItems.length === 0 ? 1 : filteredAndSortedItems.length / itemsPerPage
+  );
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (itemsPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedItems.slice(startIndex, endIndex);
+  }, [filteredAndSortedItems, itemsPage, itemsPerPage]);
+
+  // Reset to page 1 when filters/sort/search/tab changes
+  useEffect(() => {
+    setItemsPage(1);
+  }, [searchQuery, filterType, itemsSortBy, itemsSortOrder, activeTab]);
 
   if (loading) {
     return (
@@ -410,43 +492,115 @@ export function ContactPageEditor() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder={activeTab === 'contact-info' ? t('admin.contact.searchContactInfo') : t('admin.contact.searchOffices')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+      {/* Filters and Controls */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder={activeTab === 'contact-info' ? t('admin.contact.searchContactInfo') : t('admin.contact.searchOffices')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-9"
+              />
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-9 w-48">
+                <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
+                {activeTab === 'contact-info' ? (
+                  <>
+                    <SelectItem value="phone">{t('admin.contact.phone')}</SelectItem>
+                    <SelectItem value="email">{t('admin.contact.email')}</SelectItem>
+                    <SelectItem value="address">{t('admin.contact.address')}</SelectItem>
+                    <SelectItem value="emergency">{t('admin.contact.emergency')}</SelectItem>
+                    <SelectItem value="office">{t('admin.contact.officeHours')}</SelectItem>
+                    <SelectItem value="social">{t('admin.contact.social')}</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="head">{t('admin.contact.headOffice')}</SelectItem>
+                    <SelectItem value="regional">{t('admin.contact.regional')}</SelectItem>
+                    <SelectItem value="branch">{t('admin.contact.branch')}</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={itemsSortBy}
+              onValueChange={(value) => setItemsSortBy(value as typeof itemsSortBy)}
+            >
+              <SelectTrigger className="h-9 w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="order">Sort by Order</SelectItem>
+                <SelectItem value="title">Sort by Title</SelectItem>
+                <SelectItem value="type">Sort by Type</SelectItem>
+                <SelectItem value="date">Sort by Date</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-2"
+              onClick={() => setItemsSortOrder(itemsSortOrder === 'asc' ? 'desc' : 'asc')}
+              title={`Sort ${itemsSortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+            >
+              {itemsSortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+            </Button>
+
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                setItemsPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12">12/page</SelectItem>
+                <SelectItem value="24">24/page</SelectItem>
+                <SelectItem value="48">48/page</SelectItem>
+                <SelectItem value="96">96/page</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="h-9 px-2"
+              title="List view"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2"
+              onClick={() => setCompactMode(!compactMode)}
+              title={compactMode ? 'Normal view' : 'Compact view'}
+            >
+              {compactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
-            {activeTab === 'contact-info' ? (
-              <>
-                <SelectItem value="phone">{t('admin.contact.phone')}</SelectItem>
-                <SelectItem value="email">{t('admin.contact.email')}</SelectItem>
-                <SelectItem value="address">{t('admin.contact.address')}</SelectItem>
-                <SelectItem value="emergency">{t('admin.contact.emergency')}</SelectItem>
-                <SelectItem value="office">{t('admin.contact.officeHours')}</SelectItem>
-                <SelectItem value="social">{t('admin.contact.social')}</SelectItem>
-              </>
-            ) : (
-              <>
-                <SelectItem value="head">{t('admin.contact.headOffice')}</SelectItem>
-                <SelectItem value="regional">{t('admin.contact.regional')}</SelectItem>
-                <SelectItem value="branch">{t('admin.contact.branch')}</SelectItem>
-              </>
-            )}
-          </SelectContent>
-        </Select>
+        
+        <div className="text-xs text-gray-600 pt-2 border-t">
+          Showing {paginatedItems.length} of {filteredAndSortedItems.length} {activeTab === 'contact-info' ? 'contact info' : 'offices'} ({activeTab === 'contact-info' ? contactInfo.length : offices.length} total)
+        </div>
       </div>
 
       {/* Contact Info Form */}
@@ -697,144 +851,200 @@ export function ContactPageEditor() {
 
       {/* Contact Info List */}
       {activeTab === 'contact-info' && (
-        <div className="space-y-4">
-          {filteredContacts.map((contact) => (
-            <Card key={contact.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
+        <div className={compactMode ? 'space-y-2' : 'space-y-4'}>
+          {paginatedItems.map((contact) => {
+            const contactItem = contact as ContactInfo;
+            return (
+              <Card key={contactItem.id} className={`hover:shadow-lg transition-shadow ${compactMode ? 'border border-gray-200' : ''}`}>
+                <CardContent className={compactMode ? 'p-3' : 'p-4'}>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3 flex-1">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      {getContactIcon(contact.contactType)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{contact.title}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getContactTypeColor(contact.contactType)}`}>
-                          {contact.contactType}
-                        </span>
-                        {contact.isVisible ? (
-                          <Eye className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className={`${compactMode ? 'p-1.5' : 'p-2'} bg-gray-100 rounded-lg`}>
+                        {getContactIcon(contactItem.contactType)}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className={`${compactMode ? 'text-sm' : ''} font-semibold text-gray-900`}>{contactItem.title}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getContactTypeColor(contactItem.contactType)}`}>
+                            {contactItem.contactType}
+                          </span>
+                          {contactItem.isVisible ? (
+                            <Eye className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
+                          )}
+                        </div>
+                        <p className={`${compactMode ? 'text-sm' : ''} text-gray-700 mb-1`}>{contactItem.value}</p>
+                        {contactItem.description && (
+                          <p className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-600`}>{contactItem.description}</p>
                         )}
-                      </div>
-                      <p className="text-gray-700 mb-1">{contact.value}</p>
-                      {contact.description && (
-                        <p className="text-sm text-gray-600">{contact.description}</p>
-                      )}
-                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                        <span>Order: {contact.order}</span>
-                        <span>{new Date(contact.createdAt).toLocaleDateString()}</span>
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                          <span>Order: {contactItem.order}</span>
+                          <span>{new Date(contactItem.createdAt).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-1 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditContact(contactItem)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteContact(contactItem.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1 ml-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditContact(contact)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteContact(contact.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
       {/* Offices List */}
       {activeTab === 'offices' && (
-        <div className="space-y-4">
-          {filteredOffices.map((office) => (
-            <Card key={office.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-4">
+        <div className={compactMode ? 'space-y-2' : 'space-y-4'}>
+          {paginatedItems.map((office) => {
+            const officeItem = office as ContactOffice;
+            return (
+              <Card key={officeItem.id} className={`hover:shadow-lg transition-shadow ${compactMode ? 'border border-gray-200' : ''}`}>
+                <CardContent className={compactMode ? 'p-3' : 'p-4'}>
                 <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-3 flex-1">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <Building2 className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{office.name}</h3>
-                        {office.nameHindi && (
-                          <span className="text-sm text-gray-600">({office.nameHindi})</span>
-                        )}
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          office.officeType === 'head' ? 'bg-red-100 text-red-800' :
-                          office.officeType === 'regional' ? 'bg-blue-100 text-blue-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {office.officeType}
-                        </span>
-                        {office.isVisible ? (
-                          <Eye className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        )}
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className={`${compactMode ? 'p-1.5' : 'p-2'} bg-gray-100 rounded-lg`}>
+                        <Building2 className="h-4 w-4" />
                       </div>
-                      <p className="text-gray-700 mb-1">{office.address}</p>
-                      <p className="text-sm text-gray-600 mb-1">
-                        {office.city}, {office.state} {office.pincode}
-                      </p>
-                      {(office.phone || office.email) && (
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          {office.phone && (
-                            <div className="flex items-center space-x-1">
-                              <Phone className="h-3 w-3" />
-                              <span>{office.phone}</span>
-                            </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className={`${compactMode ? 'text-sm' : ''} font-semibold text-gray-900`}>{officeItem.name}</h3>
+                          {officeItem.nameHindi && (
+                            <span className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-600`}>({officeItem.nameHindi})</span>
                           )}
-                          {office.email && (
-                            <div className="flex items-center space-x-1">
-                              <Mail className="h-3 w-3" />
-                              <span>{office.email}</span>
-                            </div>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            officeItem.officeType === 'head' ? 'bg-red-100 text-red-800' :
+                            officeItem.officeType === 'regional' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {officeItem.officeType}
+                          </span>
+                          {officeItem.isVisible ? (
+                            <Eye className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-gray-400" />
                           )}
                         </div>
-                      )}
-                      <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                        <span>Order: {office.order}</span>
-                        <span>{new Date(office.createdAt).toLocaleDateString()}</span>
+                        <p className={`${compactMode ? 'text-sm' : ''} text-gray-700 mb-1`}>{officeItem.address}</p>
+                        <p className={`${compactMode ? 'text-xs' : 'text-sm'} text-gray-600 mb-1`}>
+                          {officeItem.city}, {officeItem.state} {officeItem.pincode}
+                        </p>
+                        {(officeItem.phone || officeItem.email) && (
+                          <div className={`flex items-center space-x-4 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-600`}>
+                            {officeItem.phone && (
+                              <div className="flex items-center space-x-1">
+                                <Phone className="h-3 w-3" />
+                                <span>{officeItem.phone}</span>
+                              </div>
+                            )}
+                            {officeItem.email && (
+                              <div className="flex items-center space-x-1">
+                                <Mail className="h-3 w-3" />
+                                <span>{officeItem.email}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+                          <span>Order: {officeItem.order}</span>
+                          <span>{new Date(officeItem.createdAt).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-1 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEditOffice(officeItem)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteOffice(officeItem.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1 ml-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEditOffice(office)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDeleteOffice(office.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalItemsPages > 1 && filteredAndSortedItems.length > 0 && (
+        <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+          <div className="text-sm text-gray-600">
+            Page {itemsPage} of {totalItemsPages}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(1)}
+              disabled={itemsPage === 1}
+              className="h-8 w-8 p-0"
+              title="First page"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(Math.max(1, itemsPage - 1))}
+              disabled={itemsPage === 1}
+              className="h-8 w-8 p-0"
+              title="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(Math.min(totalItemsPages, itemsPage + 1))}
+              disabled={itemsPage === totalItemsPages}
+              className="h-8 w-8 p-0"
+              title="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(totalItemsPages)}
+              disabled={itemsPage === totalItemsPages}
+              className="h-8 w-8 p-0"
+              title="Last page"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       )}
 
       {/* Empty State */}
-      {((activeTab === 'contact-info' && filteredContacts.length === 0) || 
-        (activeTab === 'offices' && filteredOffices.length === 0)) && (
+      {filteredAndSortedItems.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             {activeTab === 'contact-info' ? <Phone className="h-12 w-12 mx-auto" /> : <Building2 className="h-12 w-12 mx-auto" />}

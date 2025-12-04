@@ -5,16 +5,26 @@ import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 // Force dynamic rendering to prevent Next.js caching
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
 
 // GET all categories (admin)
 export async function GET() {
   try {
-    const rows = await executeQuery(
-      `SELECT id, name, description, isVisible, created_at, updated_at
-       FROM product_categories
-       ORDER BY name ASC`
-    ) as Array<{ id: number; name: string; description: string; isVisible: boolean; created_at: string; updated_at: string }>;
-    return noCacheJsonResponse({ success: true, categories: rows });
+    // Use a fresh connection to avoid stale data
+    const connection = await getConnection();
+    try {
+      const [rows] = await connection.execute(
+        `SELECT id, name, description, isVisible, created_at, updated_at
+         FROM product_categories
+         ORDER BY name ASC`
+      ) as [Array<{ id: number; name: string; description: string; isVisible: boolean; created_at: string; updated_at: string }>, unknown];
+      
+      return noCacheJsonResponse({ success: true, categories: rows });
+    } finally {
+      connection.release();
+    }
   } catch (e) {
     console.error('categories GET error', e);
     return noCacheJsonResponse({ success: false, message: 'Server error' }, { status: 500 });
@@ -41,6 +51,7 @@ export async function POST(req: NextRequest) {
 
     // Use explicit connection with transaction to ensure data is committed
     const connection = await getConnection();
+    let transactionCommitted = false;
     
     try {
       // Start transaction
@@ -74,10 +85,32 @@ export async function POST(req: NextRequest) {
 
       // Commit the transaction
       await connection.commit();
+      transactionCommitted = true;
       console.log('[Category POST] Transaction committed successfully');
-
-      // Verify the category was created/updated (use a new query after commit)
-      const [verifyRows] = await connection.execute(
+    } catch (transactionError) {
+      // Rollback on error
+      if (!transactionCommitted) {
+        try {
+          await connection.rollback();
+        } catch (rollbackError) {
+          console.error('[Category POST] Rollback error:', rollbackError);
+        }
+      }
+      console.error('[Category POST] Transaction error:', transactionError);
+      throw transactionError;
+    } finally {
+      // Always release the transaction connection
+      connection.release();
+    }
+    
+    // Get a fresh connection for verification to avoid any connection-level caching
+    const verifyConnection = await getConnection();
+    try {
+      // Small delay to ensure commit is fully processed
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Verify the category was created/updated (use a fresh connection after commit)
+      const [verifyRows] = await verifyConnection.execute(
         'SELECT id, name, description, isVisible FROM product_categories WHERE id = ?',
         [id]
       ) as [Array<{ id: string; name: string; description: string | null; isVisible: number }>, unknown];
@@ -97,14 +130,8 @@ export async function POST(req: NextRequest) {
           isVisible: verifyRows[0].isVisible === 1
         }
       });
-    } catch (transactionError) {
-      // Rollback on error
-      await connection.rollback();
-      console.error('[Category POST] Transaction error, rolled back:', transactionError);
-      throw transactionError;
     } finally {
-      // Always release the connection
-      connection.release();
+      verifyConnection.release();
     }
   } catch (e) {
     console.error('[Category POST] Error details:', e);

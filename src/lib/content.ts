@@ -67,6 +67,8 @@ export interface Photo {
   originalName?: string;
   filePath?: string;
   fileUrl?: string;
+  youtubeVideoUrl?: string;
+  isVideo?: boolean;
   thumbnailPath?: string;
   mediumPath?: string;
   fileSize?: number;
@@ -107,6 +109,8 @@ export interface PhotoCreateInput {
   filename: string;
   originalName?: string;
   filePath?: string;
+  youtubeVideoUrl?: string;
+  isVideo?: boolean;
   thumbnailPath?: string;
   mediumPath?: string;
   fileSize?: number;
@@ -633,6 +637,8 @@ export class ContentService {
             WHEN p.file_blob IS NOT NULL THEN CONCAT('/api/media/photos/', p.id, '?v=', UNIX_TIMESTAMP(p.updated_at))
             ELSE p.file_path
           END AS resolved_file_path,
+          p.youtube_video_url,
+          p.is_video,
           p.thumbnail_path,
           p.medium_path,
           p.file_size,
@@ -753,6 +759,8 @@ export class ContentService {
         originalName: row.original_name,
         filePath: row.resolved_file_path ?? undefined,
         fileUrl: row.resolved_file_path ?? undefined,
+        youtubeVideoUrl: row.youtube_video_url ?? undefined,
+        isVideo: Boolean(row.is_video),
         thumbnailPath: row.thumbnail_path,
         mediumPath: row.medium_path,
         fileSize: row.file_size,
@@ -794,6 +802,13 @@ export class ContentService {
     try {
       const id = photo.id || `photo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
+      console.log('[ContentService] Creating photo:', {
+        id,
+        isVideo: photo.isVideo,
+        youtubeVideoUrl: photo.youtubeVideoUrl,
+        filename: photo.filename
+      });
+      
         await pool.execute(
         `INSERT INTO photos (
           id,
@@ -802,6 +817,8 @@ export class ContentService {
           filename,
           original_name,
           file_path,
+          youtube_video_url,
+          is_video,
           thumbnail_path,
           medium_path,
           file_size,
@@ -827,7 +844,7 @@ export class ContentService {
           owner_admin_id,
           created_by
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           id,
           photo.galleryId || null,
@@ -835,6 +852,8 @@ export class ContentService {
           photo.filename,
           photo.originalName || null,
           photo.filePath || null,
+          photo.youtubeVideoUrl || null,
+          photo.isVideo || false,
           photo.thumbnailPath || null,
           photo.mediumPath || null,
           photo.fileSize ?? null,
@@ -870,9 +889,38 @@ export class ContentService {
         );
       }
 
+      console.log('[ContentService] Photo created successfully:', id);
+      
+      // Verify the photo was created with YouTube URL if it's a video
+      if (photo.isVideo && photo.youtubeVideoUrl) {
+        const verifyQuery = await pool.execute(
+          'SELECT id, youtube_video_url, is_video FROM photos WHERE id = ?',
+          [id]
+        ) as any;
+        const verifyResult = verifyQuery[0] as any[];
+        if (verifyResult.length > 0) {
+          console.log('[ContentService] Verified photo in database:', {
+            id: verifyResult[0].id,
+            youtube_video_url: verifyResult[0].youtube_video_url,
+            is_video: verifyResult[0].is_video
+          });
+        }
+      }
+
       return id;
     } catch (error) {
-      console.error('Error creating photo:', error);
+      console.error('[ContentService] Error creating photo:', error);
+      if (error instanceof Error) {
+        console.error('[ContentService] Error message:', error.message);
+        console.error('[ContentService] Error stack:', error.stack);
+        
+        // Check for database column errors
+        if (error.message.includes('Unknown column') || error.message.includes('youtube_video_url') || error.message.includes('is_video')) {
+          const dbError = new Error(`Database migration not run. The columns 'youtube_video_url' and 'is_video' do not exist. Please run the migration: database/add-youtube-video-to-photos.sql`);
+          console.error('[ContentService] Database migration error:', dbError.message);
+          throw dbError;
+        }
+      }
       throw error;
     }
   }

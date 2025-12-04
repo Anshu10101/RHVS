@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
       content,
       excerpt,
       image_path: imageInput,
+      youtube_video_url,
       news_type,
       priority,
       is_featured,
@@ -244,8 +245,8 @@ export async function POST(request: NextRequest) {
     await pool.execute(
       `INSERT INTO news 
        (id, title, title_hindi, content, excerpt, image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
-        news_type, priority, is_featured, is_published, \`order\`, district, state, owner_admin_id, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        youtube_video_url, news_type, priority, is_featured, is_published, \`order\`, district, state, owner_admin_id, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, 
         safeValue(title), 
@@ -258,6 +259,7 @@ export async function POST(request: NextRequest) {
         imageAsset.hash,
         imageAsset.size,
         imageAsset.originalName,
+        safeValue(youtube_video_url),
         safeValue(news_type), 
         safeValue(priority),
         safeValue(is_featured), 
@@ -309,6 +311,7 @@ export async function PUT(request: NextRequest) {
       content,
       excerpt,
       image_path: imageInput,
+      youtube_video_url,
       news_type,
       priority,
       is_featured,
@@ -324,6 +327,7 @@ export async function PUT(request: NextRequest) {
       'title_hindi = ?',
       'content = ?',
       'excerpt = ?',
+      'youtube_video_url = ?',
       'news_type = ?',
       'priority = ?',
       'is_featured = ?',
@@ -335,6 +339,7 @@ export async function PUT(request: NextRequest) {
         safeValue(title_hindi), 
         safeValue(content), 
         safeValue(excerpt), 
+        safeValue(youtube_video_url),
         safeValue(news_type), 
         safeValue(priority),
         safeValue(is_featured), 

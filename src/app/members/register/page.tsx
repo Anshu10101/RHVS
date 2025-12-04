@@ -57,6 +57,8 @@ export default function MemberRegistrationPage() {
   const { t } = useLanguage();
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [signature, setSignature] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
@@ -181,7 +183,29 @@ export default function MemberRegistrationPage() {
         return;
       }
       
+      // Clean up previous preview URL
+      if (profilePhotoPreview) {
+        URL.revokeObjectURL(profilePhotoPreview);
+      }
+      
       setProfilePhoto(file);
+      
+      // Create preview using FileReader for better mobile compatibility
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePhotoPreview(reader.result as string);
+      };
+      reader.onerror = () => {
+        // Fallback to object URL if FileReader fails
+        try {
+          const objectUrl = URL.createObjectURL(file);
+          setProfilePhotoPreview(objectUrl);
+        } catch (err) {
+          console.error('Failed to create image preview:', err);
+          setProfilePhotoPreview(null);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -200,10 +224,44 @@ export default function MemberRegistrationPage() {
         return;
       }
       
+      // Clean up previous preview URL
+      if (signaturePreview) {
+        URL.revokeObjectURL(signaturePreview);
+      }
+      
       setSignature(file);
       form.setValue('hasSignature', true);
+      
+      // Create preview using FileReader for better mobile compatibility
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSignaturePreview(reader.result as string);
+      };
+      reader.onerror = () => {
+        // Fallback to object URL if FileReader fails
+        try {
+          const objectUrl = URL.createObjectURL(file);
+          setSignaturePreview(objectUrl);
+        } catch (err) {
+          console.error('Failed to create signature preview:', err);
+          setSignaturePreview(null);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreview && profilePhotoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(profilePhotoPreview);
+      }
+      if (signaturePreview && signaturePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(signaturePreview);
+      }
+    };
+  }, [profilePhotoPreview, signaturePreview]);
 
   const handleSendOTP = async () => {
     const existingMemberRegNumber = form.getValues('existingMemberRegNumber');
@@ -375,9 +433,18 @@ export default function MemberRegistrationPage() {
         // Success message for token-based registration
         alert(`${t('register.registrationSuccess')} ${registerResult.token}. ${t('register.bringTokenToAdmin')}`);
         
-        // Reset form
+        // Reset form and cleanup preview URLs
+        if (profilePhotoPreview && profilePhotoPreview.startsWith('blob:')) {
+          URL.revokeObjectURL(profilePhotoPreview);
+        }
+        if (signaturePreview && signaturePreview.startsWith('blob:')) {
+          URL.revokeObjectURL(signaturePreview);
+        }
         form.reset();
         setProfilePhoto(null);
+        setSignature(null);
+        setProfilePhotoPreview(null);
+        setSignaturePreview(null);
         setOtpSent(false);
         setCurrentStep(0);
       } else {
@@ -724,13 +791,31 @@ export default function MemberRegistrationPage() {
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
-                          <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
-                            {profilePhoto ? (
-                              <img
-                                src={URL.createObjectURL(profilePhoto)}
-                                alt={t('register.profilePreview')}
-                                className="w-full h-full object-cover"
-                              />
+                          <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {profilePhotoPreview ? (
+                              <>
+                                <img
+                                  src={profilePhotoPreview}
+                                  alt={t('register.profilePreview')}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    console.error('Profile photo preview failed to load');
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const fallback = target.parentElement?.querySelector('.photo-fallback') as HTMLElement;
+                                    if (fallback) {
+                                      fallback.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <div className="photo-fallback absolute inset-0 w-full h-full flex items-center justify-center bg-slate-100 hidden">
+                                  <User className="h-12 w-12 sm:h-14 sm:w-14 text-slate-400" />
+                                </div>
+                              </>
+                            ) : profilePhoto ? (
+                              <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                                <User className="h-12 w-12 sm:h-14 sm:w-14 text-slate-400" />
+                              </div>
                             ) : (
                               <User className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-slate-300" />
                             )}
@@ -774,13 +859,39 @@ export default function MemberRegistrationPage() {
                       </Label>
                       <div className="flex flex-col items-center gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-100 bg-white">
                         <div className="relative group">
-                          <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
-                            {signature ? (
-                              <img
-                                src={URL.createObjectURL(signature)}
-                                alt={t('register.signaturePreview')}
-                                className="w-full h-full object-contain"
-                              />
+                          <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-2xl sm:rounded-3xl bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                            {signaturePreview ? (
+                              <>
+                                <img
+                                  src={signaturePreview}
+                                  alt={t('register.signaturePreview')}
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    console.error('Signature preview failed to load');
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const fallback = target.parentElement?.querySelector('.signature-fallback') as HTMLElement;
+                                    if (fallback) {
+                                      fallback.style.display = 'flex';
+                                    }
+                                  }}
+                                />
+                                <div className="signature-fallback absolute inset-0 w-full h-full flex items-center justify-center bg-slate-100 hidden">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400">
+                                    <path d="M4 22h16"></path>
+                                    <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                                    <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                                  </svg>
+                                </div>
+                              </>
+                            ) : signature ? (
+                              <div className="w-full h-full flex items-center justify-center bg-slate-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-slate-400">
+                                  <path d="M4 22h16"></path>
+                                  <path d="M4 15s.5-9 8-9 8 9 8 9"></path>
+                                  <path d="M8 10.5s1.5-3.5 4-3.5 4 3.5 4 3.5"></path>
+                                </svg>
+                              </div>
                             ) : (
                               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-8 w-8 sm:h-10 sm:w-10 text-slate-300">
                                 <path d="M4 22h16"></path>

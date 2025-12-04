@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,14 @@ import {
   AlertCircle,
   CheckCircle,
   EyeOff,
+  SortAsc,
+  SortDesc,
+  Maximize2,
+  Minimize2,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from 'lucide-react';
 
 interface News {
@@ -43,6 +51,7 @@ interface News {
   content: string;
   excerpt?: string;
   image_path?: string;
+  youtube_video_url?: string;
   news_type: 'announcement' | 'update' | 'achievement' | 'notice' | 'general';
   priority: 'high' | 'medium' | 'low';
   is_featured: boolean;
@@ -92,12 +101,20 @@ export default function NewsEventsEditor() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // List management state (pagination, sorting, compact mode)
+  const [itemsPage, setItemsPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(24);
+  const [itemsSortBy, setItemsSortBy] = useState<'date' | 'title' | 'type' | 'status'>('date');
+  const [itemsSortOrder, setItemsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [compactMode, setCompactMode] = useState(false);
+
   // News form state
   const [newsForm, setNewsForm] = useState({
     title: '',
     content: '',
     excerpt: '',
     image_path: '',
+    youtube_video_url: '',
     news_type: 'general' as News['news_type'],
     priority: 'medium' as News['priority'],
     is_featured: false,
@@ -137,6 +154,21 @@ export default function NewsEventsEditor() {
   // Fetch data
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // Reload data when page becomes visible (user navigates back or tab becomes active)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Reload data when page becomes visible to get fresh data
+        fetchData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Fetch states when currentUser is available (for superadmins)
@@ -203,8 +235,22 @@ export default function NewsEventsEditor() {
       const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
       const timestamp = Date.now();
       const [newsRes, eventsRes] = await Promise.all([
-        fetch(`/api/content/news?admin=true&_t=${timestamp}`, { cache: 'no-store', headers }),
-        fetch(`/api/content/events?admin=true&_t=${timestamp}`, { cache: 'no-store', headers })
+        fetch(`/api/content/news?admin=true&_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        }),
+        fetch(`/api/content/events?admin=true&_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            ...headers,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        })
       ]);
 
       if (newsRes.ok) {
@@ -317,16 +363,73 @@ export default function NewsEventsEditor() {
         cache: 'no-store',
         headers: { 
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        await fetchData();
+        const responseData = await response.json();
+        const savedItemId = editingItem ? editingItem.id : responseData.data?.id;
+        
+        // If editing, update the item in the list immediately with the saved data
+        if (editingItem && activeTab === 'news') {
+          setNews(prevNews => prevNews.map(item => 
+            item.id === savedItemId 
+              ? { ...item, ...data, youtube_video_url: data.youtube_video_url || item.youtube_video_url }
+              : item
+          ));
+        } else if (editingItem && activeTab === 'events') {
+          setEvents(prevEvents => prevEvents.map(item => 
+            item.id === savedItemId 
+              ? { ...item, ...data }
+              : item
+          ));
+        }
+        
+        // Reset form to clear any cached state
         resetForm();
+        
+        // Force immediate refresh with fresh cache-busting and proper headers
+        // This ensures the list shows the latest data from the server
+        const token = localStorage.getItem('admin_token');
+        const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
+        const freshTimestamp = Date.now();
+        
+        // Fetch fresh data immediately with aggressive cache control
+        const [newsRes, eventsRes] = await Promise.all([
+          fetch(`/api/content/news?admin=true&_t=${freshTimestamp}`, { 
+            cache: 'no-store',
+            headers: {
+              ...headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+            }
+          }),
+          fetch(`/api/content/events?admin=true&_t=${freshTimestamp}`, { 
+            cache: 'no-store',
+            headers: {
+              ...headers,
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+            }
+          })
+        ]);
+
+        if (newsRes.ok) {
+          const newsData = await newsRes.json();
+          setNews(newsData.data || []);
+        }
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json();
+          setEvents(eventsData.data || []);
+        }
       } else {
-        console.error('Failed to save');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Failed to save:', errorData);
+        alert('Failed to save: ' + (errorData.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving:', error);
@@ -398,6 +501,7 @@ export default function NewsEventsEditor() {
       content: '',
       excerpt: '',
       image_path: '',
+      youtube_video_url: '',
       news_type: 'general',
       priority: 'medium',
       is_featured: false,
@@ -437,7 +541,11 @@ export default function NewsEventsEditor() {
       const url = activeTab === 'news' ? '/api/content/news' : '/api/content/events';
       const response = await fetch(`${url}?id=${item.id}&admin=true&_t=${Date.now()}`, {
         cache: 'no-store',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
       });
       
       if (response.ok) {
@@ -470,6 +578,7 @@ export default function NewsEventsEditor() {
         image_path: newsItem.image_path ? 
           (newsItem.image_path.startsWith('/') ? `${newsItem.image_path}${newsItem.image_path.includes('?') ? '&' : '?'}_t=${timestamp}` : newsItem.image_path) 
           : '',
+        youtube_video_url: newsItem.youtube_video_url || '',
         news_type: newsItem.news_type,
         priority: newsItem.priority,
         is_featured: newsItem.is_featured,
@@ -564,17 +673,76 @@ export default function NewsEventsEditor() {
     setIsCreating(true);
   };
 
-  const filteredItems = activeTab === 'news' 
-    ? news.filter(item => {
-        if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-        if (filterType !== 'all' && item.news_type !== filterType) return false;
-        return true;
-      })
-    : events.filter(item => {
-        if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-        if (filterType !== 'all' && item.event_type !== filterType) return false;
-        return true;
-      });
+  // Filter and sort items
+  const filteredAndSortedItems = useMemo(() => {
+    const items = activeTab === 'news' ? news : events;
+    
+    let filtered = items.filter(item => {
+      // Search filter
+      if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      
+      // Type filter
+      if (activeTab === 'news') {
+        const newsItem = item as News;
+        if (filterType !== 'all' && newsItem.news_type !== filterType) return false;
+      } else {
+        const eventItem = item as Event;
+        if (filterType !== 'all' && eventItem.event_type !== filterType) return false;
+      }
+      
+      return true;
+    });
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (itemsSortBy === 'title') {
+        comparison = a.title.localeCompare(b.title);
+      } else if (itemsSortBy === 'date') {
+        const aTime = new Date(a.created_at).getTime();
+        const bTime = new Date(b.created_at).getTime();
+        comparison = aTime - bTime;
+      } else if (itemsSortBy === 'type') {
+        if (activeTab === 'news') {
+          const aType = (a as News).news_type;
+          const bType = (b as News).news_type;
+          comparison = aType.localeCompare(bType);
+        } else {
+          const aType = (a as Event).event_type;
+          const bType = (b as Event).event_type;
+          comparison = aType.localeCompare(bType);
+        }
+      } else if (itemsSortBy === 'status') {
+        if (activeTab === 'news') {
+          const aPublished = (a as News).is_published ? 1 : 0;
+          const bPublished = (b as News).is_published ? 1 : 0;
+          comparison = aPublished - bPublished;
+        } else {
+          const aVisible = (a as Event).isVisible ? 1 : 0;
+          const bVisible = (b as Event).isVisible ? 1 : 0;
+          comparison = aVisible - bVisible;
+        }
+      }
+      return itemsSortOrder === 'asc' ? comparison : -comparison;
+    });
+    
+    return filtered;
+  }, [activeTab, news, events, searchQuery, filterType, itemsSortBy, itemsSortOrder]);
+
+  const totalItemsPages = Math.ceil(
+    filteredAndSortedItems.length === 0 ? 1 : filteredAndSortedItems.length / itemsPerPage
+  );
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (itemsPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedItems.slice(startIndex, endIndex);
+  }, [filteredAndSortedItems, itemsPage, itemsPerPage]);
+
+  // Reset to page 1 when filters/sort/search/tab changes
+  useEffect(() => {
+    setItemsPage(1);
+  }, [searchQuery, filterType, itemsSortBy, itemsSortOrder, activeTab]);
 
   if (loading) {
     return (
@@ -627,37 +795,40 @@ export default function NewsEventsEditor() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder={t('admin.newsEvents.searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+      {/* Filters and Controls */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder={t('admin.newsEvents.searchPlaceholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-9"
+              />
+            </div>
           </div>
-        </div>
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
-            {activeTab === 'news' ? (
-              <>
-                <SelectItem value="announcement">{t('admin.newsEvents.announcement')}</SelectItem>
-                <SelectItem value="update">{t('admin.newsEvents.update')}</SelectItem>
-                <SelectItem value="achievement">{t('admin.newsEvents.achievement')}</SelectItem>
-                <SelectItem value="notice">{t('admin.newsEvents.notice')}</SelectItem>
-                <SelectItem value="general">{t('admin.newsEvents.general')}</SelectItem>
-              </>
-            ) : (
-              <>
-                <SelectItem value="festival">{t('admin.newsEvents.festival')}</SelectItem>
-                <SelectItem value="meeting">{t('admin.newsEvents.meeting')}</SelectItem>
+          
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-9 w-48">
+                <SelectValue placeholder={t('admin.newsEvents.filterByType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('admin.newsEvents.allTypes')}</SelectItem>
+                {activeTab === 'news' ? (
+                  <>
+                    <SelectItem value="announcement">{t('admin.newsEvents.announcement')}</SelectItem>
+                    <SelectItem value="update">{t('admin.newsEvents.update')}</SelectItem>
+                    <SelectItem value="achievement">{t('admin.newsEvents.achievement')}</SelectItem>
+                    <SelectItem value="notice">{t('admin.newsEvents.notice')}</SelectItem>
+                    <SelectItem value="general">{t('admin.newsEvents.general')}</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="festival">{t('admin.newsEvents.festival')}</SelectItem>
+                    <SelectItem value="meeting">{t('admin.newsEvents.meeting')}</SelectItem>
                 <SelectItem value="celebration">{t('admin.newsEvents.celebration')}</SelectItem>
                 <SelectItem value="workshop">{t('admin.newsEvents.workshop')}</SelectItem>
                 <SelectItem value="conference">{t('admin.newsEvents.conference')}</SelectItem>
@@ -666,21 +837,82 @@ export default function NewsEventsEditor() {
             )}
           </SelectContent>
         </Select>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid3X3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="h-4 w-4" />
-          </Button>
+            <Select
+              value={itemsSortBy}
+              onValueChange={(value) => setItemsSortBy(value as typeof itemsSortBy)}
+            >
+              <SelectTrigger className="h-9 w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Sort by Date</SelectItem>
+                <SelectItem value="title">Sort by Title</SelectItem>
+                <SelectItem value="type">Sort by Type</SelectItem>
+                <SelectItem value="status">Sort by Status</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 px-2"
+              onClick={() => setItemsSortOrder(itemsSortOrder === 'asc' ? 'desc' : 'asc')}
+              title={`Sort ${itemsSortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+            >
+              {itemsSortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+            </Button>
+
+            <Select
+              value={itemsPerPage.toString()}
+              onValueChange={(value) => {
+                setItemsPerPage(parseInt(value));
+                setItemsPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="12">12/page</SelectItem>
+                <SelectItem value="24">24/page</SelectItem>
+                <SelectItem value="48">48/page</SelectItem>
+                <SelectItem value="96">96/page</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+              className="h-9 px-2"
+              title="Grid view"
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="h-9 px-2"
+              title="List view"
+            >
+              <List className="w-4 h-4" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 px-2"
+              onClick={() => setCompactMode(!compactMode)}
+              title={compactMode ? 'Normal view' : 'Compact view'}
+            >
+              {compactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+            </Button>
+          </div>
+        </div>
+        
+        <div className="text-xs text-gray-600 pt-2 border-t">
+          Showing {paginatedItems.length} of {filteredAndSortedItems.length} {activeTab} ({activeTab === 'news' ? news.length : events.length} total)
         </div>
       </div>
 
@@ -1179,6 +1411,23 @@ export default function NewsEventsEditor() {
                 )}
               </div>
 
+              {/* YouTube Video URL - News only */}
+              {activeTab === 'news' && (
+                <div className="space-y-3">
+                  <Label htmlFor="youtube_video_url">YouTube Video URL (Optional)</Label>
+                  <Input
+                    id="youtube_video_url"
+                    type="url"
+                    value={newsForm.youtube_video_url}
+                    onChange={(e) => setNewsForm({ ...newsForm, youtube_video_url: e.target.value })}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                  />
+                  <p className="text-xs text-gray-500">
+                    Enter the full YouTube video URL. The video will be displayed on the news page.
+                  </p>
+                </div>
+              )}
+
               {/* Actions */}
               <div className="flex justify-end space-x-3 pt-4 border-t">
                 <Button variant="outline" onClick={resetForm}>
@@ -1195,10 +1444,10 @@ export default function NewsEventsEditor() {
       )}
 
       {/* Items List */}
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-        {filteredItems.map((item) => (
-          <Card key={item.id} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-4">
+      <div className={viewMode === 'grid' ? `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ${compactMode ? 'gap-3' : 'gap-6'}` : (compactMode ? 'space-y-2' : 'space-y-4')}>
+        {paginatedItems.map((item) => (
+          <Card key={item.id} className={`hover:shadow-lg transition-shadow ${compactMode ? 'border border-gray-200' : ''}`}>
+            <CardContent className={compactMode ? 'p-3' : 'p-4'}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900 line-clamp-2">{item.title}</h3>
@@ -1305,7 +1554,58 @@ export default function NewsEventsEditor() {
         ))}
       </div>
 
-      {filteredItems.length === 0 && (
+      {/* Pagination */}
+      {totalItemsPages > 1 && filteredAndSortedItems.length > 0 && (
+        <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
+          <div className="text-sm text-gray-600">
+            Page {itemsPage} of {totalItemsPages}
+          </div>
+          <div className="flex gap-1">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(1)}
+              disabled={itemsPage === 1}
+              className="h-8 w-8 p-0"
+              title="First page"
+            >
+              <ChevronsLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(Math.max(1, itemsPage - 1))}
+              disabled={itemsPage === 1}
+              className="h-8 w-8 p-0"
+              title="Previous page"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(Math.min(totalItemsPages, itemsPage + 1))}
+              disabled={itemsPage === totalItemsPages}
+              className="h-8 w-8 p-0"
+              title="Next page"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setItemsPage(totalItemsPages)}
+              disabled={itemsPage === totalItemsPages}
+              className="h-8 w-8 p-0"
+              title="Last page"
+            >
+              <ChevronsRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {filteredAndSortedItems.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 mb-4">
             {activeTab === 'news' ? <Newspaper className="h-12 w-12 mx-auto" /> : <CalendarDays className="h-12 w-12 mx-auto" />}

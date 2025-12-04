@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,16 @@ import {
   Image as ImageIcon,
   Loader2,
   CheckCircle,
-  Users
+  Users,
+  Search,
+  SortAsc,
+  SortDesc,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  ChevronsLeft as ChevronsLeftIcon,
+  ChevronsRight as ChevronsRightIcon,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 interface Product {
@@ -138,6 +147,20 @@ export default function ProductStoreEditor() {
   const [selectedStateName, setSelectedStateName] = useState<string>('All');
   const [selectedDistrictName, setSelectedDistrictName] = useState<string>('All');
 
+  // Product list management (search, sort, pagination, compact view)
+  const [productSearch, setProductSearch] = useState('');
+  const [productsSortBy, setProductsSortBy] = useState<'name' | 'price' | 'stock' | 'updatedAt'>('updatedAt');
+  const [productsSortOrder, setProductsSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [productsPage, setProductsPage] = useState(1);
+  const [productsPerPage, setProductsPerPage] = useState(24);
+  const [productsCompactMode, setProductsCompactMode] = useState(false);
+
+  // Category list management (search, pagination, compact view)
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoriesPage, setCategoriesPage] = useState(1);
+  const [categoriesPerPage] = useState(20);
+  const [categoriesCompactMode, setCategoriesCompactMode] = useState(false);
+
   // Define setDefaultCategories before it's used
   const setDefaultCategories = useCallback(() => {
     const defaultCategories: ProductCategory[] = [
@@ -190,7 +213,12 @@ export default function ProductStoreEditor() {
       // Use admin endpoint for consistency with creation endpoint
       const response = await fetch(`/api/admin/content/categories?_t=${Date.now()}`, {
         cache: 'no-store',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
       });
       const data = await response.json();
       if (data.success) {
@@ -628,13 +656,53 @@ export default function ProductStoreEditor() {
         return;
       }
       
-      // Add to local state after successful save
+      // Wait a brief moment to ensure database commit is processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Reload categories from server to get the latest data with fresh cache busting
+      try {
+        const token = localStorage.getItem('admin_token');
+        const reloadResp = await fetch(`/api/admin/content/categories?_t=${Date.now()}&_nocache=${Math.random()}`, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { 
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        const reloadData = await reloadResp.json();
+        if (reloadData.success && reloadData.categories) {
+          const reloadedCategories = reloadData.categories.map((cat: any) => ({
+            id: String(cat.id),
+            name: cat.name,
+            description: cat.description || '',
+            isVisible: Boolean(cat.isVisible),
+            createdAt: cat.created_at ? new Date(cat.created_at) : new Date(),
+            updatedAt: cat.updated_at ? new Date(cat.updated_at) : new Date()
+          }));
+          setCategories(reloadedCategories);
+          saveToHistory(products, reloadedCategories);
+          // Find the created category (might have different ID if server generated one)
+          const createdCat = reloadedCategories.find((c: ProductCategory) => c.id === newCategory.id || c.name === newCategory.name) || reloadedCategories[reloadedCategories.length - 1];
+          if (createdCat) {
+            setEditingCategory(createdCat.id);
+          }
+          console.log('[Add Category] Successfully created and reloaded category:', createdCat?.id || newCategory.id);
+          return;
+        }
+      } catch (reloadError) {
+        console.error('[Add Category] Error reloading categories after creation:', reloadError);
+      }
+      
+      // Fallback: add to local state if reload fails
       const optimistic = [...categories, newCategory];
       setCategories(optimistic);
       saveToHistory(products, optimistic);
       setEditingCategory(newCategory.id);
       
-      console.log('[Add Category] Successfully created category:', newCategory.id);
+      console.log('[Add Category] Successfully created category (using optimistic update):', newCategory.id);
     } catch (error) {
       console.error('[Add Category] Error creating category:', error);
       alert('Failed to create category. Please try again.');
@@ -1092,7 +1160,7 @@ export default function ProductStoreEditor() {
     }
   };
 
-  const filteredProducts = (() => {
+  const filteredAndSortedProducts = useMemo(() => {
     let filtered = products;
     
     // Filter by category
@@ -1104,29 +1172,113 @@ export default function ProductStoreEditor() {
     if ((currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin')) {
       if (selectedStateName !== 'All') {
         filtered = filtered.filter(product => {
-          // Check if product has state information
-          const productState = product.state_id || product.added_by_name;
+          const productState = (product as any).state_name || product.state_id || product.added_by_name; // eslint-disable-line @typescript-eslint/no-explicit-any
           if (!productState) return false;
-          
-          // Match by state name (case insensitive)
-          return productState.toLowerCase().includes(selectedStateName.toLowerCase());
+          return String(productState).toLowerCase().includes(selectedStateName.toLowerCase());
         });
       }
       
       if (selectedDistrictName !== 'All') {
         filtered = filtered.filter(product => {
-          // Check if product has district information
-          const productDistrict = product.district_id || product.added_by_name;
+          const productDistrict = (product as any).district_name || product.district_id || product.added_by_name; // eslint-disable-line @typescript-eslint/no-explicit-any
           if (!productDistrict) return false;
-          
-          // Match by district name (case insensitive)
-          return productDistrict.toLowerCase().includes(selectedDistrictName.toLowerCase());
+          return String(productDistrict).toLowerCase().includes(selectedDistrictName.toLowerCase());
         });
       }
     }
+
+    // Text search
+    if (productSearch.trim() !== '') {
+      const q = productSearch.toLowerCase();
+      filtered = filtered.filter(product => {
+        const inName = product.name.toLowerCase().includes(q);
+        const inDesc = product.description.toLowerCase().includes(q);
+        const inCategory = product.category.toLowerCase().includes(q);
+        const inTags = (product.tags || []).some(tag => String(tag).toLowerCase().includes(q));
+        return inName || inDesc || inCategory || inTags;
+      });
+    }
+
+    // Sort
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      if (productsSortBy === 'name') {
+        comparison = a.name.localeCompare(b.name);
+      } else if (productsSortBy === 'price') {
+        comparison = a.price - b.price;
+      } else if (productsSortBy === 'stock') {
+        comparison = a.stock - b.stock;
+      } else if (productsSortBy === 'updatedAt') {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        comparison = aTime - bTime;
+      }
+      return productsSortOrder === 'asc' ? comparison : -comparison;
+    });
     
     return filtered;
-  })();
+  }, [
+    products,
+    selectedCategory,
+    currentUser,
+    selectedStateName,
+    selectedDistrictName,
+    productSearch,
+    productsSortBy,
+    productsSortOrder
+  ]);
+
+  const totalProductsPages = Math.ceil(
+    filteredAndSortedProducts.length === 0 ? 1 : filteredAndSortedProducts.length / productsPerPage
+  );
+
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (productsPage - 1) * productsPerPage;
+    const endIndex = startIndex + productsPerPage;
+    return filteredAndSortedProducts.slice(startIndex, endIndex);
+  }, [filteredAndSortedProducts, productsPage, productsPerPage]);
+
+  // Reset to first page when filters/sort/search change
+  useEffect(() => {
+    setProductsPage(1);
+  }, [selectedCategory, selectedStateName, selectedDistrictName, productSearch, productsSortBy, productsSortOrder]);
+
+  // Optimize category counts with memoization
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach(product => {
+      const catId = product.category || 'uncategorized';
+      counts[catId] = (counts[catId] || 0) + 1;
+    });
+    return counts;
+  }, [products]);
+
+  // Filter and paginate categories
+  const filteredCategories = useMemo(() => {
+    if (!categorySearch.trim()) {
+      return categories;
+    }
+    const search = categorySearch.toLowerCase();
+    return categories.filter(cat => 
+      cat.name.toLowerCase().includes(search) ||
+      (cat.description || '').toLowerCase().includes(search)
+    );
+  }, [categories, categorySearch]);
+
+  const totalCategoriesPages = Math.ceil(
+    filteredCategories.length === 0 ? 1 : filteredCategories.length / categoriesPerPage
+  );
+
+  const paginatedCategories = useMemo(() => {
+    const startIndex = (categoriesPage - 1) * categoriesPerPage;
+    const endIndex = startIndex + categoriesPerPage;
+    return filteredCategories.slice(startIndex, endIndex);
+  }, [filteredCategories, categoriesPage, categoriesPerPage]);
+
+  // Reset categories page when search changes
+  useEffect(() => {
+    setCategoriesPage(1);
+  }, [categorySearch]);
 
   return (
     <div className="h-full flex flex-col">
@@ -1166,61 +1318,146 @@ export default function ProductStoreEditor() {
           {/* Sidebar - Categories */}
           <div className="w-80 border-r bg-gray-50 p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">{t('admin.store.products.categories')}</h3>
-              <Button
-                onClick={() => setCreatingCategoryDraft({ id: `category_${Date.now()}`, name: '', description: '', isVisible: true })}
-                size="sm"
-                className="cursor-pointer hover:bg-blue-600"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">{t('admin.store.products.categories')}</h3>
+                <span className="text-xs text-gray-500">({categories.length})</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCategoriesCompactMode(!categoriesCompactMode)}
+                  className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
+                  title={categoriesCompactMode ? 'Normal View' : 'Compact View'}
+                >
+                  {categoriesCompactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                </button>
+                <Button
+                  onClick={() => setCreatingCategoryDraft({ id: `category_${Date.now()}`, name: '', description: '', isVisible: true })}
+                  size="sm"
+                  className="cursor-pointer hover:bg-blue-600"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             
-            <div className="space-y-2">
+            {/* Category Search */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search categories..."
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                className="pl-10 h-9 text-sm"
+              />
+            </div>
+            
+            <div className={categoriesCompactMode ? 'space-y-1' : 'space-y-2'}>
               <Button
                 variant={selectedCategory === 'all' ? 'default' : 'outline'}
-                size="sm"
+                size={categoriesCompactMode ? 'sm' : 'sm'}
                 onClick={() => setSelectedCategory('all')}
-                className="w-full justify-start cursor-pointer hover:bg-gray-100"
+                className={`w-full justify-start cursor-pointer hover:bg-gray-100 ${categoriesCompactMode ? 'h-8 text-xs' : ''}`}
               >
                 {t('admin.store.products.allProducts')} ({products.length})
               </Button>
-              {categories.map(category => (
-                <div key={category.id} className="flex items-center space-x-2">
-                  <Button
-                    variant={selectedCategory === category.id ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSelectedCategory(category.id)}
-                    className="flex-1 justify-start cursor-pointer hover:bg-gray-100"
-                  >
-                    {category.name} ({products.filter(p => p.category === category.id).length})
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (editingCategory === category.id) {
-                        setEditingCategory(null);
-                        setEditingCategoryDraft(null);
-                      } else {
-                        setEditingCategory(category.id);
-                        setEditingCategoryDraft({ ...category });
-                      }
-                    }}
-                    className="cursor-pointer hover:bg-gray-100"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteCategory(category.id)}
-                    className="cursor-pointer hover:bg-red-100 text-red-600"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+              {paginatedCategories.length === 0 ? (
+                <div className="text-center py-4 text-xs text-gray-500">
+                  {categorySearch ? 'No categories found' : 'No categories'}
                 </div>
-              ))}
+              ) : (
+                <>
+                  {paginatedCategories.map(category => (
+                    <div key={category.id} className={`flex items-center space-x-2 ${categoriesCompactMode ? 'gap-1' : 'gap-2'}`}>
+                      <Button
+                        variant={selectedCategory === category.id ? 'default' : 'outline'}
+                        size={categoriesCompactMode ? 'sm' : 'sm'}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`flex-1 justify-start cursor-pointer hover:bg-gray-100 ${categoriesCompactMode ? 'h-8 text-xs' : ''}`}
+                      >
+                        <span className="truncate">{category.name}</span> ({categoryCounts[category.id] || 0})
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (editingCategory === category.id) {
+                            setEditingCategory(null);
+                            setEditingCategoryDraft(null);
+                          } else {
+                            setEditingCategory(category.id);
+                            setEditingCategoryDraft({ ...category });
+                          }
+                        }}
+                        className={`cursor-pointer hover:bg-gray-100 ${categoriesCompactMode ? 'h-8 w-8 p-0' : ''}`}
+                      >
+                        <Edit2 className={categoriesCompactMode ? 'h-3 w-3' : 'h-3 w-3'} />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deleteCategory(category.id)}
+                        className={`cursor-pointer hover:bg-red-100 text-red-600 ${categoriesCompactMode ? 'h-8 w-8 p-0' : ''}`}
+                      >
+                        <Trash2 className={categoriesCompactMode ? 'h-3 w-3' : 'h-3 w-3'} />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {/* Category Pagination */}
+                  {totalCategoriesPages > 1 && (
+                    <div className={`${categoriesCompactMode ? 'p-2' : 'p-3'} border-t border-gray-200 bg-gray-50 mt-3`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-gray-600">
+                          Page {categoriesPage} of {totalCategoriesPages}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCategoriesPage(1)}
+                            disabled={categoriesPage === 1}
+                            className="h-7 w-7 p-0"
+                            title="First page"
+                          >
+                            <ChevronsLeftIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCategoriesPage(prev => Math.max(1, prev - 1))}
+                            disabled={categoriesPage === 1}
+                            className="h-7 w-7 p-0"
+                            title="Previous page"
+                          >
+                            <ChevronLeftIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCategoriesPage(prev => Math.min(totalCategoriesPages, prev + 1))}
+                            disabled={categoriesPage === totalCategoriesPages}
+                            className="h-7 w-7 p-0"
+                            title="Next page"
+                          >
+                            <ChevronRightIcon className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setCategoriesPage(totalCategoriesPages)}
+                            disabled={categoriesPage === totalCategoriesPages}
+                            className="h-7 w-7 p-0"
+                            title="Last page"
+                          >
+                            <ChevronsRightIcon className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
             
             {/* Location Filters (Superadmin only) */}
@@ -1341,47 +1578,130 @@ export default function ProductStoreEditor() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
-                  {filteredProducts.length} products
-                </span>
-                
-                {/* Active Location Filters (Superadmin only) */}
-                {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') && (
-                  selectedStateName !== 'All' || selectedDistrictName !== 'All'
-                ) && (
-                  <div className="flex items-center space-x-1">
-                    {selectedStateName !== 'All' && (
-                      <Badge variant="secondary" className="text-xs">
-                        State: {selectedStateName}
-                      </Badge>
-                    )}
-                    {selectedDistrictName !== 'All' && (
-                      <Badge variant="secondary" className="text-xs">
-                        District: {selectedDistrictName}
-                      </Badge>
-                    )}
+              <div className="flex flex-col items-end space-y-2">
+                {/* Search + sort row */}
+                <div className="flex items-center space-x-2">
+                  <div className="relative hidden md:block">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 w-3 h-3" />
+                    <Input
+                      type="text"
+                      placeholder={t('admin.store.products.searchPlaceholder') || 'Search products...'}
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="pl-7 pr-2 h-8 text-xs w-52"
+                    />
                   </div>
-                )}
-                
-                {saveStatus === 'saved' && (
-                  <Badge variant="outline" className="text-green-600">
-                    Saved
-                  </Badge>
-                )}
-                {saveStatus === 'error' && (
-                  <Badge variant="outline" className="text-red-600">
-                    Error
-                  </Badge>
-                )}
+
+                  <Select
+                    value={productsSortBy}
+                    onValueChange={(value) => setProductsSortBy(value as typeof productsSortBy)}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-32">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="updatedAt">Recently updated</SelectItem>
+                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="price">Price</SelectItem>
+                      <SelectItem value="stock">Stock</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() =>
+                      setProductsSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+                    }
+                    title={productsSortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
+                  >
+                    {productsSortOrder === 'asc' ? (
+                      <SortAsc className="w-4 h-4" />
+                    ) : (
+                      <SortDesc className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setProductsCompactMode((prev) => !prev)}
+                    title={productsCompactMode ? 'Normal view' : 'Compact view'}
+                  >
+                    {productsCompactMode ? (
+                      <Maximize2 className="w-4 h-4" />
+                    ) : (
+                      <Minimize2 className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  <Select
+                    value={productsPerPage.toString()}
+                    onValueChange={(value) => {
+                      setProductsPerPage(parseInt(value));
+                      setProductsPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="12">12/page</SelectItem>
+                      <SelectItem value="24">24/page</SelectItem>
+                      <SelectItem value="48">48/page</SelectItem>
+                      <SelectItem value="96">96/page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Counts + filters row */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs sm:text-sm text-gray-600">
+                    Showing {paginatedProducts.length} of {filteredAndSortedProducts.length}{' '}
+                    products
+                  </span>
+                  
+                  {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') &&
+                    (selectedStateName !== 'All' || selectedDistrictName !== 'All') && (
+                      <div className="flex items-center space-x-1">
+                        {selectedStateName !== 'All' && (
+                          <Badge variant="secondary" className="text-xs">
+                            State: {selectedStateName}
+                          </Badge>
+                        )}
+                        {selectedDistrictName !== 'All' && (
+                          <Badge variant="secondary" className="text-xs">
+                            District: {selectedDistrictName}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  
+                  {saveStatus === 'saved' && (
+                    <Badge variant="outline" className="text-green-600">
+                      Saved
+                    </Badge>
+                  )}
+                  {saveStatus === 'error' && (
+                    <Badge variant="outline" className="text-red-600">
+                      Error
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Products Grid/List */}
             <div className="flex-1 overflow-y-auto p-4">
               {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {filteredProducts.map(product => (
+                <div
+                  className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
+                    productsCompactMode ? 'gap-3' : 'gap-4'
+                  }`}
+                >
+                  {paginatedProducts.map(product => (
                     <Card key={product.id} className="overflow-hidden">
                       <div className="relative">
                         <div
@@ -1480,8 +1800,8 @@ export default function ProductStoreEditor() {
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {filteredProducts.map(product => (
+                <div className={productsCompactMode ? 'space-y-1.5' : 'space-y-2'}>
+                  {paginatedProducts.map(product => (
                     <Card key={product.id}>
                       <CardContent className="p-4">
                         <div className="flex items-center space-x-4">
@@ -1517,9 +1837,21 @@ export default function ProductStoreEditor() {
                           </div>
                           
                           <div className="flex-1">
-                            <h3 className="font-semibold">{product.name}</h3>
-                            <p className="text-sm text-gray-600 line-clamp-2">{product.description}</p>
-                            <div className="flex items-center space-x-4 mt-2">
+                            <h3 className={`font-semibold ${productsCompactMode ? 'text-sm' : ''}`}>
+                              {product.name}
+                            </h3>
+                            <p
+                              className={`text-gray-600 line-clamp-2 ${
+                                productsCompactMode ? 'text-xs' : 'text-sm'
+                              }`}
+                            >
+                              {product.description}
+                            </p>
+                            <div
+                              className={`flex items-center space-x-4 ${
+                                productsCompactMode ? 'mt-1' : 'mt-2'
+                              }`}
+                            >
                               <span className="text-sm font-bold text-green-600">
                                 ₹{product.price}
                               </span>

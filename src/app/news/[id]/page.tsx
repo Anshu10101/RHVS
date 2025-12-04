@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, Star, ArrowLeft, Share2, Eye, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Star, ArrowLeft, Share2, Eye, User, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Noto_Serif_Devanagari } from 'next/font/google';
@@ -20,6 +20,7 @@ interface News {
   content: string;
   excerpt?: string;
   image_path?: string;
+  youtube_video_url?: string;
   news_type: 'announcement' | 'update' | 'achievement' | 'notice' | 'general';
   priority: 'high' | 'medium' | 'low';
   is_featured: boolean;
@@ -48,15 +49,27 @@ export default function NewsArticlePage() {
       // Use timestamp for cache-busting
       const timestamp = Date.now();
       
-      // Fetch the specific news article
-      const response = await fetch(`/api/content/news?id=${params.id}&_t=${timestamp}`, { cache: 'no-store' });
+      // Fetch the specific news article with aggressive cache control
+      const response = await fetch(`/api/content/news?id=${params.id}&_t=${timestamp}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       const data = await response.json();
       
       if (data.success && data.data.length > 0) {
         setNews(data.data[0]);
         
         // Fetch related news (same type, excluding current)
-        const relatedResponse = await fetch(`/api/content/news?type=${data.data[0].news_type}&limit=4&_t=${timestamp}`, { cache: 'no-store' });
+        const relatedResponse = await fetch(`/api/content/news?type=${data.data[0].news_type}&limit=4&_t=${timestamp}`, { 
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         const relatedData = await relatedResponse.json();
         
         if (relatedData.success) {
@@ -169,6 +182,48 @@ export default function NewsArticlePage() {
     });
   };
 
+  // Extract YouTube video ID from various URL formats
+  const getYouTubeVideoId = (url: string | undefined): string | null => {
+    if (!url || !url.trim()) return null;
+    
+    const trimmedUrl = url.trim();
+    
+    // Handle various YouTube URL formats
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/watch\?.*[&?]v=([a-zA-Z0-9_-]{11})/,
+      /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/shorts\/|m\.youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/, // YouTube Shorts
+      /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
+    ];
+    
+    for (const pattern of patterns) {
+      const match = trimmedUrl.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    // If it's already an embed URL or contains the video ID, try to extract
+    if (trimmedUrl.includes('embed/')) {
+      const embedMatch = trimmedUrl.match(/embed\/([a-zA-Z0-9_-]{11})/);
+      if (embedMatch && embedMatch[1]) {
+        return embedMatch[1];
+      }
+    }
+    
+    // Handle YouTube Shorts URLs
+    if (trimmedUrl.includes('/shorts/')) {
+      const shortsMatch = trimmedUrl.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
+      if (shortsMatch && shortsMatch[1]) {
+        return shortsMatch[1];
+      }
+    }
+    
+    console.warn('Could not extract YouTube video ID from URL:', trimmedUrl);
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -193,6 +248,13 @@ export default function NewsArticlePage() {
         </div>
       </div>
     );
+  }
+
+  const youtubeVideoId = getYouTubeVideoId(news.youtube_video_url);
+  
+  // Debug logging (remove in production if needed)
+  if (news.youtube_video_url && !youtubeVideoId) {
+    console.warn('YouTube URL provided but could not extract video ID:', news.youtube_video_url);
   }
 
   return (
@@ -230,91 +292,144 @@ export default function NewsArticlePage() {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Article Header */}
-          <article className="bg-white rounded-lg shadow-lg overflow-hidden">
-            {/* Featured Image */}
-            {news.image_path && (
-              <div className="aspect-video overflow-hidden">
-                <img
-                  src={news.image_path}
-                  alt={news.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-
-            <div className="p-8">
-              {/* Article Meta */}
-              <div className="flex flex-wrap items-center gap-4 mb-6">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getNewsTypeColor(news.news_type)}`}>
-                  {getNewsTypeIcon(news.news_type)}
-                  <span className="ml-2">{getNewsTypeLabel(news.news_type)}</span>
-                </span>
-                
-                {news.is_featured && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
-                    <Star className="w-4 h-4 mr-1" />
-                    मुख्य समाचार
-                  </span>
-                )}
-
-                {(news.district || news.state) && (
-                  <div className="flex items-center gap-2">
-                    {news.district && news.district !== 'All Districts' && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
-                        <MapPin className="w-3 h-3 mr-1" />
-                        {news.district}
-                      </span>
-                    )}
-                    {news.state && news.state !== 'All States' && (
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-                        {news.state}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Title */}
-              <h1 className={`text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight ${devanagari.className}`}>
-                {news.title_hindi || news.title}
-              </h1>
-
-              {/* Article Meta Info */}
-              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-6 pb-6 border-b border-gray-200">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formatDate(news.published_at)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  <span>{formatTime(news.published_at)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <span>{news.created_by}</span>
-                </div>
-              </div>
-
-              {/* Excerpt */}
-              {news.excerpt && (
-                <div className="bg-gray-50 border-l-4 border-orange-500 p-4 mb-6">
-                  <p className="text-gray-700 italic text-lg leading-relaxed">
-                    {news.excerpt}
-                  </p>
+      <div className="relative">
+        {/* Main Content Layout - Centered News with Video at Extreme Right */}
+        <div className="container mx-auto px-4 py-8">
+          {/* Container for News Article and Video - Video sticks only within this container */}
+          <div className={`relative ${youtubeVideoId ? 'lg:flex lg:justify-center' : ''}`}>
+            {/* Main News Content - Exactly Centered */}
+            <article className={`bg-white rounded-lg shadow-lg overflow-hidden ${youtubeVideoId ? 'max-w-3xl' : 'max-w-4xl mx-auto'}`}>
+              {/* Featured Image (only if no video) */}
+              {!youtubeVideoId && news.image_path && (
+                <div className="aspect-video overflow-hidden">
+                  <img
+                    src={news.image_path}
+                    alt={news.title}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
 
-              {/* Content */}
-              <div className={`prose prose-lg max-w-none ${devanagari.className}`}>
-                <div className="text-gray-800 leading-relaxed text-base md:text-lg whitespace-pre-line">
-                  {news.content}
+              <div className="p-6 md:p-8">
+                {/* Article Meta */}
+                <div className="flex flex-wrap items-center gap-4 mb-6">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getNewsTypeColor(news.news_type)}`}>
+                    {getNewsTypeIcon(news.news_type)}
+                    <span className="ml-2">{getNewsTypeLabel(news.news_type)}</span>
+                  </span>
+                  
+                  {news.is_featured && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                      <Star className="w-4 h-4 mr-1" />
+                      मुख्य समाचार
+                    </span>
+                  )}
+
+                  {(news.district || news.state) && (
+                    <div className="flex items-center gap-2">
+                      {news.district && news.district !== 'All Districts' && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                          <MapPin className="w-3 h-3 mr-1" />
+                          {news.district}
+                        </span>
+                      )}
+                      {news.state && news.state !== 'All States' && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                          {news.state}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Title */}
+                <h1 className={`text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight ${devanagari.className}`}>
+                  {news.title_hindi || news.title}
+                </h1>
+
+                {/* Article Meta Info */}
+                <div className="flex flex-wrap items-center gap-4 md:gap-6 text-sm text-gray-600 mb-6 pb-6 border-b border-gray-200">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <span>{formatDate(news.published_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    <span>{formatTime(news.published_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    <span>{news.created_by}</span>
+                  </div>
+                </div>
+
+                {/* Excerpt */}
+                {news.excerpt && (
+                  <div className="bg-gray-50 border-l-4 border-orange-500 p-4 mb-6">
+                    <p className="text-gray-700 italic text-lg leading-relaxed">
+                      {news.excerpt}
+                    </p>
+                  </div>
+                )}
+
+                {/* Featured Image (shown if video exists) */}
+                {youtubeVideoId && news.image_path && (
+                  <div className="mb-8">
+                    <div className="relative w-full aspect-video rounded-lg overflow-hidden shadow-md">
+                      <img
+                        src={news.image_path}
+                        alt={news.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Content */}
+                <div className={`prose prose-lg max-w-none ${devanagari.className}`}>
+                  <div className="text-gray-800 leading-relaxed text-base md:text-lg whitespace-pre-line">
+                    {news.content}
+                  </div>
                 </div>
               </div>
+            </article>
+
+            {/* YouTube Video - Sticky only within article container (Desktop) */}
+            {youtubeVideoId && (
+              <aside className="hidden lg:block lg:absolute lg:right-0 lg:top-0 w-80 lg:ml-8">
+                <div className="sticky" style={{ top: '96px' }}>
+                  <div className="relative w-full rounded-lg overflow-hidden bg-black shadow-xl" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      className="absolute top-0 left-0 w-full h-full"
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      loading="lazy"
+                      style={{ border: 'none' }}
+                    />
+                  </div>
+                </div>
+              </aside>
+            )}
+          </div>
+
+          {/* YouTube Video - Mobile View (shown above news on small screens) */}
+          {youtubeVideoId && (
+            <div className="lg:hidden mt-8 max-w-md mx-auto mb-8">
+              <div className="relative w-full rounded-lg overflow-hidden bg-black" style={{ paddingBottom: '56.25%' }}>
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${youtubeVideoId}?rel=0&modestbranding=1&enablejsapi=1`}
+                  title="YouTube video player"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                  style={{ border: 'none' }}
+                />
+              </div>
             </div>
-          </article>
+          )}
 
           {/* Related Articles */}
           {relatedNews.length > 0 && (
