@@ -1696,6 +1696,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'इस महीने',
     en: 'This Month'
   },
+  'admin.members.recent30Days': {
+    hi: 'हाल के 30 दिन',
+    en: 'Recent (30 days)'
+  },
   'admin.members.searchMembers': {
     hi: 'सदस्य खोजें',
     en: 'Search Members'
@@ -2567,6 +2571,128 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'System Administration'
   },
   
+  // Permission History
+  'admin.permissions.history.title': {
+    hi: 'अनुमति इतिहास',
+    en: 'Permission History'
+  },
+  'admin.permissions.history.subtitle': {
+    hi: 'सभी अनुमति असाइनमेंट का पूर्ण अवलोकन',
+    en: 'Complete overview of all permission assignments'
+  },
+  'admin.permissions.history.accessDenied': {
+    hi: 'पहुंच अस्वीकृत',
+    en: 'Access Denied'
+  },
+  'admin.permissions.history.onlySuperadmins': {
+    hi: 'केवल सुपरएडमिन अनुमति इतिहास तक पहुंच सकते हैं।',
+    en: 'Only superadmins can access permission history.'
+  },
+  'admin.permissions.history.loading': {
+    hi: 'अनुमति इतिहास लोड हो रहा है...',
+    en: 'Loading permission history...'
+  },
+  'admin.permissions.history.refresh': {
+    hi: 'ताज़ा करें',
+    en: 'Refresh'
+  },
+  'admin.permissions.history.total': {
+    hi: 'कुल',
+    en: 'Total'
+  },
+  'admin.permissions.history.active': {
+    hi: 'सक्रिय',
+    en: 'Active'
+  },
+  'admin.permissions.history.permanent': {
+    hi: 'स्थायी',
+    en: 'Permanent'
+  },
+  'admin.permissions.history.expired': {
+    hi: 'समाप्त',
+    en: 'Expired'
+  },
+  'admin.permissions.history.revoked': {
+    hi: 'रद्द',
+    en: 'Revoked'
+  },
+  'admin.permissions.history.searchAndFilter': {
+    hi: 'खोजें और फ़िल्टर करें',
+    en: 'Search & Filter'
+  },
+  'admin.permissions.history.searchPlaceholder': {
+    hi: 'एडमिन नाम, ईमेल, अनुमति से खोजें...',
+    en: 'Search by admin name, email, permission...'
+  },
+  'admin.permissions.history.allStatus': {
+    hi: 'सभी स्थिति',
+    en: 'All Status'
+  },
+  'admin.permissions.history.allDistricts': {
+    hi: 'सभी जिले',
+    en: 'All Districts'
+  },
+  'admin.permissions.history.clearFilters': {
+    hi: 'साफ़ करें',
+    en: 'Clear'
+  },
+  'admin.permissions.history.results': {
+    hi: 'परिणाम',
+    en: 'Results'
+  },
+  'admin.permissions.history.allAssignments': {
+    hi: 'सभी अनुमति असाइनमेंट',
+    en: 'All Permission Assignments'
+  },
+  'admin.permissions.history.showing': {
+    hi: 'दिखा रहे हैं',
+    en: 'Showing'
+  },
+  'admin.permissions.history.of': {
+    hi: 'का',
+    en: 'of'
+  },
+  'admin.permissions.history.admins': {
+    hi: 'एडमिन',
+    en: 'admins'
+  },
+  'admin.permissions.history.page': {
+    hi: 'पृष्ठ',
+    en: 'Page'
+  },
+  'admin.permissions.history.noAssignments': {
+    hi: 'कोई अनुमति असाइनमेंट नहीं मिला।',
+    en: 'No permission assignments found.'
+  },
+  'admin.permissions.history.expiringSoon': {
+    hi: 'जल्द समाप्त हो रहा है',
+    en: 'Expiring Soon'
+  },
+  'admin.permissions.history.granted': {
+    hi: 'दिया गया',
+    en: 'Granted'
+  },
+  'admin.permissions.history.expires': {
+    hi: 'समाप्त होता है',
+    en: 'Expires'
+  },
+  'admin.permissions.history.status': {
+    hi: 'स्थिति',
+    en: 'Status'
+  },
+  'admin.permissions.history.noExpiration': {
+    hi: 'कोई समाप्ति नहीं',
+    en: 'No Expiration'
+  },
+  'admin.permissions.history.previous': {
+    hi: 'पिछला',
+    en: 'Previous'
+  },
+  'admin.permissions.history.next': {
+    hi: 'अगला',
+    en: 'Next'
+  },
+  
   // Admin Content - About Page Editor
   'admin.content.about.title': {
     hi: 'अबाउट पेज संपादक',
@@ -2779,6 +2905,66 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.content.about.extrabold': {
     hi: 'अतिरिक्त बोल्ड',
     en: 'Extrabold'
+  },
+  'admin.content.about.imageSection': {
+    hi: 'छवि अनुभाग',
+    en: 'Image Section'
+  },
+  'admin.content.about.imageUpload': {
+    hi: 'छवि अपलोड करें',
+    en: 'Upload Image'
+  },
+  'admin.content.about.removeImage': {
+    hi: 'छवि हटाएं',
+    en: 'Remove Image'
+  },
+  'admin.content.about.replaceImage': {
+    hi: 'छवि बदलें',
+    en: 'Replace Image'
+  },
+  'admin.content.about.uploading': {
+    hi: 'अपलोड हो रहा है...',
+    en: 'Uploading...'
+  },
+  'admin.content.about.imageUploadError': {
+    hi: 'छवि अपलोड करने में त्रुटि',
+    en: 'Failed to upload image'
+  },
+  'admin.content.about.imageUploadHint': {
+    hi: 'समर्थित प्रारूप: JPG, PNG, GIF। अधिकतम आकार: 2MB',
+    en: 'Supported formats: JPG, PNG, GIF. Max size: 2MB'
+  },
+  'admin.content.about.imageAlignment': {
+    hi: 'छवि संरेखण',
+    en: 'Image Alignment'
+  },
+  'admin.content.about.imageWidth': {
+    hi: 'छवि चौड़ाई',
+    en: 'Image Width'
+  },
+  'admin.content.about.fullWidth': {
+    hi: 'पूर्ण चौड़ाई',
+    en: 'Full Width'
+  },
+  'admin.content.about.halfWidth': {
+    hi: 'आधी चौड़ाई',
+    en: 'Half Width'
+  },
+  'admin.content.about.thirdWidth': {
+    hi: 'एक तिहाई चौड़ाई',
+    en: 'Third Width'
+  },
+  'admin.content.about.quarterWidth': {
+    hi: 'एक चौथाई चौड़ाई',
+    en: 'Quarter Width'
+  },
+  'admin.content.about.imageCaption': {
+    hi: 'छवि कैप्शन/Alt पाठ',
+    en: 'Image Caption/Alt Text'
+  },
+  'admin.content.about.imageCaptionPlaceholder': {
+    hi: 'छवि कैप्शन या alt पाठ दर्ज करें...',
+    en: 'Enter image caption or alt text...'
   },
 
   // Admin Content - Hero Images
@@ -4263,6 +4449,46 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.departments.create.failedToCreate': {
     hi: 'विभाग बनाने में विफल',
     en: 'Failed to create department'
+  },
+  'admin.departments.title': {
+    hi: 'विभाग प्रबंधन',
+    en: 'Department Management'
+  },
+  'admin.departments.createDepartment': {
+    hi: 'विभाग बनाएं',
+    en: 'Create Department'
+  },
+  'admin.departments.createDepartmentDesc': {
+    hi: 'राष्ट्रीय, राज्य, या जिला स्तर पर नए विभाग बनाएं',
+    en: 'Create new departments at national, state, or district level'
+  },
+  'admin.departments.createDepartmentText': {
+    hi: 'हिंदी और अंग्रेजी में कस्टम नाम के साथ एक नया विभाग जोड़ें। आप जितने चाहें उतने विभाग बना सकते हैं।',
+    en: 'Add a new department with custom name in Hindi and English. You can create as many departments as needed.'
+  },
+  'admin.departments.manageDepartments': {
+    hi: 'विभाग प्रबंधित करें',
+    en: 'Manage Departments'
+  },
+  'admin.departments.manageDepartmentsDesc': {
+    hi: 'विभाग पदों को संपादित, हटाएं और प्रबंधित करें',
+    en: 'Edit, delete, and manage department posts'
+  },
+  'admin.departments.manageDepartmentsText': {
+    hi: 'मौजूदा विभागों को प्रबंधित करें, पद बनाएं, पदों को पुन: क्रमित करें, और विभाग विवरण अपडेट करें।',
+    en: 'Manage existing departments, create posts, re-order posts, and update department details.'
+  },
+  'admin.departments.assignMembers': {
+    hi: 'सदस्य असाइन करें',
+    en: 'Assign Members'
+  },
+  'admin.departments.assignMembersDesc': {
+    hi: 'विभाग पदों में सदस्य असाइन करें',
+    en: 'Assign members to department posts'
+  },
+  'admin.departments.assignMembersText': {
+    hi: 'राष्ट्रीय, राज्य, या जिला स्तर पर विभागों में पंजीकृत सदस्यों को पदों में असाइन करें।',
+    en: 'Assign registered members to posts in departments at national, state, or district level.'
   },
 
   // Admin Departments - Manage
@@ -7397,6 +7623,386 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.help.general.someFeaturesNotAvailable': {
     hi: 'आपकी भूमिका के आधार पर कुछ सुविधाएं उपलब्ध नहीं हो सकती हैं।',
     en: 'Some features may not be available based on your role.'
+  },
+
+  // Settings page
+  'admin.settings.title': {
+    hi: 'सेटिंग्स',
+    en: 'Settings'
+  },
+  'admin.settings.subtitle': {
+    hi: 'अपने खाते की सेटिंग्स और प्राथमिकताएं प्रबंधित करें',
+    en: 'Manage your account settings and preferences'
+  },
+  'admin.settings.profileSettings': {
+    hi: 'प्रोफ़ाइल सेटिंग्स',
+    en: 'Profile Settings'
+  },
+  'admin.settings.profileSettingsDesc': {
+    hi: 'अपनी व्यक्तिगत जानकारी अपडेट करें',
+    en: 'Update your personal information'
+  },
+  'admin.settings.fullName': {
+    hi: 'पूरा नाम',
+    en: 'Full Name'
+  },
+  'admin.settings.fullNamePlaceholder': {
+    hi: 'अपना पूरा नाम दर्ज करें',
+    en: 'Enter your full name'
+  },
+  'admin.settings.email': {
+    hi: 'ईमेल पता',
+    en: 'Email Address'
+  },
+  'admin.settings.emailPlaceholder': {
+    hi: 'अपना ईमेल दर्ज करें',
+    en: 'Enter your email'
+  },
+  'admin.settings.phone': {
+    hi: 'फ़ोन नंबर',
+    en: 'Phone Number'
+  },
+  'admin.settings.phonePlaceholder': {
+    hi: 'अपना फ़ोन नंबर दर्ज करें',
+    en: 'Enter your phone number'
+  },
+  'admin.settings.saveProfile': {
+    hi: 'प्रोफ़ाइल सहेजें',
+    en: 'Save Profile'
+  },
+  'admin.settings.changePassword': {
+    hi: 'पासवर्ड बदलें',
+    en: 'Change Password'
+  },
+  'admin.settings.changePasswordDesc': {
+    hi: 'अपने खाते को सुरक्षित रखने के लिए अपना पासवर्ड अपडेट करें',
+    en: 'Update your password to keep your account secure'
+  },
+  'admin.settings.currentPassword': {
+    hi: 'वर्तमान पासवर्ड',
+    en: 'Current Password'
+  },
+  'admin.settings.currentPasswordPlaceholder': {
+    hi: 'वर्तमान पासवर्ड दर्ज करें',
+    en: 'Enter current password'
+  },
+  'admin.settings.newPassword': {
+    hi: 'नया पासवर्ड',
+    en: 'New Password'
+  },
+  'admin.settings.newPasswordPlaceholder': {
+    hi: 'नया पासवर्ड दर्ज करें (न्यूनतम 8 वर्ण)',
+    en: 'Enter new password (min 8 characters)'
+  },
+  'admin.settings.confirmPassword': {
+    hi: 'नया पासवर्ड पुष्टि करें',
+    en: 'Confirm New Password'
+  },
+  'admin.settings.confirmPasswordPlaceholder': {
+    hi: 'नया पासवर्ड पुष्टि करें',
+    en: 'Confirm new password'
+  },
+  'admin.settings.preferences': {
+    hi: 'प्राथमिकताएं',
+    en: 'Preferences'
+  },
+  'admin.settings.preferencesDesc': {
+    hi: 'अपने अनुभव को अनुकूलित करें',
+    en: 'Customize your experience'
+  },
+  'admin.settings.language': {
+    hi: 'भाषा',
+    en: 'Language'
+  },
+  'admin.settings.languageDesc': {
+    hi: 'अपनी पसंदीदा भाषा चुनें',
+    en: 'Choose your preferred language'
+  },
+  'admin.settings.emailNotifications': {
+    hi: 'ईमेल सूचनाएं',
+    en: 'Email Notifications'
+  },
+  'admin.settings.emailNotificationsDesc': {
+    hi: 'महत्वपूर्ण अपडेट के लिए ईमेल सूचनाएं प्राप्त करें',
+    en: 'Receive email notifications for important updates'
+  },
+  'admin.settings.systemNotifications': {
+    hi: 'सिस्टम सूचनाएं',
+    en: 'System Notifications'
+  },
+  'admin.settings.systemNotificationsDesc': {
+    hi: 'इन-ऐप सूचनाएं दिखाएं',
+    en: 'Show in-app notifications'
+  },
+  'admin.settings.save': {
+    hi: 'सहेजें',
+    en: 'Save'
+  },
+  'admin.settings.saving': {
+    hi: 'सहेजा जा रहा है...',
+    en: 'Saving...'
+  },
+  'admin.settings.changing': {
+    hi: 'बदला जा रहा है...',
+    en: 'Changing...'
+  },
+  'admin.settings.accountInfo': {
+    hi: 'खाता जानकारी',
+    en: 'Account Information'
+  },
+  'admin.settings.role': {
+    hi: 'भूमिका',
+    en: 'Role'
+  },
+  'admin.settings.district': {
+    hi: 'जिला',
+    en: 'District'
+  },
+  'admin.settings.state': {
+    hi: 'राज्य',
+    en: 'State'
+  },
+  'admin.settings.systemInfo': {
+    hi: 'सिस्टम जानकारी',
+    en: 'System Information'
+  },
+  'admin.settings.totalMembers': {
+    hi: 'कुल सदस्य',
+    en: 'Total Members'
+  },
+  'admin.settings.totalAdmins': {
+    hi: 'कुल एडमिन',
+    en: 'Total Admins'
+  },
+  'admin.settings.totalDepartments': {
+    hi: 'विभाग',
+    en: 'Departments'
+  },
+  'admin.settings.refresh': {
+    hi: 'ताज़ा करें',
+    en: 'Refresh'
+  },
+  'admin.settings.quickActions': {
+    hi: 'त्वरित कार्रवाई',
+    en: 'Quick Actions'
+  },
+  'admin.settings.viewActivityLogs': {
+    hi: 'गतिविधि लॉग देखें',
+    en: 'View Activity Logs'
+  },
+  'admin.settings.managePermissions': {
+    hi: 'अनुमतियां प्रबंधित करें',
+    en: 'Manage Permissions'
+  },
+  'admin.settings.helpGuide': {
+    hi: 'सहायता गाइड',
+    en: 'Help Guide'
+  },
+  'admin.settings.securityTips': {
+    hi: 'सुरक्षा युक्तियाँ',
+    en: 'Security Tips'
+  },
+  'admin.settings.tip1': {
+    hi: 'एक मजबूत, अद्वितीय पासवर्ड का उपयोग करें',
+    en: 'Use a strong, unique password'
+  },
+  'admin.settings.tip2': {
+    hi: 'अपना पासवर्ड नियमित रूप से बदलें',
+    en: 'Change your password regularly'
+  },
+  'admin.settings.tip3': {
+    hi: 'अपने लॉगिन क्रेडेंशियल कभी साझा न करें',
+    en: 'Never share your login credentials'
+  },
+  'admin.settings.tip4': {
+    hi: 'साझा उपकरणों का उपयोग करते समय लॉग आउट करें',
+    en: 'Log out when using shared devices'
+  },
+  'admin.settings.success': {
+    hi: 'सफलता',
+    en: 'Success'
+  },
+  'admin.settings.error': {
+    hi: 'त्रुटि',
+    en: 'Error'
+  },
+  'admin.settings.fillRequiredFields': {
+    hi: 'कृपया सभी आवश्यक फ़ील्ड भरें',
+    en: 'Please fill all required fields'
+  },
+  'admin.settings.profileUpdated': {
+    hi: 'प्रोफ़ाइल सफलतापूर्वक अपडेट की गई',
+    en: 'Profile updated successfully'
+  },
+  'admin.settings.failedToUpdate': {
+    hi: 'प्रोफ़ाइल अपडेट करने में विफल',
+    en: 'Failed to update profile'
+  },
+  'admin.settings.fillAllPasswordFields': {
+    hi: 'कृपया सभी पासवर्ड फ़ील्ड भरें',
+    en: 'Please fill all password fields'
+  },
+  'admin.settings.passwordsDoNotMatch': {
+    hi: 'पासवर्ड मेल नहीं खाते',
+    en: 'Passwords do not match'
+  },
+  'admin.settings.passwordMinLength': {
+    hi: 'पासवर्ड कम से कम 8 वर्ण का होना चाहिए',
+    en: 'Password must be at least 8 characters'
+  },
+  'admin.settings.passwordChanged': {
+    hi: 'पासवर्ड सफलतापूर्वक बदला गया',
+    en: 'Password changed successfully'
+  },
+  'admin.settings.failedToChangePassword': {
+    hi: 'पासवर्ड बदलने में विफल',
+    en: 'Failed to change password'
+  },
+  'admin.settings.preferencesSaved': {
+    hi: 'प्राथमिकताएं सफलतापूर्वक सहेजी गईं',
+    en: 'Preferences saved successfully'
+  },
+  'admin.settings.failedToSavePreferences': {
+    hi: 'प्राथमिकताएं सहेजने में विफल',
+    en: 'Failed to save preferences'
+  },
+
+  // Analytics page
+  'admin.analytics.title': {
+    hi: 'एनालिटिक्स डैशबोर्ड',
+    en: 'Analytics Dashboard'
+  },
+  'admin.analytics.subtitle': {
+    hi: 'अपने RHVS समुदाय में व्यापक अंतर्दृष्टि',
+    en: 'Comprehensive insights into your RHVS community'
+  },
+  'admin.analytics.refresh': {
+    hi: 'ताज़ा करें',
+    en: 'Refresh'
+  },
+  'admin.analytics.totalMembers': {
+    hi: 'कुल सदस्य',
+    en: 'Total Members'
+  },
+  'admin.analytics.thisMonth': {
+    hi: 'इस महीने',
+    en: 'this month'
+  },
+  'admin.analytics.verifiedMembers': {
+    hi: 'सत्यापित सदस्य',
+    en: 'Verified Members'
+  },
+  'admin.analytics.ofTotal': {
+    hi: 'कुल का',
+    en: 'of total'
+  },
+  'admin.analytics.activeDistricts': {
+    hi: 'सक्रिय जिले',
+    en: 'Active Districts'
+  },
+  'admin.analytics.withRegisteredMembers': {
+    hi: 'पंजीकृत सदस्यों के साथ',
+    en: 'With registered members'
+  },
+  'admin.analytics.recentActivities': {
+    hi: 'हाल की गतिविधियां',
+    en: 'Recent Activities'
+  },
+  'admin.analytics.newMembers30Days': {
+    hi: 'नए सदस्य (30 दिन)',
+    en: 'new members (30 days)'
+  },
+  'admin.analytics.monthlyGrowthTrend': {
+    hi: 'मासिक वृद्धि प्रवृत्ति',
+    en: 'Monthly Growth Trend'
+  },
+  'admin.analytics.memberStatusDistribution': {
+    hi: 'सदस्य स्थिति वितरण',
+    en: 'Member Status Distribution'
+  },
+  'admin.analytics.noStatusData': {
+    hi: 'कोई स्थिति डेटा उपलब्ध नहीं',
+    en: 'No status data available'
+  },
+  'admin.analytics.topStatesByMembers': {
+    hi: 'सदस्यों द्वारा शीर्ष राज्य',
+    en: 'Top States by Members'
+  },
+  'admin.analytics.noStateData': {
+    hi: 'कोई राज्य डेटा उपलब्ध नहीं',
+    en: 'No state data available'
+  },
+  'admin.analytics.topDistrictsByMembers': {
+    hi: 'सदस्यों द्वारा शीर्ष जिले',
+    en: 'Top Districts by Members'
+  },
+  'admin.analytics.noDistrictData': {
+    hi: 'कोई जिला डेटा उपलब्ध नहीं',
+    en: 'No district data available'
+  },
+  'admin.analytics.departmentDistribution': {
+    hi: 'विभाग वितरण',
+    en: 'Department Distribution'
+  },
+  'admin.analytics.pendingVerification': {
+    hi: 'लंबित सत्यापन',
+    en: 'Pending Verification'
+  },
+  'admin.analytics.thisMonthLabel': {
+    hi: 'इस महीने',
+    en: 'This Month'
+  },
+  'admin.analytics.rejected': {
+    hi: 'अस्वीकृत',
+    en: 'Rejected'
+  },
+  'admin.analytics.loading': {
+    hi: 'एनालिटिक्स लोड हो रहे हैं...',
+    en: 'Loading analytics...'
+  },
+  'admin.analytics.error': {
+    hi: 'त्रुटि',
+    en: 'Error'
+  },
+  'admin.analytics.failedToLoad': {
+    hi: 'एनालिटिक्स लोड करने में विफल',
+    en: 'Failed to load analytics'
+  },
+  'admin.analytics.retry': {
+    hi: 'पुनः प्रयास करें',
+    en: 'Retry'
+  },
+  'admin.analytics.chartMembers': {
+    hi: 'सदस्य',
+    en: 'Members'
+  },
+  'admin.analytics.chartEvents': {
+    hi: 'कार्यक्रम',
+    en: 'Events'
+  },
+  'admin.analytics.chartProducts': {
+    hi: 'उत्पाद',
+    en: 'Products'
+  },
+  'admin.analytics.chartVerified': {
+    hi: 'सत्यापित',
+    en: 'Verified'
+  },
+  'admin.analytics.chartPending': {
+    hi: 'लंबित',
+    en: 'Pending'
+  },
+  'admin.analytics.chartRejected': {
+    hi: 'अस्वीकृत',
+    en: 'Rejected'
+  },
+  'admin.analytics.districtAnalytics': {
+    hi: 'जिला एनालिटिक्स',
+    en: 'District Analytics'
+  },
+  'admin.analytics.districtSubtitle': {
+    hi: 'अपने जिले के लिए विस्तृत अंतर्दृष्टि',
+    en: 'Detailed insights for your district'
   }
 };
 

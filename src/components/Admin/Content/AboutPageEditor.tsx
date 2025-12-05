@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Save,
   Edit,
@@ -33,9 +33,10 @@ import {
 
 interface AboutSection {
   id: string;
-  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading';
+  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading' | 'image';
   title?: string;
   content: string;
+  imageUrl?: string;
   order: number;
   isVisible: boolean;
   styling?: {
@@ -43,6 +44,8 @@ interface AboutSection {
     fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
     fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
     color?: 'gray' | 'orange' | 'red' | 'blue' | 'green';
+    imageAlign?: 'left' | 'center' | 'right';
+    imageWidth?: 'full' | 'half' | 'third' | 'quarter';
   };
 }
 
@@ -56,6 +59,7 @@ export function AboutPageEditor() {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
   // Load about page content from API
   const loadAboutSections = useCallback(async () => {
@@ -300,6 +304,39 @@ export function AboutPageEditor() {
     }
   };
 
+  const handleImageUpload = async (sectionId: string, file: File) => {
+    try {
+      setUploadingImage(sectionId);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', 'about_page');
+
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/upload/about', {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      if (data.success && data.url) {
+        updateSection(sectionId, { imageUrl: data.url });
+      } else {
+        throw new Error(data.error || 'Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert(t('admin.content.about.imageUploadError') || 'Failed to upload image');
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
   const getSectionIcon = (type: AboutSection['type']) => {
     switch (type) {
       case 'hero': return <Heading1 className="h-4 w-4" />;
@@ -307,6 +344,7 @@ export function AboutPageEditor() {
       case 'quote': return <Quote className="h-4 w-4" />;
       case 'paragraph': return <Type className="h-4 w-4" />;
       case 'heading': return <Heading2 className="h-4 w-4" />;
+      case 'image': return <ImageIcon className="h-4 w-4" />;
       default: return <Type className="h-4 w-4" />;
     }
   };
@@ -314,6 +352,7 @@ export function AboutPageEditor() {
   const getSectionColor = (type: AboutSection['type']) => {
     switch (type) {
       case 'hero': return 'bg-orange-100 text-orange-800';
+      case 'image': return 'bg-purple-100 text-purple-800';
       case 'card': return 'bg-blue-100 text-blue-800';
       case 'quote': return 'bg-green-100 text-green-800';
       case 'paragraph': return 'bg-gray-100 text-gray-800';
@@ -420,6 +459,14 @@ export function AboutPageEditor() {
             <Type className="h-4 w-4 mr-2" />
             {t('admin.content.about.paragraph')}
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => addSection('image')}
+          >
+            <ImageIcon className="h-4 w-4 mr-2" />
+            {t('admin.content.about.imageSection') || 'Image'}
+          </Button>
         </div>
       </Card>
 
@@ -488,9 +535,22 @@ export function AboutPageEditor() {
                         {section.title}
                       </h3>
                     )}
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {section.content || t('admin.content.about.noContent')}
-                    </p>
+                    {section.type === 'image' && section.imageUrl ? (
+                      <div>
+                        <img 
+                          src={section.imageUrl} 
+                          alt={section.content || section.title || 'Section image'} 
+                          className="max-w-full h-auto rounded-lg border border-gray-200 max-h-48 object-contain"
+                        />
+                        {section.content && (
+                          <p className="text-sm text-gray-600 mt-2 italic">{section.content}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {section.content || t('admin.content.about.noContent')}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -514,25 +574,178 @@ export function AboutPageEditor() {
                         value={section.type}
                         onValueChange={(value: AboutSection['type']) => updateSection(section.id, { type: value })}
                       >
-                        <option value="hero">{t('admin.content.about.heroSection')}</option>
-                        <option value="card">{t('admin.content.about.cardSection')}</option>
-                        <option value="quote">{t('admin.content.about.quoteSection')}</option>
-                        <option value="heading">{t('admin.content.about.heading')}</option>
-                        <option value="paragraph">{t('admin.content.about.paragraph')}</option>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="hero">{t('admin.content.about.heroSection')}</SelectItem>
+                          <SelectItem value="card">{t('admin.content.about.cardSection')}</SelectItem>
+                          <SelectItem value="quote">{t('admin.content.about.quoteSection')}</SelectItem>
+                          <SelectItem value="heading">{t('admin.content.about.heading')}</SelectItem>
+                          <SelectItem value="paragraph">{t('admin.content.about.paragraph')}</SelectItem>
+                          <SelectItem value="image">{t('admin.content.about.imageSection') || 'Image'}</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.contentLabel')}</Label>
-                    <Textarea
-                      id={`content-${section.id}`}
-                      value={section.content}
-                      onChange={(e) => updateSection(section.id, { content: e.target.value })}
-                      placeholder={t('admin.content.about.contentPlaceholder')}
-                      rows={6}
-                    />
-                  </div>
+                  {/* Image Upload for Image Sections */}
+                  {section.type === 'image' && (
+                    <div>
+                      <Label>{t('admin.content.about.imageUpload') || 'Upload Image'}</Label>
+                      <div className="mt-2 space-y-2">
+                        {section.imageUrl ? (
+                          <div className="space-y-2">
+                            <img 
+                              src={section.imageUrl} 
+                              alt={section.title || 'Section image'} 
+                              className="max-w-full h-auto rounded-lg border border-gray-200 max-h-64 object-contain"
+                            />
+                            <div className="flex gap-2">
+                              <label className="flex-1 cursor-pointer">
+                                <Input
+                                  type="file"
+                                  accept="image/*"
+                                  id={`image-upload-${section.id}`}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(section.id, file);
+                                    }
+                                  }}
+                                  disabled={uploadingImage === section.id}
+                                  className="hidden"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const input = document.getElementById(`image-upload-${section.id}`) as HTMLInputElement;
+                                    input?.click();
+                                  }}
+                                  disabled={uploadingImage === section.id}
+                                  className="w-full"
+                                >
+                                  <ImageIcon className="h-4 w-4 mr-2" />
+                                  {uploadingImage === section.id 
+                                    ? (t('admin.content.about.uploading') || 'Uploading...')
+                                    : (t('admin.content.about.replaceImage') || 'Replace Image')
+                                  }
+                                </Button>
+                              </label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateSection(section.id, { imageUrl: undefined })}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                {t('admin.content.about.removeImage') || 'Remove'}
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleImageUpload(section.id, file);
+                                }
+                              }}
+                              disabled={uploadingImage === section.id}
+                              className="cursor-pointer"
+                            />
+                            {uploadingImage === section.id && (
+                              <p className="text-sm text-gray-500 mt-1">{t('admin.content.about.uploading') || 'Uploading...'}</p>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-500">
+                          {t('admin.content.about.imageUploadHint') || 'Supported formats: JPG, PNG, GIF. Max size: 2MB'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Image Alignment and Width for Image Sections */}
+                  {section.type === 'image' && section.imageUrl && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor={`imageAlign-${section.id}`}>{t('admin.content.about.imageAlignment') || 'Image Alignment'}</Label>
+                        <Select
+                          value={section.styling?.imageAlign || 'center'}
+                          onValueChange={(value: 'left' | 'center' | 'right') => 
+                            updateSection(section.id, { 
+                              styling: { ...section.styling, imageAlign: value }
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="left">{t('admin.content.about.left')}</SelectItem>
+                            <SelectItem value="center">{t('admin.content.about.center')}</SelectItem>
+                            <SelectItem value="right">{t('admin.content.about.right')}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor={`imageWidth-${section.id}`}>{t('admin.content.about.imageWidth') || 'Image Width'}</Label>
+                        <Select
+                          value={section.styling?.imageWidth || 'full'}
+                          onValueChange={(value: 'full' | 'half' | 'third' | 'quarter') => 
+                            updateSection(section.id, { 
+                              styling: { ...section.styling, imageWidth: value }
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="full">{t('admin.content.about.fullWidth') || 'Full Width'}</SelectItem>
+                            <SelectItem value="half">{t('admin.content.about.halfWidth') || 'Half Width'}</SelectItem>
+                            <SelectItem value="third">{t('admin.content.about.thirdWidth') || 'Third Width'}</SelectItem>
+                            <SelectItem value="quarter">{t('admin.content.about.quarterWidth') || 'Quarter Width'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Content for non-image sections */}
+                  {section.type !== 'image' && (
+                    <div>
+                      <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.contentLabel')}</Label>
+                      <Textarea
+                        id={`content-${section.id}`}
+                        value={section.content}
+                        onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                        placeholder={t('admin.content.about.contentPlaceholder')}
+                        rows={6}
+                      />
+                    </div>
+                  )}
+
+                  {/* Caption/Alt text for image sections */}
+                  {section.type === 'image' && (
+                    <div>
+                      <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.imageCaption') || 'Image Caption/Alt Text'}</Label>
+                      <Textarea
+                        id={`content-${section.id}`}
+                        value={section.content}
+                        onChange={(e) => updateSection(section.id, { content: e.target.value })}
+                        placeholder={t('admin.content.about.imageCaptionPlaceholder') || 'Enter image caption or alt text...'}
+                        rows={3}
+                      />
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
@@ -545,9 +758,14 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="left">{t('admin.content.about.left')}</option>
-                        <option value="center">{t('admin.content.about.center')}</option>
-                        <option value="right">{t('admin.content.about.right')}</option>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="left">{t('admin.content.about.left')}</SelectItem>
+                          <SelectItem value="center">{t('admin.content.about.center')}</SelectItem>
+                          <SelectItem value="right">{t('admin.content.about.right')}</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div>
@@ -560,14 +778,19 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="sm">{t('admin.content.about.small')}</option>
-                        <option value="base">{t('admin.content.about.base')}</option>
-                        <option value="lg">{t('admin.content.about.large')}</option>
-                        <option value="xl">{t('admin.content.about.extraLarge')}</option>
-                        <option value="2xl">{t('admin.content.about.twoXL')}</option>
-                        <option value="3xl">{t('admin.content.about.threeXL')}</option>
-                        <option value="4xl">{t('admin.content.about.fourXL')}</option>
-                        <option value="5xl">{t('admin.content.about.fiveXL')}</option>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sm">{t('admin.content.about.small')}</SelectItem>
+                          <SelectItem value="base">{t('admin.content.about.base')}</SelectItem>
+                          <SelectItem value="lg">{t('admin.content.about.large')}</SelectItem>
+                          <SelectItem value="xl">{t('admin.content.about.extraLarge')}</SelectItem>
+                          <SelectItem value="2xl">{t('admin.content.about.twoXL')}</SelectItem>
+                          <SelectItem value="3xl">{t('admin.content.about.threeXL')}</SelectItem>
+                          <SelectItem value="4xl">{t('admin.content.about.fourXL')}</SelectItem>
+                          <SelectItem value="5xl">{t('admin.content.about.fiveXL')}</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div>
@@ -580,11 +803,16 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <option value="gray">{t('admin.content.about.gray')}</option>
-                        <option value="orange">{t('admin.content.about.orange')}</option>
-                        <option value="red">{t('admin.content.about.red')}</option>
-                        <option value="blue">{t('admin.content.about.blue')}</option>
-                        <option value="green">{t('admin.content.about.green')}</option>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="gray">{t('admin.content.about.gray')}</SelectItem>
+                          <SelectItem value="orange">{t('admin.content.about.orange')}</SelectItem>
+                          <SelectItem value="red">{t('admin.content.about.red')}</SelectItem>
+                          <SelectItem value="blue">{t('admin.content.about.blue')}</SelectItem>
+                          <SelectItem value="green">{t('admin.content.about.green')}</SelectItem>
+                        </SelectContent>
                       </Select>
                     </div>
                   </div>

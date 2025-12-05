@@ -463,58 +463,58 @@ export function MemberManagement() {
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
           <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 sm:p-2.5 bg-orange-100 rounded-lg flex-shrink-0">
-                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-orange-100 rounded-lg flex-shrink-0">
+                  <Users className="h-4 w-4 text-orange-600" />
                 </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.totalMembers')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.total}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-600 truncate">{t('admin.members.totalMembers')}</p>
+                  <p className="text-lg font-bold text-gray-900">{stats.total}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 sm:p-2.5 bg-green-100 rounded-lg flex-shrink-0">
-                  <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-green-100 rounded-lg flex-shrink-0">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
                 </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.verified')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.verified || 0}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 sm:p-2.5 bg-yellow-100 rounded-lg flex-shrink-0">
-                  <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
-                </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.pending')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.status.pending || 0}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-600 truncate">{t('admin.members.verified')}</p>
+                  <p className="text-lg font-bold text-gray-900">{stats.status.verified || 0}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-center">
-                <div className="p-2 sm:p-2.5 bg-blue-100 rounded-lg flex-shrink-0">
-                  <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-purple-100 rounded-lg flex-shrink-0">
+                  <Calendar className="h-4 w-4 text-purple-600" />
                 </div>
-                <div className="ml-3 sm:ml-4 min-w-0">
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">{t('admin.members.thisMonth')}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.monthly}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-600 truncate">{t('admin.members.recent30Days')}</p>
+                  <p className="text-lg font-bold text-gray-900">{stats.recent || 0}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 rounded-lg flex-shrink-0">
+                  <TrendingUp className="h-4 w-4 text-blue-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-600 truncate">{t('admin.members.thisMonth')}</p>
+                  <p className="text-lg font-bold text-gray-900">{stats.monthly}</p>
                 </div>
               </div>
             </CardContent>
@@ -522,61 +522,48 @@ export function MemberManagement() {
         </div>
       )}
 
-      {/* Search Section */}
+      {/* Search & Filters Section - Combined */}
       <Card>
-        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
-          <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
-            <Search className="h-4 w-4 sm:h-5 sm:w-5" />
-            {t('admin.members.searchMembers')}
+        <CardHeader className="pb-2 px-4 pt-3">
+          <CardTitle className="text-sm font-semibold text-orange-900 flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            {t('admin.members.searchMembers')} & {t('admin.members.filterMembers')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        <CardContent className="pt-0 px-4 pb-3 space-y-3">
+          {/* Search inputs - compact row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="search" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.searchPlaceholder')}</Label>
-              <div className="relative mt-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   id="search"
                   placeholder={t('admin.members.searchPlaceholder')}
                   value={localSearchTerm}
                   onChange={(e) => setLocalSearchTerm(e.target.value)}
-                  className="pl-10 h-9 sm:h-10 text-sm"
+                  className="pl-8 h-8 text-xs"
                 />
               </div>
             </div>
-            
             <div>
-              <Label htmlFor="regNumber" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.searchByRegNumber')}</Label>
-              <div className="relative mt-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                 <Input
                   id="regNumber"
                   placeholder={t('admin.members.searchByRegNumberPlaceholder')}
                   value={localRegNumberSearch}
                   onChange={(e) => setLocalRegNumberSearch(e.target.value)}
-                  className="pl-10 h-9 sm:h-10 text-sm"
+                  className="pl-8 h-8 text-xs"
                 />
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Filters Section */}
-      <Card>
-        <CardHeader className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6">
-          <CardTitle className="text-base sm:text-lg font-semibold text-orange-900 flex items-center gap-2">
-            <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
-            {t('admin.members.filterMembers')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 px-4 sm:px-6 pb-4 sm:pb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Filters - compact grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
             <div>
-              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.state')}</Label>
               <Select value={selectedState} onValueChange={setSelectedState}>
-                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder={t('admin.members.allStates')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -589,13 +576,12 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.district')}</Label>
               <Select 
                 value={selectedDistrict} 
                 onValueChange={setSelectedDistrict}
                 disabled={!selectedState || selectedState === 'all' || loadingDistricts}
               >
-                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder={
                     !selectedState || selectedState === 'all' 
                       ? t('admin.members.selectStateFirst')
@@ -614,9 +600,8 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="department" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.department')}</Label>
               <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder={t('admin.members.allDepartments')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -629,9 +614,8 @@ export function MemberManagement() {
             </div>
             
             <div>
-              <Label htmlFor="status" className="text-xs sm:text-sm font-medium text-gray-700">{t('admin.members.status')}</Label>
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="mt-1 h-9 sm:h-10 text-sm">
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue placeholder={t('admin.members.allStatus')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -642,27 +626,27 @@ export function MemberManagement() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 mt-4 sm:mt-6">
-            <Button 
-              variant="outline" 
-              onClick={clearFilters}
-              size="sm"
-              className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 cursor-pointer text-sm"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t('admin.members.clearFilters')}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={fetchMembers}
-              size="sm"
-              className="w-full sm:w-auto px-4 sm:px-6 h-9 sm:h-10 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100 cursor-pointer text-sm"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              {t('admin.members.applyFilters')}
-            </Button>
+
+            <div className="col-span-2 sm:col-span-1 lg:col-span-2 flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={clearFilters}
+                size="sm"
+                className="flex-1 h-8 px-3 text-xs bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100"
+              >
+                <RefreshCw className="h-3 w-3 mr-1.5" />
+                {t('admin.members.clearFilters')}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={fetchMembers}
+                size="sm"
+                className="flex-1 h-8 px-3 text-xs bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+              >
+                <Filter className="h-3 w-3 mr-1.5" />
+                {t('admin.members.applyFilters')}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -687,7 +671,7 @@ export function MemberManagement() {
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('admin.members.contact')}
                   </th>
-                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ maxWidth: '350px' }}>
                     {t('admin.members.location')}
                   </th>
                   <th className="px-4 xl:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -743,10 +727,25 @@ export function MemberManagement() {
                       <div className="text-sm text-gray-900 truncate">{member.email}</div>
                       <div className="text-xs sm:text-sm text-gray-500">{member.phone}</div>
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 xl:px-6 py-4" style={{ maxWidth: '350px', wordWrap: 'break-word' }}>
                       <div className="text-sm text-gray-900">{member.state || t('admin.members.na')}</div>
                       <div className="text-xs sm:text-sm text-gray-500">{member.district || t('admin.members.na')}</div>
-                      <div className="text-xs sm:text-sm text-blue-600 font-medium truncate">{member.departments || t('admin.members.noAssignments')}</div>
+                      {member.departments ? (
+                        <div 
+                          className="text-xs sm:text-sm text-blue-600 font-medium break-words leading-relaxed" 
+                          style={{ 
+                            maxHeight: '4.5em',
+                            overflowY: 'auto',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere'
+                          }}
+                          title={member.departments}
+                        >
+                          {member.departments}
+                        </div>
+                      ) : (
+                        <div className="text-xs sm:text-sm text-gray-400 italic">{t('admin.members.noAssignments')}</div>
+                      )}
                     </td>
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(member.status)}
@@ -880,8 +879,19 @@ export function MemberManagement() {
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-gray-500">{t('admin.members.location')}</p>
                         <p className="text-sm text-gray-900">{member.state || t('admin.members.na')}, {member.district || t('admin.members.na')}</p>
-                        {member.departments && (
-                          <p className="text-xs text-blue-600 font-medium mt-1">{member.departments}</p>
+                        {member.departments ? (
+                          <p 
+                            className="text-xs text-blue-600 font-medium mt-1 break-words leading-relaxed" 
+                            style={{ 
+                              wordBreak: 'break-word',
+                              overflowWrap: 'anywhere'
+                            }}
+                            title={member.departments}
+                          >
+                            {member.departments}
+                          </p>
+                        ) : (
+                          <p className="text-xs text-gray-400 italic mt-1">{t('admin.members.noAssignments')}</p>
                         )}
                       </div>
                     </div>

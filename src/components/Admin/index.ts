@@ -24,6 +24,9 @@ export { MemberManagement } from './Members/MemberManagement';
 
 // Analytics
 export { AnalyticsDashboard } from './Analytics/AnalyticsDashboard';
+
+// Settings
+export { SettingsPage } from './Settings/SettingsPage';
 export { ActivityLogs } from './Analytics/ActivityLogs';
 
 // Security

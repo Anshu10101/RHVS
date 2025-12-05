@@ -74,6 +74,18 @@ export default function GalleryGrid({ images, favorites, onImageClick, onToggleF
                       className="w-full h-auto object-contain transition-transform duration-700 group-hover:scale-105"
                       priority={index < 6}
                       quality={85}
+                      unoptimized
+                      onError={(e) => {
+                        // Fallback to different thumbnail quality if hqdefault fails
+                        const target = e.target as HTMLImageElement;
+                        if (target.src.includes('hqdefault.jpg')) {
+                          target.src = `https://img.youtube.com/vi/${image.youtubeVideoId}/mqdefault.jpg`;
+                        } else if (target.src.includes('mqdefault.jpg')) {
+                          target.src = `https://img.youtube.com/vi/${image.youtubeVideoId}/sddefault.jpg`;
+                        } else if (target.src.includes('sddefault.jpg')) {
+                          target.src = `https://img.youtube.com/vi/${image.youtubeVideoId}/default.jpg`;
+                        }
+                      }}
                     />
                     {/* Minimal Play Button Overlay for Videos */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-xl sm:rounded-2xl">

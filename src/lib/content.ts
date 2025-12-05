@@ -2,9 +2,10 @@ import pool from './database';
 
 export interface AboutSection {
   id: string;
-  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading';
+  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading' | 'image';
   title?: string;
   content: string;
+  imageUrl?: string;
   order: number;
   isVisible: boolean;
   styling?: {
@@ -12,6 +13,8 @@ export interface AboutSection {
     fontSize?: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
     fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold' | 'extrabold';
     color?: 'gray' | 'orange' | 'red' | 'blue' | 'green';
+    imageAlign?: 'left' | 'center' | 'right';
+    imageWidth?: 'full' | 'half' | 'third' | 'quarter';
   };
   createdAt: Date;
   updatedAt: Date;
@@ -239,6 +242,7 @@ export class ContentService {
         type: row.type,
         title: row.title,
         content: row.content,
+        imageUrl: row.image_url || undefined,
         order: row.order,
         isVisible: Boolean(row.isVisible),
         styling: row.styling ? JSON.parse(row.styling) : undefined,
@@ -262,13 +266,14 @@ export class ContentService {
       // Insert new sections
       for (const section of sections) {
         await pool.execute(
-          `INSERT INTO about_sections (id, type, title, content, \`order\`, isVisible, styling, created_at, updated_at, updated_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
+          `INSERT INTO about_sections (id, type, title, content, image_url, \`order\`, isVisible, styling, created_at, updated_at, updated_by)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)`,
           [
             section.id,
             section.type,
             section.title || null,
             section.content,
+            section.imageUrl || null,
             section.order,
             section.isVisible,
             section.styling ? JSON.stringify(section.styling) : null,
@@ -1023,15 +1028,15 @@ export class ContentService {
         // Set isolation level to READ COMMITTED to ensure we see committed data
         await connection.execute('SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED');
         const [rows] = await connection.execute('SELECT * FROM product_categories WHERE isVisible = TRUE ORDER BY name ASC');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (rows as any[]).map((row: any) => ({
-          id: row.id,
-          name: row.name,
-          description: row.description,
-          isVisible: Boolean(row.isVisible),
-          createdAt: new Date(row.created_at as string),
-          updatedAt: new Date(row.updated_at as string)
-        }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (rows as any[]).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        isVisible: Boolean(row.isVisible),
+        createdAt: new Date(row.created_at as string),
+        updatedAt: new Date(row.updated_at as string)
+      }));
       } finally {
         connection.release();
       }

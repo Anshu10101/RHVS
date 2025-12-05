@@ -767,8 +767,8 @@ export default function AssignMembersPage() {
                         }}
                       >
                         <CardContent className="p-4">
-                          <h3 className="font-semibold text-lg">{department.name_en}</h3>
-                          <p className="text-gray-600 text-sm">{department.name_hi}</p>
+                          <h3 className="font-semibold text-lg">{department.name_hi}</h3>
+                          <p className="text-gray-600 text-sm">{department.name_en}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -801,15 +801,15 @@ export default function AssignMembersPage() {
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                   <h3 className="font-medium text-orange-800 mb-2">{t('admin.departments.assign.nationalExecutiveAssignment')}</h3>
                   <p className="text-sm text-orange-700">
-                    <strong>{t('admin.departments.assign.department')}</strong> {nationalExecutiveDept.name_en} ({nationalExecutiveDept.name_hi})
+                    <strong>{t('admin.departments.assign.department')}</strong> {nationalExecutiveDept.name_hi} ({nationalExecutiveDept.name_en})
                   </p>
                   <p className="text-xs text-orange-600 mt-1" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.nationalLevelOnly').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
                 </div>
                 
                 <Card>
                   <CardHeader>
-                    <CardTitle>{nationalExecutiveDept.name_en}</CardTitle>
-                    <p className="text-sm text-gray-500">{nationalExecutiveDept.name_hi}</p>
+                    <CardTitle>{nationalExecutiveDept.name_hi}</CardTitle>
+                    <p className="text-sm text-gray-500">{nationalExecutiveDept.name_en}</p>
                   </CardHeader>
                   <CardContent>
                     {nationalExecutivePosts.length === 0 ? (
@@ -835,14 +835,14 @@ export default function AssignMembersPage() {
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <h3 className="font-semibold">
-                                      {post.position_order}. {post.name_en}
+                                      {post.position_order}. {post.name_hi}
                                       {post.position_order === 1 && (
                                         <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
                                           President
                                         </span>
                                       )}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{post.name_hi}</p>
+                                    <p className="text-sm text-gray-500">{post.name_en}</p>
                                   </div>
                                   
                                   <Button
@@ -1090,7 +1090,7 @@ export default function AssignMembersPage() {
                   <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <h3 className="font-medium text-blue-800 mb-2">Selected Configuration:</h3>
                     <p className="text-sm text-blue-700">
-                      <strong>Department:</strong> {selectedDepartment.name_en} ({selectedDepartment.name_hi})
+                      <strong>Department:</strong> {selectedDepartment.name_hi} ({selectedDepartment.name_en})
                     </p>
                     <p className="text-sm text-blue-700">
                       <strong>Level:</strong> {selectedLevel}
@@ -1118,7 +1118,7 @@ export default function AssignMembersPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="font-medium text-blue-800 mb-2">📋 Assignment Configuration</h3>
                   <p className="text-sm text-blue-700">
-                    <strong>Department:</strong> {selectedDepartment.name_en} • 
+                    <strong>Department:</strong> {selectedDepartment.name_hi} • 
                     <strong> Level:</strong> {isDistrictAdmin ? 'district' : selectedLevel}
                     {isDistrictAdmin && currentUser?.state && currentUser?.district && (
                       ` • State: ${currentUser.state} • District: ${currentUser.district}`
@@ -1133,8 +1133,8 @@ export default function AssignMembersPage() {
                 
                 <Card>
                   <CardHeader>
-                    <CardTitle>{selectedDepartment.name_en}</CardTitle>
-                    <p className="text-sm text-gray-500">{selectedDepartment.name_hi}</p>
+                    <CardTitle>{selectedDepartment.name_hi}</CardTitle>
+                    <p className="text-sm text-gray-500">{selectedDepartment.name_en}</p>
                   </CardHeader>
                   <CardContent>
                     {isLoading ? (
@@ -1180,14 +1180,14 @@ export default function AssignMembersPage() {
                                 <div className="flex items-center justify-between">
                                   <div>
                                     <h3 className="font-semibold">
-                                      {post.position_order}. {post.name_en}
+                                      {post.position_order}. {post.name_hi}
                                       {post.position_order === 1 && (
                                         <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
                                           President
                                         </span>
                                       )}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{post.name_hi}</p>
+                                    <p className="text-sm text-gray-500">{post.name_en}</p>
                                   </div>
                                   
                                   <Button
@@ -1288,15 +1288,15 @@ export default function AssignMembersPage() {
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_en || '')}</DialogTitle>
+            <DialogTitle>{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_hi || '')}</DialogTitle>
             <DialogDescription>
               {t('admin.departments.assign.selectMembersAtLevel').replace('{level}', selectedLevel)}
             </DialogDescription>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
               <p className="font-medium text-blue-800">{t('admin.departments.assign.assignmentConfiguration')}</p>
               <p className="text-blue-700">
-                <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment?.name_en} • 
-                <strong> {t('admin.departments.assign.post')}</strong> {selectedPost?.name_en} • 
+                <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment?.name_hi} • 
+                <strong> {t('admin.departments.assign.post')}</strong> {selectedPost?.name_hi} • 
                 <strong> {t('admin.departments.assign.level')}</strong> {selectedLevel}
                 {selectedLevel === 'state' && selectedState && (
                   <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState}</span>

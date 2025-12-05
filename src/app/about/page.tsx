@@ -12,9 +12,10 @@ const devanagari = Noto_Sans_Devanagari({
 
 interface AboutSection {
   id: string;
-  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading';
+  type: 'hero' | 'card' | 'quote' | 'paragraph' | 'heading' | 'image';
   title?: string;
   content: string;
+  imageUrl?: string;
   order: number;
   isVisible: boolean;
   styling?: {
@@ -22,6 +23,8 @@ interface AboutSection {
     fontSize?: string;
     fontWeight?: string;
     color?: 'gray' | 'orange' | 'red' | 'blue' | 'green';
+    imageAlign?: 'left' | 'center' | 'right';
+    imageWidth?: 'full' | 'half' | 'third' | 'quarter';
   };
 }
 
@@ -260,6 +263,50 @@ export default function AboutPage() {
                   <h2 className={`${getFontSizeClass(section.styling?.fontSize)} ${getFontWeightClass(section.styling?.fontWeight)} ${getTextColorClass(section.styling?.color)} ${getTextAlignClass(section.styling?.textAlign)}`}>
                     {section.title || section.content}
                   </h2>
+                </div>
+              </section>
+            );
+          }
+
+          if (section.type === 'image') {
+            const imageAlign = section.styling?.imageAlign || 'center';
+            const imageWidth = section.styling?.imageWidth || 'full';
+            
+            const widthClasses = {
+              full: 'w-full',
+              half: 'w-full md:w-1/2',
+              third: 'w-full md:w-1/3',
+              quarter: 'w-full md:w-1/4'
+            };
+
+            const alignClasses = {
+              left: 'mr-auto',
+              center: 'mx-auto',
+              right: 'ml-auto'
+            };
+
+            return (
+              <section key={section.id} className="py-6">
+                <div className="container mx-auto px-4">
+                  {section.title && (
+                    <h3 className={`${getFontSizeClass(section.styling?.fontSize)} ${getFontWeightClass(section.styling?.fontWeight)} ${getTextColorClass(section.styling?.color)} ${getTextAlignClass(section.styling?.textAlign)} mb-4`}>
+                      {section.title}
+                    </h3>
+                  )}
+                  {section.imageUrl && (
+                    <div className={`${widthClasses[imageWidth]} ${alignClasses[imageAlign]}`}>
+                      <img 
+                        src={section.imageUrl} 
+                        alt={section.content || section.title || 'About page image'} 
+                        className="w-full h-auto rounded-lg shadow-md"
+                      />
+                      {section.content && (
+                        <p className={`mt-3 text-sm ${getTextColorClass(section.styling?.color)} ${getTextAlignClass(imageAlign)} italic`}>
+                          {section.content}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </section>
             );

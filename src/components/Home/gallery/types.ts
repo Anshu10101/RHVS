@@ -73,6 +73,13 @@ export function photoToGalleryImage(photo: Photo): GalleryImage | null {
 
   const numericId = generateNumericId(photo.id);
 
+  // Helper function to get YouTube thumbnail with fallback
+  const getYouTubeThumbnail = (videoId: string): string => {
+    // Try maxresdefault first (best quality), then fallback to hqdefault, then mqdefault, then sddefault
+    // For YouTube Shorts, maxresdefault often doesn't exist, so we'll use hqdefault as primary
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  };
+
   // Check if it's a video - be more lenient with the check
   const isVideo = photo.isVideo === true || (photo.youtubeVideoUrl && !photo.filePath);
   if (isVideo && photo.youtubeVideoUrl) {
@@ -84,7 +91,7 @@ export function photoToGalleryImage(photo: Photo): GalleryImage | null {
     
     return {
       id: numericId,
-      src: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, // YouTube thumbnail
+      src: getYouTubeThumbnail(videoId), // YouTube thumbnail with fallback
       alt: photo.caption || photo.filename || 'Gallery Video',
       title: photo.caption || photo.filename || 'Untitled Video',
       description: photo.description || photo.caption || '',
@@ -102,7 +109,7 @@ export function photoToGalleryImage(photo: Photo): GalleryImage | null {
     if (videoId) {
       return {
         id: numericId,
-        src: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+        src: getYouTubeThumbnail(videoId),
         alt: photo.caption || photo.filename || 'Gallery Video',
         title: photo.caption || photo.filename || 'Untitled Video',
         description: photo.description || photo.caption || '',

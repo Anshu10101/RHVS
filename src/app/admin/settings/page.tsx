@@ -1,5 +1,5 @@
-import { PermissionManagement } from '@/components/Admin';
+import { SettingsPage as SettingsPageComponent } from '@/components/Admin';
 
 export default function SettingsPage() {
-  return <PermissionManagement />;
+  return <SettingsPageComponent />;
 }
