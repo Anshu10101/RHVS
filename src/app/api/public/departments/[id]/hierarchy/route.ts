@@ -66,6 +66,7 @@ export async function GET(
       photo_path: string | null;
       reg_number: string | null;
       email: string | null;
+      member_updated_at: string | null;
     }> = [];
     try {
       assignments = await executeQuery(
@@ -75,7 +76,8 @@ export async function GET(
                   WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
                   ELSE m.profile_photo_path
                 END AS photo_path,
-                m.member_reg_number as reg_number, m.email
+                m.member_reg_number as reg_number, m.email,
+                m.updated_at as member_updated_at
          FROM department_members dm
          JOIN department_posts dp ON dp.id = dm.post_id AND dp.department_id = dm.department_id
          JOIN members m ON m.id = dm.member_id
@@ -100,6 +102,7 @@ export async function GET(
             photo_path: a.photo_path,
             reg_number: a.reg_number,
             email: a.email,
+            updated_at: a.member_updated_at,
           })),
       }))
     };

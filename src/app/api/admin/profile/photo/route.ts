@@ -11,7 +11,13 @@ export async function POST(req: NextRequest) {
     }
 
     const claims = await verifyAdminJwt(token);
-    if (!claims || claims.role !== 'superadmin') {
+    if (!claims) {
+      return noCacheJsonResponse({ success: false, message: 'Forbidden' }, { status: 403 });
+    }
+    
+    // Allow superadmin and news_editor to update profile photos
+    const userType = claims.type || (claims.role === 'superadmin' ? 'superadmin' : claims.role === 'news_editor' || claims.role === 'news_reporter' ? 'news_editor' : null);
+    if (userType !== 'superadmin' && userType !== 'news_editor') {
       return noCacheJsonResponse({ success: false, message: 'Forbidden' }, { status: 403 });
     }
 
@@ -83,12 +89,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update superadmin profile photo
+    // Update profile photo (superadmin or news_editor)
     if (profilePhotoBlob && profilePhotoBlob.length > 0) {
       // Verify the blob before saving
       const userId = parseInt(claims.sub, 10);
       console.log('Saving profile photo:', {
         userId: userId,
+        userType: userType,
         claimsSub: claims.sub,
         blobSize: profilePhotoBlob.length,
         blobType: profilePhotoBlob.constructor.name,
@@ -103,18 +110,39 @@ export async function POST(req: NextRequest) {
         }
 
         // First verify the user exists
-        const userCheck = await executeQuery(
-          'SELECT id FROM superadmin WHERE id = ? LIMIT 1',
-          [userId]
-        ) as Array<{ id: number }>;
-
-        if (!userCheck || userCheck.length === 0) {
-          console.error('Superadmin not found:', { userId, claimsSub: claims.sub });
-          return noCacheJsonResponse({ success: false, message: 'Superadmin record not found' }, { status: 404 });
+        let userCheck: Array<{ id: number }>;
+        let updateQuery: string;
+        
+        if (userType === 'superadmin') {
+          userCheck = await executeQuery(
+            'SELECT id FROM superadmin WHERE id = ? LIMIT 1',
+            [userId]
+          ) as Array<{ id: number }>;
+          
+          if (!userCheck || userCheck.length === 0) {
+            console.error('Superadmin not found:', { userId, claimsSub: claims.sub });
+            return noCacheJsonResponse({ success: false, message: 'Superadmin record not found' }, { status: 404 });
+          }
+          
+          updateQuery = 'UPDATE superadmin SET profile_photo_blob = ?, profile_photo_path = NULL, updated_at = NOW() WHERE id = ?';
+        } else if (userType === 'news_editor') {
+          userCheck = await executeQuery(
+            'SELECT id FROM news_editors WHERE id = ? LIMIT 1',
+            [userId]
+          ) as Array<{ id: number }>;
+          
+          if (!userCheck || userCheck.length === 0) {
+            console.error('News editor not found:', { userId, claimsSub: claims.sub });
+            return noCacheJsonResponse({ success: false, message: 'News editor record not found' }, { status: 404 });
+          }
+          
+          updateQuery = 'UPDATE news_editors SET profile_photo_blob = ?, profile_photo_path = NULL, updated_at = NOW() WHERE id = ?';
+        } else {
+          return noCacheJsonResponse({ success: false, message: 'Invalid user type' }, { status: 400 });
         }
 
         const result = await executeQuery(
-          'UPDATE superadmin SET profile_photo_blob = ?, profile_photo_path = NULL, updated_at = NOW() WHERE id = ?',
+          updateQuery,
           [profilePhotoBlob, userId]
         ) as any;
         
@@ -145,8 +173,12 @@ export async function POST(req: NextRequest) {
         }
         
         // Verify it was saved
+        const verifyQuery = userType === 'superadmin' 
+          ? 'SELECT LENGTH(profile_photo_blob) as blob_size FROM superadmin WHERE id = ?'
+          : 'SELECT LENGTH(profile_photo_blob) as blob_size FROM news_editors WHERE id = ?';
+        
         const verifyRows = await executeQuery(
-          'SELECT LENGTH(profile_photo_blob) as blob_size FROM superadmin WHERE id = ?',
+          verifyQuery,
           [userId]
         ) as Array<{ blob_size: number | null }>;
         

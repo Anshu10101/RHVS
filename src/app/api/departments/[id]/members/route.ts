@@ -138,7 +138,8 @@ export async function GET(
              CASE 
                WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
                ELSE m.profile_photo_path
-             END AS profile_photo_path
+             END AS profile_photo_path,
+             m.updated_at as member_updated_at
       FROM department_members dm
       JOIN department_posts dp ON dm.post_id = dp.id
       JOIN members m ON dm.member_id = m.id

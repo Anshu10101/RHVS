@@ -30,8 +30,8 @@ export async function GET(req: NextRequest) {
     let countQuery = '';
     let params: (string | number)[] = [];
 
-    if (claims.type === 'superadmin') {
-      // Superadmin can see all news
+    if (claims.type === 'superadmin' || claims.type === 'news_editor' || claims.role === 'news_editor' || claims.role === 'news_reporter') {
+      // Superadmin and news editors can see all news
       query = `
         SELECT * FROM news
         ORDER BY created_at DESC
@@ -116,12 +116,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { title, content, image_url, is_featured, is_published, district, state } = body;
 
-    // For superadmins, skip permission check. For district admins, check permissions
+    // For superadmins and news editors, skip permission check. For district admins, check permissions
     let districtName: string | null = null;
     let adminState: string | null = null;
 
-    if (claims.type === 'superadmin') {
-      // Superadmin can select district/state from request body
+    if (claims.type === 'superadmin' || claims.type === 'news_editor' || claims.role === 'news_editor' || claims.role === 'news_reporter') {
+      // Superadmin and news editors can select district/state from request body
       districtName = district || null;
       adminState = state || null;
       
@@ -230,18 +230,28 @@ export async function POST(req: NextRequest) {
 
     // Get user name for logging
     let userName: string;
+    let userType: string;
     if (claims.type === 'superadmin') {
       const superadminRows = await executeQuery(
         'SELECT name, email FROM superadmin WHERE id = ? LIMIT 1',
         [claims.sub]
       ) as Array<{ name: string | null; email: string }>;
       userName = superadminRows[0]?.name || superadminRows[0]?.email || 'Unknown';
+      userType = 'superadmin';
+    } else if (claims.type === 'news_editor' || claims.role === 'news_editor' || claims.role === 'news_reporter') {
+      const newsEditorRows = await executeQuery(
+        'SELECT name, email FROM news_editors WHERE id = ? LIMIT 1',
+        [claims.sub]
+      ) as Array<{ name: string | null; email: string }>;
+      userName = newsEditorRows[0]?.name || newsEditorRows[0]?.email || 'Unknown';
+      userType = 'news_editor';
     } else {
       const districtAdminRows = await executeQuery(
         'SELECT m.name, da.email FROM district_admins da JOIN members m ON da.member_id = m.id WHERE da.id = ? LIMIT 1',
         [claims.sub]
       ) as Array<{ name: string; email: string }>;
       userName = districtAdminRows[0]?.name || districtAdminRows[0]?.email || 'Unknown';
+      userType = 'district_admin';
     }
 
     // Log activity
@@ -256,7 +266,7 @@ export async function POST(req: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?)`,
       [
         claims.sub,
-        claims.type === 'superadmin' ? 'superadmin' : 'district_admin',
+        userType,
         userName,
         'create_news',
         `Created news item: ${title}`,

@@ -11,8 +11,10 @@ interface NewsCardProps {
   content: string;
   image_url?: string;
   created_at: string;
-  district_id?: string | null;
-  state_id?: string | null;
+  district?: string | null;
+  state?: string | null;
+  district_id?: string | null; // For backward compatibility
+  state_id?: string | null; // For backward compatibility
   added_by_name?: string | null;
   showDistrictInfo?: boolean;
 }
@@ -23,11 +25,16 @@ export default function NewsCard({
   content,
   image_url,
   created_at,
-  district_id,
-  state_id,
+  district,
+  state,
+  district_id, // For backward compatibility
+  state_id, // For backward compatibility
   added_by_name,
   showDistrictInfo = true
 }: NewsCardProps) {
+  // Use district/state if available, fallback to district_id/state_id for backward compatibility
+  const displayDistrict = district || district_id;
+  const displayState = state || state_id;
   // Format date
   const formattedDate = new Date(created_at).toLocaleDateString('en-US', {
     day: 'numeric',
@@ -64,11 +71,11 @@ export default function NewsCard({
           <span>{formattedDate}</span>
         </div>
         
-        {showDistrictInfo && district_id && state_id && (
+        {showDistrictInfo && displayDistrict && displayState && (
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="flex items-center gap-1">
               <MapPin className="h-3 w-3" />
-              {district_id}, {state_id}
+              {displayDistrict}, {displayState}
             </Badge>
             
             {added_by_name && (

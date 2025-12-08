@@ -126,7 +126,7 @@ export async function GET(request: NextRequest) {
         END AS profile_photo_path,
         m.member_reg_number, 
         m.created_at, m.updated_at, m.status, 
-        m.state, m.district,
+        m.state, m.district, m.aadhar_card_number,
         m.verified_by_member_id,
         verifier.name as verified_by_name,
         GROUP_CONCAT(

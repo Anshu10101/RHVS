@@ -163,17 +163,27 @@ export default function LatestPhotosSection() {
               <h2 className={`${devanagari.className} text-3xl sm:text-4xl md:text-5xl font-bold mb-5 text-gray-900 leading-tight`}>
                 {t('photos.header')}
               </h2>
-              <p className="text-gray-600 text-base sm:text-lg leading-relaxed">
+              <p className="text-gray-600 text-base sm:text-lg leading-relaxed mb-4 md:mb-0">
                 {t('photos.description')}
               </p>
             </div>
             <Link
               href="/gallery"
               aria-label={t('photos.viewAll')}
-              className="absolute top-0 right-0 text-xs sm:text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
+              className="absolute top-0 right-0 hidden md:block text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
             >
               {t('photos.viewAll')} →
             </Link>
+            <div className="flex justify-center md:hidden mt-4">
+              <Link
+                href="/gallery"
+                aria-label={t('photos.viewAll')}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+              >
+                {t('photos.viewAll')}
+                <span>→</span>
+              </Link>
+            </div>
           </div>
         </div>
 

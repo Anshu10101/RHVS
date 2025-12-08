@@ -136,13 +136,22 @@ export async function POST(req: NextRequest) {
       }
 
       const adminId = Number(claims.sub);
-      const userType = claims.type || (claims.role === 'superadmin' ? 'superadmin' : 'district_admin');
+      const userType = claims.type || (claims.role === 'superadmin' ? 'superadmin' : claims.role === 'news_editor' || claims.role === 'news_reporter' ? 'news_editor' : 'district_admin');
 
       // Get current password hash
       let currentHash: string;
       if (userType === 'superadmin') {
         const rows = await executeQuery(
           'SELECT password_hash FROM superadmin WHERE id = ? LIMIT 1',
+          [adminId]
+        ) as Array<{ password_hash: string }>;
+        if (rows.length === 0) {
+          return noCacheJsonResponse({ success: false, message: 'User not found' }, { status: 404 });
+        }
+        currentHash = rows[0].password_hash;
+      } else if (userType === 'news_editor') {
+        const rows = await executeQuery(
+          'SELECT password_hash FROM news_editors WHERE id = ? LIMIT 1',
           [adminId]
         ) as Array<{ password_hash: string }>;
         if (rows.length === 0) {
@@ -170,6 +179,8 @@ export async function POST(req: NextRequest) {
       const newHash = await hashPassword(newPassword);
       if (userType === 'superadmin') {
         await executeQuery('UPDATE superadmin SET password_hash = ?, updated_at = NOW() WHERE id = ?', [newHash, adminId]);
+      } else if (userType === 'news_editor') {
+        await executeQuery('UPDATE news_editors SET password_hash = ?, updated_at = NOW() WHERE id = ?', [newHash, adminId]);
       } else {
         await executeQuery('UPDATE district_admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [newHash, adminId]);
       }
@@ -184,7 +195,7 @@ export async function POST(req: NextRequest) {
 
       // Check superadmin first
       let adminId: number | null = null;
-      let userType: 'superadmin' | 'district_admin' = 'superadmin';
+      let userType: 'superadmin' | 'district_admin' | 'news_editor' = 'superadmin';
       let adminName: string | null = null;
       let adminState: string | null = null;
 
@@ -198,20 +209,32 @@ export async function POST(req: NextRequest) {
         userType = 'superadmin';
         adminName = superadminRows[0].name || superadminRows[0].email;
       } else {
-        // Check district admin
-        const districtAdminRows = await executeQuery(
-          `SELECT da.id, da.email, da.is_active, da.state, m.name as member_name
-           FROM district_admins da
-           LEFT JOIN members m ON da.member_id = m.id
-           WHERE LOWER(da.email) = LOWER(?) LIMIT 1`,
+        // Check news editor
+        const newsEditorRows = await executeQuery(
+          'SELECT id, email, name, is_active FROM news_editors WHERE LOWER(email) = LOWER(?) LIMIT 1',
           [email]
-        ) as Array<{ id: number; email: string; is_active: boolean; state: string | null; member_name: string | null }>;
+        ) as Array<{ id: number; email: string; name: string | null; is_active: boolean }>;
 
-        if (districtAdminRows.length > 0 && districtAdminRows[0].is_active) {
-          adminId = districtAdminRows[0].id;
-          userType = 'district_admin';
-          adminName = districtAdminRows[0].member_name || districtAdminRows[0].email;
-          adminState = districtAdminRows[0].state || requestedState || null;
+        if (newsEditorRows.length > 0 && newsEditorRows[0].is_active) {
+          adminId = newsEditorRows[0].id;
+          userType = 'news_editor';
+          adminName = newsEditorRows[0].name || newsEditorRows[0].email;
+        } else {
+          // Check district admin
+          const districtAdminRows = await executeQuery(
+            `SELECT da.id, da.email, da.is_active, da.state, m.name as member_name
+             FROM district_admins da
+             LEFT JOIN members m ON da.member_id = m.id
+             WHERE LOWER(da.email) = LOWER(?) LIMIT 1`,
+            [email]
+          ) as Array<{ id: number; email: string; is_active: boolean; state: string | null; member_name: string | null }>;
+
+          if (districtAdminRows.length > 0 && districtAdminRows[0].is_active) {
+            adminId = districtAdminRows[0].id;
+            userType = 'district_admin';
+            adminName = districtAdminRows[0].member_name || districtAdminRows[0].email;
+            adminState = districtAdminRows[0].state || requestedState || null;
+          }
         }
       }
 
@@ -254,6 +277,8 @@ export async function POST(req: NextRequest) {
       let language: 'hi' | 'en' | 'both' = 'en';
       if (userType === 'superadmin') {
         language = 'both'; // Superadmin gets both languages
+      } else if (userType === 'news_editor') {
+        language = 'both'; // News editors get both languages
       } else if (adminState && hindiStates.some(state => adminState.toLowerCase().includes(state.toLowerCase()))) {
         language = 'hi'; // Hindi state admin
       } else {
@@ -371,6 +396,8 @@ export async function POST(req: NextRequest) {
       const hash = await hashPassword(newPassword);
       if (payload.userType === 'superadmin') {
         await executeQuery('UPDATE superadmin SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, payload.adminId]);
+      } else if (payload.userType === 'news_editor') {
+        await executeQuery('UPDATE news_editors SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, payload.adminId]);
       } else {
         await executeQuery('UPDATE district_admins SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, payload.adminId]);
       }

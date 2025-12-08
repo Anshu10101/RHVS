@@ -19,6 +19,7 @@ interface Member {
   photo_path: string | null;
   reg_number: string;
   email: string;
+  updated_at?: string | null;
 }
 
 interface Post {
@@ -39,12 +40,28 @@ interface Department {
   name_hi: string;
 }
 
+// Helper function to add cache-busting to image URLs
+const getImageUrlWithCacheBust = (photoPath: string | null, updatedAt?: string | null): string => {
+  if (!photoPath) return '';
+  const baseUrl = photoPath.startsWith('/') ? photoPath : `/${photoPath}`;
+  // Use updated_at timestamp if available, otherwise use current timestamp
+  const cacheBust = updatedAt ? new Date(updatedAt).getTime() : Date.now();
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}_t=${cacheBust}`;
+};
+
 export default function NationalExecutiveSection() {
   const { t } = useLanguage();
   const [department, setDepartment] = useState<Department | null>(null);
   const [members, setMembers] = useState<MemberWithPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
+  
+  // Increment version when members change to force image reload
+  useEffect(() => {
+    setDataVersion(prev => prev + 1);
+  }, [members]);
 
   useEffect(() => {
     const loadNationalExecutive = async () => {
@@ -196,9 +213,8 @@ export default function NationalExecutiveSection() {
                                 {heroEntry.member?.photo_path ? (
                                   <div className="absolute inset-[-8px] md:inset-[-10px] rounded-full overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                     <Image
-                                      src={heroEntry.member.photo_path.startsWith('/') 
-                                        ? heroEntry.member.photo_path 
-                                        : `/${heroEntry.member.photo_path}`}
+                                      key={`${heroEntry.member.id}-${dataVersion}`}
+                                      src={getImageUrlWithCacheBust(heroEntry.member.photo_path, heroEntry.member.updated_at)}
                                       alt={heroEntry.member.name || t('nationalExecutive.member')}
                                       fill
                                       className="object-cover"
@@ -263,7 +279,8 @@ export default function NationalExecutiveSection() {
                                     {item.member?.photo_path ? (
                                       <div className="absolute inset-[-4px] sm:inset-[-6px] md:inset-[-8px] rounded-full overflow-hidden group-hover:scale-105 transition-transform duration-300">
                                         <Image
-                                          src={item.member.photo_path.startsWith('/') ? item.member.photo_path : `/${item.member.photo_path}`}
+                                          key={`${item.member.id}-${dataVersion}`}
+                                          src={getImageUrlWithCacheBust(item.member.photo_path, item.member.updated_at)}
                                           alt={item.member.name || t('nationalExecutive.member')}
                                           fill
                                           className="object-cover"

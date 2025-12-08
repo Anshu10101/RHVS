@@ -716,7 +716,7 @@ export function EventPhotoManager({ hasPermission }: EventPhotoManagerProps) {
         <div>
           <h2 className="text-xl font-bold text-gray-900">{t('admin.photos.photoManagement') || 'Photo Management'}</h2>
           <p className="text-sm text-gray-600 mt-0.5">
-            {events.length} {t('admin.photos.events').toLowerCase()} • {photos.length} {t('admin.photos.photos').toLowerCase()} {selectedEvent || selectedGallery ? 'selected' : ''}
+            {events.length} {t('admin.photos.events').toLowerCase()} • {photos.length} {t('admin.photos.photos').toLowerCase()} {selectedEvent || selectedGallery ? t('admin.photos.selected') : ''}
           </p>
         </div>
         

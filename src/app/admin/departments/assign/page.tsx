@@ -41,6 +41,7 @@ type Member = {
   phone: string;
   member_reg_number: string;
   profile_photo_path: string | null;
+  updated_at?: string | null;
   district: string | null;
   state: string | null;
 };
@@ -57,11 +58,22 @@ type DepartmentMember = {
   member_email: string;
   member_reg_number: string;
   profile_photo_path: string | null;
+  member_updated_at?: string | null;
   level: 'national' | 'state' | 'district';
   state: string | null;
   district: string | null;
   valid_from?: string | null;
   valid_until?: string | null;
+};
+
+// Helper function to add cache-busting to image URLs
+const getImageUrlWithCacheBust = (photoPath: string | null, updatedAt?: string | null): string => {
+  if (!photoPath) return '';
+  const baseUrl = photoPath.startsWith('/') ? photoPath : `/${photoPath}`;
+  // Use updated_at timestamp if available, otherwise use current timestamp
+  const cacheBust = updatedAt ? new Date(updatedAt).getTime() : Date.now();
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}_t=${cacheBust}`;
 };
 
 export default function AssignMembersPage() {
@@ -293,6 +305,68 @@ export default function AssignMembersPage() {
 
     fetchNationalExecutive();
   }, [toast, currentUser]);
+
+  // Reload data when page becomes visible (e.g., after updating member photo)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Reload department members when page becomes visible
+        if (selectedDepartment) {
+          const fetchDepartmentData = async () => {
+            try {
+              const token = localStorage.getItem('admin_token');
+              const params = new URLSearchParams();
+              params.append('level', selectedLevel);
+              if (selectedLevel === 'state' && selectedState) {
+                params.append('state', selectedState);
+              } else if (selectedLevel === 'district' && selectedState && selectedDistrict) {
+                params.append('state', selectedState);
+                params.append('district', selectedDistrict);
+              }
+              params.append('_t', String(Date.now()));
+
+              const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members?${params.toString()}`, {
+                cache: 'no-store',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+              });
+              const membersData = await membersResponse.json();
+              if (membersData.members) {
+                setDepartmentMembers(membersData.members);
+              }
+            } catch (error) {
+              console.error('Error refreshing department members:', error);
+            }
+          };
+          fetchDepartmentData();
+        }
+
+        // Reload National Executive members if applicable
+        if (nationalExecutiveDept && currentUser?.type !== 'district_admin') {
+          const fetchNationalExecutiveMembers = async () => {
+            try {
+              const token = localStorage.getItem('admin_token');
+              const membersResponse = await fetch(`/api/departments/${nationalExecutiveDept.id}/members?level=national&_t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+              });
+              const membersData = await membersResponse.json();
+              if (membersData.members) {
+                setNationalExecutiveMembers(membersData.members);
+              }
+            } catch (error) {
+              console.error('Error refreshing national executive members:', error);
+            }
+          };
+          fetchNationalExecutiveMembers();
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, nationalExecutiveDept, currentUser]);
 
   // Fetch posts and department members when department/level changes
   useEffect(() => {
@@ -661,37 +735,37 @@ export default function AssignMembersPage() {
 
   return (
     <>
-      <div className="container mx-auto py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">{t('admin.departments.assign.title')}</h1>
+      <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6 overflow-x-hidden min-h-screen">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.departments.assign.title')}</h1>
           <Button
             variant="outline"
             onClick={() => router.push('/admin/departments')}
-            className="flex items-center"
+            className="flex items-center w-full sm:w-auto"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('admin.departments.assign.backToDepartments')}
           </Button>
         </div>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="select">{t('admin.departments.assign.selectDepartment')}</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6 w-full">
+          <TabsList className="w-full overflow-x-auto flex sm:inline-flex">
+            <TabsTrigger value="select" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.assign.selectDepartment')}</TabsTrigger>
             {!isDistrictAdmin && (
-            <TabsTrigger value="national-executive">{t('admin.departments.assign.nationalExecutive')}</TabsTrigger>
+            <TabsTrigger value="national-executive" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.assign.nationalExecutive')}</TabsTrigger>
             )}
             {selectedDepartment && !isDistrictAdmin && (
-              <TabsTrigger value="level">{t('admin.departments.assign.selectLevel')}</TabsTrigger>
+              <TabsTrigger value="level" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.assign.selectLevel')}</TabsTrigger>
             )}
             {selectedDepartment && (selectedLevel || isDistrictAdmin) && (
-              <TabsTrigger value="assign">{isDistrictAdmin ? t('admin.departments.assign.assignMembers') : t('admin.departments.assign.assignMembersSuperadmin')}</TabsTrigger>
+              <TabsTrigger value="assign" className="text-xs sm:text-sm whitespace-nowrap">{isDistrictAdmin ? t('admin.departments.assign.assignMembers') : t('admin.departments.assign.assignMembersSuperadmin')}</TabsTrigger>
             )}
           </TabsList>
           
           {/* Step indicator */}
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-4">
             <div className="flex items-center space-x-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                 selectedDepartment ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 1
@@ -700,9 +774,9 @@ export default function AssignMembersPage() {
                 {t('admin.departments.assign.stepSelectDepartment')}
               </span>
             </div>
-            <div className="w-8 h-px bg-gray-300"></div>
+            <div className="hidden sm:block w-8 h-px bg-gray-300"></div>
             <div className="flex items-center space-x-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                 selectedLevel ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 2
@@ -713,9 +787,9 @@ export default function AssignMembersPage() {
             </div>
             {!isDistrictAdmin && (
               <>
-            <div className="w-8 h-px bg-gray-300"></div>
+            <div className="hidden sm:block w-8 h-px bg-gray-300"></div>
             <div className="flex items-center space-x-2">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0 ${
                 selectedLevel ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
                 3
@@ -729,7 +803,7 @@ export default function AssignMembersPage() {
           </div>
           
           <TabsContent value="select" className="space-y-6">
-            <Card>
+            <Card className="transition-all duration-200">
               <CardHeader>
                 <CardTitle>{t('admin.departments.assign.stepSelectDepartment')}</CardTitle>
               </CardHeader>
@@ -750,25 +824,30 @@ export default function AssignMembersPage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {departments.map((department) => (
                       <Card 
                         key={department.id} 
-                        className={`cursor-pointer hover:shadow-md transition-shadow ${
-                          selectedDepartment?.id === department.id ? 'ring-2 ring-orange-500' : ''
+                        className={`cursor-pointer hover:shadow-md transition-all duration-200 ${
+                          selectedDepartment?.id === department.id ? 'ring-2 ring-orange-500 scale-[1.02]' : ''
                         }`}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setSelectedDepartment(department);
                           // For district admins, automatically set level to district and go to assign tab
                           if (isDistrictAdmin) {
                             setSelectedLevel('district');
+                            // Use requestAnimationFrame for smooth transition
+                            requestAnimationFrame(() => {
                             setActiveTab('assign');
+                            });
                           }
                         }}
                       >
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold text-lg">{department.name_hi}</h3>
-                          <p className="text-gray-600 text-sm">{department.name_en}</p>
+                        <CardContent className="p-3 sm:p-4">
+                          <h3 className="font-semibold text-base sm:text-lg">{department.name_hi}</h3>
+                          <p className="text-gray-600 text-xs sm:text-sm mt-1">{department.name_en}</p>
                         </CardContent>
                       </Card>
                     ))}
@@ -798,43 +877,43 @@ export default function AssignMembersPage() {
               </Card>
             ) : (
               <>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h3 className="font-medium text-orange-800 mb-2">{t('admin.departments.assign.nationalExecutiveAssignment')}</h3>
-                  <p className="text-sm text-orange-700">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4">
+                  <h3 className="font-medium text-orange-800 mb-2 text-sm sm:text-base">{t('admin.departments.assign.nationalExecutiveAssignment')}</h3>
+                  <p className="text-xs sm:text-sm text-orange-700 break-words">
                     <strong>{t('admin.departments.assign.department')}</strong> {nationalExecutiveDept.name_hi} ({nationalExecutiveDept.name_en})
                   </p>
-                  <p className="text-xs text-orange-600 mt-1" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.nationalLevelOnly').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
+                  <p className="text-xs text-orange-600 mt-1 break-words" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.nationalLevelOnly').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
                 </div>
                 
                 <Card>
-                  <CardHeader>
-                    <CardTitle>{nationalExecutiveDept.name_hi}</CardTitle>
-                    <p className="text-sm text-gray-500">{nationalExecutiveDept.name_en}</p>
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl break-words">{nationalExecutiveDept.name_hi}</CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{nationalExecutiveDept.name_en}</p>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6">
                     {nationalExecutivePosts.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">{t('admin.departments.assign.noPostsFound')}</p>
+                      <div className="text-center py-6 sm:py-8">
+                        <p className="text-gray-500 text-sm sm:text-base">{t('admin.departments.assign.noPostsFound')}</p>
                         <Button 
                           variant="outline" 
-                          className="mt-4"
+                          className="mt-4 w-full sm:w-auto"
                           onClick={() => router.push(`/admin/departments/manage?department=${nationalExecutiveDept.id}`)}
                         >
                           {t('admin.departments.assign.createPosts')}
                         </Button>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {nationalExecutivePosts.map((post) => {
                           const assignments = nationalExecutiveMembers.filter(dm => dm.post_id === post.id);
                           const hasAssignments = assignments.length > 0;
                           
                           return (
                             <Card key={post.id} className="overflow-hidden">
-                              <div className="p-4 space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <h3 className="font-semibold">
+                              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-sm sm:text-base break-words">
                                       {post.position_order}. {post.name_hi}
                                       {post.position_order === 1 && (
                                         <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
@@ -842,7 +921,7 @@ export default function AssignMembersPage() {
                                         </span>
                                       )}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{post.name_en}</p>
+                                    <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{post.name_en}</p>
                                   </div>
                                   
                                   <Button
@@ -856,54 +935,66 @@ export default function AssignMembersPage() {
                                       setUseCustomValidity(false);
                                       setIsAssignDialogOpen(true);
                                     }}
-                                    className="shrink-0"
+                                    className="w-full sm:w-auto shrink-0 text-xs sm:text-sm"
+                                    size="sm"
                                     variant={hasAssignments ? "outline" : "default"}
                                     disabled={post.position_order === 1 && hasAssignments}
                                     title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
                                   >
-                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    <UserPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                    <span className="hidden sm:inline">
                                     {post.position_order === 1 && hasAssignments 
                                       ? 'Remove Existing First' 
                                       : hasAssignments 
                                         ? 'Assign More' 
                                         : 'Assign Members'}
+                                    </span>
+                                    <span className="sm:hidden">
+                                      {post.position_order === 1 && hasAssignments 
+                                        ? 'Remove First' 
+                                        : hasAssignments 
+                                          ? 'Assign More' 
+                                          : 'Assign'}
+                                    </span>
                                   </Button>
                                 </div>
                                 
                                 {hasAssignments ? (
-                                  <div className="space-y-2 border-t pt-4">
+                                  <div className="space-y-2 border-t pt-3 sm:pt-4">
                                     {assignments.map((assignment) => (
-                                      <div key={assignment.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3 flex-1">
-                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                      <div key={assignment.id} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                                             {assignment.profile_photo_path ? (
                                               <Image
-                                                src={assignment.profile_photo_path}
+                                                src={getImageUrlWithCacheBust(assignment.profile_photo_path, assignment.member_updated_at)}
                                                 alt={assignment.member_name}
                                                 width={40}
                                                 height={40}
                                                 className="object-cover w-full h-full"
                                               />
                                             ) : (
-                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
+                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold text-xs sm:text-sm">
                                                 {assignment.member_name.charAt(0)}
                                               </div>
                                             )}
                                           </div>
                                           <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate">{assignment.member_name}</p>
-                                            <div className="flex text-xs text-gray-500 space-x-2 flex-wrap">
-                                              <p>{assignment.member_reg_number}</p>
-                                              <p>• {assignment.level}</p>
+                                            <p className="font-medium truncate text-sm sm:text-base">{assignment.member_name}</p>
+                                            <div className="flex text-xs text-gray-500 space-x-1 sm:space-x-2 flex-wrap gap-y-1">
+                                              <span className="truncate">{assignment.member_reg_number}</span>
+                                              <span>•</span>
+                                              <span>{assignment.level}</span>
                                             </div>
                                             {assignment.valid_until && (
                                               <div className="mt-1">
                                                 {(() => {
                                                   const badge = getExpiryBadge(assignment.valid_until);
                                                   return badge ? (
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
-                                                      <Clock className="h-3 w-3" />
-                                                      {badge.text}
+                                                    <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
+                                                      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                      <span className="hidden sm:inline">{badge.text}</span>
+                                                      <span className="sm:hidden truncate max-w-[120px]">{badge.text}</span>
                                                     </span>
                                                   ) : null;
                                                 })()}
@@ -914,6 +1005,7 @@ export default function AssignMembersPage() {
                                         <Button
                                           variant="outline"
                                           size="sm"
+                                          className="shrink-0 h-8 w-8 sm:h-10 sm:w-auto sm:px-3 p-0"
                                           onClick={async () => {
                                             if (!nationalExecutiveDept) return;
                                             // Confirm before removing
@@ -961,16 +1053,16 @@ export default function AssignMembersPage() {
                                               setIsLoading(false);
                                             }
                                           }}
-                                          className="shrink-0"
                                         >
-                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                                          <span className="hidden sm:inline ml-2">Remove</span>
                                         </Button>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-center py-4 text-gray-500 text-sm border-t">
-                                    No members assigned yet
+                                  <div className="text-center py-3 sm:py-4 text-gray-500 text-xs sm:text-sm border-t">
+                                    {t('admin.departments.assign.noMembersAssigned')}
                                   </div>
                                 )}
                               </div>
@@ -996,9 +1088,9 @@ export default function AssignMembersPage() {
                     }} />
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-4">
-                      <Label htmlFor="level_selection">{t('admin.departments.assign.assignmentLevel')}</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="space-y-2 sm:space-y-4">
+                      <Label htmlFor="level_selection" className="text-sm">{t('admin.departments.assign.assignmentLevel')}</Label>
                       <Select
                         value={selectedLevel}
                         onValueChange={(value) => {
@@ -1029,8 +1121,8 @@ export default function AssignMembersPage() {
                     </div>
                     
                     {selectedLevel !== 'national' && (
-                      <div className="space-y-4">
-                        <Label htmlFor="state_selection">{t('admin.departments.assign.state')}</Label>
+                      <div className="space-y-2 sm:space-y-4">
+                        <Label htmlFor="state_selection" className="text-sm">{t('admin.departments.assign.state')}</Label>
                         <Select
                           value={selectedState}
                           onValueChange={(value) => {
@@ -1059,8 +1151,8 @@ export default function AssignMembersPage() {
                     )}
                     
                     {selectedLevel === 'district' && (
-                      <div className="space-y-4">
-                        <Label htmlFor="district_selection">{t('admin.departments.assign.district')}</Label>
+                      <div className="space-y-2 sm:space-y-4 sm:col-span-2 lg:col-span-1">
+                        <Label htmlFor="district_selection" className="text-sm">{t('admin.departments.assign.district')}</Label>
                         <Select
                           value={selectedDistrict}
                           onValueChange={setSelectedDistrict}
@@ -1087,12 +1179,12 @@ export default function AssignMembersPage() {
                   </div>
                   
                   {/* Level selection summary */}
-                  <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 className="font-medium text-blue-800 mb-2">Selected Configuration:</h3>
-                    <p className="text-sm text-blue-700">
+                  <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h3 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">Selected Configuration:</h3>
+                    <p className="text-xs sm:text-sm text-blue-700 break-words">
                       <strong>Department:</strong> {selectedDepartment.name_hi} ({selectedDepartment.name_en})
                     </p>
-                    <p className="text-sm text-blue-700">
+                    <p className="text-xs sm:text-sm text-blue-700 break-words mt-1">
                       <strong>Level:</strong> {selectedLevel}
                       {selectedLevel === 'state' && selectedState && (
                         <span> • <strong>State:</strong> {selectedState}</span>
@@ -1101,7 +1193,7 @@ export default function AssignMembersPage() {
                         <span> • <strong>State:</strong> {selectedState} • <strong>District:</strong> {selectedDistrict}</span>
                       )}
                     </p>
-                    <p className="text-xs text-blue-600 mt-2">
+                    <p className="text-xs text-blue-600 mt-2 break-words">
                       All members assigned to this department will be assigned at the {selectedLevel} level
                       {selectedLevel === 'state' && selectedState && ` for ${selectedState}`}
                       {selectedLevel === 'district' && selectedState && selectedDistrict && ` for ${selectedDistrict}, ${selectedState}`}.
@@ -1115,28 +1207,28 @@ export default function AssignMembersPage() {
           <TabsContent value="assign" className="space-y-6">
             {selectedDepartment && (
               <>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-medium text-blue-800 mb-2">📋 Assignment Configuration</h3>
-                  <p className="text-sm text-blue-700">
-                    <strong>Department:</strong> {selectedDepartment.name_hi} • 
-                    <strong> Level:</strong> {isDistrictAdmin ? 'district' : selectedLevel}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 transition-all duration-200">
+                  <h3 className="font-medium text-blue-800 mb-2 text-sm sm:text-base">{t('admin.departments.assign.assignmentConfiguration')}</h3>
+                  <p className="text-xs sm:text-sm text-blue-700 break-words">
+                    <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment.name_hi} • 
+                    <strong> {t('admin.departments.assign.level')}</strong> {isDistrictAdmin ? t('admin.departments.assign.districtLevel') : selectedLevel === 'national' ? t('admin.departments.assign.nationalLevel') : selectedLevel === 'state' ? t('admin.departments.assign.stateLevel') : t('admin.departments.assign.districtLevel')}
                     {isDistrictAdmin && currentUser?.state && currentUser?.district && (
-                      ` • State: ${currentUser.state} • District: ${currentUser.district}`
+                      ` • ${t('admin.departments.assign.state')}: ${currentUser.state} • ${t('admin.departments.assign.district')}: ${currentUser.district}`
                     )}
-                    {!isDistrictAdmin && selectedLevel === 'state' && selectedState && ` • State: ${selectedState}`}
-                    {!isDistrictAdmin && selectedLevel === 'district' && selectedState && selectedDistrict && ` • State: ${selectedState} • District: ${selectedDistrict}`}
+                    {!isDistrictAdmin && selectedLevel === 'state' && selectedState && ` • ${t('admin.departments.assign.state')}: ${selectedState}`}
+                    {!isDistrictAdmin && selectedLevel === 'district' && selectedState && selectedDistrict && ` • ${t('admin.departments.assign.state')}: ${selectedState} • ${t('admin.departments.assign.district')}: ${selectedDistrict}`}
                   </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    All members assigned will be assigned at {isDistrictAdmin ? 'district' : selectedLevel} level. Click "Assign Members" on any post to select members.
+                  <p className="text-xs text-blue-600 mt-1 break-words">
+                    {t('admin.departments.assign.allMembersAssignedAtLevel').replace('{level}', isDistrictAdmin ? t('admin.departments.assign.districtLevel') : selectedLevel === 'national' ? t('admin.departments.assign.nationalLevel') : selectedLevel === 'state' ? t('admin.departments.assign.stateLevel') : t('admin.departments.assign.districtLevel'))}
                   </p>
                 </div>
                 
                 <Card>
-                  <CardHeader>
-                    <CardTitle>{selectedDepartment.name_hi}</CardTitle>
-                    <p className="text-sm text-gray-500">{selectedDepartment.name_en}</p>
+                  <CardHeader className="p-3 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl break-words">{selectedDepartment.name_hi}</CardTitle>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{selectedDepartment.name_en}</p>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6">
                     {isLoading ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -1169,17 +1261,17 @@ export default function AssignMembersPage() {
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         {posts.map((post) => {
                           const assignments = departmentMembers.filter(dm => dm.post_id === post.id);
                           const hasAssignments = assignments.length > 0;
                           
                           return (
                             <Card key={post.id} className="overflow-hidden">
-                              <div className="p-4 space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <h3 className="font-semibold">
+                              <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-sm sm:text-base break-words">
                                       {post.position_order}. {post.name_hi}
                                       {post.position_order === 1 && (
                                         <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
@@ -1187,7 +1279,7 @@ export default function AssignMembersPage() {
                                         </span>
                                       )}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{post.name_en}</p>
+                                    <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{post.name_en}</p>
                                   </div>
                                   
                                   <Button
@@ -1197,56 +1289,78 @@ export default function AssignMembersPage() {
                                       setUseCustomValidity(false);
                                       setIsAssignDialogOpen(true);
                                     }}
-                                    className="shrink-0"
+                                    className="w-full sm:w-auto shrink-0 text-xs sm:text-sm"
+                                    size="sm"
                                     variant={hasAssignments ? "outline" : "default"}
                                     disabled={post.position_order === 1 && hasAssignments}
                                     title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
                                   >
-                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    <UserPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                                    <span className="hidden sm:inline">
                                     {post.position_order === 1 && hasAssignments 
                                       ? 'Remove Existing First' 
                                       : hasAssignments 
                                         ? 'Assign More' 
                                         : 'Assign Members'}
+                                    </span>
+                                    <span className="sm:hidden">
+                                      {post.position_order === 1 && hasAssignments 
+                                        ? 'Remove First' 
+                                        : hasAssignments 
+                                          ? 'Assign More' 
+                                          : 'Assign'}
+                                    </span>
                                   </Button>
                                 </div>
                                 
                                 {hasAssignments ? (
-                                  <div className="space-y-2 border-t pt-4">
+                                  <div className="space-y-2 border-t pt-3 sm:pt-4">
                                     {assignments.map((assignment) => (
-                                      <div key={assignment.id} className="flex items-center justify-between gap-4 p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3 flex-1">
-                                          <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                      <div key={assignment.id} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                          <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                                             {assignment.profile_photo_path ? (
                                               <Image
-                                                src={assignment.profile_photo_path}
+                                                src={getImageUrlWithCacheBust(assignment.profile_photo_path, assignment.member_updated_at)}
                                                 alt={assignment.member_name}
                                                 width={40}
                                                 height={40}
                                                 className="object-cover w-full h-full"
                                               />
                                             ) : (
-                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
+                                              <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold text-xs sm:text-sm">
                                                 {assignment.member_name.charAt(0)}
                                               </div>
                                             )}
                                           </div>
                                           <div className="flex-1 min-w-0">
-                                            <p className="font-medium truncate">{assignment.member_name}</p>
-                                            <div className="flex text-xs text-gray-500 space-x-2 flex-wrap">
-                                              <p>{assignment.member_reg_number}</p>
-                                              <p>• {assignment.level}</p>
-                                              {assignment.state && <p>• {assignment.state}</p>}
-                                              {assignment.district && <p>• {assignment.district}</p>}
+                                            <p className="font-medium truncate text-sm sm:text-base">{assignment.member_name}</p>
+                                            <div className="flex text-xs text-gray-500 space-x-1 sm:space-x-2 flex-wrap gap-y-1">
+                                              <span className="truncate">{assignment.member_reg_number}</span>
+                                              <span>•</span>
+                                              <span>{assignment.level}</span>
+                                              {assignment.state && (
+                                                <>
+                                                  <span>•</span>
+                                                  <span className="truncate">{assignment.state}</span>
+                                                </>
+                                              )}
+                                              {assignment.district && (
+                                                <>
+                                                  <span>•</span>
+                                                  <span className="truncate">{assignment.district}</span>
+                                                </>
+                                              )}
                                             </div>
                                             {assignment.valid_until && (
                                               <div className="mt-1">
                                                 {(() => {
                                                   const badge = getExpiryBadge(assignment.valid_until);
                                                   return badge ? (
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
-                                                      <Clock className="h-3 w-3" />
-                                                      {badge.text}
+                                                    <span className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded text-xs font-medium border ${badge.color}`}>
+                                                      <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                                                      <span className="hidden sm:inline">{badge.text}</span>
+                                                      <span className="sm:hidden truncate max-w-[120px]">{badge.text}</span>
                                                     </span>
                                                   ) : null;
                                                 })()}
@@ -1258,16 +1372,17 @@ export default function AssignMembersPage() {
                                           variant="outline"
                                           size="sm"
                                           onClick={() => handleRemoveMember(assignment.id)}
-                                          className="shrink-0"
+                                          className="shrink-0 h-8 w-8 sm:h-10 sm:w-auto sm:px-3 p-0"
                                         >
-                                          <Trash2 className="h-4 w-4 text-red-500" />
+                                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                                          <span className="hidden sm:inline ml-2">Remove</span>
                                         </Button>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div className="text-center py-4 text-gray-500 text-sm border-t">
-                                    No members assigned yet
+                                  <div className="text-center py-3 sm:py-4 text-gray-500 text-xs sm:text-sm border-t">
+                                    {t('admin.departments.assign.noMembersAssigned')}
                                   </div>
                                 )}
                               </div>
@@ -1286,15 +1401,17 @@ export default function AssignMembersPage() {
 
       {/* Assign Member Dialog */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_hi || '')}</DialogTitle>
-            <DialogDescription>
+        <DialogContent 
+          className="max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col w-[95vw] sm:w-full p-4 sm:p-6 overflow-hidden"
+        >
+          <DialogHeader className="space-y-2 sm:space-y-3">
+            <DialogTitle className="text-base sm:text-lg break-words">{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_hi || '')}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {t('admin.departments.assign.selectMembersAtLevel').replace('{level}', selectedLevel)}
             </DialogDescription>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-              <p className="font-medium text-blue-800">{t('admin.departments.assign.assignmentConfiguration')}</p>
-              <p className="text-blue-700">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
+              <p className="font-medium text-blue-800 mb-1">{t('admin.departments.assign.assignmentConfiguration')}</p>
+              <p className="text-blue-700 break-words">
                 <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment?.name_hi} • 
                 <strong> {t('admin.departments.assign.post')}</strong> {selectedPost?.name_hi} • 
                 <strong> {t('admin.departments.assign.level')}</strong> {selectedLevel}
@@ -1309,29 +1426,29 @@ export default function AssignMembersPage() {
                 {t('admin.departments.assign.selectedMembers')} <span className="font-medium">{selectedMembers.length}</span>
               </p>
               {selectedPost?.position_order === 1 && (
-                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.presidentPostWarning').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
+                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800 break-words" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.presidentPostWarning').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
               )}
             </div>
           </DialogHeader>
-          <div className="py-4 space-y-4 flex-1 overflow-hidden flex flex-col">
+          <div className="py-3 sm:py-4 space-y-3 sm:space-y-4 flex-1 overflow-hidden flex flex-col min-h-0">
 
             <div className="flex items-center space-x-2 flex-shrink-0">
               <Input
                 placeholder={t('admin.departments.assign.searchMembers')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1"
+                className="flex-1 text-sm sm:text-base h-9 sm:h-10"
               />
-              <Button variant="outline" onClick={() => setSearchQuery('')}>
+              <Button variant="outline" onClick={() => setSearchQuery('')} size="sm" className="h-9 sm:h-10 px-2 sm:px-3">
                 <Search className="h-4 w-4" />
               </Button>
             </div>
             
             {/* Validity Date Configuration */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex-shrink-0">
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="validity-toggle" className="text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                <Label htmlFor="validity-toggle" className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
                   Post Validity Period
                 </Label>
                 <div className="flex items-center space-x-2">
@@ -1359,14 +1476,14 @@ export default function AssignMembersPage() {
                     value={customValidUntil}
                     onChange={(e) => setCustomValidUntil(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="text-sm"
+                    className="text-sm h-9 sm:h-10"
                   />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 break-words">
                     Default: 1 year from assignment date. Choose a custom date if needed (e.g., 2 years, 18 months).
                   </p>
                 </div>
               ) : (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 break-words">
                   Default validity: <strong>1 year</strong> from assignment date
                   {customValidUntil && ` (will be ${formatDateDDMMYYYY(customValidUntil)})`}
                 </p>
@@ -1410,7 +1527,7 @@ export default function AssignMembersPage() {
                       return (
                         <div
                           key={member.id}
-                          className={`p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer ${
+                          className={`p-2 sm:p-3 flex items-center justify-between hover:bg-gray-50 cursor-pointer touch-manipulation ${
                             isSelected ? 'bg-orange-50' : ''
                           }`}
                           onClick={() => {
@@ -1426,38 +1543,48 @@ export default function AssignMembersPage() {
                             }
                           }}
                         >
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                            <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                               isSelected ? 'bg-orange-500 border-orange-500' : 'border-gray-300'
                             }`}>
                               {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
                             </div>
-                            <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100">
+                            <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                               {member.profile_photo_path ? (
                                 <Image
-                                  src={member.profile_photo_path}
+                                  src={getImageUrlWithCacheBust(member.profile_photo_path, member.updated_at)}
                                   alt={member.name}
                                   width={40}
                                   height={40}
                                   className="object-cover w-full h-full"
                                 />
                               ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold">
+                                <div className="h-full w-full flex items-center justify-center bg-orange-100 text-orange-800 font-semibold text-xs sm:text-sm">
                                   {member.name.charAt(0)}
                                 </div>
                               )}
                             </div>
-                            <div>
-                              <p className="font-medium">{member.name}</p>
-                              <div className="flex text-xs text-gray-500 space-x-2">
-                                <p>{member.member_reg_number}</p>
-                                {member.state && <p>• {member.state}</p>}
-                                {member.district && <p>• {member.district}</p>}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm sm:text-base truncate">{member.name}</p>
+                              <div className="flex text-xs text-gray-500 space-x-1 sm:space-x-2 flex-wrap gap-y-1">
+                                <span className="truncate">{member.member_reg_number}</span>
+                                {member.state && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate">{member.state}</span>
+                                  </>
+                                )}
+                                {member.district && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate">{member.district}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
                           {isSelected && (
-                            <UserCheck className="h-5 w-5 text-green-500" />
+                            <UserCheck className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0 ml-2" />
                           )}
                         </div>
                       );
@@ -1467,16 +1594,15 @@ export default function AssignMembersPage() {
               </div>
             </div>
           </div>
-          <DialogFooter className="flex-shrink-0">
-            <div className="flex items-center justify-between w-full">
-              <div className="text-sm text-gray-600">
+          <DialogFooter className="flex-shrink-0 flex-col sm:flex-row gap-3 sm:gap-0 sm:items-center sm:justify-between w-full">
+            <div className="text-xs sm:text-sm text-gray-600 w-full sm:w-auto text-center sm:text-left">
                 {selectedMembers.length} {t('admin.departments.assign.membersSelected')}
                 {selectedPost?.position_order === 1 && selectedMembers.length > 1 && (
-                  <span className="text-red-600 ml-2">{t('admin.departments.assign.onlyOneForPresident')}</span>
+                <span className="text-red-600 ml-2 block sm:inline mt-1 sm:mt-0">{t('admin.departments.assign.onlyOneForPresident')}</span>
                 )}
               </div>
-              <div className="flex space-x-2">
-                <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
+            <div className="flex space-x-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)} className="flex-1 sm:flex-initial text-sm">
                   {t('admin.departments.assign.cancel')}
                 </Button>
                 <Button 
@@ -1486,11 +1612,13 @@ export default function AssignMembersPage() {
                     selectedMembers.length === 0 || 
                     (selectedPost?.position_order === 1 && selectedMembers.length > 1)
                   }
+                className="flex-1 sm:flex-initial text-sm"
                 >
                   {isAssigning ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {t('admin.departments.assign.assigning')}
+                    <span className="hidden sm:inline">{t('admin.departments.assign.assigning')}</span>
+                    <span className="sm:hidden">Assigning...</span>
                     </>
                   ) : (
                     selectedPost?.position_order === 1 
@@ -1498,7 +1626,6 @@ export default function AssignMembersPage() {
                       : t('admin.departments.assign.assignMembersCount').replace('{count}', String(selectedMembers.length))
                   )}
                 </Button>
-              </div>
             </div>
           </DialogFooter>
         </DialogContent>

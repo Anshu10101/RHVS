@@ -21,6 +21,15 @@ interface HeroSettings {
   transition_effect: string;
 }
 
+interface CustomMarquee {
+  id: number;
+  text: string;
+  text_color: string;
+  background_color: string;
+  speed: number;
+  is_active: boolean;
+}
+
 function WelcomeMarqueeContent({ ariaHidden }: { ariaHidden?: boolean }) {
   const { t } = useLanguage();
   return (
@@ -40,6 +49,7 @@ export default function HeroSection() {
     show_indicators: true,
     transition_effect: 'slide'
   });
+  const [customMarquee, setCustomMarquee] = useState<CustomMarquee | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [imageAspectRatios, setImageAspectRatios] = useState<{[key: number]: string}>({});
@@ -68,7 +78,7 @@ export default function HeroSection() {
     const ro = new ResizeObserver(update);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [customMarquee]); // Remeasure when marquee changes
 
   // Measure shlokas marquee width
   useEffect(() => {
@@ -88,34 +98,62 @@ export default function HeroSection() {
     const node = welcomeMarqueeRef.current;
     if (!node) return;
     
-    let lastTs = performance.now();
-
-    const step = (ts: number) => {
+    // Cancel any existing animation
+    if (welcomeRafRef.current) {
+      cancelAnimationFrame(welcomeRafRef.current);
+      welcomeRafRef.current = null;
+    }
+    
+    // Reset scroll position when marquee changes
+    node.scrollLeft = 0;
+    
+    // Wait a bit for DOM to update and width to be measured
+    const timeoutId = setTimeout(() => {
+      const node = welcomeMarqueeRef.current;
       if (!node) return;
       
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const speedPxPerSec = isMobile ? 50 : 40; // Slower on desktop
-      
-      const dt = Math.max(0, ts - lastTs) / 1000;
-      lastTs = ts;
-      
-      const firstWidth = welcomeWidthRef.current || 0;
-      if (firstWidth > 0) {
-        node.scrollLeft += speedPxPerSec * dt;
-        while (node.scrollLeft >= firstWidth) {
-          node.scrollLeft -= firstWidth;
-        }
+      // Remeasure width after DOM update
+      const track = welcomeTrackRef.current;
+      if (track) {
+        welcomeWidthRef.current = track.scrollWidth || track.offsetWidth || 0;
       }
-      welcomeRafRef.current = requestAnimationFrame(step);
-    };
+      
+      let lastTs = performance.now();
 
-    welcomeRafRef.current = requestAnimationFrame(step);
+      const step = (ts: number) => {
+        const currentNode = welcomeMarqueeRef.current;
+        if (!currentNode) return;
+        
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        // Use custom marquee speed if available, otherwise use default
+        const speedPxPerSec = customMarquee 
+          ? customMarquee.speed 
+          : (isMobile ? 50 : 40);
+        
+        const dt = Math.max(0, ts - lastTs) / 1000;
+        lastTs = ts;
+        
+        const firstWidth = welcomeWidthRef.current || 0;
+        if (firstWidth > 0) {
+          currentNode.scrollLeft += speedPxPerSec * dt;
+          while (currentNode.scrollLeft >= firstWidth) {
+            currentNode.scrollLeft -= firstWidth;
+          }
+        }
+        welcomeRafRef.current = requestAnimationFrame(step);
+      };
+
+      welcomeRafRef.current = requestAnimationFrame(step);
+    }, 150);
     
     return () => {
-      if (welcomeRafRef.current) cancelAnimationFrame(welcomeRafRef.current);
-      welcomeRafRef.current = null;
+      if (welcomeRafRef.current) {
+        cancelAnimationFrame(welcomeRafRef.current);
+        welcomeRafRef.current = null;
+      }
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []);
+  }, [customMarquee]);
 
   // Shlokas marquee RAF loop
   useEffect(() => {
@@ -226,16 +264,105 @@ export default function HeroSection() {
     }
   }, []);
 
+  const fetchCustomMarquee = useCallback(async () => {
+    try {
+      // Get district/state from URL or localStorage if available
+      if (typeof window === 'undefined') return;
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      let district = urlParams.get('district') || localStorage.getItem('selectedDistrict');
+      let state = urlParams.get('state') || localStorage.getItem('selectedState');
+      
+      // Always try to get names from localStorage first (these are the actual names)
+      const districtName = localStorage.getItem('district_name');
+      const stateName = localStorage.getItem('state_name');
+      
+      // If we have names in localStorage, use those (they're the actual district/state names)
+      if (districtName && stateName) {
+        district = districtName;
+        state = stateName;
+        console.log('📍 Using district/state from localStorage (names):', { district, state });
+      } else if (district && state && !isNaN(Number(district)) && !isNaN(Number(state))) {
+        // These are IDs, need to convert to names
+        console.log('🔄 Converting IDs to names:', { district, state });
+        try {
+          const [stateRes, districtRes] = await Promise.all([
+            fetch('/api/states'),
+            fetch(`/api/districts?stateId=${state}`)
+          ]);
+          
+          if (stateRes.ok && districtRes.ok) {
+            const stateData = await stateRes.json();
+            const districtData = await districtRes.json();
+            
+            const stateObj = stateData.data?.find((s: { id: number }) => String(s.id) === state);
+            const districtObj = districtData.data?.find((d: { id: string | number }) => String(d.id) === district);
+            
+            if (stateObj && districtObj) {
+              state = stateObj.name;
+              district = districtObj.name;
+              // Store the names for future use
+              if (district) localStorage.setItem('district_name', district);
+              if (state) localStorage.setItem('state_name', state);
+              console.log('✅ Converted IDs to names:', { district, state });
+            } else {
+              console.warn('⚠️ Could not convert IDs to names, using IDs as-is');
+            }
+          }
+        } catch (e) {
+          console.error('❌ Error converting IDs to names:', e);
+        }
+      }
+      
+      const url = district && state 
+        ? `/api/marquee?district=${encodeURIComponent(district)}&state=${encodeURIComponent(state)}`
+        : '/api/marquee';
+      
+      console.log('🌐 Fetching marquee with:', { district, state, url });
+      
+      const response = await fetch(`${url}?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Marquee fetch response:', { 
+          success: data.success, 
+          hasData: !!data.data,
+          is_global: data.data?.is_global,
+          district: data.data?.district,
+          state: data.data?.state
+        });
+        if (data.success && data.data) {
+          setCustomMarquee(data.data);
+        } else {
+          setCustomMarquee(null);
+        }
+      } else {
+        console.error('❌ Marquee fetch failed:', response.status, response.statusText);
+        setCustomMarquee(null);
+      }
+    } catch (error) {
+      console.error('Error fetching custom marquee:', error);
+      setCustomMarquee(null);
+    }
+  }, []);
+
   // Load hero images and settings on mount and when page becomes visible
   useEffect(() => {
     fetchHeroImages();
     fetchHeroSettings();
+    fetchCustomMarquee();
 
     // Reload when page becomes visible (user returns from admin panel or switches tabs)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         fetchHeroImages();
         fetchHeroSettings();
+        fetchCustomMarquee();
       }
     };
 
@@ -244,7 +371,7 @@ export default function HeroSection() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchHeroImages, fetchHeroSettings]);
+  }, [fetchHeroImages, fetchHeroSettings, fetchCustomMarquee]);
 
   const detectImageAspectRatio = (imagePath: string, imageId: number) => {
     if (typeof window === 'undefined') return;
@@ -345,7 +472,45 @@ export default function HeroSection() {
         </div>
 
 
-        {/* Welcome marquee */}
+        {/* Custom Marquee or Default Welcome marquee */}
+        {customMarquee ? (
+          <div 
+            className="relative overflow-hidden full-bleed mt-2 py-2 sm:py-3"
+            style={{ backgroundColor: customMarquee.background_color }}
+          >
+            <div
+              ref={welcomeMarqueeRef}
+              className="overflow-x-scroll flex gap-3 sm:gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+              style={{ msOverflowStyle: 'none' as unknown as undefined }}
+              onScroll={(e) => {
+                const node = e.currentTarget;
+                const firstWidth = welcomeWidthRef.current || 0;
+                if (firstWidth > 0 && node.scrollLeft >= firstWidth) {
+                  node.scrollLeft = node.scrollLeft - firstWidth;
+                }
+              }}
+            >
+              {/* Track A */}
+              <div ref={welcomeTrackRef} className="flex gap-3 sm:gap-4 whitespace-nowrap">
+                <span 
+                  className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block font-bold tracking-wide text-sm sm:text-base md:text-lg"
+                  style={{ color: customMarquee.text_color }}
+                >
+                  {customMarquee.text}
+                </span>
+              </div>
+              {/* Track B (duplicate for seamless loop) */}
+              <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
+                <span 
+                  className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block font-bold tracking-wide text-sm sm:text-base md:text-lg"
+                  style={{ color: customMarquee.text_color }}
+                >
+                  {customMarquee.text}
+                </span>
+              </div>
+            </div>
+          </div>
+        ) : (
         <div className="relative overflow-hidden full-bleed mt-2 py-2 sm:py-3 bg-gradient-to-r from-orange-100 to-orange-50">
           <div
             ref={welcomeMarqueeRef}
@@ -369,6 +534,7 @@ export default function HeroSection() {
             </div>
           </div>
         </div>
+        )}
 
         {/* mantra marquee */}
         <div className="relative overflow-hidden full-bleed mt-1 sm:mt-2 py-1.5 sm:py-2">

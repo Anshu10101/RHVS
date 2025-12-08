@@ -32,6 +32,7 @@ interface Department {
     photo_path: string | null;
     reg_number: string;
     email: string;
+    updated_at?: string | null;
   } | null;
 }
 
@@ -44,6 +45,16 @@ interface DistrictOption {
   id: string | number;
   name: string;
 }
+
+// Helper function to add cache-busting to image URLs
+const getImageUrlWithCacheBust = (photoPath: string | null, updatedAt?: string | null): string => {
+  if (!photoPath) return '';
+  const baseUrl = photoPath.startsWith('/') ? photoPath : `/${photoPath}`;
+  // Use updated_at timestamp if available, otherwise use current timestamp
+  const cacheBust = updatedAt ? new Date(updatedAt).getTime() : Date.now();
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}_t=${cacheBust}`;
+};
 
 export default function DepartmentsSection() {
   const { t } = useLanguage();
@@ -62,6 +73,7 @@ export default function DepartmentsSection() {
   const [loadingStateLevel, setLoadingStateLevel] = useState(false);
   const [showAllNational, setShowAllNational] = useState(false);
   const [showAllState, setShowAllState] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
   const [isStateHoveringTop, setIsStateHoveringTop] = useState(false);
   const [isStateHoveringBottom, setIsStateHoveringBottom] = useState(false);
@@ -296,6 +308,7 @@ export default function DepartmentsSection() {
     // Reload when page becomes visible (user returns from admin panel or switches tabs)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
+        // Force reload with cache-busting
         loadNationalDepartments();
         loadStates();
       }
@@ -307,6 +320,11 @@ export default function DepartmentsSection() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [loadNationalDepartments, loadStates]);
+  
+  useEffect(() => {
+    // Increment version when departments change to force image reload
+    setDataVersion(prev => prev + 1);
+  }, [nationalDepartments, stateDepartments]);
 
   useEffect(() => {
     if (selectedStateId || states.length === 0) return;
@@ -369,15 +387,12 @@ export default function DepartmentsSection() {
           </p>
         </div>
 
-        <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
+                    <div className="relative h-32 w-32 sm:h-36 sm:w-36 md:h-40 md:w-40 rounded-full overflow-hidden ring-1 ring-orange-200/60 shadow-sm transition-all duration-300 group-hover:shadow-md">
           {department.president?.photo_path ? (
             <div className="absolute inset-0 overflow-hidden bg-white">
               <Image
-                src={
-                  department.president.photo_path.startsWith('/')
-                    ? department.president.photo_path
-                    : `/${department.president.photo_path}`
-                }
+                key={`${department.president.id}-${dataVersion}`}
+                src={getImageUrlWithCacheBust(department.president.photo_path, department.president.updated_at)}
                 alt={department.president.name}
                 fill
                 sizes="(max-width: 640px) 128px, (max-width: 768px) 144px, (max-width: 1024px) 160px, 176px"
@@ -736,7 +751,8 @@ export default function DepartmentsSection() {
                       {department.president?.photo_path ? (
                         <div className="absolute inset-0 overflow-hidden bg-white">
                           <Image
-                            src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
+                            key={`${department.president.id}-${dataVersion}`}
+                            src={getImageUrlWithCacheBust(department.president.photo_path, department.president.updated_at)}
                             alt={department.president.name}
                             fill
                             sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, 176px"
@@ -804,7 +820,8 @@ export default function DepartmentsSection() {
                           {department.president?.photo_path ? (
                             <div className="absolute inset-0 overflow-hidden bg-white">
                               <Image
-                                src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
+                                key={`${department.president.id}-${dataVersion}`}
+                                src={getImageUrlWithCacheBust(department.president.photo_path, department.president.updated_at)}
                                 alt={department.president.name}
                                 fill
                                 sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, 176px"
@@ -885,7 +902,8 @@ export default function DepartmentsSection() {
                 {department.president?.photo_path ? (
                   <div className="absolute inset-0 overflow-hidden bg-white">
                     <Image
-                      src={department.president.photo_path.startsWith('/') ? department.president.photo_path : `/${department.president.photo_path}`}
+                      key={`${department.president.id}-${dataVersion}`}
+                      src={getImageUrlWithCacheBust(department.president.photo_path, department.president.updated_at)}
                       alt={department.president.name}
                       fill
                         sizes="(max-width: 640px) 112px, (max-width: 768px) 128px, (max-width: 1024px) 144px, (max-width: 1280px) 160px, 176px"

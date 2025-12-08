@@ -30,7 +30,7 @@ export async function GET(
           ELSE m.profile_photo_path
         END AS profile_photo_path,
         m.member_reg_number, m.created_at, m.updated_at, m.status, m.district, m.state,
-        m.verified_by_member_id,
+        m.verified_by_member_id, m.aadhar_card_number,
         GROUP_CONCAT(
           CONCAT(d.name_en, ' (', dp.name_en, ' - ', dm.level, 
             CASE 
@@ -123,7 +123,7 @@ export async function PUT(
     const {
       name, email, phone, address, father_husband_name, mother_wife_name,
       registration_date, existing_member_reg_number, profile_photo_path,
-      district, department, status
+      district, department, status, aadhar_card_number
     } = body;
 
     // Check if member exists
@@ -224,13 +224,18 @@ export async function PUT(
         }
       }
     }
-    if (district !== undefined) {
-      updateFields.push('district = ?');
-      updateValues.push(district);
-    }
-    if (department !== undefined) {
-      updateFields.push('department = ?');
-      updateValues.push(department);
+    if (aadhar_card_number !== undefined) {
+      // Validate Aadhaar card number if provided
+      if (aadhar_card_number && aadhar_card_number.trim() !== '') {
+        if (!/^\d{12}$/.test(aadhar_card_number.trim())) {
+          return NextResponse.json(
+            { success: false, error: 'Aadhaar card number must be exactly 12 digits' },
+            { status: 400 }
+          );
+        }
+      }
+      updateFields.push('aadhar_card_number = ?');
+      updateValues.push(aadhar_card_number?.trim() || null);
     }
     if (status !== undefined) {
       updateFields.push('status = ?');

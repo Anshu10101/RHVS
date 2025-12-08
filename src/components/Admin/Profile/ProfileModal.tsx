@@ -293,7 +293,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
                     {currentUser.email?.[0]?.toUpperCase() || 'A'}
                   </div>
                 )}
-                {currentUser.type === 'superadmin' && (
+                {(currentUser.type === 'superadmin' || currentUser.type === 'news_editor' || currentUser.role === 'news_editor' || currentUser.role === 'news_reporter') && (
                   <>
                     <input
                       type="file"
@@ -321,7 +321,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-gray-900 break-words">{currentUser.name}</h3>
                 <p className="text-sm text-gray-500 break-all">{currentUser.email}</p>
-                {currentUser.type === 'superadmin' && (
+                {(currentUser.type === 'superadmin' || currentUser.type === 'news_editor' || currentUser.role === 'news_editor' || currentUser.role === 'news_reporter') && (
                   <button
                     onClick={() => document.getElementById('profile-photo-upload')?.click()}
                     disabled={uploadingPhoto}

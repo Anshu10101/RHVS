@@ -20,7 +20,8 @@ import {
   Activity,
   Globe,
   Phone,
-  Award
+  Award,
+  ScrollText
 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { AdminProvider } from '@/contexts/AdminContext';
@@ -112,6 +113,7 @@ function AdminDashboardContent() {
 
   const isSuperAdmin = currentUser.type === 'superadmin';
   const isDistrictAdmin = currentUser.type === 'district_admin';
+  const isNewsEditor = currentUser.type === 'news_editor' || currentUser.role === 'news_editor' || currentUser.role === 'news_reporter';
 
   // Helper function to check if user can access an item
   const canAccess = (item: { roles?: string[]; permission?: string }) => {
@@ -204,6 +206,12 @@ function AdminDashboardContent() {
           href: '/admin/content/hero-images',
           icon: Camera,
           permission: 'manage_hero_images',
+        },
+        {
+          name: 'Marquee Management',
+          href: '/admin/content/marquee',
+          icon: ScrollText,
+          permission: 'manage_marquee',
         },
         {
           name: t('admin.dashboard.items.photoManagement'),
@@ -319,20 +327,31 @@ function AdminDashboardContent() {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 py-4 sm:py-5 md:py-6">
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                {isSuperAdmin ? t('admin.dashboard.superadmin') : t('admin.dashboard.districtAdmin')}
+                {isSuperAdmin 
+                  ? t('admin.dashboard.superadmin') 
+                  : isNewsEditor 
+                    ? 'समाचार संपादक डैशबोर्ड'
+                    : t('admin.dashboard.districtAdmin')}
               </h1>
               <p className="text-sm sm:text-base text-gray-600 mt-1 truncate">
                 {t('admin.dashboard.welcomeBack')}, {currentUser.name}
                 {isDistrictAdmin && ` (${currentUser.district} ${t('admin.dashboard.district')})`}
+                {isNewsEditor && ' - संगठन के समाचार संपादक'}
               </p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <span className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap ${
                 isSuperAdmin 
                   ? 'bg-red-100 text-red-800' 
+                  : isNewsEditor
+                    ? 'bg-purple-100 text-purple-800'
                   : 'bg-blue-100 text-blue-800'
               }`}>
-                {isSuperAdmin ? t('admin.dashboard.superadminLabel') : t('admin.dashboard.districtAdminLabel')}
+                {isSuperAdmin 
+                  ? t('admin.dashboard.superadminLabel') 
+                  : isNewsEditor
+                    ? 'समाचार संपादक'
+                    : t('admin.dashboard.districtAdminLabel')}
               </span>
               <Button onClick={logout} variant="outline" size="sm" className="text-xs sm:text-sm">
                 <LogOut className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
@@ -348,11 +367,17 @@ function AdminDashboardContent() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
         <div className="mb-6 sm:mb-8 md:mb-10">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1 sm:mb-2">
-            {isSuperAdmin ? t('admin.dashboard.systemManagement') : t('admin.dashboard.districtManagement')}
+            {isSuperAdmin 
+              ? t('admin.dashboard.systemManagement') 
+              : isNewsEditor
+                ? 'समाचार और कार्यक्रम प्रबंधन'
+                : t('admin.dashboard.districtManagement')}
           </h2>
           <p className="text-xs sm:text-sm text-gray-500">
             {isSuperAdmin 
               ? t('admin.dashboard.systemManagementDesc')
+              : isNewsEditor
+                ? 'समाचार और कार्यक्रम बनाएं, संपादित करें और प्रबंधित करें'
               : t('admin.dashboard.districtManagementDesc')
             }
           </p>
@@ -488,7 +513,11 @@ function AdminDashboardContent() {
                   </div>
                   <div className="ml-3 sm:ml-4 min-w-0 flex-1">
                     <p className="text-xs sm:text-sm font-medium text-gray-500 mb-1 truncate">
-                      {isSuperAdmin ? t('admin.dashboard.totalDistricts') : t('admin.dashboard.yourDistrict')}
+                      {isSuperAdmin 
+                        ? t('admin.dashboard.totalDistricts') 
+                        : isNewsEditor
+                          ? 'समाचार संपादक'
+                          : t('admin.dashboard.yourDistrict')}
                     </p>
                     <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                       {isDistrictAdmin ? currentUser.district : '-'}

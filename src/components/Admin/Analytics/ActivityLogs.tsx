@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ interface ActivityLog {
 
 export function ActivityLogs() {
   const { hasPermission } = useAdmin();
+  const { t } = useLanguage();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,8 +130,8 @@ export function ActivityLogs() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
-          <p className="text-gray-600">You don&apos;t have permission to view activity logs.</p>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('admin.logs.accessDenied')}</h3>
+          <p className="text-gray-600">{t('admin.logs.noPermission')}</p>
         </div>
       </div>
     );
@@ -227,13 +229,13 @@ export function ActivityLogs() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Activity Logs</h1>
-          <p className="text-sm md:text-base text-gray-600">Track all administrative activities and changes</p>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">{t('admin.logs.title')}</h1>
+          <p className="text-sm md:text-base text-gray-600">{t('admin.logs.description')}</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading}>
             <RefreshCw className={`h-4 w-4 md:mr-2 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden md:inline">Refresh</span>
+            <span className="hidden md:inline">{t('admin.logs.refresh')}</span>
           </Button>
         </div>
       </div>
@@ -242,12 +244,12 @@ export function ActivityLogs() {
       <Card className="p-4 md:p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
           <div>
-            <Label htmlFor="search" className="text-sm">Search</Label>
+            <Label htmlFor="search" className="text-sm">{t('admin.logs.search')}</Label>
             <div className="relative mt-1">
               <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="search"
-                placeholder="Search activities..."
+                placeholder={t('admin.logs.searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 h-9 text-sm"
@@ -256,13 +258,13 @@ export function ActivityLogs() {
           </div>
           
           <div>
-            <Label htmlFor="action" className="text-sm">Action Type</Label>
+            <Label htmlFor="action" className="text-sm">{t('admin.logs.actionType')}</Label>
             <Select value={selectedAction} onValueChange={setSelectedAction}>
               <SelectTrigger className="h-9 text-sm mt-1">
-                <SelectValue placeholder="All Actions" />
+                <SelectValue placeholder={t('admin.logs.allActions')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Actions</SelectItem>
+                <SelectItem value="all">{t('admin.logs.allActions')}</SelectItem>
                 {actions.map(action => (
                   <SelectItem key={action} value={action}>{formatAction(action)}</SelectItem>
                 ))}
@@ -271,13 +273,13 @@ export function ActivityLogs() {
           </div>
           
           <div>
-            <Label htmlFor="user" className="text-sm">User</Label>
+            <Label htmlFor="user" className="text-sm">{t('admin.logs.user')}</Label>
             <Select value={selectedUser} onValueChange={setSelectedUser}>
               <SelectTrigger className="h-9 text-sm mt-1">
-                <SelectValue placeholder="All Users" />
+                <SelectValue placeholder={t('admin.logs.allUsers')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="all">{t('admin.logs.allUsers')}</SelectItem>
                 {users.map(user => (
                   <SelectItem key={user} value={user}>{user}</SelectItem>
                 ))}
@@ -286,16 +288,16 @@ export function ActivityLogs() {
           </div>
           
           <div>
-            <Label htmlFor="dateRange" className="text-sm">Date Range</Label>
+            <Label htmlFor="dateRange" className="text-sm">{t('admin.logs.dateRange')}</Label>
             <Select value={dateRange} onValueChange={setDateRange}>
               <SelectTrigger className="h-9 text-sm mt-1">
-                <SelectValue placeholder="All Time" />
+                <SelectValue placeholder={t('admin.logs.allTime')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="all">{t('admin.logs.allTime')}</SelectItem>
+                <SelectItem value="today">{t('admin.logs.today')}</SelectItem>
+                <SelectItem value="week">{t('admin.logs.thisWeek')}</SelectItem>
+                <SelectItem value="month">{t('admin.logs.thisMonth')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -306,20 +308,20 @@ export function ActivityLogs() {
       <Card>
         <div className="px-4 md:px-6 py-3 md:py-4 border-b border-gray-200">
           <h3 className="text-base md:text-lg font-semibold text-gray-900">
-            Activity Logs <span className="text-sm font-normal text-gray-500">({total})</span>
+            {t('admin.logs.activityLogs')} <span className="text-sm font-normal text-gray-500">({total})</span>
           </h3>
         </div>
         <div className="divide-y divide-gray-200">
           {loading ? (
             <div className="p-6 md:p-8 text-center">
               <Loader2 className="h-6 w-6 md:h-8 md:w-8 animate-spin text-gray-400 mx-auto mb-3 md:mb-4" />
-              <p className="text-sm md:text-base text-gray-600">Loading logs...</p>
+              <p className="text-sm md:text-base text-gray-600">{t('admin.logs.loadingLogs')}</p>
             </div>
           ) : logs.length === 0 ? (
             <div className="p-6 md:p-8 text-center">
               <Activity className="h-10 w-10 md:h-12 md:w-12 text-gray-400 mx-auto mb-3 md:mb-4" />
-              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No activities found</h3>
-              <p className="text-sm md:text-base text-gray-600">Try adjusting your filters to see more results.</p>
+              <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">{t('admin.logs.noActivitiesFound')}</h3>
+              <p className="text-sm md:text-base text-gray-600">{t('admin.logs.tryAdjustingFilters')}</p>
             </div>
           ) : (
             logs.map((log) => (
@@ -334,7 +336,7 @@ export function ActivityLogs() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getActionColor(log.action)}`}>
                           {formatAction(log.action)}
                         </span>
-                        <span className="text-xs md:text-sm text-gray-600">by {log.userName}</span>
+                        <span className="text-xs md:text-sm text-gray-600">{t('admin.logs.by')} {log.userName}</span>
                       </div>
                       <div className="flex items-center gap-1.5 text-xs md:text-sm text-gray-500">
                         <Clock className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
@@ -359,8 +361,8 @@ export function ActivityLogs() {
       {logs.length > 0 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-2">
           <p className="text-xs md:text-sm text-gray-700 text-center sm:text-left">
-            Showing <span className="font-medium">{logs.length}</span> of <span className="font-medium">{total}</span> activities
-            <span className="hidden md:inline"> (Page {currentPage} of {totalPages})</span>
+            {t('admin.logs.showing')} <span className="font-medium">{logs.length}</span> {t('admin.logs.of')} <span className="font-medium">{total}</span> {t('admin.logs.activities')}
+            <span className="hidden md:inline"> ({t('admin.logs.page')} {currentPage} {t('admin.logs.of')} {totalPages})</span>
           </p>
           <div className="flex items-center gap-2">
             <Button 
@@ -370,7 +372,7 @@ export function ActivityLogs() {
               disabled={currentPage === 1 || loading}
               className="text-xs md:text-sm"
             >
-              Previous
+              {t('admin.logs.previous')}
             </Button>
             <span className="text-xs md:text-sm text-gray-500 px-2 md:hidden">{currentPage}/{totalPages}</span>
             <Button 
@@ -380,7 +382,7 @@ export function ActivityLogs() {
               disabled={currentPage === totalPages || loading}
               className="text-xs md:text-sm"
             >
-              Next
+              {t('admin.logs.next')}
             </Button>
           </div>
         </div>

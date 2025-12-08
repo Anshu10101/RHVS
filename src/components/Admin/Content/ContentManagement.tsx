@@ -38,6 +38,7 @@ import {
 import { NewsManagement } from '../Events/NewsManagement';
 import { EventsManagement } from '../Events/EventsManagement';
 import { HeroImagesManagement } from './HeroImagesManagement';
+import { MarqueeManagement } from './MarqueeManagement';
 
 interface ContentSection {
   id: string;
@@ -341,6 +342,12 @@ export function ContentManagement() {
       name: 'Hero Images',
       icon: ImageIcon,
       permission: 'manage_hero_images',
+    },
+    {
+      id: 'marquee',
+      name: 'Marquee Management',
+      icon: FileText,
+      permission: 'manage_marquee',
     },
     {
       id: 'about',
@@ -882,6 +889,10 @@ export function ContentManagement() {
 
         {activeTab === 'hero-images' && (
           <HeroImagesManagement />
+        )}
+
+        {activeTab === 'marquee' && (
+          <MarqueeManagement />
         )}
 
         {activeTab === 'seo' && (

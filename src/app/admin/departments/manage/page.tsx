@@ -646,25 +646,25 @@ export default function ManageDepartmentsPage() {
 
   return (
     <>
-      <div className="container mx-auto py-6">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">{t('admin.departments.manage.title')}</h1>
+      <div className="container mx-auto py-4 px-4 sm:py-6 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold">{t('admin.departments.manage.title')}</h1>
           <Button
             variant="outline"
             onClick={() => router.push('/admin/departments')}
-            className="flex items-center"
+            className="flex items-center w-full sm:w-auto"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('admin.departments.manage.backToDepartments')}
           </Button>
         </div>
         
-        <Tabs defaultValue="departments" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="departments">{t('admin.departments.manage.selectDepartment')}</TabsTrigger>
-            <TabsTrigger value="national-executive">{t('admin.departments.manage.manageNationalExecutive')}</TabsTrigger>
+        <Tabs defaultValue="departments" className="space-y-4 sm:space-y-6">
+          <TabsList className="w-full overflow-x-auto flex sm:inline-flex">
+            <TabsTrigger value="departments" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.manage.selectDepartment')}</TabsTrigger>
+            <TabsTrigger value="national-executive" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.manage.manageNationalExecutive')}</TabsTrigger>
             {selectedDepartment && (
-              <TabsTrigger value="posts">{t('admin.departments.manage.managePosts')}</TabsTrigger>
+              <TabsTrigger value="posts" className="text-xs sm:text-sm whitespace-nowrap">{t('admin.departments.manage.managePosts')}</TabsTrigger>
             )}
           </TabsList>
           
@@ -700,17 +700,17 @@ export default function ManageDepartmentsPage() {
                           placeholder={t('admin.departments.manage.searchDepartments')}
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10"
+                          className="pl-10 text-sm sm:text-base h-9 sm:h-10"
                         />
                       </div>
                     </div>
                     
                     {filteredDepartments.length === 0 ? (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">{t('admin.departments.manage.noMatchingDepartments')}</p>
+                      <div className="text-center py-6 sm:py-8">
+                        <p className="text-gray-500 text-sm sm:text-base">{t('admin.departments.manage.noMatchingDepartments')}</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {filteredDepartments.map((department) => (
                           <Card 
                             key={department.id} 
@@ -719,16 +719,16 @@ export default function ManageDepartmentsPage() {
                             }`}
                             onClick={() => setSelectedDepartment(department)}
                           >
-                            <CardContent className="p-4">
+                            <CardContent className="p-3 sm:p-4">
                               <div className="flex items-start justify-between gap-2">
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="font-bold text-lg">{department.name_hi}</h3>
-                                  <p className="text-gray-600 text-sm">{department.name_en}</p>
+                                  <h3 className="font-bold text-base sm:text-lg break-words">{department.name_hi}</h3>
+                                  <p className="text-gray-600 text-xs sm:text-sm mt-1 break-words">{department.name_en}</p>
                                 </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="flex-shrink-0"
+                                  className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-auto sm:px-2 p-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setEditingDepartment(department);
@@ -737,7 +737,7 @@ export default function ManageDepartmentsPage() {
                                     setIsEditDepartmentDialogOpen(true);
                                   }}
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                                 </Button>
                               </div>
                             </CardContent>
@@ -751,44 +751,44 @@ export default function ManageDepartmentsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="national-executive" className="space-y-6">
+          <TabsContent value="national-executive" className="space-y-4 sm:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.departments.manage.manageNationalExecutive')}</CardTitle>
-                <p className="text-sm text-gray-500 mt-2">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">{t('admin.departments.manage.manageNationalExecutive')}</CardTitle>
+                <p className="text-xs sm:text-sm text-gray-500 mt-2">
                   {t('admin.departments.manage.nationalExecutiveDescription')}
                 </p>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-6">
                 {isLoadingNationalExecutive ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+                  <div className="flex justify-center py-6 sm:py-8">
+                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-gray-500" />
                   </div>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-4 sm:space-y-6">
                     {/* Current National Executive Department */}
                     {nationalExecutiveDept ? (
-                      <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
+                      <div className="p-3 sm:p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="px-2 py-1 bg-orange-500 text-white text-xs font-semibold rounded">
                                 {t('admin.departments.manage.currentNationalExecutive')}
                               </span>
                             </div>
-                            <h3 className="font-bold text-lg text-gray-900">{nationalExecutiveDept.name_hi}</h3>
-                            <p className="text-gray-600 text-sm">{nationalExecutiveDept.name_en}</p>
+                            <h3 className="font-bold text-base sm:text-lg text-gray-900 break-words">{nationalExecutiveDept.name_hi}</h3>
+                            <p className="text-gray-600 text-xs sm:text-sm mt-1 break-words">{nationalExecutiveDept.name_en}</p>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={handleUnsetNationalExecutive}
                             disabled={isSettingNationalExecutive}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full sm:w-auto text-xs sm:text-sm"
                           >
                             {isSettingNationalExecutive ? (
                               <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                                 {t('admin.departments.manage.unsetting')}
                               </>
                             ) : (
@@ -798,53 +798,56 @@ export default function ManageDepartmentsPage() {
                         </div>
                       </div>
                     ) : (
-                      <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
-                        <p className="text-gray-500">{t('admin.departments.manage.noNationalExecutive')}</p>
-                        <p className="text-sm text-gray-400 mt-1">{t('admin.departments.manage.selectBelow')}</p>
+                      <div className="p-3 sm:p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                        <p className="text-gray-500 text-sm sm:text-base">{t('admin.departments.manage.noNationalExecutive')}</p>
+                        <p className="text-xs sm:text-sm text-gray-400 mt-1">{t('admin.departments.manage.selectBelow')}</p>
                       </div>
                     )}
 
                     {/* Available Departments to Select */}
                     <div>
-                      <h3 className="font-semibold text-lg mb-4">{t('admin.departments.manage.selectDepartmentLabel')}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">{t('admin.departments.manage.selectDepartmentLabel')}</h3>
                       {departments.length === 0 ? (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">{t('admin.departments.manage.noDepartmentsAvailable')}</p>
+                        <div className="text-center py-6 sm:py-8">
+                          <p className="text-gray-500 text-sm sm:text-base">{t('admin.departments.manage.noDepartmentsAvailable')}</p>
                           <Button 
                             variant="outline" 
-                            className="mt-4"
+                            className="mt-4 w-full sm:w-auto"
                             onClick={() => router.push('/admin/departments/create')}
                           >
-                            <Plus className="mr-2 h-4 w-4" />
+                            <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                             {t('admin.departments.manage.createDepartment')}
                           </Button>
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                           {departments.map((department) => (
                             <Card 
                               key={department.id} 
                               className="cursor-pointer hover:shadow-md transition-shadow"
                             >
-                              <CardContent className="p-4">
-                                <div className="flex items-start justify-between gap-2">
+                              <CardContent className="p-3 sm:p-4">
+                                <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
                                   <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-lg">{department.name_hi}</h3>
-                                    <p className="text-gray-600 text-sm">{department.name_en}</p>
+                                    <h3 className="font-bold text-base sm:text-lg break-words">{department.name_hi}</h3>
+                                    <p className="text-gray-600 text-xs sm:text-sm mt-1 break-words">{department.name_en}</p>
                                   </div>
                                 </div>
                                 <Button
-                                  className="w-full mt-4"
+                                  className="w-full text-xs sm:text-sm"
                                   onClick={() => handleSetNationalExecutive(department.id)}
                                   disabled={isSettingNationalExecutive}
                                 >
                                   {isSettingNationalExecutive ? (
                                     <>
-                                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                      <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                                       {t('admin.departments.manage.setting')}
                                     </>
                                   ) : (
-                                    t('admin.departments.manage.setAsNationalExecutive')
+                                    <>
+                                      <span className="hidden sm:inline">{t('admin.departments.manage.setAsNationalExecutive')}</span>
+                                      <span className="sm:hidden">Set as National Executive</span>
+                                    </>
                                   )}
                                 </Button>
                               </CardContent>
@@ -859,21 +862,21 @@ export default function ManageDepartmentsPage() {
             </Card>
           </TabsContent>
           
-          <TabsContent value="posts" className="space-y-6">
+          <TabsContent value="posts" className="space-y-4 sm:space-y-6">
             {selectedDepartment && (
               <>
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="font-bold">{selectedDepartment.name_hi}</CardTitle>
-                      <p className="text-sm text-gray-500 mt-1">{selectedDepartment.name_en}</p>
+                  <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-6">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="font-bold text-lg sm:text-xl break-words">{selectedDepartment.name_hi}</CardTitle>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1 break-words">{selectedDepartment.name_en}</p>
                     </div>
-                    <Button onClick={() => setIsNewPostDialogOpen(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
+                    <Button onClick={() => setIsNewPostDialogOpen(true)} className="w-full sm:w-auto text-sm">
+                      <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                       {t('admin.departments.manage.addPost')}
                     </Button>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-3 sm:p-6">
                     {isLoading ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
@@ -910,35 +913,36 @@ export default function ManageDepartmentsPage() {
                                     <div
                                       ref={provided.innerRef}
                                       {...provided.draggableProps}
-                                      className={`flex items-center justify-between p-3 rounded-lg border ${
+                                      className={`flex items-center justify-between p-2 sm:p-3 rounded-lg border ${
                                         post.position_order === 1 
                                           ? 'bg-orange-50 border-orange-200' 
                                           : 'bg-white hover:bg-gray-50'
                                       }`}
                                     >
-                                      <div className="flex items-center space-x-3">
+                                      <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                                         <div 
                                           {...provided.dragHandleProps}
-                                          className={`p-1 rounded ${post.position_order === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-grab hover:bg-gray-100'}`}
+                                          className={`p-1 rounded flex-shrink-0 ${post.position_order === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-grab hover:bg-gray-100 touch-none'}`}
                                         >
-                                          <MoveVertical className="h-5 w-5 text-gray-400" />
+                                          <MoveVertical className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                                         </div>
-                                        <div>
-                                          <p className="font-medium">
+                                        <div className="flex-1 min-w-0">
+                                          <p className="font-medium text-sm sm:text-base break-words">
                                             {post.position_order}. {post.name_en}
                                             {post.position_order === 1 && (
-                                              <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded">
+                                              <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-1.5 sm:px-2 py-0.5 rounded">
                                                 {t('admin.departments.manage.president')}
                                               </span>
                                             )}
                                           </p>
-                                          <p className="text-sm text-gray-500">{post.name_hi}</p>
+                                          <p className="text-xs sm:text-sm text-gray-500 mt-0.5 break-words">{post.name_hi}</p>
                                         </div>
                                       </div>
-                                      <div className="flex items-center space-x-2">
+                                      <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                                         <Button
                                           variant="ghost"
                                           size="sm"
+                                          className="h-8 w-8 sm:h-9 sm:w-auto sm:px-2 p-0"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setEditingPost(post);
@@ -949,18 +953,19 @@ export default function ManageDepartmentsPage() {
                                             setIsEditPostDialogOpen(true);
                                           }}
                                         >
-                                          <Edit className="h-4 w-4" />
+                                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                                         </Button>
                                         {post.position_order !== 1 && (
                                           <Button
                                             variant="ghost"
                                             size="sm"
+                                            className="h-8 w-8 sm:h-9 sm:w-auto sm:px-2 p-0"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleDeletePost(post);
                                             }}
                                           >
-                                            <Trash2 className="h-4 w-4 text-red-500" />
+                                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
                                           </Button>
                                         )}
                                       </div>
@@ -984,61 +989,65 @@ export default function ManageDepartmentsPage() {
 
       {/* New Post Dialog */}
       <Dialog open={isNewPostDialogOpen} onOpenChange={setIsNewPostDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{t('admin.departments.manage.addNewPost')}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg break-words">{t('admin.departments.manage.addNewPost')}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm break-words">
               {t('admin.departments.manage.createPostFor')} {selectedDepartment?.name_en}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
             <div className="space-y-2">
-              <Label htmlFor="post_name_en">{t('admin.departments.manage.postNameEn')}</Label>
+              <Label htmlFor="post_name_en" className="text-sm">{t('admin.departments.manage.postNameEn')}</Label>
               <Input
                 id="post_name_en"
                 placeholder={t('admin.departments.manage.postNameEnPlaceholder')}
                 value={newPostNameEn}
                 onChange={(e) => setNewPostNameEn(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="post_name_hi">{t('admin.departments.manage.postNameHi')}</Label>
+              <Label htmlFor="post_name_hi" className="text-sm">{t('admin.departments.manage.postNameHi')}</Label>
               <Input
                 id="post_name_hi"
                 placeholder={t('admin.departments.manage.postNameHiPlaceholder')}
                 value={newPostNameHi}
                 onChange={(e) => setNewPostNameHi(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="post_print_as_name_en">Print As (English) - Complete Designation</Label>
+              <Label htmlFor="post_print_as_name_en" className="text-sm">Print As (English) - Complete Designation</Label>
               <Input
                 id="post_print_as_name_en"
                 placeholder="e.g., President, National Executive Department"
                 value={newPostPrintAsNameEn}
                 onChange={(e) => setNewPostPrintAsNameEn(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
-              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+              <p className="text-xs text-gray-500 break-words">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="post_print_as_name_hi">Print As (Hindi) - Complete Designation</Label>
+              <Label htmlFor="post_print_as_name_hi" className="text-sm">Print As (Hindi) - Complete Designation</Label>
               <Input
                 id="post_print_as_name_hi"
                 placeholder="e.g., अध्यक्ष, राष्ट्रीय कार्यकारणी"
                 value={newPostPrintAsNameHi}
                 onChange={(e) => setNewPostPrintAsNameHi(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
-              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+              <p className="text-xs text-gray-500 break-words">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewPostDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsNewPostDialogOpen(false)} className="w-full sm:w-auto text-sm">
               {t('admin.departments.manage.cancel')}
             </Button>
-            <Button onClick={handleAddPost} disabled={isAddingPost}>
+            <Button onClick={handleAddPost} disabled={isAddingPost} className="w-full sm:w-auto text-sm">
               {isAddingPost ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                   {t('admin.departments.manage.adding')}
                 </>
               ) : (
@@ -1051,61 +1060,65 @@ export default function ManageDepartmentsPage() {
 
       {/* Edit Post Dialog */}
       <Dialog open={isEditPostDialogOpen} onOpenChange={setIsEditPostDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-w-lg max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{t('admin.departments.manage.editPost')}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">{t('admin.departments.manage.editPost')}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {t('admin.departments.manage.updatePostDetails')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_post_name_en">{t('admin.departments.manage.postNameEn')}</Label>
+              <Label htmlFor="edit_post_name_en" className="text-sm">{t('admin.departments.manage.postNameEn')}</Label>
               <Input
                 id="edit_post_name_en"
                 placeholder={t('admin.departments.manage.postNameEnPlaceholder')}
                 value={editPostNameEn}
                 onChange={(e) => setEditPostNameEn(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_post_name_hi">{t('admin.departments.manage.postNameHi')}</Label>
+              <Label htmlFor="edit_post_name_hi" className="text-sm">{t('admin.departments.manage.postNameHi')}</Label>
               <Input
                 id="edit_post_name_hi"
                 placeholder={t('admin.departments.manage.postNameHiPlaceholder')}
                 value={editPostNameHi}
                 onChange={(e) => setEditPostNameHi(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_post_print_as_name_en">Print As (English) - Complete Designation</Label>
+              <Label htmlFor="edit_post_print_as_name_en" className="text-sm">Print As (English) - Complete Designation</Label>
               <Input
                 id="edit_post_print_as_name_en"
                 placeholder="e.g., President, National Executive Department"
                 value={editPostPrintAsNameEn}
                 onChange={(e) => setEditPostPrintAsNameEn(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
-              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+              <p className="text-xs text-gray-500 break-words">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_post_print_as_name_hi">Print As (Hindi) - Complete Designation</Label>
+              <Label htmlFor="edit_post_print_as_name_hi" className="text-sm">Print As (Hindi) - Complete Designation</Label>
               <Input
                 id="edit_post_print_as_name_hi"
                 placeholder="e.g., अध्यक्ष, राष्ट्रीय कार्यकारणी"
                 value={editPostPrintAsNameHi}
                 onChange={(e) => setEditPostPrintAsNameHi(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
-              <p className="text-xs text-gray-500">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
+              <p className="text-xs text-gray-500 break-words">Enter the complete designation (post + department) to print on certificates/ID cards. If empty, will use default format: [Level] [Post] [Department].</p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditPostDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsEditPostDialogOpen(false)} className="w-full sm:w-auto text-sm">
               {t('admin.departments.manage.cancel')}
             </Button>
-            <Button onClick={handleEditPost} disabled={isEditingPost}>
+            <Button onClick={handleEditPost} disabled={isEditingPost} className="w-full sm:w-auto text-sm">
               {isEditingPost ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                   {t('admin.departments.manage.saving')}
                 </>
               ) : (
@@ -1118,41 +1131,43 @@ export default function ManageDepartmentsPage() {
 
       {/* Edit Department Dialog */}
       <Dialog open={isEditDepartmentDialogOpen} onOpenChange={setIsEditDepartmentDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] sm:w-full max-w-lg p-4 sm:p-6">
           <DialogHeader>
-            <DialogTitle>{t('admin.departments.manage.editDepartment')}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">{t('admin.departments.manage.editDepartment')}</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {t('admin.departments.manage.updateDepartmentName')}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-3 sm:space-y-4 py-3 sm:py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit_dept_name_en">{t('admin.departments.manage.deptNameEn')}</Label>
+              <Label htmlFor="edit_dept_name_en" className="text-sm">{t('admin.departments.manage.deptNameEn')}</Label>
               <Input
                 id="edit_dept_name_en"
                 placeholder={t('admin.departments.manage.deptNameEnPlaceholder')}
                 value={editDeptNameEn}
                 onChange={(e) => setEditDeptNameEn(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit_dept_name_hi">{t('admin.departments.manage.deptNameHi')}</Label>
+              <Label htmlFor="edit_dept_name_hi" className="text-sm">{t('admin.departments.manage.deptNameHi')}</Label>
               <Input
                 id="edit_dept_name_hi"
                 placeholder={t('admin.departments.manage.deptNameHiPlaceholder')}
                 value={editDeptNameHi}
                 onChange={(e) => setEditDeptNameHi(e.target.value)}
+                className="text-sm sm:text-base h-9 sm:h-10"
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDepartmentDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setIsEditDepartmentDialogOpen(false)} className="w-full sm:w-auto text-sm">
               {t('admin.departments.manage.cancel')}
             </Button>
-            <Button onClick={handleEditDepartment} disabled={isEditingDepartment}>
+            <Button onClick={handleEditDepartment} disabled={isEditingDepartment} className="w-full sm:w-auto text-sm">
               {isEditingDepartment ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                   {t('admin.departments.manage.saving')}
                 </>
               ) : (

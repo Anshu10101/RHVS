@@ -13,10 +13,12 @@ interface MemberProfileRow {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const cacheBust = searchParams.get('_t'); // Get cache-busting parameter
 
   const rows = await executeQuery(
     `SELECT profile_photo_blob, profile_photo_mime, profile_photo_size, profile_photo_original_name, profile_photo_path
@@ -81,7 +83,9 @@ async function serveDirectBlob(
     return null;
   }
   const headers = buildHeaders(mime, size, name || `${cacheKey}.bin`);
-  headers['Cache-Control'] = 'private, max-age=86400';
+  // Use shorter cache with revalidation to allow updates to be seen quickly
+  headers['Cache-Control'] = 'private, max-age=300, must-revalidate';
+  headers['Pragma'] = 'no-cache';
   const payload = toBlob(blob);
   return new NextResponse(payload, { status: 200, headers });
 }
@@ -100,7 +104,11 @@ async function serveFromPath(
       const buffer = await fs.readFile(absolutePath);
       const stat = await fs.stat(absolutePath);
       const headers = buildHeaders(meta.mime, stat.size, meta.originalName);
-      headers['Cache-Control'] = 'private, max-age=86400';
+      // Use shorter cache with revalidation to allow updates to be seen quickly
+      headers['Cache-Control'] = 'private, max-age=300, must-revalidate';
+      headers['Pragma'] = 'no-cache';
+      // Use file modification time as ETag for better cache invalidation
+      headers['ETag'] = `"${stat.mtime.getTime()}"`;
       const payload = toBlob(buffer);
       return new NextResponse(payload, { status: 200, headers });
     } catch {

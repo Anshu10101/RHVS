@@ -36,6 +36,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Upload,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -60,6 +61,7 @@ interface Member {
   departments?: string; // This will contain the formatted department assignments
   verified_by_member_id?: number;
   verified_by_name?: string;
+  aadhar_card_number?: string;
 }
 
 interface MemberStats {
@@ -106,6 +108,8 @@ export function MemberManagement() {
   const [districts, setDistricts] = useState<Array<{id: string, name: string}>>([]);
   const [departments, setDepartments] = useState<string[]>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
 
   // Clear all filters
   const clearFilters = () => {
@@ -304,22 +308,80 @@ export function MemberManagement() {
   }, [currentPage, searchTerm, regNumberSearch, selectedStatus, selectedState, selectedDistrict, selectedDepartment]);
 
 
+  const handleProfilePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (max 500KB)
+      if (file.size > 500 * 1024) {
+        alert('Profile photo size must be less than 500KB');
+        e.target.value = '';
+        return;
+      }
+      
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Only image files are allowed');
+        e.target.value = '';
+        return;
+      }
+      
+      setProfilePhoto(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleUpdateMember = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!editingMember) return;
 
     const formData = new FormData(e.currentTarget);
-    const updateData = {
+    
+    // Upload profile photo if provided
+    let profilePhotoPath: string | null = null;
+    if (profilePhoto) {
+      try {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', profilePhoto);
+        
+        const uploadResponse = await fetch('/api/upload/profile', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+        
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.success && uploadResult.url) {
+          profilePhotoPath = uploadResult.url;
+        } else {
+          setError('Failed to upload profile photo: ' + (uploadResult.error || 'Unknown error'));
+          return;
+        }
+      } catch (err) {
+        setError('Failed to upload profile photo');
+        return;
+      }
+    }
+
+    const updateData: any = {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       phone: formData.get('phone') as string,
       address: formData.get('address') as string,
       father_husband_name: formData.get('father_husband_name') as string,
       mother_wife_name: formData.get('mother_wife_name') as string,
-      district: formData.get('district') as string,
-      department: formData.get('department') as string,
       status: formData.get('status') as string,
+      aadhar_card_number: formData.get('aadhar_card_number') as string,
     };
+
+    // Only include profile_photo_path if a new photo was uploaded
+    if (profilePhotoPath) {
+      updateData.profile_photo_path = profilePhotoPath;
+    }
 
     try {
       const token = localStorage.getItem('admin_token');
@@ -334,10 +396,31 @@ export function MemberManagement() {
 
       const data = await response.json();
       if (data.success) {
+        // Force refresh members list to show updated image
+        await fetchMembers();
+        fetchStats();
+        // If member details modal is open, refresh that member's data too
+        if (selectedMember && selectedMember.id === editingMember.id) {
+          try {
+            const token = localStorage.getItem('admin_token');
+            const response = await fetch(`/api/admin/members/${editingMember.id}?_t=${Date.now()}`, {
+              cache: 'no-store',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success && data.data) {
+                setSelectedMember(data.data as Member);
+              }
+            }
+          } catch (err) {
+            console.error('Failed to refresh member details:', err);
+          }
+        }
         setShowEditModal(false);
         setEditingMember(null);
-        fetchMembers();
-        fetchStats();
+        setProfilePhoto(null);
+        setProfilePhotoPreview(null);
         setError(null);
       } else {
         setError(data.error || 'Failed to update member');
@@ -693,11 +776,12 @@ export function MemberManagement() {
                         <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                           {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
-                              src={getValidImageUrl(member.profile_photo_path)!}
+                              src={`${getValidImageUrl(member.profile_photo_path)!}?_t=${member.updated_at || Date.now()}`}
                               alt={member.name}
                               width={40}
                               height={40}
                               className="rounded-full object-cover"
+                              key={`list-photo-${member.id}-${member.updated_at}`}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -763,7 +847,27 @@ export function MemberManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedMember(member)}
+                          onClick={async () => {
+                            // Fetch fresh member data to ensure we have latest photo
+                            try {
+                              const token = localStorage.getItem('admin_token');
+                              const response = await fetch(`/api/admin/members/${member.id}?_t=${Date.now()}`, {
+                                cache: 'no-store',
+                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                              });
+                              if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.data) {
+                                  setSelectedMember(data.data as Member);
+                                  return;
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Failed to fetch member details:', err);
+                            }
+                            // Fallback to using member from list
+                            setSelectedMember(member);
+                          }}
                           className="cursor-pointer h-8 w-8 p-0"
                         >
                           <Eye className="h-3.5 w-3.5" />
@@ -771,7 +875,28 @@ export function MemberManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
+                          onClick={async () => {
+                            // Reset photo state when opening edit modal
+                            setProfilePhoto(null);
+                            setProfilePhotoPreview(null);
+                            // Fetch full member data to ensure we have aadhar_card_number
+                            try {
+                              const token = localStorage.getItem('admin_token');
+                              const response = await fetch(`/api/admin/members/${member.id}`, {
+                                headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                              });
+                              if (response.ok) {
+                                const data = await response.json();
+                                if (data.success && data.data) {
+                                  setEditingMember(data.data as Member);
+                                  setShowEditModal(true);
+                                  return;
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Failed to fetch member details:', err);
+                            }
+                            // Fallback to using member from list
                             setEditingMember(member);
                             setShowEditModal(true);
                           }}
@@ -827,11 +952,12 @@ export function MemberManagement() {
                         <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
                           {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
-                              src={getValidImageUrl(member.profile_photo_path)!}
+                              src={`${getValidImageUrl(member.profile_photo_path)!}?_t=${member.updated_at || Date.now()}`}
                               alt={member.name}
                               width={48}
                               height={48}
                               className="rounded-full object-cover"
+                              key={`card-photo-${member.id}-${member.updated_at}`}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.style.display = 'none';
@@ -915,7 +1041,27 @@ export function MemberManagement() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setSelectedMember(member)}
+                        onClick={async () => {
+                          // Fetch fresh member data to ensure we have latest photo
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch(`/api/admin/members/${member.id}?_t=${Date.now()}`, {
+                              cache: 'no-store',
+                              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            });
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.success && data.data) {
+                                setSelectedMember(data.data as Member);
+                                return;
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Failed to fetch member details:', err);
+                          }
+                          // Fallback to using member from list
+                          setSelectedMember(member);
+                        }}
                         className="flex-1 sm:flex-none cursor-pointer text-xs"
                       >
                         <Eye className="h-3.5 w-3.5 mr-1.5" />
@@ -924,7 +1070,28 @@ export function MemberManagement() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
+                        onClick={async () => {
+                          // Reset photo state when opening edit modal
+                          setProfilePhoto(null);
+                          setProfilePhotoPreview(null);
+                          // Fetch full member data to ensure we have aadhar_card_number
+                          try {
+                            const token = localStorage.getItem('admin_token');
+                            const response = await fetch(`/api/admin/members/${member.id}`, {
+                              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                            });
+                            if (response.ok) {
+                              const data = await response.json();
+                              if (data.success && data.data) {
+                                setEditingMember(data.data as Member);
+                                setShowEditModal(true);
+                                return;
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Failed to fetch member details:', err);
+                          }
+                          // Fallback to using member from list
                           setEditingMember(member);
                           setShowEditModal(true);
                         }}
@@ -1138,6 +1305,54 @@ export function MemberManagement() {
           </DialogHeader>
           {editingMember && (
             <form onSubmit={handleUpdateMember} className="space-y-4">
+              {/* Profile Photo Upload */}
+              <div>
+                <Label className="text-xs sm:text-sm">Profile Photo</Label>
+                <div className="flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 bg-white mt-2">
+                  <div className="relative">
+                    <div className="relative w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
+                      {profilePhotoPreview ? (
+                        <img
+                          src={profilePhotoPreview}
+                          alt="Profile preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : editingMember.profile_photo_path && isValidImageUrl(editingMember.profile_photo_path) ? (
+                        <Image
+                          src={`${getValidImageUrl(editingMember.profile_photo_path)!}?_t=${Date.now()}`}
+                          alt={editingMember.name}
+                          width={96}
+                          height={96}
+                          className="rounded-full object-cover"
+                          key={`edit-photo-${editingMember.id}-${editingMember.updated_at}`}
+                        />
+                      ) : (
+                        <User className="h-10 w-10 text-slate-300" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePhotoChange}
+                      id="edit_profile_photo"
+                      className="hidden"
+                    />
+                    <Label
+                      htmlFor="edit_profile_photo"
+                      className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200 text-sm w-full sm:w-auto"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {profilePhoto ? 'Change Photo' : 'Upload New Photo'}
+                    </Label>
+                    <p className="text-xs text-slate-500 text-center">
+                      Maximum file size: 500KB. Supported formats: JPG, PNG, GIF
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <Label htmlFor="edit_name" className="text-xs sm:text-sm">Full Name *</Label>
@@ -1204,20 +1419,15 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_district" className="text-xs sm:text-sm">District</Label>
+                  <Label htmlFor="edit_aadhar_card_number" className="text-xs sm:text-sm">Aadhaar Card Number</Label>
                   <Input
-                    id="edit_district"
-                    name="district"
-                    defaultValue={editingMember.district || ''}
-                    className="h-9 sm:h-10 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_department" className="text-xs sm:text-sm">Department</Label>
-                  <Input
-                    id="edit_department"
-                    name="department"
-                    defaultValue={editingMember.departments || ''}
+                    id="edit_aadhar_card_number"
+                    name="aadhar_card_number"
+                    type="text"
+                    maxLength={12}
+                    pattern="[0-9]{12}"
+                    placeholder="Enter 12-digit Aadhaar number"
+                    defaultValue={editingMember.aadhar_card_number || ''}
                     className="h-9 sm:h-10 text-sm"
                   />
                 </div>
@@ -1239,6 +1449,8 @@ export function MemberManagement() {
                   onClick={() => {
                     setShowEditModal(false);
                     setEditingMember(null);
+                    setProfilePhoto(null);
+                    setProfilePhotoPreview(null);
                   }}
                   size="sm"
                   className="w-full sm:w-auto cursor-pointer text-sm"
@@ -1258,9 +1470,9 @@ export function MemberManagement() {
       <Dialog open={!!selectedMember} onOpenChange={() => setSelectedMember(null)}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Member Details</DialogTitle>
+            <DialogTitle>{t('admin.members.details.title') || 'Member Details | सदस्य विवरण'}</DialogTitle>
             <DialogDescription>
-              Complete information about the member
+              {t('admin.members.details.description') || 'Complete information about the member | सदस्य की पूर्ण जानकारी'}
             </DialogDescription>
           </DialogHeader>
           {selectedMember && (
@@ -1269,11 +1481,12 @@ export function MemberManagement() {
                 <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center">
                   {isValidImageUrl(selectedMember.profile_photo_path) ? (
                     <Image
-                      src={getValidImageUrl(selectedMember.profile_photo_path)!}
+                      src={`${getValidImageUrl(selectedMember.profile_photo_path)!}?_t=${selectedMember.updated_at || Date.now()}`}
                       alt={selectedMember.name}
                       width={64}
                       height={64}
                       className="rounded-full object-cover"
+                      key={`details-photo-${selectedMember.id}-${selectedMember.updated_at}`}
                       onError={(e) => {
                         // Hide image and show fallback on error
                         const target = e.target as HTMLImageElement;
@@ -1309,16 +1522,18 @@ export function MemberManagement() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-900">{selectedMember.state || 'N/A'}</span>
+                    <span className="text-sm text-gray-900">{selectedMember.state || t('admin.members.details.notAvailable') || 'N/A'}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-900">{selectedMember.district || 'N/A'}</span>
+                    <span className="text-sm text-gray-900">{selectedMember.district || t('admin.members.details.notAvailable') || 'N/A'}</span>
                   </div>
                   <div className="flex items-start space-x-2">
                     <Building2 className="h-4 w-4 text-gray-400 mt-1" />
                     <div className="flex-1">
-                      <span className="text-sm font-medium text-gray-600">Department Assignments:</span>
+                      <span className="text-sm font-medium text-gray-600">
+                        {t('admin.members.details.departmentAssignments') || 'Department Assignments | विभाग असाइनमेंट:'}
+                      </span>
                       <div className="text-sm text-gray-900 mt-1">
                         {selectedMember.departments ? (
                           <div className="space-y-1">
@@ -1329,7 +1544,9 @@ export function MemberManagement() {
                             ))}
                           </div>
                         ) : (
-                          <span className="text-gray-500 italic">No department assignments</span>
+                          <span className="text-gray-500 italic">
+                            {t('admin.members.details.noDepartmentAssignments') || 'No department assignments | कोई विभाग असाइनमेंट नहीं'}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1337,30 +1554,40 @@ export function MemberManagement() {
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Father/Husband:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {t('register.fatherHusbandName') || 'Father/Husband | पिता/पति:'}
+                    </span>
                     <p className="text-sm text-gray-900">{selectedMember.father_husband_name}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Mother/Wife:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {t('register.motherWifeName') || 'Mother/Wife | माता/पत्नी:'}
+                    </span>
                     <p className="text-sm text-gray-900">{selectedMember.mother_wife_name}</p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Registration Date:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {t('register.registrationDate') || 'Registration Date | पंजीकरण तिथि:'}
+                    </span>
                     <p className="text-sm text-gray-900">
                       {new Date(selectedMember.registration_date).toLocaleDateString()}
                     </p>
                   </div>
                   <div>
-                    <span className="text-sm font-medium text-gray-600">Verified by:</span>
+                    <span className="text-sm font-medium text-gray-600">
+                      {t('admin.members.details.verifiedBy') || 'Verified by | सत्यापित किया गया:'}
+                    </span>
                     <p className="text-sm text-gray-900">
-                      {selectedMember.verified_by_name || 'Admin'}
+                      {selectedMember.verified_by_name || t('admin.members.details.admin') || 'Admin | एडमिन'}
                     </p>
                   </div>
                 </div>
               </div>
               
               <div>
-                <span className="text-sm font-medium text-gray-600">Address:</span>
+                <span className="text-sm font-medium text-gray-600">
+                  {t('register.address') || 'Address | पता:'}
+                </span>
                 <p className="text-sm text-gray-900 mt-1">{selectedMember.address}</p>
               </div>
             </div>

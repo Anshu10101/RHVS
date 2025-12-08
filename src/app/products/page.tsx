@@ -373,7 +373,7 @@ export default function ProductsPage() {
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                           <Input 
                             type="text" 
-                            placeholder="Search products..."
+                            placeholder={t('products.searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 pr-4 py-2 w-full"
@@ -527,7 +527,7 @@ export default function ProductsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input 
                 type="text" 
-                placeholder="Search products..."
+                placeholder={t('products.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 pr-4 py-2.5 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500 text-sm"
@@ -545,7 +545,7 @@ export default function ProductsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input 
                   type="text" 
-                  placeholder="Search products..."
+                  placeholder={t('products.searchPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-full focus:ring-orange-500 focus:border-orange-500"
@@ -792,13 +792,15 @@ export default function ProductsPage() {
             <div className="mb-4 sm:mb-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                 <p className="text-xs sm:text-sm text-gray-500">
-                  Showing <span className="font-medium">{startIndex + 1}-{Math.min(endIndex, filteredProducts.length)}</span> of <span className="font-medium">{filteredProducts.length}</span> products
+                  {t('admin.store.products.showingProducts')
+                    .replace('{showing}', `${startIndex + 1}-${Math.min(endIndex, filteredProducts.length)}`)
+                    .replace('{total}', String(filteredProducts.length))}
                   {totalPages > 1 && (
-                    <span className="hidden sm:inline ml-2 text-gray-400">(Page {currentPage} of {totalPages})</span>
+                    <span className="hidden sm:inline ml-2 text-gray-400">({t('admin.store.products.pageInfo').replace('{current}', String(currentPage)).replace('{total}', String(totalPages))})</span>
                   )}
                 </p>
                 {totalPages > 1 && (
-                  <p className="sm:hidden text-xs text-gray-400">Page {currentPage} of {totalPages}</p>
+                  <p className="sm:hidden text-xs text-gray-400">{t('admin.store.products.pageInfo').replace('{current}', String(currentPage)).replace('{total}', String(totalPages))}</p>
                 )}
               </div>
             </div>

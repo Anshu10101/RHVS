@@ -4,6 +4,10 @@ import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 import { noCacheJsonResponse } from '@/lib/api-helpers';
 
+// Force dynamic rendering to prevent Next.js caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET - Fetch news
 export async function GET(request: NextRequest) {
   try {
@@ -173,8 +177,9 @@ export async function POST(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
     
-    // Check permissions for district admins
-    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+    // Check permissions - superadmin and news editors have full access
+    // Only check permissions for district admins
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -216,31 +221,141 @@ export async function POST(request: NextRequest) {
     let state = null;
     let owner_admin_id = null;
     
-    if (scope.isSuperAdmin && districtInput && stateInput) {
-      // Superadmin can specify district/state
-      // Validate and get actual names from database
-      const [stateRows] = await pool.execute(
-        'SELECT state_name_english FROM states WHERE id = ? OR state_name_english = ? LIMIT 1',
-        [stateInput, stateInput]
-      ) as any[];
+    // Debug logging
+    console.log('News POST - Scope:', {
+      isSuperAdmin: scope.isSuperAdmin,
+      isNewsEditor: scope.isNewsEditor,
+      isDistrictAdmin: scope.isDistrictAdmin,
+      districtInput,
+      stateInput
+    });
+    
+    // Superadmin and news editors can specify district/state (if provided)
+    if (scope.isSuperAdmin || scope.isNewsEditor) {
+      // Check if district/state are provided and not empty
+      // Handle both undefined/null and empty strings
+      const districtValue = districtInput !== undefined && districtInput !== null ? String(districtInput).trim() : '';
+      const stateValue = stateInput !== undefined && stateInput !== null ? String(stateInput).trim() : '';
+      const hasDistrict = districtValue !== '';
+      const hasState = stateValue !== '';
       
+      console.log('News POST - Checking district/state inputs:', { 
+        districtInput, 
+        stateInput,
+        districtValue,
+        stateValue,
+        hasDistrict, 
+        hasState,
+        districtInputType: typeof districtInput,
+        stateInputType: typeof stateInput
+      });
+      
+      if (hasDistrict && hasState) {
+      // Validate and get actual names from database
+        // Frontend sends: state ID (number) and district_code (string from districts API)
+        
+        // First, get the state by ID (frontend sends state ID as number)
+        let stateFound = false;
+        let stateCode = null;
+        
+        if (!isNaN(Number(stateValue))) {
+          // State value is a numeric ID
+          const [stateRowsById] = await pool.execute(
+            'SELECT state_name_english, state_code FROM states WHERE id = ? LIMIT 1',
+            [Number(stateValue)]
+          ) as any[];
+          if (stateRowsById && stateRowsById.length > 0) {
+            state = stateRowsById[0].state_name_english;
+            stateCode = stateRowsById[0].state_code;
+            stateFound = true;
+            console.log('News POST - State found by ID:', state, 'state_code:', stateCode, 'from input:', stateValue);
+          }
+        }
+        
+        // If state lookup by ID failed, try by name
+        if (!stateFound) {
+      const [stateRows] = await pool.execute(
+            'SELECT state_name_english, state_code FROM states WHERE state_name_english = ? LIMIT 1',
+            [stateValue]
+      ) as any[];
       if (stateRows && stateRows.length > 0) {
         state = stateRows[0].state_name_english;
+            stateCode = stateRows[0].state_code;
+            stateFound = true;
+            console.log('News POST - State found by name:', state, 'state_code:', stateCode);
+          }
+        }
         
+        if (!stateFound) {
+          console.error('News POST - State not found for input:', stateValue);
+        } else if (stateCode) {
+          // Now find district - frontend sends district_code (from districts API which returns district_code as id)
+          // The district_code is a string like "JH", "UP-01", etc.
         const [districtRows] = await pool.execute(
-          'SELECT district_name_english FROM districts WHERE district_code = ? OR district_name_english = ? LIMIT 1',
-          [districtInput, districtInput]
+            'SELECT district_name_english FROM districts WHERE district_code = ? AND state_code = ? LIMIT 1',
+            [districtValue, stateCode]
         ) as any[];
         
         if (districtRows && districtRows.length > 0) {
           district = districtRows[0].district_name_english;
+            console.log('News POST - District found:', district, 'from district_code:', districtValue, 'in state:', stateCode);
+          } else {
+            // Try without state_code constraint (fallback)
+            const [districtRows2] = await pool.execute(
+              'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1',
+              [districtValue]
+            ) as any[];
+            if (districtRows2 && districtRows2.length > 0) {
+              district = districtRows2[0].district_name_english;
+              console.log('News POST - District found (without state constraint):', district, 'from district_code:', districtValue);
+            } else {
+              // Last resort: try by name
+              const [districtRows3] = await pool.execute(
+                'SELECT district_name_english FROM districts WHERE district_name_english = ? AND state_code = ? LIMIT 1',
+                [districtValue, stateCode]
+              ) as any[];
+              if (districtRows3 && districtRows3.length > 0) {
+                district = districtRows3[0].district_name_english;
+                console.log('News POST - District found by name:', district);
+              } else {
+                console.error('News POST - District not found for district_code:', districtValue, 'in state_code:', stateCode);
+              }
+            }
+          }
         }
+        console.log('News POST - Final resolved district/state:', { district, state, districtInput: districtValue, stateInput: stateValue });
+      } else {
+        console.log('News POST - District/state not provided or empty, keeping as null (global news)');
       }
-    } else if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
+      // If district/state not provided, they remain null (global news)
+    } else if (scope.isDistrictAdmin && scope.adminId) {
+      // District admins automatically get their district/state attached
       district = scope.districtName;
       state = scope.stateName;
       owner_admin_id = scope.adminId;
+      console.log('News POST - District admin auto-assigned:', { district, state });
     }
+    
+    // Debug: Log what we're about to insert
+    console.log('News POST - Final values before INSERT:', { 
+      district, 
+      state, 
+      owner_admin_id,
+      districtInput,
+      stateInput,
+      districtType: typeof district,
+      stateType: typeof state,
+      districtIsNull: district === null,
+      stateIsNull: state === null,
+      districtIsUndefined: district === undefined,
+      stateIsUndefined: state === undefined
+    });
+    
+    // Ensure district and state are properly set (not undefined)
+    const finalDistrict = district !== undefined ? district : null;
+    const finalState = state !== undefined ? state : null;
+    
+    console.log('News POST - Using final values:', { finalDistrict, finalState });
     
     await pool.execute(
       `INSERT INTO news 
@@ -265,12 +380,14 @@ export async function POST(request: NextRequest) {
         safeValue(is_featured), 
         safeValue(is_published), 
         safeValue(order), 
-        safeValue(district),
-        safeValue(state),
+        finalDistrict,  // Use finalDistrict to ensure it's not undefined
+        finalState,     // Use finalState to ensure it's not undefined
         safeValue(owner_admin_id),
         safeValue(created_by)
       ]
     );
+    
+    console.log('News POST - Successfully inserted news with ID:', id, 'district:', finalDistrict, 'state:', finalState);
 
     if (imageAsset.blob) {
       await pool.execute(
@@ -283,6 +400,12 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'News added successfully',
       data: { id }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
   } catch (error) {
     console.error('Error adding news:', error);
@@ -298,8 +421,9 @@ export async function PUT(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
     
-    // Check permissions for district admins
-    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+    // Check permissions - superadmin and news editors have full access
+    // Only check permissions for district admins
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -316,11 +440,84 @@ export async function PUT(request: NextRequest) {
       priority,
       is_featured,
       is_published,
-      order
+      order,
+      district: districtInput,
+      state: stateInput
     } = body;
 
     // Convert undefined values to null for MySQL
     const safeValue = (val: unknown) => val === undefined ? null : val;
+    
+    // Handle district/state updates for superadmin and news editors
+    let district = null;
+    let state = null;
+    
+    if (scope.isSuperAdmin || scope.isNewsEditor) {
+      // Check if district/state are provided and not empty
+      const districtValue = districtInput !== undefined && districtInput !== null ? String(districtInput).trim() : '';
+      const stateValue = stateInput !== undefined && stateInput !== null ? String(stateInput).trim() : '';
+      const hasDistrict = districtValue !== '';
+      const hasState = stateValue !== '';
+      
+      console.log('News PUT - Checking district/state inputs:', { 
+        districtInput, 
+        stateInput,
+        districtValue,
+        stateValue,
+        hasDistrict, 
+        hasState
+      });
+      
+      if (hasDistrict && hasState) {
+        // Get state by ID
+        let stateFound = false;
+        let stateCode = null;
+        
+        if (!isNaN(Number(stateValue))) {
+          const [stateRowsById] = await pool.execute(
+            'SELECT state_name_english, state_code FROM states WHERE id = ? LIMIT 1',
+            [Number(stateValue)]
+          ) as any[];
+          if (stateRowsById && stateRowsById.length > 0) {
+            state = stateRowsById[0].state_name_english;
+            stateCode = stateRowsById[0].state_code;
+            stateFound = true;
+          }
+        }
+        
+        if (!stateFound) {
+          const [stateRows] = await pool.execute(
+            'SELECT state_name_english, state_code FROM states WHERE state_name_english = ? LIMIT 1',
+            [stateValue]
+          ) as any[];
+          if (stateRows && stateRows.length > 0) {
+            state = stateRows[0].state_name_english;
+            stateCode = stateRows[0].state_code;
+          }
+        }
+        
+        if (stateCode) {
+          // Find district by district_code
+          const [districtRows] = await pool.execute(
+            'SELECT district_name_english FROM districts WHERE district_code = ? AND state_code = ? LIMIT 1',
+            [districtValue, stateCode]
+          ) as any[];
+          if (districtRows && districtRows.length > 0) {
+            district = districtRows[0].district_name_english;
+          } else {
+            // Fallback: try without state constraint
+            const [districtRows2] = await pool.execute(
+              'SELECT district_name_english FROM districts WHERE district_code = ? LIMIT 1',
+              [districtValue]
+            ) as any[];
+            if (districtRows2 && districtRows2.length > 0) {
+              district = districtRows2[0].district_name_english;
+            }
+          }
+        }
+        console.log('News PUT - Resolved district/state:', { district, state });
+      }
+    }
     
     const updateFields: string[] = [
       'title = ?',
@@ -346,6 +543,17 @@ export async function PUT(request: NextRequest) {
         safeValue(is_published), 
       safeValue(order)
     ];
+    
+    // Add district/state to update if provided (for superadmin and news editors)
+    if (scope.isSuperAdmin || scope.isNewsEditor) {
+      if (districtInput !== undefined || stateInput !== undefined) {
+        updateFields.push('district = ?');
+        updateParams.push(district !== null ? district : null);
+        updateFields.push('state = ?');
+        updateParams.push(state !== null ? state : null);
+        console.log('News PUT - Updating district/state:', { district, state });
+      }
+    }
 
     if (imageInput !== undefined) {
       let imageAsset: ResolvedAsset;
@@ -389,7 +597,8 @@ export async function PUT(request: NextRequest) {
 
     // For district admins, ensure the news belongs to their district/state
     // Allow editing any news in their district, not just ones they created
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+    // News editors can edit any news (like superadmin)
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
       const [ownershipRows] = await pool.execute(
         `SELECT id FROM news WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
         [id, scope.districtName, scope.stateName]
@@ -424,8 +633,9 @@ export async function DELETE(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
     
-    // Check permissions for district admins
-    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+    // Check permissions - superadmin and news editors have full access
+    // Only check permissions for district admins
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -441,7 +651,8 @@ export async function DELETE(request: NextRequest) {
 
     // For district admins, ensure the news belongs to their district/state
     // Allow editing any news in their district, not just ones they created
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+    // News editors can edit any news (like superadmin)
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
       const [ownershipRows] = await pool.execute(
         `SELECT id FROM news WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
         [id, scope.districtName, scope.stateName]

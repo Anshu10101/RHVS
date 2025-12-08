@@ -61,6 +61,8 @@ interface News {
   created_at: string;
   updated_at: string;
   created_by: string;
+  district?: string | null;
+  state?: string | null;
 }
 
 interface Event {
@@ -90,6 +92,15 @@ interface Event {
 export default function NewsEventsEditor() {
   const { currentUser } = useAdmin();
   const { t } = useLanguage();
+  
+  // Helper to check if user can select state/district (superadmin or news_editor)
+  const canSelectStateDistrict = currentUser && (
+    currentUser.type === 'superadmin' || 
+    currentUser.role === 'superadmin' || 
+    currentUser.type === 'news_editor' || 
+    currentUser.role === 'news_editor' || 
+    currentUser.role === 'news_reporter'
+  );
   const [activeTab, setActiveTab] = useState<'news' | 'events'>('news');
   const [news, setNews] = useState<News[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -124,7 +135,7 @@ export default function NewsEventsEditor() {
     state: '',
   });
 
-  // State/district dropdowns (for superadmins)
+  // State/district dropdowns (for superadmins and news editors)
   const [states, setStates] = useState<Array<{ id: number; name: string }>>([]);
   const [districts, setDistricts] = useState<Array<{ id: string; name: string }>>([]);
   const [loadingDistricts, setLoadingDistricts] = useState(false);
@@ -171,31 +182,6 @@ export default function NewsEventsEditor() {
     };
   }, []);
 
-  // Fetch states when currentUser is available (for superadmins)
-  useEffect(() => {
-    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && states.length === 0 && !loadingStates) {
-      fetchStates();
-    }
-  }, [currentUser]);
-
-  // Fetch districts when state changes (for news)
-  useEffect(() => {
-    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && newsForm.state) {
-      fetchDistricts(newsForm.state);
-    } else if (!newsForm.state) {
-      setDistricts([]);
-    }
-  }, [newsForm.state, currentUser]);
-
-  // Fetch districts when state changes (for events)
-  useEffect(() => {
-    if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && eventForm.state) {
-      fetchDistricts(eventForm.state);
-    } else if (!eventForm.state) {
-      setDistricts([]);
-    }
-  }, [eventForm.state, currentUser]);
-
   const fetchStates = async () => {
     setLoadingStates(true);
     try {
@@ -213,20 +199,130 @@ export default function NewsEventsEditor() {
     }
   };
 
-  const fetchDistricts = async (stateId: string) => {
+  const fetchDistricts = useCallback(async (stateId: string) => {
+    // Validate stateId - must be a valid numeric ID, not a placeholder or invalid value
+    if (!stateId || 
+        stateId === 'All States' || 
+        stateId === 'all' || 
+        stateId.trim() === '' ||
+        isNaN(Number(stateId))) {
+      setDistricts([]);
+      return;
+    }
     setLoadingDistricts(true);
     try {
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const response = await fetch(`/api/districts?stateId=${encodeURIComponent(stateId)}`);
+      if (!response.ok) {
+        console.error('Failed to fetch districts:', response.status, response.statusText);
+        setDistricts([]);
+        return;
+      }
       const data = await response.json();
       if (data.success) {
         setDistricts(data.data || []);
+      } else {
+        console.error('API returned error:', data.error);
+        setDistricts([]);
       }
     } catch (error) {
       console.error('Error fetching districts:', error);
+      setDistricts([]);
     } finally {
       setLoadingDistricts(false);
     }
-  };
+  }, []);
+
+  // Fetch states when currentUser is available (for superadmins and news editors)
+  useEffect(() => {
+    if (canSelectStateDistrict && states.length === 0 && !loadingStates) {
+      fetchStates();
+    }
+  }, [currentUser, canSelectStateDistrict]);
+
+  // Fetch districts when state changes (for news)
+  useEffect(() => {
+    if (canSelectStateDistrict && newsForm.state && 
+        newsForm.state !== 'All States' && 
+        newsForm.state !== 'all' && 
+        !isNaN(Number(newsForm.state))) {
+      fetchDistricts(newsForm.state);
+    } else {
+      setDistricts([]);
+      // Clear district when state is cleared
+      if (!newsForm.state) {
+        setNewsForm(prev => ({ ...prev, district: '' }));
+      }
+    }
+  }, [newsForm.state, canSelectStateDistrict, fetchDistricts]);
+  
+  // Set district ID when districts load and we're editing news (if district name matches)
+  useEffect(() => {
+    if (editingItem && activeTab === 'news' && canSelectStateDistrict && districts.length > 0 && newsForm.state && !newsForm.district) {
+      const districtName = (editingItem as any).district;
+      console.log('Checking district for news:', {
+        districtName,
+        districtsCount: districts.length,
+        districtNames: districts.map(d => d.name),
+        newsFormDistrict: newsForm.district,
+        newsFormState: newsForm.state
+      });
+      
+      if (districtName && districtName !== 'All Districts' && districtName !== 'all' && districtName !== '') {
+        // Try exact match first
+        let districtObj = districts.find(d => d.name === districtName);
+        
+        // If not found, try case-insensitive match
+        if (!districtObj) {
+          districtObj = districts.find(d => d.name.toLowerCase().trim() === districtName.toLowerCase().trim());
+        }
+        
+        // If still not found, try partial match
+        if (!districtObj) {
+          districtObj = districts.find(d => 
+            d.name.toLowerCase().includes(districtName.toLowerCase()) || 
+            districtName.toLowerCase().includes(d.name.toLowerCase())
+          );
+        }
+        
+        if (districtObj) {
+          console.log('Setting district ID for news:', districtObj.id, 'from name:', districtName);
+          setNewsForm(prev => ({ ...prev, district: districtObj.id }));
+        } else {
+          console.warn('District not found in districts list:', districtName, 'Available districts:', districts.map(d => d.name));
+        }
+      }
+    }
+  }, [districts, editingItem, activeTab, canSelectStateDistrict, newsForm.state, newsForm.district]);
+
+  // Fetch districts when state changes (for events)
+  useEffect(() => {
+    if (canSelectStateDistrict && eventForm.state && 
+        eventForm.state !== 'All States' && 
+        eventForm.state !== 'all' && 
+        !isNaN(Number(eventForm.state))) {
+      fetchDistricts(eventForm.state);
+    } else {
+      setDistricts([]);
+      // Clear district when state is cleared
+      if (!eventForm.state) {
+        setEventForm(prev => ({ ...prev, district: '' }));
+      }
+    }
+  }, [eventForm.state, canSelectStateDistrict, fetchDistricts]);
+  
+  // Set district ID when districts load and we're editing events (if district name matches)
+  useEffect(() => {
+    if (editingItem && activeTab === 'events' && canSelectStateDistrict && districts.length > 0 && eventForm.state) {
+      const districtName = (editingItem as any).district;
+      if (districtName && districtName !== 'All Districts' && districtName !== 'all' && districtName !== '' && !eventForm.district) {
+        const districtObj = districts.find(d => d.name === districtName);
+        if (districtObj) {
+          console.log('Setting district ID for event:', districtObj.id, 'from name:', districtName);
+          setEventForm(prev => ({ ...prev, district: districtObj.id }));
+        }
+      }
+    }
+  }, [districts, editingItem, activeTab, canSelectStateDistrict, eventForm.state, eventForm.district]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -272,14 +368,14 @@ export default function NewsEventsEditor() {
   const handleSave = async () => {
     if (!currentUser) return;
 
-    // Validate state/district for superadmins
-    if (activeTab === 'news' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
+    // Validate state/district for superadmins and news editors
+    if (activeTab === 'news' && canSelectStateDistrict) {
       if (!newsForm.state || !newsForm.district) {
         alert(t('admin.newsEvents.selectBothStateDistrict'));
         return;
       }
     }
-    if (activeTab === 'events' && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin')) {
+    if (activeTab === 'events' && canSelectStateDistrict) {
       if (!eventForm.state || !eventForm.district) {
         alert(t('admin.newsEvents.selectBothStateDistrictEvent'));
         return;
@@ -325,27 +421,30 @@ export default function NewsEventsEditor() {
         data = { 
           ...newsForm, 
           created_by: currentUser.name,
-          // Include district/state for superadmins
-          ...((currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && {
-            district: newsForm.district,
-            state: newsForm.state,
+          // Include district/state for superadmins and news editors
+          // Only include if they have actual values (not empty strings)
+          // Convert to string first since they might be numbers (IDs)
+          ...(canSelectStateDistrict && {
+            ...(newsForm.district && String(newsForm.district).trim() ? { district: String(newsForm.district).trim() } : {}),
+            ...(newsForm.state && String(newsForm.state).trim() ? { state: String(newsForm.state).trim() } : {}),
           }),
         };
       } else {
         // For events, ensure dates are properly formatted and empty strings become null
         data = {
           ...eventForm,
-          created_by: (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') 
+          created_by: canSelectStateDistrict
             ? currentUser.id 
             : currentUser.name,
           event_date: eventForm.event_date?.trim() || null,
           event_time: eventForm.event_time?.trim() || null,
           end_date: eventForm.end_date?.trim() || null,
           end_time: eventForm.end_time?.trim() || null,
-          // Include district/state for superadmins
-          ...((currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && {
-            district: eventForm.district,
-            state: eventForm.state,
+          // Include district/state for superadmins and news editors
+          // Convert to string first since they might be numbers (IDs)
+          ...(canSelectStateDistrict && {
+            ...(eventForm.district && String(eventForm.district).trim() ? { district: String(eventForm.district).trim() } : {}),
+            ...(eventForm.state && String(eventForm.state).trim() ? { state: String(eventForm.state).trim() } : {}),
           }),
         };
       }
@@ -358,6 +457,21 @@ export default function NewsEventsEditor() {
       const token = localStorage.getItem('admin_token');
       // Add cache-busting timestamp to URL
       const urlWithCache = `${url}?_t=${Date.now()}`;
+      
+      // Debug logging
+      console.log('Sending request:', {
+        url: urlWithCache,
+        method,
+        data: { ...data, image_path: data.image_path ? '[image data]' : null },
+        hasDistrict: !!data.district,
+        hasState: !!data.state,
+        district: data.district,
+        state: data.state,
+        newsFormState: activeTab === 'news' ? newsForm.state : null,
+        newsFormDistrict: activeTab === 'news' ? newsForm.district : null,
+        canSelectStateDistrict
+      });
+      
       const response = await fetch(urlWithCache, {
         method,
         cache: 'no-store',
@@ -365,6 +479,7 @@ export default function NewsEventsEditor() {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           'Pragma': 'no-cache',
+          'Expires': '0',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify(data),
@@ -570,6 +685,21 @@ export default function NewsEventsEditor() {
     if (activeTab === 'news') {
       const newsItem = itemToUse as News;
       const timestamp = Date.now();
+      // Convert state/district names to IDs for dropdowns
+      let stateId = '';
+      const stateName = (newsItem as any).state;
+      const districtName = (newsItem as any).district;
+      
+      if (canSelectStateDistrict && stateName && stateName !== 'All States' && stateName !== 'all') {
+        // Find state ID from state name
+        const stateObj = states.find(s => s.name === stateName);
+        if (stateObj) {
+          stateId = String(stateObj.id);
+          // Fetch districts for this state (this will trigger useEffect to set district)
+          fetchDistricts(stateId);
+        }
+      }
+      
       setNewsForm({
         title: newsItem.title,
         content: newsItem.content,
@@ -584,18 +714,9 @@ export default function NewsEventsEditor() {
         is_featured: newsItem.is_featured,
         is_published: newsItem.is_published,
         order: newsItem.order,
-        district: (newsItem as any).district || '',
-        state: (newsItem as any).state || '',
+        district: '', // Will be set after districts load via useEffect
+        state: stateId,
       });
-      
-      // If superadmin and state is set, fetch districts
-      if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (newsItem as any).state) {
-        // Find state ID from state name
-        const stateObj = states.find(s => s.name === (newsItem as any).state);
-        if (stateObj) {
-          fetchDistricts(String(stateObj.id));
-        }
-      }
     } else {
       const eventItem = itemToUse as Event;
       
@@ -653,16 +774,23 @@ export default function NewsEventsEditor() {
         event_type: eventItem.event_type,
         order: eventItem.order,
         isVisible: eventItem.isVisible,
-        district: (eventItem as any).district || '',
-        state: (eventItem as any).state || '',
+        district: '', // Will be set after districts load via useEffect
+        state: '', // Will be set below
       });
       
-      // If superadmin and state is set, fetch districts
-      if (currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (eventItem as any).state) {
+      // Convert state/district names to IDs for dropdowns
+      const eventStateName = (eventItem as any).state;
+      const eventDistrictName = (eventItem as any).district;
+      
+      if (canSelectStateDistrict && eventStateName && eventStateName !== 'All States' && eventStateName !== 'all') {
         // Find state ID from state name
-        const stateObj = states.find(s => s.name === (eventItem as any).state);
+        const stateObj = states.find(s => s.name === eventStateName);
         if (stateObj) {
-          fetchDistricts(String(stateObj.id));
+          const eventStateId = String(stateObj.id);
+          // Update state ID in form
+          setEventForm(prev => ({ ...prev, state: eventStateId }));
+          // Fetch districts for this state
+          fetchDistricts(eventStateId);
         }
       }
     }
@@ -845,10 +973,10 @@ export default function NewsEventsEditor() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date">Sort by Date</SelectItem>
-                <SelectItem value="title">Sort by Title</SelectItem>
-                <SelectItem value="type">Sort by Type</SelectItem>
-                <SelectItem value="status">Sort by Status</SelectItem>
+                <SelectItem value="date">{t('admin.newsEvents.sortByDate')}</SelectItem>
+                <SelectItem value="title">{t('admin.newsEvents.sortByTitle')}</SelectItem>
+                <SelectItem value="type">{t('admin.newsEvents.sortByType')}</SelectItem>
+                <SelectItem value="status">{t('admin.newsEvents.sortByStatus')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -873,10 +1001,10 @@ export default function NewsEventsEditor() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="12">12/page</SelectItem>
-                <SelectItem value="24">24/page</SelectItem>
-                <SelectItem value="48">48/page</SelectItem>
-                <SelectItem value="96">96/page</SelectItem>
+                <SelectItem value="12">{t('admin.newsEvents.itemsPerPage').replace('{count}', '12')}</SelectItem>
+                <SelectItem value="24">{t('admin.newsEvents.itemsPerPage').replace('{count}', '24')}</SelectItem>
+                <SelectItem value="48">{t('admin.newsEvents.itemsPerPage').replace('{count}', '48')}</SelectItem>
+                <SelectItem value="96">{t('admin.newsEvents.itemsPerPage').replace('{count}', '96')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -912,7 +1040,11 @@ export default function NewsEventsEditor() {
         </div>
         
         <div className="text-xs text-gray-600 pt-2 border-t">
-          Showing {paginatedItems.length} of {filteredAndSortedItems.length} {activeTab} ({activeTab === 'news' ? news.length : events.length} total)
+          {t('admin.newsEvents.showingItems')
+            .replace('{showing}', String(paginatedItems.length))
+            .replace('{filtered}', String(filteredAndSortedItems.length))
+            .replace('{type}', activeTab === 'news' ? t('admin.newsEvents.newsLowercase') : t('admin.newsEvents.eventsLowercase'))
+            .replace('{total}', String(activeTab === 'news' ? news.length : events.length))}
         </div>
       </div>
 
@@ -958,16 +1090,15 @@ export default function NewsEventsEditor() {
               {/* News-specific fields */}
               {activeTab === 'news' && (
                 <>
-                  {/* State/District selection for superadmins */}
-                  {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
+                  {/* State/District selection for superadmins and news editors */}
+                  {canSelectStateDistrict && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4 ">
                       <div>
                         <Label htmlFor="state">{t('admin.store.sellers.state')} *</Label>
                         <Select 
                           value={newsForm.state} 
                           onValueChange={(value) => {
-                            setNewsForm({ ...newsForm, state: value, district: '' });
-                            setDistricts([]);
+                            setNewsForm(prev => ({ ...prev, state: value, district: '' }));
                           }}
                           disabled={loadingStates}
                         >
@@ -1122,16 +1253,15 @@ export default function NewsEventsEditor() {
               {/* Event-specific fields */}
               {activeTab === 'events' && (
                 <>
-                  {/* State/District selection for superadmins */}
-                  {currentUser && (currentUser.type === 'superadmin' || currentUser.role === 'superadmin') && (
+                  {/* State/District selection for superadmins and news editors */}
+                  {canSelectStateDistrict && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4 mb-4">
                       <div>
                         <Label htmlFor="event_state">{t('admin.store.sellers.state')} *</Label>
                         <Select 
                           value={eventForm.state} 
                           onValueChange={(value) => {
-                            setEventForm({ ...eventForm, state: value, district: '' });
-                            setDistricts([]);
+                            setEventForm(prev => ({ ...prev, state: value, district: '' }));
                           }}
                           disabled={loadingStates}
                         >
@@ -1502,6 +1632,22 @@ export default function NewsEventsEditor() {
                       <EyeOff className="h-4 w-4 text-gray-400" />
                     )}
                   </div>
+                  {(() => {
+                    const newsItem = item as News;
+                    const district = newsItem.district && newsItem.district !== 'All Districts' ? newsItem.district : null;
+                    const state = newsItem.state && newsItem.state !== 'All States' ? newsItem.state : null;
+                    if (district || state) {
+                      return (
+                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <span className="line-clamp-1">
+                            {[district, state].filter(Boolean).join(', ')}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   {(item as News).excerpt && (
                     <p className="text-sm text-gray-600 line-clamp-2">{(item as News).excerpt}</p>
                   )}

@@ -33,6 +33,65 @@ export async function GET(req: NextRequest) {
   // Handle different user types
   const userType = claims.type || 'superadmin';
   
+  if (userType === 'news_editor') {
+    // Fetch news editor details
+    const rows = await executeQuery(
+      `SELECT 
+        id, 
+        email, 
+        name,
+        role, 
+        is_active, 
+        created_at, 
+        updated_at,
+        profile_photo_path,
+        LENGTH(profile_photo_blob) as blob_size
+      FROM news_editors WHERE id = ? LIMIT 1`, 
+      [claims.sub]
+    ) as Array<{ id: number; email: string; name: string | null; role: string; is_active: boolean; created_at: string; updated_at: string; profile_photo_path: string | null; blob_size: number | null }>;
+    
+    if (rows.length === 0) return NextResponse.json({ authenticated: false }, { status: 200 });
+    
+    const user = rows[0];
+    
+    // Check if account is active
+    if (!user.is_active) {
+      return NextResponse.json({ authenticated: false, message: 'Account disabled' }, { status: 403 });
+    }
+    
+    // Determine profile photo URL - prefer blob over path
+    let profilePhoto: string | null = null;
+    if (user.blob_size && user.blob_size > 0) {
+      // Add timestamp for cache busting
+      profilePhoto = `/api/media/news-editors/${user.id}/profile?t=${Date.now()}`;
+    } else if (user.profile_photo_path) {
+      profilePhoto = user.profile_photo_path;
+    }
+    
+    // News editors have full access to news and events (like superadmin for news/events)
+    return NextResponse.json({ 
+      authenticated: true, 
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name || user.email,
+        role: user.role,
+        is_active: user.is_active,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        profile_photo: profilePhoto,
+        type: 'news_editor',
+        permissions: ['edit_news_events', 'add_news', 'edit_news', 'delete_news', 'add_events', 'edit_events', 'delete_events']
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
+  }
+  
   if (userType === 'superadmin') {
     // Fetch superadmin details
     const rows = await executeQuery(

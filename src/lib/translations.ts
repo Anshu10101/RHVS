@@ -2100,6 +2100,34 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: '12 अंकों का आधार नंबर दर्ज करें',
     en: 'Enter 12-digit Aadhar number'
   },
+  'admin.members.details.title': {
+    hi: 'सदस्य विवरण',
+    en: 'Member Details'
+  },
+  'admin.members.details.description': {
+    hi: 'सदस्य की पूर्ण जानकारी',
+    en: 'Complete information about the member'
+  },
+  'admin.members.details.departmentAssignments': {
+    hi: 'विभाग असाइनमेंट',
+    en: 'Department Assignments'
+  },
+  'admin.members.details.verifiedBy': {
+    hi: 'सत्यापित किया गया',
+    en: 'Verified by'
+  },
+  'admin.members.details.notAvailable': {
+    hi: 'उपलब्ध नहीं',
+    en: 'N/A'
+  },
+  'admin.members.details.noDepartmentAssignments': {
+    hi: 'कोई विभाग असाइनमेंट नहीं',
+    en: 'No department assignments'
+  },
+  'admin.members.details.admin': {
+    hi: 'एडमिन',
+    en: 'Admin'
+  },
   'admin.members.add.fatherHusbandName': {
     hi: 'पिता/पति का नाम *',
     en: 'Father/Husband Name *'
@@ -2446,9 +2474,13 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'अनुमति दें',
     en: 'Grant'
   },
-  'admin.permissions.assign.revoke': {
-    hi: 'रद्द करें',
-    en: 'Revoke'
+  'admin.permissions.assign.granted': {
+    hi: 'अनुमति दी गई',
+    en: 'Granted'
+  },
+  'admin.permissions.assign.permissionAdded': {
+    hi: 'अनुमति जोड़ी गई',
+    en: 'Permission added'
   },
   'admin.permissions.assign.permissionDuration': {
     hi: 'अनुमति अवधि',
@@ -2569,6 +2601,110 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.permissions.assign.systemAdministration': {
     hi: 'सिस्टम प्रशासन',
     en: 'System Administration'
+  },
+  'admin.permissions.assign.timeBasedPermissions': {
+    hi: 'समय-आधारित अनुमतियाँ',
+    en: 'Time-based permissions'
+  },
+  'admin.permissions.assign.assign': {
+    hi: 'असाइन करें',
+    en: 'ASSIGN'
+  },
+  'admin.permissions.assign.revoke': {
+    hi: 'रद्द करें',
+    en: 'REVOKE'
+  },
+  'admin.permissions.assign.searchAdmins': {
+    hi: 'प्रशासक खोजें...',
+    en: 'Search admins...'
+  },
+  'admin.permissions.assign.allStates': {
+    hi: 'सभी राज्य',
+    en: 'All States'
+  },
+  'admin.permissions.assign.allDistricts': {
+    hi: 'सभी जिले',
+    en: 'All Districts'
+  },
+  'admin.permissions.assign.selectStateFirst': {
+    hi: 'पहले राज्य चुनें',
+    en: 'Select State First'
+  },
+  'admin.permissions.assign.sortByName': {
+    hi: 'नाम से क्रमबद्ध करें',
+    en: 'Sort by Name'
+  },
+  'admin.permissions.assign.sortByPermissions': {
+    hi: 'अनुमतियों से क्रमबद्ध करें',
+    en: 'Sort by Permissions'
+  },
+  'admin.permissions.assign.sortByState': {
+    hi: 'राज्य से क्रमबद्ध करें',
+    en: 'Sort by State'
+  },
+  'admin.permissions.assign.sortByDistrict': {
+    hi: 'जिले से क्रमबद्ध करें',
+    en: 'Sort by District'
+  },
+  'admin.permissions.assign.noAdminsFound': {
+    hi: 'आपके फ़िल्टर से मेल खाने वाला कोई प्रशासक नहीं मिला',
+    en: 'No admins found matching your filters'
+  },
+  'admin.permissions.assign.showPermissions': {
+    hi: 'अनुमतियाँ दिखाएं',
+    en: 'Show Permissions'
+  },
+  'admin.permissions.assign.hidePermissions': {
+    hi: 'अनुमतियाँ छुपाएं',
+    en: 'Hide Permissions'
+  },
+  'admin.permissions.assign.page': {
+    hi: 'पृष्ठ',
+    en: 'Page'
+  },
+  'admin.permissions.assign.of': {
+    hi: 'का',
+    en: 'of'
+  },
+  'admin.permissions.assign.admins': {
+    hi: 'प्रशासक',
+    en: 'admins'
+  },
+  'admin.permissions.assign.firstPage': {
+    hi: 'पहला पृष्ठ',
+    en: 'First page'
+  },
+  'admin.permissions.assign.previousPage': {
+    hi: 'पिछला पृष्ठ',
+    en: 'Previous page'
+  },
+  'admin.permissions.assign.nextPage': {
+    hi: 'अगला पृष्ठ',
+    en: 'Next page'
+  },
+  'admin.permissions.assign.lastPage': {
+    hi: 'अंतिम पृष्ठ',
+    en: 'Last page'
+  },
+  'admin.permissions.assign.sortAscending': {
+    hi: 'आरोही क्रम',
+    en: 'Sort Ascending'
+  },
+  'admin.permissions.assign.sortDescending': {
+    hi: 'अवरोही क्रम',
+    en: 'Sort Descending'
+  },
+  'admin.permissions.assign.normalView': {
+    hi: 'सामान्य दृश्य',
+    en: 'Normal View'
+  },
+  'admin.permissions.assign.compactView': {
+    hi: 'संक्षिप्त दृश्य',
+    en: 'Compact View'
+  },
+  'admin.permissions.assign.revoking': {
+    hi: 'रद्द किया जा रहा है...',
+    en: 'Revoking...'
   },
   
   // Permission History
@@ -3102,6 +3238,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'आपके पास फोटो प्रबंधन की अनुमति नहीं है। पहुंच के लिए अपने प्रशासक से संपर्क करें।',
     en: 'You don\'t have permission to manage photos. Contact your administrator for access.'
   },
+  'admin.photos.photoManagement': {
+    hi: 'फोटो प्रबंधन',
+    en: 'Photo Management'
+  },
   'admin.photos.title': {
     hi: 'फोटो प्रबंधन',
     en: 'Photo Management'
@@ -3182,6 +3322,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'फोटो',
     en: 'photos'
   },
+  'admin.photos.selected': {
+    hi: 'चयनित',
+    en: 'selected'
+  },
   'admin.photos.editEvent': {
     hi: 'इवेंट संपादित करें',
     en: 'Edit event'
@@ -3221,10 +3365,6 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.photos.selectAll': {
     hi: 'सभी चुनें',
     en: 'Select All'
-  },
-  'admin.photos.selected': {
-    hi: 'चयनित',
-    en: 'selected'
   },
   'admin.photos.total': {
     hi: 'कुल',
@@ -3690,6 +3830,70 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'वापस',
     en: 'Back'
   },
+  'admin.store.products.manageSellers': {
+    hi: 'विक्रेताओं का प्रबंधन करें',
+    en: 'Manage Sellers'
+  },
+  'admin.store.products.recentlyUpdated': {
+    hi: 'हाल ही में अपडेट किया गया',
+    en: 'Recently updated'
+  },
+  'admin.store.products.sortByName': {
+    hi: 'नाम से क्रमबद्ध करें',
+    en: 'Name'
+  },
+  'admin.store.products.sortByPrice': {
+    hi: 'मूल्य से क्रमबद्ध करें',
+    en: 'Price'
+  },
+  'admin.store.products.sortByStock': {
+    hi: 'स्टॉक से क्रमबद्ध करें',
+    en: 'Stock'
+  },
+  'admin.store.products.itemsPerPage': {
+    hi: '{count}/पृष्ठ',
+    en: '{count}/page'
+  },
+  'admin.store.products.showingProducts': {
+    hi: '{showing} में से {total} उत्पाद दिखा रहे हैं',
+    en: 'Showing {showing} of {total} products'
+  },
+  'admin.store.products.pageInfo': {
+    hi: 'पृष्ठ {current} का {total}',
+    en: 'Page {current} of {total}'
+  },
+  'admin.newsEvents.sortByDate': {
+    hi: 'तारीख से क्रमबद्ध करें',
+    en: 'Sort by Date'
+  },
+  'admin.newsEvents.sortByTitle': {
+    hi: 'शीर्षक से क्रमबद्ध करें',
+    en: 'Sort by Title'
+  },
+  'admin.newsEvents.sortByType': {
+    hi: 'प्रकार से क्रमबद्ध करें',
+    en: 'Sort by Type'
+  },
+  'admin.newsEvents.sortByStatus': {
+    hi: 'स्थिति से क्रमबद्ध करें',
+    en: 'Sort by Status'
+  },
+  'admin.newsEvents.itemsPerPage': {
+    hi: '{count}/पृष्ठ',
+    en: '{count}/page'
+  },
+  'admin.newsEvents.showingItems': {
+    hi: '{showing} में से {filtered} {type} दिखा रहे हैं ({total} कुल)',
+    en: 'Showing {showing} of {filtered} {type} ({total} total)'
+  },
+  'admin.newsEvents.newsLowercase': {
+    hi: 'समाचार',
+    en: 'news'
+  },
+  'admin.newsEvents.eventsLowercase': {
+    hi: 'कार्यक्रम',
+    en: 'events'
+  },
 
   // Admin News & Events
   'admin.newsEvents.title': {
@@ -3700,14 +3904,6 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'समाचार लेख और कार्यक्रम प्रबंधित करें',
     en: 'Manage news articles and events'
   },
-  'admin.newsEvents.addNews': {
-    hi: 'समाचार जोड़ें',
-    en: 'Add News'
-  },
-  'admin.newsEvents.addEvent': {
-    hi: 'कार्यक्रम जोड़ें',
-    en: 'Add Event'
-  },
   'admin.newsEvents.news': {
     hi: 'समाचार',
     en: 'News'
@@ -3715,6 +3911,14 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.newsEvents.events': {
     hi: 'कार्यक्रम',
     en: 'Events'
+  },
+  'admin.newsEvents.addNews': {
+    hi: 'समाचार जोड़ें',
+    en: 'Add News'
+  },
+  'admin.newsEvents.addEvent': {
+    hi: 'कार्यक्रम जोड़ें',
+    en: 'Add Event'
   },
   'admin.newsEvents.searchPlaceholder': {
     hi: 'खोजें...',
@@ -4940,9 +5144,9 @@ export const translations: Record<string, Record<Language, string>> = {
   },
   'admin.departments.assign.assignmentConfiguration': {
     hi: '📋 असाइनमेंट कॉन्फ़िगरेशन',
-    en: '📋 Assignment Configuration'
+    en: 'Assignment Configuration'
   },
-  'admin.departments.assign.allMembersAtSelectedLevel': {
+  'admin.departments.assign.allMembersAssignedAtLevel': {
     hi: 'सभी असाइन किए गए सदस्य {level} स्तर पर असाइन किए जाएंगे। किसी भी पद पर "सदस्य असाइन करें" पर क्लिक करें सदस्य चुनने के लिए।',
     en: 'All members assigned will be assigned at {level} level. Click "Assign Members" on any post to select members.'
   },
@@ -5697,6 +5901,14 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.sidebar.photoManagement': {
     hi: 'फोटो प्रबंधन',
     en: 'Photo Management'
+  },
+  'admin.sidebar.marqueeManagement': {
+    hi: 'समाचार संदेश पट्टी',
+    en: 'Notice Strip'
+  },
+  'admin.sidebar.newsEditors': {
+    hi: 'समाचार संपादक',
+    en: 'News Editors'
   },
   'admin.sidebar.productStore': {
     hi: 'उत्पाद स्टोर',
@@ -8003,6 +8215,448 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.analytics.districtSubtitle': {
     hi: 'अपने जिले के लिए विस्तृत अंतर्दृष्टि',
     en: 'Detailed insights for your district'
+  },
+
+  // News Editors Management
+  'admin.newsEditors.title': {
+    hi: 'समाचार संपादक प्रबंधन',
+    en: 'News Editors Management'
+  },
+  'admin.newsEditors.description': {
+    hi: 'अपने संगठन के लिए समाचार संपादकों और रिपोर्टरों का प्रबंधन करें',
+    en: 'Manage news editors and reporters for your organization'
+  },
+  'admin.newsEditors.createEditor': {
+    hi: 'समाचार संपादक बनाएं',
+    en: 'Create News Editor'
+  },
+  'admin.newsEditors.name': {
+    hi: 'नाम',
+    en: 'Name'
+  },
+  'admin.newsEditors.email': {
+    hi: 'ईमेल',
+    en: 'Email'
+  },
+  'admin.newsEditors.role': {
+    hi: 'भूमिका',
+    en: 'Role'
+  },
+  'admin.newsEditors.status': {
+    hi: 'स्थिति',
+    en: 'Status'
+  },
+  'admin.newsEditors.appointed': {
+    hi: 'नियुक्त',
+    en: 'Appointed'
+  },
+  'admin.newsEditors.lastLogin': {
+    hi: 'अंतिम लॉगिन',
+    en: 'Last Login'
+  },
+  'admin.newsEditors.actions': {
+    hi: 'कार्रवाई',
+    en: 'Actions'
+  },
+  'admin.newsEditors.noEditorsFound': {
+    hi: 'कोई समाचार संपादक नहीं मिला',
+    en: 'No news editors found'
+  },
+  'admin.newsEditors.newsEditor': {
+    hi: 'समाचार संपादक',
+    en: 'News Editor'
+  },
+  'admin.newsEditors.newsReporter': {
+    hi: 'समाचार रिपोर्टर',
+    en: 'News Reporter'
+  },
+  'admin.newsEditors.active': {
+    hi: 'सक्रिय',
+    en: 'Active'
+  },
+  'admin.newsEditors.inactive': {
+    hi: 'निष्क्रिय',
+    en: 'Inactive'
+  },
+  'admin.newsEditors.never': {
+    hi: 'कभी नहीं',
+    en: 'Never'
+  },
+  'admin.newsEditors.activate': {
+    hi: 'सक्रिय करें',
+    en: 'Activate'
+  },
+  'admin.newsEditors.deactivate': {
+    hi: 'निष्क्रिय करें',
+    en: 'Deactivate'
+  },
+  'admin.newsEditors.createDialogTitle': {
+    hi: 'समाचार संपादक बनाएं',
+    en: 'Create News Editor'
+  },
+  'admin.newsEditors.createDialogDescription': {
+    hi: 'एक नया समाचार संपादक या रिपोर्टर खाता बनाएं। वे किसी भी राज्य या जिले में समाचार और कार्यक्रम पोस्ट करने में सक्षम होंगे।',
+    en: 'Create a new news editor or reporter account. They will be able to post news and events to any state or district.'
+  },
+  'admin.newsEditors.emailRequired': {
+    hi: 'ईमेल *',
+    en: 'Email *'
+  },
+  'admin.newsEditors.emailPlaceholder': {
+    hi: 'editor@example.com',
+    en: 'editor@example.com'
+  },
+  'admin.newsEditors.nameOptional': {
+    hi: 'नाम (वैकल्पिक)',
+    en: 'Name (Optional)'
+  },
+  'admin.newsEditors.namePlaceholder': {
+    hi: 'संपादक का नाम',
+    en: 'Editor Name'
+  },
+  'admin.newsEditors.roleLabel': {
+    hi: 'भूमिका',
+    en: 'Role'
+  },
+  'admin.newsEditors.passwordLabel': {
+    hi: 'अस्थायी पासवर्ड *',
+    en: 'Temporary Password *'
+  },
+  'admin.newsEditors.passwordPlaceholder': {
+    hi: 'पासवर्ड उत्पन्न करें या दर्ज करें',
+    en: 'Generate or enter password'
+  },
+  'admin.newsEditors.generate': {
+    hi: 'उत्पन्न करें',
+    en: 'Generate'
+  },
+  'admin.newsEditors.passwordNote': {
+    hi: 'संपादक लॉगिन के बाद अपने प्रोफ़ाइल सेक्शन से इस पासवर्ड को बदल सकता है।',
+    en: 'The editor can change this password from their profile section after login.'
+  },
+  'admin.newsEditors.expiryDate': {
+    hi: 'समाप्ति तिथि (वैकल्पिक)',
+    en: 'Expiry Date (Optional)'
+  },
+  'admin.newsEditors.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.newsEditors.creating': {
+    hi: 'बनाया जा रहा है...',
+    en: 'Creating...'
+  },
+  'admin.newsEditors.create': {
+    hi: 'बनाएं',
+    en: 'Create'
+  },
+  'admin.newsEditors.emailPasswordRequired': {
+    hi: 'ईमेल और पासवर्ड आवश्यक हैं',
+    en: 'Email and password are required'
+  },
+  'admin.newsEditors.deleteDialogTitle': {
+    hi: 'समाचार संपादक हटाएं',
+    en: 'Delete News Editor'
+  },
+  'admin.newsEditors.deleteDialogDescription': {
+    hi: 'क्या आप वाकई {email} को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।',
+    en: 'Are you sure you want to delete {email}? This action cannot be undone.'
+  },
+  'admin.newsEditors.delete': {
+    hi: 'हटाएं',
+    en: 'Delete'
+  },
+  'admin.newsEditors.createdSuccess': {
+    hi: 'समाचार संपादक सफलतापूर्वक बनाया गया',
+    en: 'News editor created successfully'
+  },
+  'admin.newsEditors.deletedSuccess': {
+    hi: 'समाचार संपादक सफलतापूर्वक हटाया गया',
+    en: 'News editor deleted successfully'
+  },
+  'admin.newsEditors.activatedSuccess': {
+    hi: 'समाचार संपादक सफलतापूर्वक सक्रिय किया गया',
+    en: 'News editor activated successfully'
+  },
+  'admin.newsEditors.deactivatedSuccess': {
+    hi: 'समाचार संपादक सफलतापूर्वक निष्क्रिय किया गया',
+    en: 'News editor deactivated successfully'
+  },
+  'admin.newsEditors.failedToLoad': {
+    hi: 'समाचार संपादक लोड करने में विफल',
+    en: 'Failed to load news editors'
+  },
+  'admin.newsEditors.failedToCreate': {
+    hi: 'समाचार संपादक बनाने में विफल',
+    en: 'Failed to create news editor'
+  },
+  'admin.newsEditors.failedToDelete': {
+    hi: 'समाचार संपादक हटाने में विफल',
+    en: 'Failed to delete news editor'
+  },
+  'admin.newsEditors.failedToUpdate': {
+    hi: 'समाचार संपादक अपडेट करने में विफल',
+    en: 'Failed to update news editor'
+  },
+  'admin.newsEditors.accessDenied': {
+    hi: 'आपके पास इस पृष्ठ तक पहुंचने की अनुमति नहीं है।',
+    en: 'You don\'t have permission to access this page.'
+  },
+
+  // Marquee Management
+  'admin.marquee.title': {
+    hi: 'समाचार संदेश पट्टी प्रबंधन',
+    en: 'Manage Notice Strip'
+  },
+  'admin.marquee.description': {
+    hi: 'हीरो सेक्शन के नीचे चलने वाली समाचार संदेश पट्टी टेक्स्ट को अनुकूलित करें',
+    en: 'Customize the running notice strip text below hero section'
+  },
+  'admin.marquee.addMarquee': {
+    hi: 'समाचार संदेश पट्टी जोड़ें',
+    en: 'Add Notice Strip'
+  },
+  'admin.marquee.createMarquee': {
+    hi: 'समाचार संदेश पट्टी बनाएं',
+    en: 'Create Notice Strip'
+  },
+  'admin.marquee.editMarquee': {
+    hi: 'समाचार संदेश पट्टी संपादित करें',
+    en: 'Edit Notice Strip'
+  },
+  'admin.marquee.marqueeText': {
+    hi: 'समाचार संदेश पट्टी टेक्स्ट *',
+    en: 'Notice Strip Text *'
+  },
+  'admin.marquee.textPlaceholder': {
+    hi: 'समाचार संदेश पट्टी टेक्स्ट दर्ज करें (आप 🎉 ✨ 🙏 जैसे इमोजी का उपयोग कर सकते हैं)',
+    en: 'Enter notice strip text (you can use emojis like 🎉 ✨ 🙏)'
+  },
+  'admin.marquee.characters': {
+    hi: '{count}/1000 अक्षर',
+    en: '{count}/1000 characters'
+  },
+  'admin.marquee.textColor': {
+    hi: 'टेक्स्ट रंग',
+    en: 'Text Color'
+  },
+  'admin.marquee.backgroundColor': {
+    hi: 'पृष्ठभूमि रंग',
+    en: 'Background Color'
+  },
+  'admin.marquee.speed': {
+    hi: 'गति (प्रति सेकंड पिक्सेल)',
+    en: 'Speed (pixels per second)'
+  },
+  'admin.marquee.speedRecommended': {
+    hi: 'अनुशंसित: 30-50',
+    en: 'Recommended: 30-50'
+  },
+  'admin.marquee.globalMarquee': {
+    hi: 'वैश्विक समाचार संदेश पट्टी (सभी जिलों के लिए दिखाता है)',
+    en: 'Global Notice Strip (shows for all districts)'
+  },
+  'admin.marquee.state': {
+    hi: 'राज्य',
+    en: 'State'
+  },
+  'admin.marquee.selectState': {
+    hi: 'राज्य चुनें',
+    en: 'Select State'
+  },
+  'admin.marquee.district': {
+    hi: 'जिला',
+    en: 'District'
+  },
+  'admin.marquee.selectDistrict': {
+    hi: 'जिला चुनें',
+    en: 'Select District'
+  },
+  'admin.marquee.isActive': {
+    hi: 'सक्रिय (प्रति स्कोप केवल एक सक्रिय समाचार संदेश पट्टी)',
+    en: 'Active (only one active notice strip per scope)'
+  },
+  'admin.marquee.preview': {
+    hi: 'पूर्वावलोकन',
+    en: 'Preview'
+  },
+  'admin.marquee.previewText': {
+    hi: 'पूर्वावलोकन टेक्स्ट यहां दिखाई देगा...',
+    en: 'Preview text will appear here...'
+  },
+  'admin.marquee.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.marquee.update': {
+    hi: 'अपडेट करें',
+    en: 'Update'
+  },
+  'admin.marquee.speedLabel': {
+    hi: 'गति: {speed} px/s',
+    en: 'Speed: {speed} px/s'
+  },
+  'admin.marquee.statusLabel': {
+    hi: 'स्थिति: {status}',
+    en: 'Status: {status}'
+  },
+  'admin.marquee.scopeLabel': {
+    hi: 'स्कोप: {scope}',
+    en: 'Scope: {scope}'
+  },
+  'admin.marquee.updatedLabel': {
+    hi: 'अपडेट किया गया: {date}',
+    en: 'Updated: {date}'
+  },
+  'admin.marquee.global': {
+    hi: 'वैश्विक',
+    en: 'Global'
+  },
+  'admin.marquee.noMarqueesFound': {
+    hi: 'कोई समाचार संदेश पट्टी नहीं मिली। शुरू करने के लिए एक बनाएं।',
+    en: 'No notice strips found. Create one to get started.'
+  },
+  'admin.marquee.loading': {
+    hi: 'लोड हो रहा है...',
+    en: 'Loading...'
+  },
+  'admin.marquee.deleteConfirm': {
+    hi: 'क्या आप वाकई इस समाचार संदेश पट्टी को हटाना चाहते हैं?',
+    en: 'Are you sure you want to delete this notice strip?'
+  },
+  'admin.marquee.failedToSave': {
+    hi: 'समाचार संदेश पट्टी सहेजने में विफल',
+    en: 'Failed to save notice strip'
+  },
+  'admin.marquee.failedToUpdate': {
+    hi: 'समाचार संदेश पट्टी स्थिति अपडेट करने में विफल',
+    en: 'Failed to update notice strip status'
+  },
+  'admin.marquee.failedToDelete': {
+    hi: 'समाचार संदेश पट्टी हटाने में विफल',
+    en: 'Failed to delete notice strip'
+  },
+  'admin.marquee.active': {
+    hi: 'सक्रिय',
+    en: 'Active'
+  },
+  'admin.marquee.inactive': {
+    hi: 'निष्क्रिय',
+    en: 'Inactive'
+  },
+  'admin.marquee.create': {
+    hi: 'बनाएं',
+    en: 'Create'
+  },
+
+  // Admin Activity Logs
+  'admin.logs.title': {
+    hi: 'गतिविधि लॉग',
+    en: 'Activity Logs'
+  },
+  'admin.logs.description': {
+    hi: 'सभी प्रशासनिक गतिविधियों और परिवर्तनों को ट्रैक करें',
+    en: 'Track all administrative activities and changes'
+  },
+  'admin.logs.refresh': {
+    hi: 'रिफ्रेश करें',
+    en: 'Refresh'
+  },
+  'admin.logs.search': {
+    hi: 'खोजें',
+    en: 'Search'
+  },
+  'admin.logs.searchPlaceholder': {
+    hi: 'गतिविधियाँ खोजें...',
+    en: 'Search activities...'
+  },
+  'admin.logs.actionType': {
+    hi: 'कार्रवाई प्रकार',
+    en: 'Action Type'
+  },
+  'admin.logs.allActions': {
+    hi: 'सभी कार्रवाइयाँ',
+    en: 'All Actions'
+  },
+  'admin.logs.user': {
+    hi: 'उपयोगकर्ता',
+    en: 'User'
+  },
+  'admin.logs.allUsers': {
+    hi: 'सभी उपयोगकर्ता',
+    en: 'All Users'
+  },
+  'admin.logs.dateRange': {
+    hi: 'तारीख सीमा',
+    en: 'Date Range'
+  },
+  'admin.logs.allTime': {
+    hi: 'सभी समय',
+    en: 'All Time'
+  },
+  'admin.logs.today': {
+    hi: 'आज',
+    en: 'Today'
+  },
+  'admin.logs.thisWeek': {
+    hi: 'इस सप्ताह',
+    en: 'This Week'
+  },
+  'admin.logs.thisMonth': {
+    hi: 'इस महीने',
+    en: 'This Month'
+  },
+  'admin.logs.activityLogs': {
+    hi: 'गतिविधि लॉग',
+    en: 'Activity Logs'
+  },
+  'admin.logs.loadingLogs': {
+    hi: 'लॉग लोड हो रहे हैं...',
+    en: 'Loading logs...'
+  },
+  'admin.logs.noActivitiesFound': {
+    hi: 'कोई गतिविधि नहीं मिली',
+    en: 'No activities found'
+  },
+  'admin.logs.tryAdjustingFilters': {
+    hi: 'अधिक परिणाम देखने के लिए अपने फ़िल्टर समायोजित करने का प्रयास करें।',
+    en: 'Try adjusting your filters to see more results.'
+  },
+  'admin.logs.by': {
+    hi: 'द्वारा',
+    en: 'by'
+  },
+  'admin.logs.showing': {
+    hi: 'दिखा रहे हैं',
+    en: 'Showing'
+  },
+  'admin.logs.of': {
+    hi: 'में से',
+    en: 'of'
+  },
+  'admin.logs.activities': {
+    hi: 'गतिविधियाँ',
+    en: 'activities'
+  },
+  'admin.logs.page': {
+    hi: 'पृष्ठ',
+    en: 'Page'
+  },
+  'admin.logs.previous': {
+    hi: 'पिछला',
+    en: 'Previous'
+  },
+  'admin.logs.next': {
+    hi: 'अगला',
+    en: 'Next'
+  },
+  'admin.logs.accessDenied': {
+    hi: 'पहुंच अस्वीकृत',
+    en: 'Access Denied'
+  },
+  'admin.logs.noPermission': {
+    hi: 'आपके पास गतिविधि लॉग देखने की अनुमति नहीं है।',
+    en: 'You don\'t have permission to view activity logs.'
   }
 };
 

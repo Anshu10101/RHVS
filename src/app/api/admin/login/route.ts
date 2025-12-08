@@ -101,10 +101,7 @@ export async function POST(req: NextRequest) {
       [email]
     ) as Array<{ id: number; email: string; password_hash: string; role: string; is_active: boolean; state: string; district: string; expires_at?: string; member_name: string | null }>;
 
-    if (districtAdminRows.length === 0) {
-      return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
-    }
-
+    if (districtAdminRows.length > 0) {
     const districtAdmin = districtAdminRows[0];
     
     // Check if admin account is active
@@ -197,6 +194,108 @@ export async function POST(req: NextRequest) {
     response.headers.append('Set-Cookie', `admin_session=; Path=/admin; Expires=${expiresDate}; HttpOnly; Max-Age=0; SameSite=Lax${isProd ? '; Secure' : ''}`);
     
     return response;
+    }
+
+    // If not district admin, check if user is a news editor
+    // Use LOWER() for case-insensitive email matching
+    const newsEditorRows = await executeQuery(
+      `SELECT 
+        id, 
+        email, 
+        name,
+        password_hash, 
+        role, 
+        is_active,
+        expires_at
+      FROM news_editors
+      WHERE LOWER(email) = LOWER(?) LIMIT 1`,
+      [email]
+    ) as Array<{ id: number; email: string; name: string | null; password_hash: string; role: string; is_active: boolean; expires_at?: string }>;
+
+    if (newsEditorRows.length > 0) {
+      const newsEditor = newsEditorRows[0];
+      
+      // Check if account is active
+      if (!newsEditor.is_active) {
+        return NextResponse.json({ success: false, message: 'Account disabled' }, { status: 403 });
+      }
+      
+      // Check if account has expired
+      if (newsEditor.expires_at && new Date(newsEditor.expires_at) < new Date()) {
+        return NextResponse.json({ success: false, message: 'Account expired' }, { status: 403 });
+      }
+
+      // Check if password hash exists
+      if (!newsEditor.password_hash) {
+        console.error('News editor login error: No password hash found for email:', email);
+        return NextResponse.json({ success: false, message: 'Account configuration error. Please contact administrator.' }, { status: 500 });
+      }
+
+      // Verify password
+      const valid = await verifyPassword(password, newsEditor.password_hash);
+      if (!valid) {
+        return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
+      }
+
+      // Update last_login timestamp
+      await executeQuery('UPDATE news_editors SET last_login = NOW() WHERE id = ?', [newsEditor.id]);
+      
+      // Log the login activity (silently, only log errors)
+      try {
+        await executeQuery(
+          `INSERT INTO activity_logs (user_id, user_type, user_name, action, details, ip_address)
+           VALUES (?, 'news_editor', ?, 'login', ?, ?)`,
+          [
+            String(newsEditor.id),
+            newsEditor.name || newsEditor.email,
+            `News editor login: ${newsEditor.email}`,
+            req.headers.get('x-forwarded-for') || 'unknown'
+          ]
+        );
+      } catch (logError) {
+        console.error('❌ Failed to log news editor login:', logError);
+        // Don't fail the login if logging fails
+      }
+
+      // Sign JWT token with news editor information
+      // News editors have full access to news and events (like superadmin for news/events)
+      const token = await signAdminJwt({ 
+        sub: String(newsEditor.id), 
+        email: newsEditor.email, 
+        role: newsEditor.role,
+        type: 'news_editor',
+        permissions: ['edit_news_events', 'add_news', 'edit_news', 'delete_news', 'add_events', 'edit_events', 'delete_events']
+      });
+      
+      // Create response with token
+      const response = NextResponse.json({ 
+        success: true, 
+        message: 'Logged in',
+        token, // Send token in response
+        expiresIn: 8 * 60 * 60 // 8 hours in seconds
+      });
+      
+      // CRITICAL: Force clear old admin_session cookie completely
+      const isProd = process.env.NODE_ENV === 'production';
+      const expiresDate = new Date(0).toUTCString();
+      
+      // Delete using Next.js method
+      response.cookies.delete('admin_session');
+      
+      // Manually set expired cookies with all possible SameSite values to ensure clearing
+      const cookieBase = `admin_session=; Path=/; Expires=${expiresDate}; HttpOnly; Max-Age=0`;
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Lax${isProd ? '; Secure' : ''}`);
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=Strict${isProd ? '; Secure' : ''}`);
+      response.headers.append('Set-Cookie', `${cookieBase}; SameSite=None${isProd ? '; Secure' : ''}`);
+      
+      // Also set for root path explicitly
+      response.headers.append('Set-Cookie', `admin_session=; Path=/admin; Expires=${expiresDate}; HttpOnly; Max-Age=0; SameSite=Lax${isProd ? '; Secure' : ''}`);
+      
+      return response;
+    }
+
+    // No matching user found
+    return NextResponse.json({ success: false, message: 'Invalid credentials' }, { status: 401 });
   } catch (e) {
     console.error('admin login error', e);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });

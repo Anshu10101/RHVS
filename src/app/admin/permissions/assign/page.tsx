@@ -9,14 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Shield, 
   UserCheck, 
   Save,
-  AlertCircle,
   Search,
   ChevronLeft,
   ChevronRight,
@@ -71,9 +68,8 @@ export default function AssignPermissionsPage() {
   const [selectedDistrict, setSelectedDistrict] = useState<string>('');
   const [selectedAdmin, setSelectedAdmin] = useState<string>('');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [expirationType, setExpirationType] = useState<'permanent' | 'temporary'>('permanent');
   const [expirationDays, setExpirationDays] = useState<number>(30);
-  const [notes, setNotes] = useState<string>('');
+  const [expirationDaysInput, setExpirationDaysInput] = useState<string>('30');
   const [submitting, setSubmitting] = useState(false);
 
   // Gallery-style filtering state
@@ -191,7 +187,7 @@ export default function AssignPermissionsPage() {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (res.ok) {
-        toast.success('All permissions revoked');
+        toast.success(t('admin.permissions.assign.allPermissionsRevoked'));
         fetchData();
       } else {
         const err = await res.json();
@@ -280,11 +276,11 @@ export default function AssignPermissionsPage() {
   // Templates removed
   // const handleTemplateSelect = (_: string) => {};
 
-  const handlePermissionToggle = (permissionKey: string) => {
+  const handlePermissionToggle = (permissionKey: string, checked: boolean) => {
     setSelectedPermissions(prev => 
-      prev.includes(permissionKey) 
-        ? prev.filter(p => p !== permissionKey)
-        : [...prev, permissionKey]
+      checked
+        ? [...prev, permissionKey]
+        : prev.filter(p => p !== permissionKey)
     );
   };
 
@@ -298,8 +294,15 @@ export default function AssignPermissionsPage() {
 
     try {
       setSubmitting(true);
-      
-      const expiresAt = expirationType === 'temporary' 
+
+      // Check if any selected permission is time-based
+      const hasTimeBasedPermission = selectedPermissions.some(p => {
+        const permission = availablePermissions.find(ap => ap.key === p);
+        return permission?.type === 'temporary';
+      });
+
+      // Calculate expires_at only for time-based permissions
+      const expiresAt = hasTimeBasedPermission
         ? new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
@@ -314,7 +317,7 @@ export default function AssignPermissionsPage() {
           district_admin_id: parseInt(selectedAdmin),
           permissions: selectedPermissions,
           expires_at: expiresAt,
-          notes: notes.trim() || null
+          notes: null
         }),
       });
 
@@ -325,9 +328,8 @@ export default function AssignPermissionsPage() {
          setSelectedDistrict('');
          setSelectedAdmin('');
          setSelectedPermissions([]);
-         setNotes('');
-         setExpirationType('permanent');
          setExpirationDays(30);
+         setExpirationDaysInput('30');
          // Refresh data
          fetchData();
        } else {
@@ -337,6 +339,42 @@ export default function AssignPermissionsPage() {
     } catch (error) {
       console.error('Error assigning permissions:', error);
       toast.error(t('admin.permissions.assign.failedToAssign'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!selectedAdmin || selectedPermissions.length === 0) {
+      toast.error(t('admin.permissions.assign.selectAllRequired'));
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('admin_token');
+
+      // Revoke each selected permission
+      const revokePromises = selectedPermissions.map(permission =>
+        fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}&permission=${permission}`, {
+          method: 'DELETE',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        })
+      );
+
+      const results = await Promise.all(revokePromises);
+      const allSucceeded = results.every(res => res.ok);
+
+      if (allSucceeded) {
+        toast.success(t('admin.permissions.assign.permissionRevoked'));
+        setSelectedPermissions([]);
+        fetchData();
+      } else {
+        toast.error(t('admin.permissions.assign.failedToRevoke'));
+      }
+    } catch (error) {
+      console.error('Error revoking permissions:', error);
+      toast.error(t('admin.permissions.assign.failedToRevoke'));
     } finally {
       setSubmitting(false);
     }
@@ -545,12 +583,12 @@ export default function AssignPermissionsPage() {
               {t('admin.permissions.assign.selectDistrictAdminDesc')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <CardContent className="px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
+             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-6">
                {/* Gallery-style Filter Section */}
-               <div className="space-y-3 sm:space-y-4">
+               <div className="space-y-2.5 sm:space-y-3 md:space-y-4">
                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                   <Label className="text-sm sm:text-base font-medium">{t('admin.permissions.assign.filterDistrictAdmins')}</Label>
+                   <Label className="text-xs sm:text-sm md:text-base font-medium">{t('admin.permissions.assign.filterDistrictAdmins')}</Label>
                    {(selectedState || selectedDistrict) && (
                      <Button
                        type="button"
@@ -570,15 +608,15 @@ export default function AssignPermissionsPage() {
                    )}
                  </div>
 
-                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
                    {/* State Selection */}
-                   <div className="space-y-2">
-                     <Label htmlFor="state" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectState')}</Label>
+                   <div className="space-y-1.5 sm:space-y-2">
+                     <Label htmlFor="state" className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.selectState')}</Label>
                      <Select 
-                       value={selectedState || undefined} 
+                       value={selectedState || ''} 
                        onValueChange={handleStateChange}
                      >
-                       <SelectTrigger className="h-9 sm:h-10 text-sm">
+                       <SelectTrigger className="h-9 sm:h-9 md:h-10 text-xs sm:text-sm w-full">
                          <SelectValue placeholder={t('admin.members.allStates')} />
                        </SelectTrigger>
                        <SelectContent>
@@ -593,14 +631,14 @@ export default function AssignPermissionsPage() {
                    </div>
 
                    {/* District Selection */}
-                   <div className="space-y-2">
-                     <Label htmlFor="district" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectDistrict')}</Label>
+                   <div className="space-y-1.5 sm:space-y-2">
+                     <Label htmlFor="district" className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.selectDistrict')}</Label>
                      <Select 
-                       value={selectedDistrict || undefined} 
+                       value={selectedDistrict || ''} 
                        onValueChange={handleDistrictChange}
                        disabled={!selectedState}
                      >
-                       <SelectTrigger className="h-9 sm:h-10 text-sm">
+                       <SelectTrigger className="h-9 sm:h-9 md:h-10 text-xs sm:text-sm w-full">
                          <SelectValue placeholder={selectedState ? t('admin.members.allDistricts') : t('admin.permissions.assign.selectDistrictFirst')} />
                        </SelectTrigger>
                        <SelectContent>
@@ -616,36 +654,53 @@ export default function AssignPermissionsPage() {
                  </div>
 
                  {/* District Admin Selection */}
-                 <div className="space-y-2">
-                   <Label htmlFor="admin" className="text-xs sm:text-sm">{t('admin.permissions.assign.selectDistrictAdmin')}</Label>
+                 <div className="space-y-1.5 sm:space-y-2">
+                   <Label htmlFor="admin" className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.selectDistrictAdmin')}</Label>
                    <Select 
-                     value={selectedAdmin} 
+                     value={selectedAdmin || ''} 
                      onValueChange={setSelectedAdmin}
                      disabled={!selectedDistrict}
                    >
-                     <SelectTrigger className="h-9 sm:h-10 text-sm">
+                     <SelectTrigger className="h-9 sm:h-9 md:h-10 text-xs sm:text-sm w-full">
                        <SelectValue placeholder={selectedDistrict ? t('admin.permissions.assign.chooseDistrictAdmin') : t('admin.permissions.assign.selectDistrictFirst')} />
                      </SelectTrigger>
-                     <SelectContent>
-                       {getAdminsForDistrict(selectedDistrict).map((admin) => (
-                         <SelectItem key={admin.id} value={admin.id.toString()}>
-                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                             <span className="truncate">{admin.name}</span>
-                             <Badge variant="outline" className="text-xs w-fit">{admin.email}</Badge>
-                           </div>
-                         </SelectItem>
-                       ))}
+                     <SelectContent className="max-h-[300px]">
+                       {getAdminsForDistrict(selectedDistrict).length === 0 ? (
+                         <div className="px-2 py-1.5 text-xs text-gray-500 text-center">
+                           {t('admin.permissions.assign.noDistrictAdmins')}
+                         </div>
+                       ) : (
+                         getAdminsForDistrict(selectedDistrict).map((admin) => (
+                           <SelectItem key={admin.id} value={admin.id.toString()} className="py-2.5">
+                             <div className="flex flex-col gap-1 w-full min-w-0">
+                               <span className="truncate font-medium text-sm">{admin.name}</span>
+                               <span className="truncate text-xs text-gray-500">{admin.email}</span>
+                             </div>
+                           </SelectItem>
+                         ))
+                       )}
                      </SelectContent>
                    </Select>
+                   {selectedAdmin && (() => {
+                     const selectedAdminData = getAdminsForDistrict(selectedDistrict).find(a => a.id.toString() === selectedAdmin);
+                     return selectedAdminData ? (
+                       <div className="mt-1.5 sm:mt-2 p-2 sm:p-2.5 rounded-md sm:rounded-lg bg-gray-50 border border-gray-200">
+                         <div className="flex flex-col gap-0.5 sm:gap-1">
+                           <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{selectedAdminData.name}</span>
+                           <span className="text-xs text-gray-500 break-all">{selectedAdminData.email}</span>
+                         </div>
+                       </div>
+                     ) : null;
+                   })()}
                  </div>
                </div>
 
               {/* Quick Select Template removed per requirement */}
 
               {/* Permissions Selection */}
-              <div className="space-y-3 sm:space-y-4">
+              <div className="space-y-2 sm:space-y-3 md:space-y-4">
                 <Label className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.selectPermissions')}</Label>
-                <div className="space-y-3 sm:space-y-4 max-h-64 sm:max-h-96 overflow-y-auto border rounded-lg p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-3 md:space-y-4 max-h-64 sm:max-h-80 md:max-h-96 overflow-y-auto border rounded-lg p-2.5 sm:p-3 md:p-4">
                   {loading ? (
                     <div className="text-center py-4 text-xs sm:text-sm text-gray-500">
                       {t('admin.permissions.assign.loadingPermissions')}
@@ -662,69 +717,30 @@ export default function AssignPermissionsPage() {
                       </h4>
                       <div className="space-y-2 sm:space-y-3">
                         {permissions.map((permission) => (
-                          <div key={`${category}-${permission.key}`} className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg">
-                            <div className="flex items-start space-x-2 flex-1 min-w-0">
+                          <div key={`${category}-${permission.key}`} className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-2.5 md:p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start space-x-2.5 sm:space-x-3 flex-1 min-w-0">
                             <Checkbox
                               id={permission.key}
                               checked={selectedPermissions.includes(permission.key)}
-                              onCheckedChange={() => handlePermissionToggle(permission.key)}
-                                className="mt-0.5"
+                              onCheckedChange={(checked) => handlePermissionToggle(permission.key, checked === true)}
+                              className="mt-0.5 flex-shrink-0"
                             />
                               <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                                 <Label 
                                   htmlFor={permission.key}
-                                    className="text-xs sm:text-sm font-medium cursor-pointer"
+                                    className="text-xs sm:text-sm font-medium cursor-pointer break-words"
                                 >
                                   {permission.name}
                                 </Label>
-                                <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-xs">
+                                <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-[10px] sm:text-xs px-1.5 py-0 flex-shrink-0">
                                     {permission.type === 'permanent' ? t('admin.permissions.assign.permanent') : t('admin.permissions.assign.timeBased')}
                                 </Badge>
                               </div>
-                                <p className="text-xs text-gray-500 line-clamp-2">
+                                <p className="text-xs text-gray-500 line-clamp-2 sm:line-clamp-none break-words">
                                 {permission.description}
                               </p>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setSelectedPermissions(prev => prev.includes(permission.key) ? prev : [...prev, permission.key])}
-                                className="text-xs h-8 px-2 sm:px-3"
-                              >
-                                {t('admin.permissions.assign.grant')}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                onClick={async () => {
-                                  if (!selectedAdmin) return;
-                                  try {
-                                    const token = localStorage.getItem('admin_token');
-                                    const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}&permission=${permission.key}`, { 
-                                      method: 'DELETE',
-                                      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                                    });
-                                    if (res.ok) {
-                                      toast.success(t('admin.permissions.assign.permissionRevoked'));
-                                      setSelectedPermissions(prev => prev.filter(p => p !== permission.key));
-                                      fetchData();
-                                    } else {
-                                      const err = await res.json();
-                                      toast.error(err.error || t('admin.permissions.assign.failedToRevoke'));
-                                    }
-                                  } catch (_e) {
-                                    toast.error(t('admin.permissions.assign.failedToRevoke'));
-                                  }
-                                }}
-                                className="text-xs h-8 px-2 sm:px-3"
-                              >
-                                {t('admin.permissions.assign.revoke')}
-                              </Button>
                             </div>
                           </div>
                         ))}
@@ -735,135 +751,104 @@ export default function AssignPermissionsPage() {
                 </div>
               </div>
 
-              {/* Expiration Settings & Revocation */}
-              <div className="space-y-3 sm:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <Label className="text-xs sm:text-sm font-medium">{t('admin.permissions.assign.permissionDuration')}</Label>
-                  <Badge variant="outline" className="text-xs w-fit">
-                    {selectedPermissions.some(p => {
-                      const permission = availablePermissions.find(ap => ap.key === p);
-                      return permission?.type === 'permanent';
-                    }) 
-                      ? t('admin.permissions.assign.containsPermanent')
-                      : t('admin.permissions.assign.allTimeBased')
-                    }
-                  </Badge>
-                </div>
-                
-                <Alert variant="default" className="bg-blue-50 border-blue-200 p-3 sm:p-4">
-                  <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <AlertDescription className="text-xs sm:text-sm">
-                    {t('admin.permissions.assign.memberPermissionsNote')}
-                  </AlertDescription>
-                </Alert>
-                
+              {/* Expiration Days Input (only for time-based permissions) */}
+              {selectedPermissions.some(p => {
+                const permission = availablePermissions.find(ap => ap.key === p);
+                return permission?.type === 'temporary';
+              }) && (
                 <div className="space-y-2">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="permanent"
-                      checked={expirationType === 'permanent'}
-                      onCheckedChange={() => setExpirationType('permanent')}
-                      className="mt-0.5"
-                    />
-                    <Label htmlFor="permanent" className="text-xs sm:text-sm cursor-pointer">
-                      {t('admin.permissions.assign.permanentNoExpiration')}
-                    </Label>
-                  </div>
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="temporary"
-                      checked={expirationType === 'temporary'}
-                      onCheckedChange={() => setExpirationType('temporary')}
-                      className="mt-0.5"
-                    />
-                    <Label htmlFor="temporary" className="text-xs sm:text-sm cursor-pointer">
-                      {t('admin.permissions.assign.temporaryExpiresAfter')}
-                    </Label>
-                  </div>
-                </div>
-                
-                {expirationType === 'temporary' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="days" className="text-xs sm:text-sm">{t('admin.permissions.assign.expirationDays')}</Label>
-                    <Input
-                      id="days"
-                      type="number"
-                      min="1"
-                      max="365"
-                      value={expirationDays}
-                      onChange={(e) => setExpirationDays(parseInt(e.target.value) || 30)}
-                      className="w-full sm:w-32 h-9 sm:h-10 text-sm"
-                    />
-                    <p className="text-xs text-gray-500">
-                      {t('admin.permissions.assign.willExpireOn')} {new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    disabled={!selectedAdmin}
-                    onClick={async () => {
-                      try {
-                        const token = localStorage.getItem('admin_token');
-                        const res = await fetch(`/api/admin/permissions/assign?district_admin_id=${selectedAdmin}`, { 
-                          method: 'DELETE',
-                          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-                        });
-                        if (res.ok) {
-                          toast.success('All permissions revoked');
-                          setSelectedPermissions([]);
-                          fetchData();
-                        } else {
-                          const err = await res.json();
-                          toast.error(err.error || 'Failed to revoke');
+                  <Label htmlFor="expirationDays" className="text-xs sm:text-sm font-medium">
+                    {t('admin.permissions.assign.expirationDays')} ({t('admin.permissions.assign.timeBasedPermissions')})
+                  </Label>
+                  <Input
+                    id="expirationDays"
+                    type="text"
+                    inputMode="numeric"
+                    value={expirationDaysInput}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow empty string, numbers only, and prevent leading zeros except single digit
+                      if (value === '' || /^\d+$/.test(value)) {
+                        setExpirationDaysInput(value);
+                        const numValue = parseInt(value);
+                        if (!isNaN(numValue) && numValue >= 1 && numValue <= 365) {
+                          setExpirationDays(numValue);
                         }
-                      } catch (_e) {
-                        toast.error('Failed to revoke');
                       }
                     }}
-                    className="w-full sm:w-auto text-xs sm:text-sm"
-                  >
-                    {t('admin.permissions.assign.revokeAllImmediately')}
-                  </Button>
+                    onBlur={(e) => {
+                      const value = e.target.value.trim();
+                      if (value === '') {
+                        setExpirationDaysInput('30');
+                        setExpirationDays(30);
+                      } else {
+                        const numValue = parseInt(value);
+                        if (isNaN(numValue) || numValue < 1) {
+                          setExpirationDaysInput('30');
+                          setExpirationDays(30);
+                        } else if (numValue > 365) {
+                          setExpirationDaysInput('365');
+                          setExpirationDays(365);
+                        } else {
+                          setExpirationDaysInput(String(numValue));
+                          setExpirationDays(numValue);
+                        }
+                      }
+                    }}
+                    className="w-full sm:w-40 h-9 sm:h-10 text-sm"
+                    placeholder="30"
+                  />
+                  <p className="text-xs text-gray-500">
+                    {t('admin.permissions.assign.willExpireOn')} {(() => {
+                      const expiryDate = new Date(Date.now() + expirationDays * 24 * 60 * 60 * 1000);
+                      const day = String(expiryDate.getDate()).padStart(2, '0');
+                      const month = String(expiryDate.getMonth() + 1).padStart(2, '0');
+                      const year = expiryDate.getFullYear();
+                      return `${day}/${month}/${year}`;
+                    })()}
+                  </p>
                 </div>
-              </div>
+              )}
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs sm:text-sm">{t('admin.permissions.assign.notes')}</Label>
-                <Textarea
-                  id="notes"
-                  placeholder={t('admin.permissions.assign.notesPlaceholder')}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="text-sm resize-none"
-                />
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full">
+                <Button 
+                  type="submit" 
+                  className="w-full sm:flex-1 h-9 sm:h-8 md:h-9 px-4 sm:px-3 md:px-4 text-xs sm:text-xs md:text-sm font-medium"
+                  disabled={submitting || !selectedState || !selectedDistrict || !selectedAdmin || selectedPermissions.length === 0}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 border-b-2 border-white mr-1.5 sm:mr-1 md:mr-1.5"></div>
+                      <span className="text-xs">{t('admin.permissions.assign.assigningPermissions')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-3.5 w-3.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 mr-1.5 sm:mr-1 md:mr-1.5 flex-shrink-0" />
+                      <span className="text-xs whitespace-nowrap">{t('admin.permissions.assign.assign')}</span>
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  type="button"
+                  variant="destructive"
+                  className="w-full sm:flex-1 h-9 sm:h-8 md:h-9 px-4 sm:px-3 md:px-4 text-xs sm:text-xs md:text-sm font-medium"
+                  disabled={submitting || !selectedAdmin || selectedPermissions.length === 0}
+                  onClick={handleRevoke}
+                >
+                  {submitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3.5 w-3.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 border-b-2 border-white mr-1.5 sm:mr-1 md:mr-1.5"></div>
+                      <span className="text-xs">{t('admin.permissions.assign.revoking')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="h-3.5 w-3.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5 mr-1.5 sm:mr-1 md:mr-1.5 flex-shrink-0" />
+                      <span className="text-xs whitespace-nowrap">{t('admin.permissions.assign.revoke')}</span>
+                    </>
+                  )}
+                </Button>
               </div>
-
-              {/* Submit Button */}
-               <Button 
-                 type="submit" 
-                 className="w-full"
-                 size="sm"
-                 disabled={submitting || !selectedState || !selectedDistrict || !selectedAdmin || selectedPermissions.length === 0}
-               >
-                {submitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    <span className="text-xs sm:text-sm">{t('admin.permissions.assign.assigningPermissions')}</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    <span className="text-xs sm:text-sm">{t('admin.permissions.assign.assignPermissions')}</span>
-                  </>
-                )}
-              </Button>
             </form>
           </CardContent>
         </Card>
@@ -884,7 +869,7 @@ export default function AssignPermissionsPage() {
               <button
                 onClick={() => setCompactMode(!compactMode)}
                 className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
-                title={compactMode ? 'Normal View' : 'Compact View'}
+                title={compactMode ? t('admin.permissions.assign.normalView') : t('admin.permissions.assign.compactView')}
               >
                 {compactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
               </button>
@@ -896,7 +881,7 @@ export default function AssignPermissionsPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   type="text"
-                  placeholder="Search admins..."
+                  placeholder={t('admin.permissions.assign.searchAdmins')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-9 text-sm"
@@ -904,7 +889,7 @@ export default function AssignPermissionsPage() {
               </div>
               
               <div className="flex flex-wrap gap-2">
-                <Select value={filterState || undefined} onValueChange={(value) => {
+                <Select value={filterState || ''} onValueChange={(value) => {
                   if (value === 'clear') {
                     setFilterState('');
                   } else {
@@ -912,10 +897,10 @@ export default function AssignPermissionsPage() {
                   }
                 }}>
                   <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
-                    <SelectValue placeholder="All States" />
+                    <SelectValue placeholder={t('admin.permissions.assign.allStates')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="clear">All States</SelectItem>
+                    <SelectItem value="clear">{t('admin.permissions.assign.allStates')}</SelectItem>
                     {availableStates.map(state => (
                       <SelectItem key={state.id} value={state.id.toString()}>
                         {state.name}
@@ -924,7 +909,7 @@ export default function AssignPermissionsPage() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={filterDistrict || undefined} onValueChange={(value) => {
+                <Select value={filterDistrict || ''} onValueChange={(value) => {
                   if (value === 'clear') {
                     setFilterDistrict('');
                   } else {
@@ -932,10 +917,10 @@ export default function AssignPermissionsPage() {
                   }
                 }} disabled={!filterState}>
                   <SelectTrigger className="h-8 text-xs flex-1 min-w-[100px]">
-                    <SelectValue placeholder={filterState ? "All Districts" : "Select State First"} />
+                    <SelectValue placeholder={filterState ? t('admin.permissions.assign.allDistricts') : t('admin.permissions.assign.selectStateFirst')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="clear">All Districts</SelectItem>
+                    <SelectItem value="clear">{t('admin.permissions.assign.allDistricts')}</SelectItem>
                     {filterState && availableDistricts
                       .filter(d => {
                         const selectedStateObj = availableStates.find(s => s.id.toString() === filterState);
@@ -954,17 +939,17 @@ export default function AssignPermissionsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="name">Sort by Name</SelectItem>
-                    <SelectItem value="permissions">Sort by Permissions</SelectItem>
-                    <SelectItem value="state">Sort by State</SelectItem>
-                    <SelectItem value="district">Sort by District</SelectItem>
+                    <SelectItem value="name">{t('admin.permissions.assign.sortByName')}</SelectItem>
+                    <SelectItem value="permissions">{t('admin.permissions.assign.sortByPermissions')}</SelectItem>
+                    <SelectItem value="state">{t('admin.permissions.assign.sortByState')}</SelectItem>
+                    <SelectItem value="district">{t('admin.permissions.assign.sortByDistrict')}</SelectItem>
                   </SelectContent>
                 </Select>
                 
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   className="px-2 py-1 text-xs border border-gray-300 rounded hover:bg-gray-100 transition-colors flex items-center gap-1 h-8"
-                  title={`Sort ${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+                  title={sortOrder === 'asc' ? t('admin.permissions.assign.sortAscending') : t('admin.permissions.assign.sortDescending')}
                 >
                   {sortOrder === 'asc' ? <SortAsc className="w-3 h-3" /> : <SortDesc className="w-3 h-3" />}
                 </button>
@@ -975,9 +960,9 @@ export default function AssignPermissionsPage() {
              <div className={`${compactMode ? 'space-y-2' : 'space-y-3'} max-h-[600px] sm:max-h-[800px] overflow-y-auto`}>
                {filteredAndSortedAdmins.length === 0 ? (
                  <div className="text-center py-8 text-sm text-gray-500">
-                   {districtAdmins.length === 0 
-                     ? t('admin.permissions.assign.noDistrictAdmins')
-                     : 'No admins found matching your filters'}
+                  {districtAdmins.length === 0 
+                    ? t('admin.permissions.assign.noDistrictAdmins')
+                    : t('admin.permissions.assign.noAdminsFound')}
                  </div>
                ) : (
                  <>
@@ -1016,7 +1001,7 @@ export default function AssignPermissionsPage() {
                                  onClick={() => toggleAdminExpansion(admin.id)}
                                  className={`text-xs h-7 px-2`}
                                >
-                                 {isExpanded ? 'Hide' : 'Show'} Permissions
+                                 {isExpanded ? t('admin.permissions.assign.hidePermissions') : t('admin.permissions.assign.showPermissions')}
                                </Button>
                              )}
                              <Button
@@ -1056,7 +1041,7 @@ export default function AssignPermissionsPage() {
                      <div className={`${compactMode ? 'p-2' : 'p-3'} border-t border-gray-200 bg-gray-50 sticky bottom-0 mt-4`}>
                        <div className="flex items-center justify-between gap-2">
                          <div className="text-xs text-gray-600">
-                           Page {currentPage} of {totalPages} ({filteredAndSortedAdmins.length} admins)
+                           {t('admin.permissions.assign.page')} {currentPage} {t('admin.permissions.assign.of')} {totalPages} ({filteredAndSortedAdmins.length} {t('admin.permissions.assign.admins')})
                          </div>
                          <div className="flex gap-1">
                            <Button
@@ -1065,7 +1050,7 @@ export default function AssignPermissionsPage() {
                              onClick={() => setCurrentPage(1)}
                              disabled={currentPage === 1}
                              className="h-7 w-7 p-0"
-                             title="First page"
+                             title={t('admin.permissions.assign.firstPage')}
                            >
                              <ChevronsLeft className="w-4 h-4" />
                            </Button>
@@ -1075,7 +1060,7 @@ export default function AssignPermissionsPage() {
                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                              disabled={currentPage === 1}
                              className="h-7 w-7 p-0"
-                             title="Previous page"
+                             title={t('admin.permissions.assign.previousPage')}
                            >
                              <ChevronLeft className="w-4 h-4" />
                            </Button>
@@ -1085,7 +1070,7 @@ export default function AssignPermissionsPage() {
                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                              disabled={currentPage === totalPages}
                              className="h-7 w-7 p-0"
-                             title="Next page"
+                             title={t('admin.permissions.assign.nextPage')}
                            >
                              <ChevronRight className="w-4 h-4" />
                            </Button>
@@ -1095,7 +1080,7 @@ export default function AssignPermissionsPage() {
                              onClick={() => setCurrentPage(totalPages)}
                              disabled={currentPage === totalPages}
                              className="h-7 w-7 p-0"
-                             title="Last page"
+                             title={t('admin.permissions.assign.lastPage')}
                            >
                              <ChevronsRight className="w-4 h-4" />
                            </Button>

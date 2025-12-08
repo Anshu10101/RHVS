@@ -47,8 +47,9 @@ function DistrictAdminLoginContent() {
       if (response.ok) {
         const data = await response.json();
         if (data.authenticated && data.user) {
-          if (data.user.type !== 'district_admin') {
-            setError('Access denied. This is for district admins only.');
+          // Allow district_admin and news_editor to login here
+          if (data.user.type !== 'district_admin' && data.user.type !== 'news_editor') {
+            setError('Access denied. This is for district admins and news editors only.');
             clearToken();
             setLoading(false);
             return;
@@ -72,7 +73,7 @@ function DistrictAdminLoginContent() {
 
   return (
     <LoginForm
-      loginType="district_admin"
+      loginType="admin"
       onLogin={handleLogin}
       loading={loading}
       error={error}

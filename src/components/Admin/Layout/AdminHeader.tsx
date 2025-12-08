@@ -114,7 +114,7 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
                   {currentUser.name || currentUser.email || 'Admin'}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.role?.toUpperCase() || 'ADMIN'}
+                  {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.type === 'news_editor' ? 'NEWS EDITOR' : currentUser.role?.toUpperCase() || 'ADMIN'}
                 </div>
               </div>
               <ChevronDown className="h-4 w-4 text-gray-500" />

@@ -667,6 +667,12 @@ export async function sendWelcomeEmail(
         ${documentsBlock}
         ${pledgeBlock}
         <p style="color:#7c2d12; text-align:left;">कृपया अपनी सदस्यता संख्या को भविष्य के लिए सुरक्षित रखें।</p>
+        <div style="background:#e0f2fe; padding:16px; border-radius:10px; border:2px solid #0ea5e9; margin:20px 0; text-align:center;">
+          <p style="margin:0 0 12px 0; color:#0c4a6e; font-size:15px; font-weight:600;">🌐 आधिकारिक वेबसाइट</p>
+          <p style="margin:0 0 12px 0; color:#075985; font-size:14px;">संगठन के बारे में अधिक जानकारी के लिए हमारी आधिकारिक वेबसाइट पर जाएं:</p>
+          <a href="https://rashtriyahinduvahinisangathan.in" style="display:inline-block; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; text-decoration:none; padding:12px 24px; border-radius:8px; font-weight:600; font-size:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">वेबसाइट देखें</a>
+          <p style="margin:12px 0 0 0; color:#075985; font-size:13px; word-break:break-all;">https://rashtriyahinduvahinisangathan.in</p>
+        </div>
         <p style="margin-top:24px; color:#9a3412; font-size:12px; text-align:left;">यह RHVS द्वारा भेजा गया स्वचालित संदेश है।</p>
       `
       : `
@@ -683,6 +689,12 @@ export async function sendWelcomeEmail(
         ${documentsBlock}
         ${pledgeBlock}
         <p style="color:#7c2d12; text-align:left;">Please keep your membership number safe for future reference.</p>
+        <div style="background:#e0f2fe; padding:16px; border-radius:10px; border:2px solid #0ea5e9; margin:20px 0; text-align:center;">
+          <p style="margin:0 0 12px 0; color:#0c4a6e; font-size:15px; font-weight:600;">🌐 Official Website</p>
+          <p style="margin:0 0 12px 0; color:#075985; font-size:14px;">Visit our official website to learn more about the organization:</p>
+          <a href="https://rashtriyahinduvahinisangathan.in" style="display:inline-block; background:linear-gradient(135deg,#f97316,#ea580c); color:#fff; text-decoration:none; padding:12px 24px; border-radius:8px; font-weight:600; font-size:15px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">Visit Website</a>
+          <p style="margin:12px 0 0 0; color:#075985; font-size:13px; word-break:break-all;">https://rashtriyahinduvahinisangathan.in</p>
+        </div>
         <p style="margin-top:24px; color:#9a3412; font-size:12px; text-align:left;">This is an automated message from RHVS.</p>
       `;
 
@@ -780,5 +792,170 @@ export async function sendWelcomeEmail(
   } catch (error) {
     console.error('❌ Failed to send welcome email:', error);
     return { success: false, error };
+  }
+}
+
+// Send News Editor Appointment Email (Bilingual - Hindi first, then English)
+export async function sendNewsEditorAppointmentEmail(
+  to: string,
+  editorName: string,
+  temporaryPassword: string,
+  loginUrl: string
+) {
+  try {
+    // Use production URL for admin login (use provided loginUrl or default to production)
+    const adminLoginUrl = loginUrl || 
+                         (process.env.NEXT_PUBLIC_BASE_URL ? `${process.env.NEXT_PUBLIC_BASE_URL}/admin/login` : null) ||
+                         (process.env.BASE_URL ? `${process.env.BASE_URL}/admin/login` : null) ||
+                         'https://rashtriyahinduvahinisangathan.in/admin/login';
+    
+    const subject = 'RHVS News Media Manager Appointment | समाचार मीडिया प्रबंधक नियुक्ति';
+    
+    const html = `
+      <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8fafc; padding: 24px;">
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #f97316, #ea580c); border-radius: 16px 16px 0 0; color: #fff; text-align: center; padding: 24px 16px;">
+          <h1 style="margin: 0; font-size: 28px; letter-spacing: 0.4px;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
+          <p style="margin: 8px 0 0; font-size: 16px; color: #fde68a; font-weight: 600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
+        </div>
+        
+        <!-- Main Content -->
+        <div style="background: #ffffff; border: 1px solid #ffe0c4; border-top: none; padding: 28px 24px; border-radius: 0 0 16px 16px; box-shadow: 0 15px 35px rgba(16,24,40,0.08);">
+          
+          <!-- Hindi Section -->
+          <div style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 2px solid #e5e7eb;">
+            <h2 style="color: #ea580c; margin: 0 0 16px 0; font-size: 22px; font-weight: 700;">समाचार मीडिया प्रबंधक नियुक्ति</h2>
+            <p style="color: #111827; margin: 0 0 12px 0; font-weight: 600; font-size: 16px;">प्रिय ${editorName || 'सदस्य'} जी,</p>
+            <p style="color: #374151; margin: 0 0 20px 0; line-height: 1.6; font-size: 15px;">
+              आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>समाचार मीडिया प्रबंधक (News Media Manager)</strong> के रूप में नियुक्त किया गया है। 
+              आप अब संगठन के समाचार और कार्यक्रमों को प्रबंधित कर सकते हैं।
+            </p>
+            
+            <!-- Login Credentials Box -->
+            <div style="background: #fef3c7; border: 2px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0;">
+              <h3 style="color: #92400e; margin: 0 0 16px 0; font-size: 18px; font-weight: 700;">लॉगिन क्रेडेंशियल्स (Login Credentials)</h3>
+              
+              <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                <p style="color: #6b7280; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">ईमेल (Email):</p>
+                <p style="color: #111827; margin: 0; font-size: 16px; font-weight: 700; font-family: monospace;">${to}</p>
+              </div>
+              
+              <div style="background: white; border-radius: 8px; padding: 16px;">
+                <p style="color: #6b7280; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">अस्थायी पासवर्ड (Temporary Password):</p>
+                <p style="color: #ea580c; margin: 0; font-size: 20px; font-weight: 700; font-family: monospace; letter-spacing: 2px;">${temporaryPassword}</p>
+                <p style="color: #92400e; margin: 8px 0 0 0; font-size: 12px;">⚠️ कृपया पहली बार लॉगिन के बाद अपना पासवर्ड बदलें</p>
+              </div>
+            </div>
+            
+            <!-- Login Button -->
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${adminLoginUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                🔐 एडमिन पैनल में लॉगिन करें
+              </a>
+            </div>
+            
+            <p style="color: #374151; margin: 20px 0 0 0; line-height: 1.6; font-size: 14px;">
+              <strong>महत्वपूर्ण:</strong> पहली बार लॉगिन करने के बाद, कृपया अपने प्रोफ़ाइल सेक्शन से अपना पासवर्ड बदलें। 
+              यह अस्थायी पासवर्ड सुरक्षा कारणों से बदलना आवश्यक है।
+            </p>
+            
+            <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 20px;">
+              <p style="color: #1e40af; margin: 0; font-size: 14px; line-height: 1.6;">
+                <strong>📋 आपकी जिम्मेदारियां:</strong><br>
+                • समाचार लेख बनाना और संपादित करना<br>
+                • कार्यक्रम जोड़ना और प्रबंधित करना<br>
+                • सामग्री को प्रकाशित करना और प्रबंधित करना
+              </p>
+            </div>
+            
+            <div style="background: #e0f2fe; padding: 16px; border-radius: 8px; border: 2px solid #0ea5e9; margin-top: 20px; text-align: center;">
+              <p style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px; font-weight: 600;">🌐 आधिकारिक वेबसाइट</p>
+              <p style="margin: 0 0 12px 0; color: #075985; font-size: 14px;">संगठन के बारे में अधिक जानकारी के लिए हमारी आधिकारिक वेबसाइट पर जाएं:</p>
+              <a href="https://rashtriyahinduvahinisangathan.in" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">वेबसाइट देखें</a>
+              <p style="margin: 12px 0 0 0; color: #075985; font-size: 13px; word-break: break-all;">https://rashtriyahinduvahinisangathan.in</p>
+            </div>
+          </div>
+          
+          <!-- English Section -->
+          <div>
+            <h2 style="color: #ea580c; margin: 0 0 16px 0; font-size: 22px; font-weight: 700;">News Media Manager Appointment</h2>
+            <p style="color: #111827; margin: 0 0 12px 0; font-weight: 600; font-size: 16px;">Dear ${editorName || 'Member'},</p>
+            <p style="color: #374151; margin: 0 0 20px 0; line-height: 1.6; font-size: 15px;">
+              You have been appointed as <strong>News Media Manager</strong> for <strong>Rashtriya Hindu Vahini Sangathan (RHVS)</strong>. 
+              You can now manage the organization's news and events.
+            </p>
+            
+            <!-- Login Credentials Box -->
+            <div style="background: #fef3c7; border: 2px solid #fde68a; border-radius: 12px; padding: 20px; margin: 20px 0;">
+              <h3 style="color: #92400e; margin: 0 0 16px 0; font-size: 18px; font-weight: 700;">Login Credentials</h3>
+              
+              <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px;">
+                <p style="color: #6b7280; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Email:</p>
+                <p style="color: #111827; margin: 0; font-size: 16px; font-weight: 700; font-family: monospace;">${to}</p>
+              </div>
+              
+              <div style="background: white; border-radius: 8px; padding: 16px;">
+                <p style="color: #6b7280; margin: 0 0 6px 0; font-size: 13px; font-weight: 600;">Temporary Password:</p>
+                <p style="color: #ea580c; margin: 0; font-size: 20px; font-weight: 700; font-family: monospace; letter-spacing: 2px;">${temporaryPassword}</p>
+                <p style="color: #92400e; margin: 8px 0 0 0; font-size: 12px;">⚠️ Please change your password after first login</p>
+              </div>
+            </div>
+            
+            <!-- Login Button -->
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${adminLoginUrl}" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                🔐 Login to Admin Panel
+              </a>
+            </div>
+            
+            <p style="color: #374151; margin: 20px 0 0 0; line-height: 1.6; font-size: 14px;">
+              <strong>Important:</strong> After your first login, please change your password from your profile section. 
+              Changing this temporary password is mandatory for security reasons.
+            </p>
+            
+            <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; border-radius: 8px; margin-top: 20px;">
+              <p style="color: #1e40af; margin: 0; font-size: 14px; line-height: 1.6;">
+                <strong>📋 Your Responsibilities:</strong><br>
+                • Create and edit news articles<br>
+                • Add and manage events<br>
+                • Publish and manage content
+              </p>
+            </div>
+            
+            <div style="background: #e0f2fe; padding: 16px; border-radius: 8px; border: 2px solid #0ea5e9; margin-top: 20px; text-align: center;">
+              <p style="margin: 0 0 12px 0; color: #0c4a6e; font-size: 15px; font-weight: 600;">🌐 Official Website</p>
+              <p style="margin: 0 0 12px 0; color: #075985; font-size: 14px;">Visit our official website to learn more about the organization:</p>
+              <a href="https://rashtriyahinduvahinisangathan.in" style="display: inline-block; background: linear-gradient(135deg, #f97316, #ea580c); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">Visit Website</a>
+              <p style="margin: 12px 0 0 0; color: #075985; font-size: 13px; word-break: break-all;">https://rashtriyahinduvahinisangathan.in</p>
+            </div>
+          </div>
+          
+          <!-- Footer -->
+          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; margin: 0 0 8px 0;">
+              यह RHVS द्वारा भेजा गया स्वचालित संदेश है; कृपया इसका प्रत्यक्ष उत्तर न दें।<br>
+              This is an automated message from RHVS; please do not reply directly.
+            </p>
+            <p style="color: #9ca3af; font-size: 11px; margin: 0;">
+              © ${new Date().getFullYear()} राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS). All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: to,
+      subject: subject,
+      html: html,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('✅ News editor appointment email sent to:', to);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error sending news editor appointment email:', error);
+    return { success: false, error: 'Failed to send email' };
   }
 }

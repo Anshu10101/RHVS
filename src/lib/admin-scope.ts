@@ -5,6 +5,7 @@ import { executeQuery } from '@/lib/database';
 export interface AdminScope {
   isSuperAdmin: boolean;
   isDistrictAdmin: boolean;
+  isNewsEditor: boolean;
   adminId: number | null;
   districtName: string | null;
   stateName: string | null;
@@ -20,20 +21,49 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
   // Some older tokens might only have 'role', newer ones have both 'type' and 'role'
   const isSuperAdmin = !!claims && (claims.type === 'superadmin' || claims.role === 'superadmin');
   const isDistrictAdmin = !!claims && (claims.type === 'district_admin' || (claims.role === 'district_admin' && claims.type !== 'superadmin'));
+  const isNewsEditor = !!claims && (claims.type === 'news_editor' || claims.role === 'news_editor' || claims.role === 'news_reporter');
   
   // Debug logging for superadmin detection issues
-  if (claims && !isSuperAdmin && !isDistrictAdmin) {
-    console.log('⚠️ Admin scope detection: claims have type:', claims.type, 'role:', claims.role, 'but not recognized as superadmin or district admin');
+  if (claims && !isSuperAdmin && !isDistrictAdmin && !isNewsEditor) {
+    console.log('⚠️ Admin scope detection: claims have type:', claims.type, 'role:', claims.role, 'but not recognized as superadmin, district admin, or news editor');
   }
   const adminId = claims ? Number(claims.sub) : null;
   let permissions: string[] = (claims?.permissions as string[]) || [];
 
+  // News editors have full access to news and events (like superadmin for news/events)
+  if (isNewsEditor) {
+    permissions = ['edit_news_events', 'add_news', 'edit_news', 'delete_news', 'add_events', 'edit_events', 'delete_events'];
+    return { isSuperAdmin, isDistrictAdmin, isNewsEditor, adminId, districtName: null, stateName: null, permissions };
+  }
+
   if (isDistrictAdmin && adminId) {
     // Prefer DB for current district/state to avoid stale JWT
-    const rows = await executeQuery(
+    // Try to get district and state from district_admins table
+    let rows = await executeQuery(
       'SELECT district, state FROM district_admins WHERE id = ? LIMIT 1',
       [adminId]
-    ) as Array<{ district: string; state: string }>;
+    ) as Array<{ district: string; state: string | null }>;
+    
+    // If state is null, try to get it from districts table
+    if (rows.length > 0 && !rows[0].state && rows[0].district) {
+      try {
+        const districtRows = await executeQuery(
+          `SELECT s.state_name_english as state_name 
+           FROM districts d 
+           JOIN states s ON d.state_code = s.state_code 
+           WHERE d.district_name_english = ? 
+           LIMIT 1`,
+          [rows[0].district.split(',')[0]?.trim() || rows[0].district]
+        ) as Array<{ state_name: string }>;
+        
+        if (districtRows.length > 0) {
+          rows[0].state = districtRows[0].state_name;
+        }
+      } catch (e) {
+        console.error('Error fetching state from districts table:', e);
+      }
+    }
+    
     // Load active permissions from DB for district admin
     try {
       // First, automatically deactivate any expired permissions (cleanup)
@@ -77,16 +107,23 @@ export async function getAdminScope(req: NextRequest): Promise<AdminScope> {
       const adminDistrict: string = rows[0].district || '';
       const districtName = (adminDistrict || '').split(',')[0]?.trim() || adminDistrict || null;
       const stateName = rows[0].state || null;
-      return { isSuperAdmin, isDistrictAdmin, adminId, districtName, stateName, permissions };
+      return { isSuperAdmin, isDistrictAdmin, isNewsEditor, adminId, districtName, stateName, permissions };
     }
   }
 
-  return { isSuperAdmin, isDistrictAdmin, adminId, districtName: null, stateName: null, permissions };
+  return { isSuperAdmin, isDistrictAdmin, isNewsEditor, adminId, districtName: null, stateName: null, permissions };
 }
 
 export function ensurePermission(scope: AdminScope, required: string | string[]): boolean {
   const list = Array.isArray(required) ? required : [required];
   if (scope.isSuperAdmin) return true;
+  
+  // News editors have full access to news and events permissions
+  if (scope.isNewsEditor) {
+    const newsEventsPermissions = ['edit_news_events', 'add_news', 'edit_news', 'delete_news', 'add_events', 'edit_events', 'delete_events'];
+    return list.some(p => newsEventsPermissions.includes(p));
+  }
+  
   return list.some(p => scope.permissions.includes(p) || scope.permissions.includes('all'));
 }
 

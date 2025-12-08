@@ -98,6 +98,7 @@ export async function GET(request: NextRequest) {
                WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
                ELSE m.profile_photo_path
              END AS profile_photo_path,
+             m.updated_at,
              m.district, m.state
       FROM members m
       WHERE m.status = 'verified'

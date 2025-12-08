@@ -1,5 +1,7 @@
+"use client";
+
 import Image from 'next/image';
-import { headers } from 'next/headers';
+import { useEffect, useState } from 'react';
 
 interface HierarchyQuery {
   level?: string;
@@ -7,46 +9,81 @@ interface HierarchyQuery {
   district?: string;
 }
 
-async function getHierarchy(id: string, query: HierarchyQuery = {}) {
-  const h = await headers();
-  const host = h.get('x-forwarded-host') || h.get('host') || 'localhost:3010';
-  const proto = h.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
-  const base = `${proto}://${host}`;
+// Helper function to add cache-busting to image URLs
+const getImageUrlWithCacheBust = (photoPath: string | null, updatedAt?: string | null): string => {
+  if (!photoPath) return '';
+  const baseUrl = photoPath.startsWith('/') ? photoPath : `/${photoPath}`;
+  // Use updated_at timestamp if available, otherwise use current timestamp
+  const cacheBust = updatedAt ? new Date(updatedAt).getTime() : Date.now();
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}_t=${cacheBust}`;
+};
 
-  const searchParams = new URLSearchParams();
-  if (query.level) searchParams.set('level', query.level);
-  if (query.state) searchParams.set('state', query.state);
-  if (query.district) searchParams.set('district', query.district);
-  const qs = searchParams.toString();
-
-  // Add cache-busting timestamp to ensure fresh data
-  const cacheBuster = `_t=${Date.now()}`;
-  const finalQs = qs ? `${qs}&${cacheBuster}` : cacheBuster;
-  const res = await fetch(`${base}/api/public/departments/${id}/hierarchy?${finalQs}`, { 
-    cache: 'no-store',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-    }
-  });
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json?.data ?? null;
-}
-
-export default async function DepartmentHierarchyPage({
+export default function DepartmentHierarchyPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<HierarchyQuery>;
 }) {
-  const { id } = await params;
-  const query = await searchParams;
-  const data = await getHierarchy(id, query);
+  const [id, setId] = useState<string>('');
+  const [department, setDepartment] = useState<{ name_en: string; name_hi: string }>({ name_en: 'Department', name_hi: 'विभाग' });
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const department = data?.department ?? { name_en: 'Department', name_hi: 'विभाग' };
-  const posts = (data?.posts ?? []).sort((a: any, b: any) => a.position_order - b.position_order);
+  useEffect(() => {
+    const loadData = async () => {
+      const resolvedParams = await params;
+      const resolvedQuery = await searchParams;
+      setId(resolvedParams.id);
+      
+      const searchParamsObj = new URLSearchParams();
+      if (resolvedQuery.level) searchParamsObj.set('level', resolvedQuery.level);
+      if (resolvedQuery.state) searchParamsObj.set('state', resolvedQuery.state);
+      if (resolvedQuery.district) searchParamsObj.set('district', resolvedQuery.district);
+      const qs = searchParamsObj.toString();
+
+      // Add cache-busting timestamp to ensure fresh data
+      const cacheBuster = `_t=${Date.now()}`;
+      const finalQs = qs ? `${qs}&${cacheBuster}` : cacheBuster;
+      
+      try {
+        const res = await fetch(`/api/public/departments/${resolvedParams.id}/hierarchy?${finalQs}`, { 
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const data = json?.data ?? null;
+          if (data) {
+            setDepartment(data.department ?? { name_en: 'Department', name_hi: 'विभाग' });
+            setPosts((data.posts ?? []).sort((a: any, b: any) => a.position_order - b.position_order));
+          }
+        }
+      } catch (error) {
+        console.error('Error loading department hierarchy:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+
+    // Reload when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
@@ -106,7 +143,7 @@ export default async function DepartmentHierarchyPage({
                             {m?.photo_path ? (
                               <div className="absolute inset-0 bg-white">
                                 <Image 
-                                  src={m.photo_path.startsWith('/') ? m.photo_path : `/${m.photo_path}`} 
+                                  src={getImageUrlWithCacheBust(m.photo_path, m.updated_at)} 
                                   alt={m.name} 
                                   fill 
                                   className="object-contain" 

@@ -54,7 +54,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       nameKey: 'dashboard',
       href: '/admin/dashboard',
       icon: BarChart3,
-      roles: ['superadmin', 'admin', 'verified_member'],
+      roles: ['superadmin', 'admin', 'verified_member', 'news_editor'],
     },
     {
       name: t('admin.sidebar.members'),
@@ -79,6 +79,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           name: t('admin.sidebar.districtAdmins'),
           href: '/admin/members/admins',
           icon: Shield,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.newsEditors'),
+          href: '/admin/members/news-editors',
+          icon: FileText,
           roles: ['superadmin'],
         },
         {
@@ -115,7 +121,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       nameKey: 'contentManagement',
       href: '/admin/content',
       icon: FileText,
-      roles: ['superadmin', 'admin', 'district_admin'],
+      roles: ['superadmin', 'admin', 'district_admin', 'news_editor'],
       children: [
         {
           name: t('admin.sidebar.aboutPage'),
@@ -128,6 +134,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           href: '/admin/content/hero-images',
           icon: Camera,
           permission: 'manage_hero_images',
+        },
+        {
+          name: t('admin.sidebar.marqueeManagement'),
+          href: '/admin/content/marquee',
+          icon: FileText,
+          permission: 'manage_marquee',
         },
         {
           name: t('admin.sidebar.photoManagement'),
@@ -261,6 +273,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       return 'bg-red-100 text-red-800 border-red-200';
     } else if (user.type === 'district_admin') {
       return 'bg-blue-100 text-blue-800 border-blue-200';
+    } else if (user.type === 'news_editor' || user.role === 'news_editor' || user.role === 'news_reporter') {
+      return 'bg-purple-100 text-purple-800 border-purple-200';
     } else if (user.role === 'verified_member') {
       return 'bg-green-100 text-green-800 border-green-200';
     }
@@ -273,6 +287,19 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     // Superadmins can see everything
     if (currentUser.type === 'superadmin') {
       return true;
+    }
+    
+    // News editors only see news and events (limited access)
+    if (currentUser.type === 'news_editor' || currentUser.role === 'news_editor' || currentUser.role === 'news_reporter') {
+      // Only show dashboard and news/events
+      if (item.nameKey === 'dashboard') {
+        return true;
+      }
+      if (item.nameKey === 'contentManagement') {
+        // Only show news/events child item
+        return true;
+      }
+      return false;
     }
     
     // For district admins, check permissions and show member management
@@ -393,7 +420,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                       getRoleBadgeColor(currentUser)
                     )}
                   >
-                    {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.role.replace('_', ' ').toUpperCase()}
+                    {currentUser.type === 'district_admin' ? 'DISTRICT ADMIN' : currentUser.type === 'news_editor' ? 'NEWS EDITOR' : currentUser.role.replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
               </div>
@@ -456,6 +483,15 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         // For superadmin, check roles
                         if (currentUser?.type === 'superadmin') {
                           canAccess = !child.roles || child.roles.includes('superadmin');
+                        }
+                        // For news editor, only show news/events
+                        else if (currentUser?.type === 'news_editor' || currentUser?.role === 'news_editor' || currentUser?.role === 'news_reporter') {
+                          if (item.nameKey === 'contentManagement') {
+                            // Only show news/events for news editors
+                            canAccess = child.href === '/admin/content/news-events';
+                          } else {
+                            canAccess = false;
+                          }
                         }
                         // For district admin, check permissions and show relevant items
                         else if (currentUser?.type === 'district_admin') {

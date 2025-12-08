@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { Star, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product } from './types';
@@ -13,6 +13,32 @@ interface FeaturedProductsMarqueeProps {
 export default function FeaturedProductsMarquee({ products, onProductClick }: FeaturedProductsMarqueeProps) {
   const featuredProducts = products.filter(p => p.isFeatured);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const marqueeContentRef = useRef<HTMLDivElement>(null);
+  const [animationKey, setAnimationKey] = useState(0);
+  
+  // Force animation restart when products change
+  useEffect(() => {
+    if (marqueeContentRef.current && featuredProducts.length > 0) {
+      const element = marqueeContentRef.current;
+      // Get the computed animation duration from CSS
+      const isMobile = window.innerWidth <= 640;
+      const isTablet = window.innerWidth <= 1024;
+      let duration = 16; // default desktop
+      if (isMobile) duration = 8;
+      else if (isTablet) duration = 10;
+      
+      // Reset animation by removing and re-adding
+      element.style.animation = 'none';
+      // Force reflow to ensure the reset takes effect
+      void element.offsetHeight;
+      // Restart animation with proper duration
+      setAnimationKey(prev => prev + 1);
+      // Use requestAnimationFrame to ensure smooth restart
+      requestAnimationFrame(() => {
+        element.style.animation = '';
+      });
+    }
+  }, [featuredProducts.length, products.map(p => `${p.id}-${p.isFeatured}`).join(',')]);
   
   if (featuredProducts.length === 0) return null;
 
@@ -64,7 +90,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
 
       {/* Marquee Container */}
       <div className="marquee-wrapper" ref={scrollContainerRef}>
-        <div className="marquee-content">
+        <div className="marquee-content" ref={marqueeContentRef} key={animationKey}>
           {duplicatedProducts.map((product, index) => (
             <div
               key={`${product.id}-${index}`}

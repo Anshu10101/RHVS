@@ -4,6 +4,10 @@ import { getAdminScope, ensurePermission } from '@/lib/admin-scope';
 import { consumeStagedBlob } from '@/lib/blob-storage';
 import { noCacheJsonResponse } from '@/lib/api-helpers';
 
+// Force dynamic rendering to prevent Next.js caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // GET - Fetch events
 export async function GET(request: NextRequest) {
   try {
@@ -169,7 +173,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const scope = await getAdminScope(request);
-    if (!scope.isSuperAdmin && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
+    // Check permissions - superadmin and news editors have full access
+    // Only check permissions for district admins
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && !ensurePermission(scope, ['edit_news_events', 'manage_news_events'])) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 403 });
     }
 
@@ -215,8 +221,18 @@ export async function POST(request: NextRequest) {
     let state = null as string | null;
     let owner_admin_id = null as string | null;
 
-    if (scope.isSuperAdmin && districtInput && stateInput) {
-      // Superadmin can specify district/state
+    // Debug logging
+    console.log('Event POST - Scope:', {
+      isSuperAdmin: scope.isSuperAdmin,
+      isNewsEditor: scope.isNewsEditor,
+      isDistrictAdmin: scope.isDistrictAdmin,
+      districtInput,
+      stateInput
+    });
+
+    // Superadmin and news editors can specify district/state (if provided)
+    if (scope.isSuperAdmin || scope.isNewsEditor) {
+      if (districtInput && stateInput && String(districtInput).trim() && String(stateInput).trim()) {
       // Validate and get actual names from database
       const [stateRows] = await pool.execute(
         'SELECT state_name_english FROM states WHERE id = ? OR state_name_english = ? LIMIT 1',
@@ -235,10 +251,17 @@ export async function POST(request: NextRequest) {
           district = districtRows[0].district_name_english;
         }
       }
-    } else if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.adminId) {
+        console.log('Event POST - Resolved district/state:', { district, state });
+      } else {
+        console.log('Event POST - District/state not provided or empty, keeping as null (global events)');
+      }
+      // If district/state not provided, they remain null (global events)
+    } else if (scope.isDistrictAdmin && scope.adminId) {
+      // District admins automatically get their district/state attached
       district = scope.districtName || null;
       state = scope.stateName || null;
       owner_admin_id = scope.adminId?.toString() || null;
+      console.log('Event POST - District admin auto-assigned:', { district, state });
     }
 
     await pool.execute(
@@ -289,6 +312,12 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Event added successfully',
       data: { id }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
   } catch (error) {
     console.error('Error adding event:', error);
@@ -410,7 +439,8 @@ export async function PUT(request: NextRequest) {
 
     // For district admins, ensure the event belongs to their district/state
     // Allow editing any event in their district, not just ones they created
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+    // News editors can edit any event (like superadmin)
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
       const [ownershipRows] = await pool.execute(
         `SELECT id FROM events WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
         [id, scope.districtName, scope.stateName]
@@ -462,7 +492,8 @@ export async function DELETE(request: NextRequest) {
 
     // For district admins, ensure the event belongs to their district/state
     // Allow editing any event in their district, not just ones they created
-    if (!scope.isSuperAdmin && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
+    // News editors can delete any event (like superadmin)
+    if (!scope.isSuperAdmin && !scope.isNewsEditor && scope.isDistrictAdmin && scope.districtName && scope.stateName) {
       const [ownershipRows] = await pool.execute(
         `SELECT id FROM events WHERE id = ? AND district = ? AND state = ? LIMIT 1`,
         [id, scope.districtName, scope.stateName]

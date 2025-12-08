@@ -137,7 +137,8 @@ export async function GET(request: NextRequest) {
               ELSE m.profile_photo_path
             END AS profile_photo_path,
             m.member_reg_number,
-            m.email as member_email
+            m.email as member_email,
+            m.updated_at as member_updated_at
           FROM departments d
           LEFT JOIN department_posts dp ON d.id = dp.department_id AND dp.position_order = 1
           LEFT JOIN department_members dm ON d.id = dm.department_id 
@@ -168,6 +169,7 @@ export async function GET(request: NextRequest) {
           profile_photo_path: string | null;
           member_reg_number: string | null;
           member_email: string | null;
+          member_updated_at: string | null;
         }> = [];
 
         try {
@@ -183,6 +185,7 @@ export async function GET(request: NextRequest) {
             profile_photo_path: string | null;
             member_reg_number: string | null;
             member_email: string | null;
+            member_updated_at: string | null;
           }>;
         } catch (presError) {
           console.log('President query failed:', presError);
@@ -217,7 +220,8 @@ export async function GET(request: NextRequest) {
                 name: presDept.member_name,
                 photo_path: presDept.profile_photo_path,
                 reg_number: presDept.member_reg_number,
-                email: presDept.member_email
+                email: presDept.member_email,
+                updated_at: presDept.member_updated_at
               }
             });
           }

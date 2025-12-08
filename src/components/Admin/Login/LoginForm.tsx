@@ -14,7 +14,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 interface LoginFormProps {
-  loginType: 'superadmin' | 'district_admin';
+  loginType: 'superadmin' | 'district_admin' | 'news_editor' | 'admin';
   onLogin: (email: string, password: string) => Promise<void>;
   loading: boolean;
   error: string | null;
@@ -56,7 +56,7 @@ export function LoginForm({ loginType, onLogin, loading, error }: LoginFormProps
           action: 'forgot',
           data: { 
             email: resetEmail,
-            userType: loginType === 'superadmin' ? 'superadmin' : 'district_admin',
+            userType: loginType === 'superadmin' ? 'superadmin' : undefined, // undefined lets API auto-detect (checks superadmin, news_editor, then district_admin)
           },
         }),
       });

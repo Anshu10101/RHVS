@@ -22,7 +22,7 @@ export interface AdminJwtClaims extends JWTPayload {
   sub: string;
   email: string;
   role: string;
-  type?: 'superadmin' | 'district_admin';
+  type?: 'superadmin' | 'district_admin' | 'news_editor';
   district?: string;
   permissions?: string[];
 }
@@ -77,7 +77,7 @@ export function clearSessionCookie(): string {
 export async function signPasswordResetJwt(
   email: string, 
   adminId: number, 
-  userType: 'superadmin' | 'district_admin',
+  userType: 'superadmin' | 'district_admin' | 'news_editor',
   ttlSeconds: number = 15 * 60
 ): Promise<string> {
   const key = getJwtKey();
@@ -91,7 +91,7 @@ export async function signPasswordResetJwt(
     .sign(key);
 }
 
-export async function verifyPasswordResetJwt(token: string): Promise<{ email: string; adminId: number; userType: 'superadmin' | 'district_admin' } | null> {
+export async function verifyPasswordResetJwt(token: string): Promise<{ email: string; adminId: number; userType: 'superadmin' | 'district_admin' | 'news_editor' } | null> {
   try {
     const key = getJwtKey();
     const { payload } = await jwtVerify(token, key, { issuer: ADMIN_JWT_ISSUER, audience: ADMIN_JWT_AUDIENCE });
@@ -100,7 +100,7 @@ export async function verifyPasswordResetJwt(token: string): Promise<{ email: st
     return { 
       email: String((payload as { email?: string }).email || ''), 
       adminId: Number(payload.sub),
-      userType: (userType === 'district_admin' ? 'district_admin' : 'superadmin') as 'superadmin' | 'district_admin'
+      userType: (userType === 'district_admin' ? 'district_admin' : userType === 'news_editor' ? 'news_editor' : 'superadmin') as 'superadmin' | 'district_admin' | 'news_editor'
     };
   } catch {
     return null;

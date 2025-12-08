@@ -238,6 +238,18 @@ const generateEmailTemplate = (data: EmailData) => {
               ${importantNote}
             </p>
           </div>
+          <div style="background: #E0F2FE; padding: 20px; border-radius: 10px; border: 2px solid #0EA5E9; margin: 30px 0; text-align: center;">
+            <p style="margin: 0 0 12px 0; color: #0C4A6E; font-size: 16px; font-weight: 600;">🌐 ${isHindi ? 'आधिकारिक वेबसाइट' : 'Official Website'}</p>
+            <p style="margin: 0 0 12px 0; color: #075985; font-size: 14px;">
+              ${isHindi 
+                ? 'संगठन के बारे में अधिक जानकारी के लिए हमारी आधिकारिक वेबसाइट पर जाएं:' 
+                : 'Visit our official website to learn more about the organization:'}
+            </p>
+            <a href="https://rashtriyahinduvahinisangathan.in" style="display: inline-block; background: linear-gradient(135deg, #DC2626, #B91C1C); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">
+              ${isHindi ? 'वेबसाइट देखें' : 'Visit Website'}
+            </a>
+            <p style="margin: 12px 0 0 0; color: #075985; font-size: 13px; word-break: break-all;">https://rashtriyahinduvahinisangathan.in</p>
+          </div>
         </div>
         
         <!-- Footer -->

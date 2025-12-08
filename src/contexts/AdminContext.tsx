@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 
-export type UserRole = 'superadmin' | 'admin' | 'verified_member';
-export type UserType = 'superadmin' | 'district_admin' | 'member';
+export type UserRole = 'superadmin' | 'admin' | 'verified_member' | 'news_editor' | 'news_reporter';
+export type UserType = 'superadmin' | 'district_admin' | 'member' | 'news_editor';
 
 export interface User {
   id: string;
@@ -354,6 +354,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     // Superadmins have all permissions
     if (state.currentUser.type === 'superadmin' || state.currentUser.role === 'superadmin') return true;
     
+    // News editors have full access to news and events (like superadmin for news/events)
+    if (state.currentUser.type === 'news_editor' || state.currentUser.role === 'news_editor' || state.currentUser.role === 'news_reporter') {
+      // News editors have access to news and events permissions
+      if (permission === 'edit_news_events' || permission === 'add_news' || permission === 'edit_news' || permission === 'delete_news' || permission === 'add_events' || permission === 'edit_events' || permission === 'delete_events') {
+        return true;
+      }
+      // For other permissions, return false (news editors only have news/events access)
+      return false;
+    }
+    
     // Check if user has 'all' permission
     if (state.currentUser.permissions.includes('all')) return true;
     
@@ -421,6 +431,9 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     
     // Superadmins can manage all districts
     if (state.currentUser.type === 'superadmin' || state.currentUser.role === 'superadmin') return true;
+    
+    // News editors can manage all districts (like superadmin for news/events)
+    if (state.currentUser.type === 'news_editor' || state.currentUser.role === 'news_editor' || state.currentUser.role === 'news_reporter') return true;
     
     // District admins can only manage their assigned district
     return state.currentUser.district === district;

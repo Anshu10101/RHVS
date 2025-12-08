@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
         END AS profile_photo_path,
         m.member_reg_number,
         m.email as member_email,
+        m.updated_at as member_updated_at,
         dm.assigned_at
       FROM department_posts dp
       LEFT JOIN department_members dm ON dp.id = dm.post_id 
@@ -70,6 +71,7 @@ export async function GET(request: NextRequest) {
       profile_photo_path: string | null;
       member_reg_number: string | null;
       member_email: string | null;
+      member_updated_at: string | null;
       assigned_at: string | null;
     }>;
 
@@ -86,7 +88,8 @@ export async function GET(request: NextRequest) {
         name: member.member_name || '',
         photo_path: member.profile_photo_path,
         reg_number: member.member_reg_number || '',
-        email: member.member_email || ''
+        email: member.member_email || '',
+        updated_at: member.member_updated_at || null
       } : null
     }));
 

@@ -1556,7 +1556,7 @@ export default function ProductStoreEditor() {
                   className="cursor-pointer hover:bg-green-50 hover:border-green-300"
                 >
                   <Users className="h-4 w-4 mr-2" />
-                  Manage Sellers
+                  {t('admin.store.products.manageSellers')}
                 </Button>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -1600,10 +1600,10 @@ export default function ProductStoreEditor() {
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="updatedAt">Recently updated</SelectItem>
-                      <SelectItem value="name">Name</SelectItem>
-                      <SelectItem value="price">Price</SelectItem>
-                      <SelectItem value="stock">Stock</SelectItem>
+                      <SelectItem value="updatedAt">{t('admin.store.products.recentlyUpdated')}</SelectItem>
+                      <SelectItem value="name">{t('admin.store.products.sortByName')}</SelectItem>
+                      <SelectItem value="price">{t('admin.store.products.sortByPrice')}</SelectItem>
+                      <SelectItem value="stock">{t('admin.store.products.sortByStock')}</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -1648,10 +1648,10 @@ export default function ProductStoreEditor() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="12">12/page</SelectItem>
-                      <SelectItem value="24">24/page</SelectItem>
-                      <SelectItem value="48">48/page</SelectItem>
-                      <SelectItem value="96">96/page</SelectItem>
+                      <SelectItem value="12">{t('admin.store.products.itemsPerPage').replace('{count}', '12')}</SelectItem>
+                      <SelectItem value="24">{t('admin.store.products.itemsPerPage').replace('{count}', '24')}</SelectItem>
+                      <SelectItem value="48">{t('admin.store.products.itemsPerPage').replace('{count}', '48')}</SelectItem>
+                      <SelectItem value="96">{t('admin.store.products.itemsPerPage').replace('{count}', '96')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1659,8 +1659,7 @@ export default function ProductStoreEditor() {
                 {/* Counts + filters row */}
                 <div className="flex items-center space-x-2">
                   <span className="text-xs sm:text-sm text-gray-600">
-                    Showing {paginatedProducts.length} of {filteredAndSortedProducts.length}{' '}
-                    products
+                    {t('admin.store.products.showingProducts').replace('{showing}', String(paginatedProducts.length)).replace('{total}', String(filteredAndSortedProducts.length))}
                   </span>
                   
                   {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') &&
