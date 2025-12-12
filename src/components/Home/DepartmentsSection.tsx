@@ -57,7 +57,7 @@ const getImageUrlWithCacheBust = (photoPath: string | null, updatedAt?: string |
 };
 
 export default function DepartmentsSection() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const [nationalDepartments, setNationalDepartments] = useState<Department[]>([]);
   const [stateDepartments, setStateDepartments] = useState<Department[]>([]);
@@ -68,7 +68,10 @@ export default function DepartmentsSection() {
   const [selectedStateName, setSelectedStateName] = useState<string>("");
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>("");
   const [selectedDistrictName, setSelectedDistrictName] = useState<string>("");
-  const [stateScope, setStateScope] = useState<"state" | "district">("state");
+  const [divisions, setDivisions] = useState<Array<{id: number, division_name_english: string, division_name_hindi: string}>>([]);
+  const [selectedDivisionId, setSelectedDivisionId] = useState<string>("");
+  const [selectedDivisionName, setSelectedDivisionName] = useState<string>("");
+  const [stateScope, setStateScope] = useState<"state" | "district" | "divisional">("state");
   const [loadingNational, setLoadingNational] = useState(true);
   const [loadingStateLevel, setLoadingStateLevel] = useState(false);
   const [showAllNational, setShowAllNational] = useState(false);
@@ -115,11 +118,12 @@ export default function DepartmentsSection() {
   );
 
   const fetchDepartmentsByLevel = useCallback(
-    async (level: 'national' | 'state' | 'district', options?: { stateName?: string; districtName?: string }) => {
+    async (level: 'national' | 'state' | 'district' | 'divisional', options?: { stateName?: string; districtName?: string; divisionName?: string }) => {
       try {
         const params = new URLSearchParams({ level });
         if (options?.stateName) params.append('state', options.stateName);
         if (options?.districtName) params.append('district', options.districtName);
+        if (options?.divisionName) params.append('division', options.divisionName);
         params.append('_t', String(Date.now()));
 
         const response = await fetch(`/api/public/departments?${params.toString()}`, { 
@@ -201,11 +205,39 @@ export default function DepartmentsSection() {
     }
   }, []);
 
+  const loadDivisionsForState = useCallback(async (stateName: string) => {
+    if (!stateName) {
+      setDivisions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/divisions?stateName=${encodeURIComponent(stateName)}&_t=${Date.now()}`, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
+      const data = await response.json();
+      if (data?.success && data.data) {
+        setDivisions(data.data);
+      } else {
+        setDivisions([]);
+      }
+    } catch (error) {
+      console.error('Failed to load divisions:', error);
+      setDivisions([]);
+    }
+  }, []);
+
   const handleStateChange = useCallback(
     async (stateId: string) => {
       setSelectedStateId(stateId);
       setSelectedDistrictId("");
       setSelectedDistrictName("");
+      setSelectedDivisionId("");
+      setSelectedDivisionName("");
       setStateScope("state");
       setShowAllState(false);
       resetStateMarqueeMotion();
@@ -214,6 +246,7 @@ export default function DepartmentsSection() {
         setSelectedStateName("");
         applyStateDepartments([]);
         setDistricts([]);
+        setDivisions([]);
         return;
       }
 
@@ -225,13 +258,16 @@ export default function DepartmentsSection() {
       applyStateDepartments(result);
       setLoadingStateLevel(false);
       loadDistrictsForState(stateId);
+      loadDivisionsForState(stateName);
     },
-    [states, fetchDepartmentsByLevel, loadDistrictsForState, applyStateDepartments]
+    [states, fetchDepartmentsByLevel, loadDistrictsForState, loadDivisionsForState, applyStateDepartments]
   );
 
   const handleDistrictChange = useCallback(
     async (districtId: string) => {
       setSelectedDistrictId(districtId);
+      setSelectedDivisionId("");
+      setSelectedDivisionName("");
 
       if (!selectedStateName) {
         setSelectedDistrictName("");
@@ -269,6 +305,45 @@ export default function DepartmentsSection() {
     [districts, fetchDepartmentsByLevel, selectedStateName, applyStateDepartments]
   );
 
+  const handleDivisionChange = useCallback(
+    async (divisionName: string) => {
+      setSelectedDivisionId(divisionName);
+      setSelectedDistrictId("");
+      setSelectedDistrictName("");
+
+      if (!selectedStateName) {
+        setSelectedDivisionName("");
+        setStateScope('state');
+        setShowAllState(false);
+        resetStateMarqueeMotion();
+        return;
+      }
+
+      if (!divisionName || divisionName === 'all') {
+        setSelectedDivisionName("");
+        setStateScope('state');
+        setShowAllState(false);
+        resetStateMarqueeMotion();
+        setLoadingStateLevel(true);
+        const result = await fetchDepartmentsByLevel('state', { stateName: selectedStateName });
+        applyStateDepartments(result);
+        setLoadingStateLevel(false);
+        return;
+      }
+
+      setSelectedDivisionName(divisionName);
+      setStateScope('divisional');
+      setLoadingStateLevel(true);
+      const result = await fetchDepartmentsByLevel('divisional', {
+        stateName: selectedStateName,
+        divisionName: divisionName,
+      });
+      applyStateDepartments(result);
+      setLoadingStateLevel(false);
+    },
+    [divisions, fetchDepartmentsByLevel, selectedStateName, applyStateDepartments]
+  );
+
   const handleStateMarqueeScroll = useCallback(
     (direction: 'left' | 'right') => {
       const delta = typeof window !== 'undefined' && window.innerWidth < 768 ? 240 : 300;
@@ -295,9 +370,10 @@ export default function DepartmentsSection() {
 
   const stateLevelContext: LevelContext | undefined = selectedStateName
     ? {
-        level: stateScope === 'district' && selectedDistrictName ? 'district' : 'state',
+        level: stateScope === 'district' && selectedDistrictName ? 'district' : stateScope === 'divisional' && selectedDivisionName ? 'divisional' : 'state',
         state: selectedStateName,
         district: stateScope === 'district' && selectedDistrictName ? selectedDistrictName : undefined,
+        division: stateScope === 'divisional' && selectedDivisionName ? selectedDivisionName : undefined,
       }
     : undefined;
 
@@ -337,9 +413,10 @@ export default function DepartmentsSection() {
   }, [states, selectedStateId, handleStateChange]);
 
   interface LevelContext {
-    level: 'state' | 'district';
+    level: 'state' | 'district' | 'divisional';
     state: string;
     district?: string;
+    division?: string;
   }
 
   const buildHierarchyLink = (departmentId: number | string, context?: LevelContext) => {
@@ -349,6 +426,9 @@ export default function DepartmentsSection() {
     params.set('state', context.state);
     if (context.level === 'district' && context.district) {
       params.set('district', context.district);
+    }
+    if (context.level === 'divisional' && context.division) {
+      params.set('division', context.division);
     }
     return `/departments/${departmentId}?${params.toString()}`;
   };
@@ -978,6 +1058,26 @@ export default function DepartmentsSection() {
 
             <div className="w-full md:w-64">
               <Select
+                value={selectedDivisionId}
+                onValueChange={handleDivisionChange}
+                disabled={!selectedStateId || divisions.length === 0}
+              >
+                <SelectTrigger className="w-full rounded-xl bg-white border-slate-300 text-left disabled:opacity-60">
+                  <SelectValue placeholder={selectedStateId ? "Select Division (संभाग)" : t('departments.selectStateFirst')} />
+                </SelectTrigger>
+                <SelectContent className="max-h-64">
+                  <SelectItem value="all">{language === 'hi' ? 'सभी संभाग' : 'All Divisions'}</SelectItem>
+                  {divisions.map((division) => (
+                    <SelectItem key={division.id} value={division.division_name_english}>
+                      {`${division.division_name_english} (${division.division_name_hindi})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-64">
+              <Select
                 value={selectedDistrictId}
                 onValueChange={handleDistrictChange}
                 disabled={!selectedStateId || districts.length === 0}
@@ -1018,6 +1118,11 @@ export default function DepartmentsSection() {
                   <>
                     {t('departments.showingDistrict')}{" "}
                     <span className="font-semibold text-orange-600">{selectedDistrictName}</span>,{" "}
+                    <span className="font-semibold text-slate-900">{selectedStateName}</span>
+                  </>
+                ) : stateScope === "divisional" && selectedDivisionName ? (
+                  <>
+                    Showing divisional level appointments <span className="font-semibold text-orange-600">{selectedDivisionName}</span>,{" "}
                     <span className="font-semibold text-slate-900">{selectedStateName}</span>
                   </>
                 ) : (
@@ -1170,6 +1275,10 @@ export default function DepartmentsSection() {
               {stateScope === "district" ? (
                 <>
                   {t('departments.noAppointmentsFound')} {selectedDistrictName || t('departments.selectState')}. {t('departments.tryAnotherDistrict')}
+                </>
+              ) : stateScope === "divisional" ? (
+                <>
+                  No divisional level appointments found for {selectedDivisionName || 'selected division'}, {selectedStateName}. Try selecting another division.
                 </>
               ) : (
                 <>{t('departments.noStateAppointments')} {selectedStateName}.</>

@@ -9,9 +9,10 @@ interface EmailData {
   memberRegNumber: string;
   departmentName: string;
   postName: string;
-  level: 'national' | 'state' | 'district';
+  level: 'national' | 'state' | 'district' | 'divisional';
   state?: string | null;
   district?: string | null;
+  division?: string | null;
   certificatePath: string;
   appointmentDate: string;
   certificateNumber: string;
@@ -86,6 +87,7 @@ const generateEmailTemplate = (data: EmailData) => {
     level,
     state,
     district,
+    division,
     appointmentDate,
     certificateNumber,
     idCardPath,
@@ -107,6 +109,12 @@ const generateEmailTemplate = (data: EmailData) => {
           }
           if (district) return `जिला स्तर पर, ${district}`;
           return 'जिला स्तर पर';
+        case 'divisional':
+          if (state && division) {
+            return `संभाग स्तर पर, ${division}, ${state}`;
+          }
+          if (division) return `संभाग स्तर पर, ${division}`;
+          return 'संभाग स्तर पर';
         default:
           return '';
       }
@@ -120,6 +128,10 @@ const generateEmailTemplate = (data: EmailData) => {
       case 'district': {
         const parts = [district, state].filter(Boolean);
         return parts.length > 0 ? `District Level, ${parts.join(', ')}` : 'District Level';
+      }
+      case 'divisional': {
+        const parts = [division, state].filter(Boolean);
+        return parts.length > 0 ? `Divisional Level, ${parts.join(', ')}` : 'Divisional Level';
       }
       default:
         return '';

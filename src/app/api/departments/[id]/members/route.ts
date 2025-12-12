@@ -8,9 +8,10 @@ import { noCacheJsonResponse } from '@/lib/api-helpers';
 const assignMemberSchema = z.object({
   post_id: z.number(),
   member_id: z.number(),
-  level: z.enum(['national', 'state', 'district']),
+  level: z.enum(['national', 'state', 'district', 'divisional']),
   state: z.string().min(1).nullable().optional(),
   district: z.string().min(1).nullable().optional(),
+  division: z.string().min(1).nullable().optional(),
   valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // Optional custom validity end date (YYYY-MM-DD), defaults to 1 year
 });
 
@@ -53,9 +54,10 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams;
     const requestedLevel = (searchParams.get('level') || '').toLowerCase();
-    const validLevels = new Set(['national', 'state', 'district']);
+    const validLevels = new Set(['national', 'state', 'district', 'divisional']);
     const stateFilter = searchParams.get('state')?.trim() || null;
     const districtFilter = searchParams.get('district')?.trim() || null;
+    const divisionFilter = searchParams.get('division')?.trim() || null;
     
     // For district admins, check if this is National Executive department (block access)
     if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
@@ -124,6 +126,12 @@ export async function GET(
         }
         levelClause += ' AND dm.state = ? AND dm.district = ?';
         queryParams.push(stateFilter, districtFilter);
+      } else if (requestedLevel === 'divisional') {
+        if (!stateFilter || !divisionFilter) {
+          return NextResponse.json({ error: 'State and division filters are required for divisional level' }, { status: 400 });
+        }
+        levelClause += ' AND dm.state = ? AND dm.division = ?';
+        queryParams.push(stateFilter, divisionFilter);
       }
     }
 
@@ -131,7 +139,7 @@ export async function GET(
     // Only show active assignments (valid_until IS NULL or valid_until >= today)
     const members = await executeQuery(`
       SELECT dm.id, dm.post_id, dm.member_id, dm.assigned_at,
-             dm.level, dm.state, dm.district,
+             dm.level, dm.state, dm.district, dm.division,
              dm.valid_from, dm.valid_until,
              dp.name_en as post_name_en, dp.name_hi as post_name_hi, dp.position_order,
              m.name as member_name, m.email as member_email, m.member_reg_number,
@@ -202,6 +210,7 @@ export async function POST(
     }
 
     const { post_id, member_id, valid_until: customValidUntil } = validationResult.data;
+    let { level, state, district, division } = validationResult.data;
     
     // Calculate validity dates: default to 1 year from now, or use custom date
     const assignedAt = new Date();
@@ -244,8 +253,6 @@ export async function POST(
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
 
-    let { level, state, district } = validationResult.data;
-    
     // For district admins, check permission and enforce restrictions
     if (scope.isDistrictAdmin && !scope.isSuperAdmin) {
       const { ensurePermission } = await import('@/lib/admin-scope');
@@ -309,23 +316,39 @@ export async function POST(
         if (adminState) {
           state = adminState;
         }
-        // District must be null for state level
+        // District and division must be null for state level
+        district = null;
+        division = null;
+      } else if (level === 'divisional') {
+        // Must be their state
+        if (adminState && state !== adminState) {
+          return NextResponse.json({ 
+            error: 'District admins can only assign members to their assigned state' 
+          }, { status: 403 });
+        }
+        // Override with district admin's state
+        if (adminState) {
+          state = adminState;
+        }
+        // District must be null for divisional level
         district = null;
       } else if (level === 'national') {
         // National level is allowed (but not National Executive, which is already blocked above)
         state = null;
         district = null;
+        division = null;
       }
     }
     
     const normalizedState = level === 'national' ? null : (state ?? null);
     const normalizedDistrict = level === 'district' ? (district ?? null) : null;
+    const normalizedDivision = level === 'divisional' ? (division ?? null) : null;
 
     // For President post: only allow ONE member assignment. Must remove existing before assigning new one.
     if (isPresidentPost) {
       const existingPresidentAssignment = await executeQuery(
-        'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND state <=> ? AND district <=> ?',
-        [departmentId, post_id, level, normalizedState, normalizedDistrict]
+        'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND level = ? AND state <=> ? AND district <=> ? AND division <=> ?',
+        [departmentId, post_id, level, normalizedState, normalizedDistrict, normalizedDivision]
       ) as any[];
       
       if (existingPresidentAssignment.length > 0) {
@@ -340,26 +363,32 @@ export async function POST(
     }
 
     // Validate level-specific requirements
-    if (level === 'national' && (state || district)) {
+    if (level === 'national' && (state || district || division)) {
       return NextResponse.json({ 
-        error: 'National level assignments cannot have state or district' 
+        error: 'National level assignments cannot have state, district, or division' 
       }, { status: 400 });
     }
 
-    if (level === 'state' && (!state || district)) {
+    if (level === 'state' && (!state || district || division)) {
       return NextResponse.json({ 
-        error: 'State level assignments require state but cannot have district' 
+        error: 'State level assignments require state but cannot have district or division' 
       }, { status: 400 });
     }
 
-    if (level === 'district' && (!state || !district)) {
+    if (level === 'district' && (!state || !district || division)) {
       return NextResponse.json({ 
-        error: 'District level assignments require both state and district' 
+        error: 'District level assignments require both state and district, but cannot have division' 
+      }, { status: 400 });
+    }
+
+    if (level === 'divisional' && (!state || !division || district)) {
+      return NextResponse.json({ 
+        error: 'Divisional level assignments require state and division, but cannot have district' 
       }, { status: 400 });
     }
 
     // Check if member belongs to the specified state/district
-    if (level === 'state' || level === 'district') {
+    if (level === 'state' || level === 'district' || level === 'divisional') {
       const memberLocation = await executeQuery(
         'SELECT state, district FROM members WHERE id = ?',
         [member_id]
@@ -382,8 +411,8 @@ export async function POST(
     // This prevents duplicate assignments to the exact same post (regardless of department type or level)
     // Members can be assigned to DIFFERENT posts in the same department, but NOT to the same post twice
     const existingAssignment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
-      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict]
+      'SELECT * FROM department_members WHERE department_id = ? AND post_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ? AND division <=> ?',
+      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, normalizedDivision]
     ) as any[];
     
     if (existingAssignment.length > 0) {
@@ -399,17 +428,18 @@ export async function POST(
     // - National Executive departments (is_national_executive = 1)
     // - National level
     // - State level
+    // - Divisional level
     // District level: Only one post per member per department (restriction remains)
     const isNationalExecutive = department[0].is_national_executive === 1 || department[0].is_national_executive === true || department[0].is_national_executive === '1';
-    const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state';
+    const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state' || level === 'divisional';
     
     console.log(`[Appointment] Department ID: ${departmentId}, is_national_executive: ${department[0].is_national_executive}, level: ${level}, allowsMultiplePosts: ${allowsMultiplePosts}`);
     
     if (!allowsMultiplePosts) {
       // For district level (and non-National Executive departments), enforce one post per member per department
     const memberInDepartment = await executeQuery(
-      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ?',
-      [departmentId, member_id, level, normalizedState, normalizedDistrict]
+      'SELECT * FROM department_members WHERE department_id = ? AND member_id = ? AND level = ? AND state <=> ? AND district <=> ? AND division <=> ?',
+      [departmentId, member_id, level, normalizedState, normalizedDistrict, normalizedDivision]
     ) as any[];
     
     if (memberInDepartment.length > 0) {
@@ -430,8 +460,8 @@ export async function POST(
     let result: any;
     try {
       result = await executeQuery(
-      'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, assigned_by, valid_from, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, assignedById, validFrom, validUntil]
+      'INSERT INTO department_members (department_id, post_id, member_id, level, state, district, division, assigned_by, valid_from, valid_until) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [departmentId, post_id, member_id, level, normalizedState, normalizedDistrict, normalizedDivision, assignedById, validFrom, validUntil]
     ) as any;
       
       console.log(`[Appointment] Successfully assigned member ${member_id} to post ${post_id} in department ${departmentId} at ${level} level`);
@@ -553,6 +583,7 @@ export async function POST(
             level,
             state,
             district,
+            division: normalizedDivision,
             appointment_date: appointmentDate,
             certificate_number: certificateNumber,
             language: languagePreference,
@@ -589,6 +620,7 @@ export async function POST(
               level,
               state,
               district,
+              division: normalizedDivision,
               appointmentDate,
               language: languagePreference,
               valid_from: validFrom,
@@ -602,10 +634,10 @@ export async function POST(
           // Save certificate record (including ID card path)
           const certResult = await executeQuery(`
             INSERT INTO certificates 
-            (member_id, department_id, post_id, level, state, district, certificate_number, appointment_date, generated_by, certificate_path, id_card_path)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (member_id, department_id, post_id, level, state, district, division, certificate_number, appointment_date, generated_by, certificate_path, id_card_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `, [
-            member_id, departmentId, post_id, level, state, district, 
+            member_id, departmentId, post_id, level, state, district, normalizedDivision, 
             certificateNumber, appointmentDate, scope.adminId, certificatePath, appointmentIdCardPath
           ]) as { insertId: number };
 
@@ -624,6 +656,7 @@ export async function POST(
               level,
               state: state || undefined,
               district: district || undefined,
+              division: normalizedDivision || undefined,
               certificatePath,
               appointmentDate,
               certificateNumber,

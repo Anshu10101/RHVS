@@ -59,9 +59,10 @@ type DepartmentMember = {
   member_reg_number: string;
   profile_photo_path: string | null;
   member_updated_at?: string | null;
-  level: 'national' | 'state' | 'district';
+  level: 'national' | 'state' | 'district' | 'divisional';
   state: string | null;
   district: string | null;
+  division: string | null;
   valid_from?: string | null;
   valid_until?: string | null;
 };
@@ -80,7 +81,7 @@ export default function AssignMembersPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { currentUser, hasPermission } = useAdmin();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -91,9 +92,11 @@ export default function AssignMembersPage() {
   const [districts, setDistricts] = useState<string[]>([]);
   
   // Level selection for department
-  const [selectedLevel, setSelectedLevel] = useState<'national' | 'state' | 'district'>('national');
+  const [selectedLevel, setSelectedLevel] = useState<'national' | 'state' | 'district' | 'divisional'>('national');
   const [selectedState, setSelectedState] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
+  const [selectedDivision, setSelectedDivision] = useState('all');
+  const [divisions, setDivisions] = useState<Array<{id: number, division_name_english: string, division_name_hindi: string}>>([]);
   
   // National Executive Department state
   const [nationalExecutiveDept, setNationalExecutiveDept] = useState<Department | null>(null);
@@ -197,6 +200,41 @@ export default function AssignMembersPage() {
 
     fetchDistricts();
   }, [selectedState]);
+
+  // Fetch divisions when selected state changes (for all levels, to enable divisional filtering)
+  useEffect(() => {
+    const fetchDivisions = async () => {
+      if (!selectedState) {
+        setDivisions([]);
+        // Only clear selectedDivision if level is not divisional (to preserve it when filtering)
+        if (selectedLevel !== 'divisional') {
+          setSelectedDivision('all');
+        }
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(`/api/divisions?stateName=${encodeURIComponent(selectedState)}`, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const data = await response.json();
+        console.log('[Assign Page] Divisions API response:', data);
+        if (data.success && data.data) {
+          console.log(`[Assign Page] Found ${data.data.length} divisions for state: ${selectedState}`);
+          setDivisions(data.data);
+        } else {
+          console.warn('[Assign Page] No divisions found or API error:', data.error || data);
+          setDivisions([]);
+        }
+      } catch (error) {
+        console.error('Error fetching divisions:', error);
+        setDivisions([]);
+      }
+    };
+
+    fetchDivisions();
+  }, [selectedState, selectedLevel]);
 
   // Fetch all departments (no level filtering - level is chosen when assigning)
   // For district admins, filter out National Executive department
@@ -316,12 +354,17 @@ export default function AssignMembersPage() {
             try {
               const token = localStorage.getItem('admin_token');
               const params = new URLSearchParams();
-              params.append('level', selectedLevel);
-              if (selectedLevel === 'state' && selectedState) {
+              // If divisional filter is selected, use divisional level for query
+              const queryLevel = selectedDivision && selectedDivision !== 'all' ? 'divisional' : selectedLevel;
+              params.append('level', queryLevel);
+              if (queryLevel === 'state' && selectedState) {
                 params.append('state', selectedState);
-              } else if (selectedLevel === 'district' && selectedState && selectedDistrict) {
+              } else if (queryLevel === 'district' && selectedState && selectedDistrict) {
                 params.append('state', selectedState);
                 params.append('district', selectedDistrict);
+              } else if (queryLevel === 'divisional' && selectedState && selectedDivision && selectedDivision !== 'all') {
+                params.append('state', selectedState);
+                params.append('division', selectedDivision);
               }
               params.append('_t', String(Date.now()));
 
@@ -366,7 +409,7 @@ export default function AssignMembersPage() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, nationalExecutiveDept, currentUser]);
+  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, selectedDivision, nationalExecutiveDept, currentUser]);
 
   // Fetch posts and department members when department/level changes
   useEffect(() => {
@@ -409,13 +452,24 @@ export default function AssignMembersPage() {
           return;
         }
 
+        if (selectedLevel === 'divisional' && (!selectedState || !selectedDivision || selectedDivision === 'all')) {
+          setDepartmentMembers([]);
+          return;
+        }
+
         const params = new URLSearchParams();
-        params.set('level', selectedLevel);
-        if (selectedLevel !== 'national' && selectedState) {
+        // If divisional filter is selected, use divisional level for query
+        const queryLevel = selectedDivision && selectedDivision !== 'all' ? 'divisional' : selectedLevel;
+        params.set('level', queryLevel);
+        if (queryLevel !== 'national' && selectedState) {
           params.set('state', selectedState);
         }
-        if (selectedLevel === 'district' && selectedDistrict) {
+        if (queryLevel === 'district' && selectedDistrict) {
           params.set('district', selectedDistrict);
+        }
+        // Add division filter if selected (works for all levels to filter by divisional appointments)
+        if (selectedDivision && selectedDivision !== 'all') {
+          params.set('division', selectedDivision);
         }
 
         const token2 = localStorage.getItem('admin_token');
@@ -444,7 +498,7 @@ export default function AssignMembersPage() {
     };
 
     fetchDepartmentData();
-  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, toast]);
+  }, [selectedDepartment, selectedLevel, selectedState, selectedDistrict, selectedDivision, toast]);
 
   // Fetch eligible members when the assign dialog is opened (based on selected level)
   useEffect(() => {
@@ -464,6 +518,12 @@ export default function AssignMembersPage() {
         return;
       }
       
+      if (selectedLevel === 'divisional' && (!selectedState || !selectedDivision || selectedDivision === 'all')) {
+        console.log('Divisional level selected but state or division not chosen');
+        setEligibleMembers([]);
+        return;
+      }
+      
       setIsLoading(true);
       
       try {
@@ -475,6 +535,10 @@ export default function AssignMembersPage() {
         
         if (selectedLevel === 'district' && selectedDistrict) {
           url += `&district=${encodeURIComponent(selectedDistrict)}`;
+        }
+        
+        if (selectedLevel === 'divisional' && selectedDivision && selectedDivision !== 'all') {
+          url += `&division=${encodeURIComponent(selectedDivision)}`;
         }
         
         if (searchQuery) {
@@ -508,7 +572,7 @@ export default function AssignMembersPage() {
     };
 
     fetchEligibleMembers();
-  }, [isAssignDialogOpen, selectedDepartment, selectedLevel, selectedState, selectedDistrict, searchQuery, toast]);
+  }, [isAssignDialogOpen, selectedDepartment, selectedLevel, selectedState, selectedDistrict, selectedDivision, searchQuery, toast]);
 
   const handleAssignMembers = async () => {
     if (!selectedDepartment || !selectedPost || selectedMembers.length === 0) return;
@@ -542,6 +606,7 @@ export default function AssignMembersPage() {
               level: selectedLevel,
               state: selectedLevel !== 'national' ? selectedState : null,
               district: selectedLevel === 'district' ? selectedDistrict : null,
+              division: selectedLevel === 'divisional' && selectedDivision && selectedDivision !== 'all' ? selectedDivision : null,
               valid_until: useCustomValidity && customValidUntil ? customValidUntil : undefined,
             }),
           });
@@ -576,6 +641,7 @@ export default function AssignMembersPage() {
             level: selectedLevel,
             state: selectedLevel !== 'national' ? selectedState : null,
             district: selectedLevel === 'district' ? selectedDistrict : null,
+            division: selectedLevel === 'divisional' ? selectedDivision : null,
             valid_from: assignedDate,
             valid_until: validUntil,
           };
@@ -595,6 +661,38 @@ export default function AssignMembersPage() {
         const membersData = await membersResponse.json();
         if (membersData.members) {
           setNationalExecutiveMembers(membersData.members);
+        }
+      } else if (selectedDepartment) {
+        // Refresh department members list after assignment to ensure it's up to date
+        const token2 = localStorage.getItem('admin_token');
+        const params = new URLSearchParams();
+        // If divisional filter is selected, use divisional level for query
+        const queryLevel = selectedDivision && selectedDivision !== 'all' ? 'divisional' : selectedLevel;
+        params.set('level', queryLevel);
+        if (queryLevel !== 'national' && selectedState) {
+          params.set('state', selectedState);
+        }
+        if (queryLevel === 'district' && selectedDistrict) {
+          params.set('district', selectedDistrict);
+        }
+        // Add division filter if selected (works for all levels to filter by divisional appointments)
+        if (selectedDivision && selectedDivision !== 'all') {
+          params.set('division', selectedDivision);
+        }
+        params.append('_t', Date.now().toString());
+        
+        try {
+          const membersResponse = await fetch(`/api/departments/${selectedDepartment.id}/members?${params.toString()}`, {
+            cache: 'no-store',
+            headers: token2 ? { 'Authorization': `Bearer ${token2}` } : {}
+          });
+          const membersData = await membersResponse.json();
+          if (membersData.members) {
+            setDepartmentMembers(membersData.members);
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing department members after assignment:', refreshError);
+          // Don't show error to user - the assignment was successful, just the refresh failed
         }
       }
 
@@ -1094,11 +1192,17 @@ export default function AssignMembersPage() {
                       <Select
                         value={selectedLevel}
                         onValueChange={(value) => {
-                          setSelectedLevel(value as 'national' | 'state' | 'district');
+                          setSelectedLevel(value as 'national' | 'state' | 'district' | 'divisional');
                           if (value === 'national') {
                             setSelectedState('');
                             setSelectedDistrict('');
+                            setSelectedDivision('');
                           } else if (value === 'state') {
+                            setSelectedDistrict('');
+                            setSelectedDivision('');
+                          } else if (value === 'district') {
+                            setSelectedDivision('');
+                          } else if (value === 'divisional') {
                             setSelectedDistrict('');
                           }
                         }}
@@ -1111,6 +1215,7 @@ export default function AssignMembersPage() {
                           <SelectItem value="national">{t('admin.departments.assign.nationalLevel')}</SelectItem>
                           <SelectItem value="state">{t('admin.departments.assign.stateLevel')}</SelectItem>
                           <SelectItem value="district">{t('admin.departments.assign.districtLevel')}</SelectItem>
+                          <SelectItem value="divisional">{language === 'hi' ? 'संभाग स्तर' : 'Divisional Level'}</SelectItem>
                         </SelectContent>
                       </Select>
                       {isDistrictAdmin && (
@@ -1128,6 +1233,7 @@ export default function AssignMembersPage() {
                           onValueChange={(value) => {
                             setSelectedState(value);
                             setSelectedDistrict('');
+                            setSelectedDivision('');
                           }}
                           disabled={isDistrictAdmin}
                         >
@@ -1176,6 +1282,44 @@ export default function AssignMembersPage() {
                         )}
                       </div>
                     )}
+                    
+                    {selectedLevel === 'divisional' && (
+                      <div className="space-y-2 sm:space-y-4 sm:col-span-2 lg:col-span-1">
+                        <Label htmlFor="division_selection" className="text-sm">{language === 'hi' ? 'संभाग' : 'Division'}</Label>
+                        <Select
+                          value={selectedDivision}
+                          onValueChange={setSelectedDivision}
+                          disabled={!selectedState || isDistrictAdmin}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder={language === 'hi' ? 'संभाग चुनें' : 'Select Division'} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {divisions.length === 0 ? (
+                              <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                {selectedState ? (language === 'hi' ? `${selectedState} के लिए कोई संभाग नहीं मिला` : `No divisions found for ${selectedState}`) : (language === 'hi' ? 'पहले राज्य चुनें' : 'Select state first')}
+                              </div>
+                            ) : (
+                              divisions.map((division) => (
+                                <SelectItem key={division.id} value={division.division_name_english}>
+                                  {language === 'hi' ? division.division_name_hindi : division.division_name_english}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                        {isDistrictAdmin && (
+                          <p className="text-xs text-gray-500">
+                            Locked to your state
+                          </p>
+                        )}
+                        {selectedState && divisions.length === 0 && (
+                          <p className="text-xs text-yellow-600">
+                            No divisions available for this state. Make sure divisions are added to the database.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Level selection summary */}
@@ -1192,11 +1336,15 @@ export default function AssignMembersPage() {
                       {selectedLevel === 'district' && selectedState && selectedDistrict && (
                         <span> • <strong>State:</strong> {selectedState} • <strong>District:</strong> {selectedDistrict}</span>
                       )}
+                      {selectedLevel === 'divisional' && selectedState && selectedDivision && selectedDivision !== 'all' && (
+                        <span> • <strong>State:</strong> {selectedState} • <strong>Division:</strong> {selectedDivision}</span>
+                      )}
                     </p>
                     <p className="text-xs text-blue-600 mt-2 break-words">
                       All members assigned to this department will be assigned at the {selectedLevel} level
                       {selectedLevel === 'state' && selectedState && ` for ${selectedState}`}
-                      {selectedLevel === 'district' && selectedState && selectedDistrict && ` for ${selectedDistrict}, ${selectedState}`}.
+                      {selectedLevel === 'district' && selectedState && selectedDistrict && ` for ${selectedDistrict}, ${selectedState}`}
+                      {selectedLevel === 'divisional' && selectedState && selectedDivision && selectedDivision !== 'all' && ` for ${selectedDivision}, ${selectedState}`}.
                     </p>
                   </div>
                 </CardContent>
@@ -1217,6 +1365,7 @@ export default function AssignMembersPage() {
                     )}
                     {!isDistrictAdmin && selectedLevel === 'state' && selectedState && ` • ${t('admin.departments.assign.state')}: ${selectedState}`}
                     {!isDistrictAdmin && selectedLevel === 'district' && selectedState && selectedDistrict && ` • ${t('admin.departments.assign.state')}: ${selectedState} • ${t('admin.departments.assign.district')}: ${selectedDistrict}`}
+                    {!isDistrictAdmin && selectedLevel === 'divisional' && selectedState && selectedDivision && selectedDivision !== 'all' && ` • ${t('admin.departments.assign.state')}: ${selectedState} • Division: ${selectedDivision}`}
                   </p>
                   <p className="text-xs text-blue-600 mt-1 break-words">
                     {t('admin.departments.assign.allMembersAssignedAtLevel').replace('{level}', isDistrictAdmin ? t('admin.departments.assign.districtLevel') : selectedLevel === 'national' ? t('admin.departments.assign.nationalLevel') : selectedLevel === 'state' ? t('admin.departments.assign.stateLevel') : t('admin.departments.assign.districtLevel'))}
@@ -1351,6 +1500,12 @@ export default function AssignMembersPage() {
                                                   <span className="truncate">{assignment.district}</span>
                                                 </>
                                               )}
+                                              {assignment.division && (
+                                                <>
+                                                  <span>•</span>
+                                                  <span className="truncate">{assignment.division}</span>
+                                                </>
+                                              )}
                                             </div>
                                             {assignment.valid_until && (
                                               <div className="mt-1">
@@ -1420,6 +1575,9 @@ export default function AssignMembersPage() {
                 )}
                 {selectedLevel === 'district' && selectedState && selectedDistrict && (
                   <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState} • <strong>{t('admin.departments.assign.district')}</strong> {selectedDistrict}</span>
+                )}
+                {selectedLevel === 'divisional' && selectedState && selectedDivision && selectedDivision !== 'all' && (
+                  <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState} • <strong>Division</strong> {selectedDivision}</span>
                 )}
               </p>
               <p className="text-xs text-blue-600 mt-1">
@@ -1502,6 +1660,12 @@ export default function AssignMembersPage() {
                 <p className="font-medium">{t('admin.departments.assign.selectStateDistrictFirst')}</p>
               </div>
             )}
+            
+            {selectedLevel === 'divisional' && (!selectedState || !selectedDivision || selectedDivision === 'all') && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                <p className="font-medium">Please select state and division first</p>
+              </div>
+            )}
 
             <div className="border rounded-md overflow-hidden flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto min-h-0">
@@ -1516,6 +1680,8 @@ export default function AssignMembersPage() {
                         ? t('admin.departments.assign.selectStateInStep2')
                         : selectedLevel === 'district' && (!selectedState || !selectedDistrict)
                         ? t('admin.departments.assign.selectStateDistrictInStep2')
+                        : selectedLevel === 'divisional' && (!selectedState || !selectedDivision || selectedDivision === 'all')
+                        ? 'Please select state and division in step 2'
                         : t('admin.departments.assign.noEligibleMembers')
                       }
                     </p>

@@ -15,16 +15,20 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams;
     const requestedLevel = (searchParams.get('level') || 'national').toLowerCase();
-    const validLevels = new Set(['national', 'state', 'district']);
+    const validLevels = new Set(['national', 'state', 'district', 'divisional']);
     const level = validLevels.has(requestedLevel) ? requestedLevel : 'national';
     const stateFilter = searchParams.get('state')?.trim() || null;
     const districtFilter = searchParams.get('district')?.trim() || null;
+    const divisionFilter = searchParams.get('division')?.trim() || null;
 
     if (level === 'state' && !stateFilter) {
       return NextResponse.json({ error: 'State filter required for state view' }, { status: 400 });
     }
     if (level === 'district' && (!stateFilter || !districtFilter)) {
       return NextResponse.json({ error: 'State and district filters required for district view' }, { status: 400 });
+    }
+    if (level === 'divisional' && (!stateFilter || !divisionFilter)) {
+      return NextResponse.json({ error: 'State and division filters required for divisional view' }, { status: 400 });
     }
 
     const levelConditions: string[] = ['dm.level = ?'];
@@ -35,7 +39,13 @@ export async function GET(
     } else if (level === 'district') {
       levelConditions.push('dm.state = ?');
       levelConditions.push('dm.district = ?');
+      levelConditions.push('(dm.division IS NULL OR dm.division = \'\')');
       levelParams.push(stateFilter!, districtFilter!);
+    } else if (level === 'divisional') {
+      levelConditions.push('dm.state = ?');
+      levelConditions.push('dm.division = ?');
+      levelConditions.push('(dm.district IS NULL OR dm.district = \'\')');
+      levelParams.push(stateFilter!, divisionFilter!);
     }
     const levelClause = ` AND ${levelConditions.join(' AND ')}`;
 
@@ -50,10 +60,16 @@ export async function GET(
     }
 
     // Posts for the department (ordered) - only get from database, no dummy/fallback posts
-    const posts = await executeQuery(
-      'SELECT id, name_en, name_hi, position_order FROM department_posts WHERE department_id = ? ORDER BY position_order ASC',
-      [departmentId]
-    ) as Array<{ id: number; name_en: string; name_hi: string; position_order: number }>;
+    let posts: Array<{ id: number; name_en: string; name_hi: string; position_order: number }> = [];
+    try {
+      posts = await executeQuery(
+        'SELECT id, name_en, name_hi, position_order FROM department_posts WHERE department_id = ? ORDER BY position_order ASC',
+        [departmentId]
+      ) as Array<{ id: number; name_en: string; name_hi: string; position_order: number }>;
+      console.log('[Hierarchy API] Posts query result:', posts.length);
+    } catch (error) {
+      console.error('[Hierarchy API] Error fetching posts:', error);
+    }
 
     // Fetch all assigned members per post for requested level
     let assignments: Array<{
@@ -69,8 +85,7 @@ export async function GET(
       member_updated_at: string | null;
     }> = [];
     try {
-      assignments = await executeQuery(
-        `SELECT dp.id as post_id, dp.position_order, dp.name_en as post_name_en, dp.name_hi as post_name_hi,
+      const query = `SELECT dp.id as post_id, dp.position_order, dp.name_en as post_name_en, dp.name_hi as post_name_hi,
                 m.id as member_id, m.name as member_name,
                 CASE 
                   WHEN m.profile_photo_blob IS NOT NULL THEN CONCAT('/api/media/members/', m.id, '/profile')
@@ -82,11 +97,18 @@ export async function GET(
          JOIN department_posts dp ON dp.id = dm.post_id AND dp.department_id = dm.department_id
          JOIN members m ON m.id = dm.member_id
          WHERE dm.department_id = ?${levelClause}
-         ORDER BY dp.position_order ASC`,
-        [departmentId, ...levelParams]
-      ) as any[];
-    } catch {}
+         ORDER BY dp.position_order ASC`;
+      console.log('[Hierarchy API] Query:', query);
+      console.log('[Hierarchy API] Params:', [departmentId, ...levelParams]);
+      assignments = await executeQuery(query, [departmentId, ...levelParams]) as any[];
+      console.log('[Hierarchy API] Assignments found:', assignments.length);
+    } catch (error) {
+      console.error('[Hierarchy API] Error fetching assignments:', error);
+    }
 
+    console.log('[Hierarchy API] Posts found:', posts.length);
+    console.log('[Hierarchy API] Level:', level, 'State:', stateFilter, 'Division:', divisionFilter, 'District:', districtFilter);
+    
     const result = {
       department: dept,
       posts: posts.map(p => ({
@@ -107,6 +129,7 @@ export async function GET(
       }))
     };
 
+    console.log('[Hierarchy API] Result posts count:', result.posts.length);
     return noCacheJsonResponse({ success: true, data: result });
   } catch (error) {
     console.error('Error fetching department hierarchy:', error);

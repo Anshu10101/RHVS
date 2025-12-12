@@ -7,6 +7,7 @@ interface HierarchyQuery {
   level?: string;
   state?: string;
   district?: string;
+  division?: string;
 }
 
 // Helper function to add cache-busting to image URLs
@@ -41,6 +42,7 @@ export default function DepartmentHierarchyPage({
       if (resolvedQuery.level) searchParamsObj.set('level', resolvedQuery.level);
       if (resolvedQuery.state) searchParamsObj.set('state', resolvedQuery.state);
       if (resolvedQuery.district) searchParamsObj.set('district', resolvedQuery.district);
+      if (resolvedQuery.division) searchParamsObj.set('division', resolvedQuery.division);
       const qs = searchParamsObj.toString();
 
       // Add cache-busting timestamp to ensure fresh data
@@ -55,16 +57,30 @@ export default function DepartmentHierarchyPage({
             'Pragma': 'no-cache',
           }
         });
-        if (res.ok) {
-          const json = await res.json();
+        const json = await res.json();
+        console.log('[Department Page] API Response status:', res.status);
+        console.log('[Department Page] API Response:', json);
+        
+        if (res.ok && json.success) {
           const data = json?.data ?? null;
           if (data) {
+            console.log('[Department Page] Posts received:', data.posts?.length || 0);
+            console.log('[Department Page] Posts data:', data.posts);
             setDepartment(data.department ?? { name_en: 'Department', name_hi: 'विभाग' });
-            setPosts((data.posts ?? []).sort((a: any, b: any) => a.position_order - b.position_order));
+            const sortedPosts = (data.posts ?? []).sort((a: any, b: any) => (a.position_order || 0) - (b.position_order || 0));
+            console.log('[Department Page] Sorted posts:', sortedPosts.length);
+            setPosts(sortedPosts);
+          } else {
+            console.warn('[Department Page] No data in response');
+            setPosts([]);
           }
+        } else {
+          console.error('[Department Page] API error:', res.status, json.error || res.statusText);
+          setPosts([]);
         }
       } catch (error) {
         console.error('Error loading department hierarchy:', error);
+        setPosts([]);
       } finally {
         setLoading(false);
       }

@@ -6,16 +6,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const requestedLevel = (searchParams.get('level') || 'national').toLowerCase();
-    const validLevels = new Set(['national', 'state', 'district']);
+    const validLevels = new Set(['national', 'state', 'district', 'divisional']);
     const level = validLevels.has(requestedLevel) ? requestedLevel : 'national';
     const stateFilter = searchParams.get('state')?.trim() || null;
     const districtFilter = searchParams.get('district')?.trim() || null;
+    const divisionFilter = searchParams.get('division')?.trim() || null;
 
-    // Require filters for state/district requests so UI can show guidance
+    // Require filters for state/district/divisional requests so UI can show guidance
     if (level === 'state' && !stateFilter) {
       return NextResponse.json({ success: true, departments: [] });
     }
     if (level === 'district' && (!stateFilter || !districtFilter)) {
+      return NextResponse.json({ success: true, departments: [] });
+    }
+    if (level === 'divisional' && (!stateFilter || !divisionFilter)) {
       return NextResponse.json({ success: true, departments: [] });
     }
 
@@ -84,8 +88,15 @@ export async function GET(request: NextRequest) {
       } else if (level === 'district') {
         clauses.push(`${alias}.state = ?`);
         clauses.push(`${alias}.district = ?`);
+        clauses.push(`(${alias}.division IS NULL OR ${alias}.division = '')`);
         params.push(stateFilter!);
         params.push(districtFilter!);
+      } else if (level === 'divisional') {
+        clauses.push(`${alias}.state = ?`);
+        clauses.push(`${alias}.division = ?`);
+        clauses.push(`(${alias}.district IS NULL OR ${alias}.district = '')`);
+        params.push(stateFilter!);
+        params.push(divisionFilter!);
       }
 
       return {

@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     let level = searchParams.get('level');
     let state = searchParams.get('state');
     let district = searchParams.get('district');
+    let division = searchParams.get('division');
     const departmentId = searchParams.get('departmentId');
     const search = searchParams.get('search');
     
@@ -71,10 +72,18 @@ export async function GET(request: NextRequest) {
           state = adminState;
         }
         district = null; // District must be null for state level
+        division = null; // Division must be null for state level
+      } else if (level === 'divisional') {
+        // Must be their state
+        if (adminState) {
+          state = adminState;
+        }
+        district = null; // District must be null for divisional level
       } else if (level === 'national') {
         // National level is allowed (but not National Executive, which is already blocked above)
         state = null;
         district = null;
+        division = null;
       }
     }
 
@@ -83,12 +92,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Level parameter is required' }, { status: 400 });
     }
 
-    if ((level === 'state' || level === 'district') && !state) {
-      return NextResponse.json({ error: 'State parameter is required for state and district levels' }, { status: 400 });
+    if ((level === 'state' || level === 'district' || level === 'divisional') && !state) {
+      return NextResponse.json({ error: 'State parameter is required for state, district, and divisional levels' }, { status: 400 });
     }
 
     if (level === 'district' && !district) {
       return NextResponse.json({ error: 'District parameter is required for district level' }, { status: 400 });
+    }
+
+    if (level === 'divisional' && !division) {
+      return NextResponse.json({ error: 'Division parameter is required for divisional level' }, { status: 400 });
     }
 
     // Build the query based on filters
@@ -115,6 +128,10 @@ export async function GET(request: NextRequest) {
     } else if (level === 'district' && state && district) {
       query += ' AND m.state = ? AND m.district = ?';
       params.push(state, district);
+    } else if (level === 'divisional' && state && division) {
+      // For divisional level, filter by state (members in the state that contains this division)
+      query += ' AND m.state = ?';
+      params.push(state);
     }
 
     // Add search filter if provided
@@ -141,17 +158,18 @@ export async function GET(request: NextRequest) {
         deptInfo[0].is_national_executive === true
       );
       
-      // Allow multiple posts for: National Executive departments, national level, or state level
-      const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state';
+      // Allow multiple posts for: National Executive departments, national level, state level, or divisional level
+      const allowsMultiplePosts = isNationalExecutive || level === 'national' || level === 'state' || level === 'divisional';
+      
+      console.log(`[Eligible Members] Department ${departmentId}, Level: ${level}, isNationalExecutive: ${isNationalExecutive}, allowsMultiplePosts: ${allowsMultiplePosts}`);
       
       if (allowsMultiplePosts) {
-        // For multiple post assignments: Only exclude if member is assigned to the SAME post
-        // (This will be handled by the backend when assigning, so we don't need to exclude here)
-        // Actually, we should still show all members - the backend will prevent duplicate assignments to the same post
-        // So we don't add any exclusion query for multiple post scenarios
-        console.log(`[Eligible Members] Allowing multiple post assignments for department ${departmentId} at ${level} level`);
+        // For multiple post assignments: Show all members - the backend will prevent duplicate assignments to the same post
+        // Members can be assigned to multiple different posts in the same department at this level
+        console.log(`[Eligible Members] Allowing multiple post assignments for department ${departmentId} at ${level} level - no exclusion applied`);
       } else {
         // For district level (and non-National Executive departments): Exclude all members already assigned
+        // Note: divisional level should NOT reach here because it's included in allowsMultiplePosts
         let exclusionQuery = `
           AND m.id NOT IN (
             SELECT member_id FROM department_members 
@@ -160,6 +178,7 @@ export async function GET(request: NextRequest) {
         const exclusionParams: any[] = [departmentId, level];
         
         // Add level-specific state/district matching for exclusion
+        // NOTE: divisional level should never reach here
         if (level === 'state' && state) {
           exclusionQuery += ' AND state = ?';
           exclusionParams.push(state);
@@ -172,6 +191,7 @@ export async function GET(request: NextRequest) {
         exclusionQuery += ')';
         query += exclusionQuery;
         params.push(...exclusionParams);
+        console.log(`[Eligible Members] Excluding already assigned members for department ${departmentId} at ${level} level`);
       }
     }
 

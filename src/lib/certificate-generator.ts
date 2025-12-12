@@ -24,14 +24,47 @@ interface CertificateData {
     print_as_name_hi?: string | null;
     is_national_executive?: boolean;
   };
-  level: 'national' | 'state' | 'district';
+  level: 'national' | 'state' | 'district' | 'divisional';
   state?: string | null;
   district?: string | null;
+  division?: string | null;
   appointment_date: string;
   certificate_number: string;
   language?: 'hi' | 'en';
   valid_from?: string | null;
   valid_until?: string | null;
+}
+
+// Helper function to get division name in correct language (Hindi or English)
+async function getDivisionName(divisionName: string | null | undefined, stateName: string | null | undefined, isHindi: boolean): Promise<string | null> {
+  if (!divisionName || !divisionName.trim() || !stateName || !stateName.trim()) return null;
+  
+  try {
+    // Get language preference for the state
+    const languagePreference = await getStateLanguagePreference({ stateName: stateName.trim() });
+    
+    // If certificate is in Hindi and state prefers Hindi, get Hindi name
+    if (isHindi && languagePreference === 'hi') {
+      const result = await executeQuery(
+        `SELECT d.division_name_hindi 
+         FROM divisions d
+         JOIN states s ON d.state_code = s.state_code
+         WHERE s.state_name_english = ? AND d.division_name_english = ?
+         LIMIT 1`,
+        [stateName.trim(), divisionName.trim()]
+      ) as Array<{ division_name_hindi: string | null }>;
+      
+      if (result.length > 0 && result[0].division_name_hindi) {
+        return result[0].division_name_hindi;
+      }
+    }
+    
+    // Return English name (or fallback to provided name)
+    return divisionName.trim();
+  } catch (error) {
+    console.error('Error getting division name:', error);
+    return divisionName?.trim() || null;
+  }
 }
 
 // Helper function to get state name in correct language (Hindi or English)
@@ -301,8 +334,8 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     
     if (!isNationalExecutive) {
       const levelPrefix = isHindi
-        ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-        : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+        ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : data.level === 'district' ? 'जिला' : 'संभाग')
+        : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : data.level === 'district' ? 'District' : 'Divisional');
       deptPostPhrase = `${levelPrefix} ${printAs}`.trim();
     } else {
       deptPostPhrase = printAs;
@@ -320,8 +353,8 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
   const isNationalExecutive = data.department.is_national_executive === true;
   if (!isNationalExecutive) {
   const levelPrefix = isHindi
-    ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : 'जिला')
-    : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : 'District');
+    ? (data.level === 'national' ? 'राष्ट्रीय' : data.level === 'state' ? 'प्रदेश' : data.level === 'district' ? 'जिला' : 'संभाग')
+    : (data.level === 'national' ? 'National' : data.level === 'state' ? 'State' : data.level === 'district' ? 'District' : 'Divisional');
   postName = `${levelPrefix} ${postName}`.trim();
   }
   
@@ -330,7 +363,7 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     : `${postName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
   }
   
-  // Get location names (state/district) with correct language and add to designation
+  // Get location names (state/district/division) with correct language and add to designation
   if (data.level === 'state' && data.state) {
     // For state level: get state name in correct language
     const stateName = await getStateName(data.state, isHindi);
@@ -342,6 +375,17 @@ export async function generateAppointmentCertificate(data: CertificateData): Pro
     const stateName = await getStateName(data.state, isHindi);
     if (stateName) {
       deptPostPhrase = `${deptPostPhrase}, ${data.district}, ${stateName}`;
+    }
+  } else if (data.level === 'divisional' && data.division && data.state) {
+    // For divisional level: division name in correct language, then state name
+    // (Level prefix "संभाग"/"Divisional" is already added to post name above)
+    const stateName = await getStateName(data.state, isHindi);
+    // Get division name in correct language
+    const divisionName = await getDivisionName(data.division, data.state, isHindi);
+    if (divisionName && stateName) {
+      deptPostPhrase = `${deptPostPhrase}, ${divisionName}, ${stateName}`;
+    } else if (divisionName) {
+      deptPostPhrase = `${deptPostPhrase}, ${divisionName}`;
     }
   }
   // For national level: no location added
@@ -1043,7 +1087,7 @@ export async function generateMembershipCertificate(data: MembershipCertificateD
   return `/certificates/${fileName}`;
 }
 
-function getLevelText(level: string, state?: string | null, district?: string | null): string {
+function getLevelText(level: string, state?: string | null, district?: string | null, division?: string | null): string {
   switch (level) {
     case 'national':
       return ' at National Level';
@@ -1051,12 +1095,14 @@ function getLevelText(level: string, state?: string | null, district?: string | 
       return state ? ` at State Level, ${state}` : ' at State Level';
     case 'district':
       return state && district ? ` at District Level, ${district}, ${state}` : ' at District Level';
+    case 'divisional':
+      return state && division ? ` at Divisional Level, ${division}, ${state}` : ' at Divisional Level';
     default:
       return '';
   }
 }
 
-function getLevelTextHindi(level: string, state?: string | null, district?: string | null): string {
+function getLevelTextHindi(level: string, state?: string | null, district?: string | null, division?: string | null): string {
   switch (level) {
     case 'national':
       return 'राष्ट्रीय स्तर';
@@ -1070,6 +1116,14 @@ function getLevelTextHindi(level: string, state?: string | null, district?: stri
         return `जिला स्तर - ${district}`;
       }
       return 'जिला स्तर';
+    case 'divisional':
+      if (state && division) {
+        return `संभाग स्तर - ${division}, ${state}`;
+      }
+      if (division) {
+        return `संभाग स्तर - ${division}`;
+      }
+      return 'संभाग स्तर';
     default:
       return '—';
   }

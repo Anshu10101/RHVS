@@ -277,11 +277,15 @@ export default function AssignPermissionsPage() {
   // const handleTemplateSelect = (_: string) => {};
 
   const handlePermissionToggle = (permissionKey: string, checked: boolean) => {
-    setSelectedPermissions(prev => 
-      checked
-        ? [...prev, permissionKey]
-        : prev.filter(p => p !== permissionKey)
-    );
+    setSelectedPermissions(prev => {
+      if (checked) {
+        // Add if not already present
+        return prev.includes(permissionKey) ? prev : [...prev, permissionKey];
+      } else {
+        // Remove if present
+        return prev.filter(p => p !== permissionKey);
+      }
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -438,13 +442,40 @@ export default function AssignPermissionsPage() {
     }
   };
 
-  const groupedPermissions = (availablePermissions || []).reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {} as { [key: string]: AvailablePermission[] });
+  const groupedPermissions = useMemo(() => {
+    const grouped = (availablePermissions || []).reduce((acc, permission) => {
+      if (!acc[permission.category]) {
+        acc[permission.category] = [];
+      }
+      acc[permission.category].push(permission);
+      return acc;
+    }, {} as { [key: string]: AvailablePermission[] });
+
+    // Sort permissions within each category, moving view_analytics to the end
+    Object.keys(grouped).forEach(category => {
+      grouped[category].sort((a, b) => {
+        // Move view_analytics to the end
+        if (a.key === 'view_analytics') return 1;
+        if (b.key === 'view_analytics') return -1;
+        // Otherwise sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+    // Sort categories, moving analytics to the end
+    const sortedCategories = Object.keys(grouped).sort((a, b) => {
+      if (a === 'analytics') return 1;
+      if (b === 'analytics') return -1;
+      return a.localeCompare(b);
+    });
+
+    const sortedGrouped: { [key: string]: AvailablePermission[] } = {};
+    sortedCategories.forEach(category => {
+      sortedGrouped[category] = grouped[category];
+    });
+
+    return sortedGrouped;
+  }, [availablePermissions]);
 
   // Flatten district admins for filtering and sorting
   const flattenedAdmins = useMemo(() => {
@@ -661,8 +692,18 @@ export default function AssignPermissionsPage() {
                      onValueChange={setSelectedAdmin}
                      disabled={!selectedDistrict}
                    >
-                     <SelectTrigger className="h-9 sm:h-9 md:h-10 text-xs sm:text-sm w-full">
-                       <SelectValue placeholder={selectedDistrict ? t('admin.permissions.assign.chooseDistrictAdmin') : t('admin.permissions.assign.selectDistrictFirst')} />
+                     <SelectTrigger className="h-auto min-h-[2.5rem] sm:min-h-[2.75rem] text-xs sm:text-sm w-full py-2 px-3">
+                       <SelectValue placeholder={selectedDistrict ? t('admin.permissions.assign.chooseDistrictAdmin') : t('admin.permissions.assign.selectDistrictFirst')}>
+                         {selectedAdmin && (() => {
+                           const selectedAdminData = getAdminsForDistrict(selectedDistrict).find(a => a.id.toString() === selectedAdmin);
+                           return selectedAdminData ? (
+                             <div className="flex flex-col gap-0.5 w-full text-left">
+                               <span className="truncate font-medium text-xs sm:text-sm leading-tight">{selectedAdminData.name}</span>
+                               <span className="truncate text-[10px] sm:text-xs text-gray-500 leading-tight">{selectedAdminData.email}</span>
+                             </div>
+                           ) : null;
+                         })()}
+                       </SelectValue>
                      </SelectTrigger>
                      <SelectContent className="max-h-[300px]">
                        {getAdminsForDistrict(selectedDistrict).length === 0 ? (
@@ -671,10 +712,10 @@ export default function AssignPermissionsPage() {
                          </div>
                        ) : (
                          getAdminsForDistrict(selectedDistrict).map((admin) => (
-                           <SelectItem key={admin.id} value={admin.id.toString()} className="py-2.5">
+                           <SelectItem key={admin.id} value={admin.id.toString()} className="py-2.5 sm:py-3">
                              <div className="flex flex-col gap-1 w-full min-w-0">
-                               <span className="truncate font-medium text-sm">{admin.name}</span>
-                               <span className="truncate text-xs text-gray-500">{admin.email}</span>
+                               <span className="truncate font-medium text-sm sm:text-base leading-tight">{admin.name}</span>
+                               <span className="truncate text-xs sm:text-sm text-gray-500 leading-tight">{admin.email}</span>
                              </div>
                            </SelectItem>
                          ))
@@ -684,10 +725,10 @@ export default function AssignPermissionsPage() {
                    {selectedAdmin && (() => {
                      const selectedAdminData = getAdminsForDistrict(selectedDistrict).find(a => a.id.toString() === selectedAdmin);
                      return selectedAdminData ? (
-                       <div className="mt-1.5 sm:mt-2 p-2 sm:p-2.5 rounded-md sm:rounded-lg bg-gray-50 border border-gray-200">
+                       <div className="mt-1.5 sm:mt-2 p-2 sm:p-2.5 md:p-3 rounded-md sm:rounded-lg bg-gray-50 border border-gray-200">
                          <div className="flex flex-col gap-0.5 sm:gap-1">
-                           <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">{selectedAdminData.name}</span>
-                           <span className="text-xs text-gray-500 break-all">{selectedAdminData.email}</span>
+                           <span className="text-xs sm:text-sm md:text-base font-medium text-gray-700 break-words">{selectedAdminData.name}</span>
+                           <span className="text-[10px] sm:text-xs md:text-sm text-gray-500 break-all">{selectedAdminData.email}</span>
                          </div>
                        </div>
                      ) : null;
@@ -716,34 +757,42 @@ export default function AssignPermissionsPage() {
                         {getPermissionCategory(category)}
                       </h4>
                       <div className="space-y-2 sm:space-y-3">
-                        {permissions.map((permission) => (
-                          <div key={`${category}-${permission.key}`} className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-2.5 md:p-3 border rounded-lg hover:bg-gray-50 transition-colors">
-                            <div className="flex items-start space-x-2.5 sm:space-x-3 flex-1 min-w-0">
-                            <Checkbox
-                              id={permission.key}
-                              checked={selectedPermissions.includes(permission.key)}
-                              onCheckedChange={(checked) => handlePermissionToggle(permission.key, checked === true)}
-                              className="mt-0.5 flex-shrink-0"
-                            />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
-                                <Label 
-                                  htmlFor={permission.key}
-                                    className="text-xs sm:text-sm font-medium cursor-pointer break-words"
-                                >
-                                  {permission.name}
-                                </Label>
-                                <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-[10px] sm:text-xs px-1.5 py-0 flex-shrink-0">
-                                    {permission.type === 'permanent' ? t('admin.permissions.assign.permanent') : t('admin.permissions.assign.timeBased')}
-                                </Badge>
-                              </div>
-                                <p className="text-xs text-gray-500 line-clamp-2 sm:line-clamp-none break-words">
-                                {permission.description}
-                              </p>
+                        {permissions.map((permission) => {
+                          const isChecked = selectedPermissions.includes(permission.key);
+                          return (
+                            <div 
+                              key={`${category}-${permission.key}`} 
+                              className="flex flex-col gap-2 sm:gap-3 p-2 sm:p-2.5 md:p-3 border rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-start space-x-2.5 sm:space-x-3 flex-1 min-w-0">
+                                <Checkbox
+                                  id={permission.key}
+                                  checked={isChecked}
+                                  onCheckedChange={(checked) => {
+                                    handlePermissionToggle(permission.key, checked === true);
+                                  }}
+                                  className="mt-0.5 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                                    <Label 
+                                      htmlFor={permission.key}
+                                      className="text-xs sm:text-sm font-medium cursor-pointer break-words"
+                                    >
+                                      {permission.name}
+                                    </Label>
+                                    <Badge variant={permission.type === 'permanent' ? 'default' : 'secondary'} className="text-[10px] sm:text-xs px-1.5 py-0 flex-shrink-0">
+                                      {permission.type === 'permanent' ? t('admin.permissions.assign.permanent') : t('admin.permissions.assign.timeBased')}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-xs text-gray-500 line-clamp-2 sm:line-clamp-none break-words">
+                                    {permission.description}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))

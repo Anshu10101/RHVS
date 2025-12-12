@@ -30,28 +30,50 @@ export const metadata: Metadata = {
   },
   description: "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित। सनातन धर्म और हिंदू संस्कृति के संरक्षण में हमारे साथ जुड़ें।",
   keywords: [
+    // Primary identifiers - English
     "Rashtriya Hindu Vahini Sangathan",
     "RHVS",
+    "RHVS India",
+    "Rashtriya Hindu Vahini Sangathan official",
+    "Rashtriya Hindu Vahini Sangathan website",
+    // Primary identifiers - Hindi
     "राष्ट्रीय हिंदू वाहिनी संगठन",
+    "राष्ट्रीय हिंदू वाहिनी संगठन आधिकारिक",
+    "राष्ट्रीय हिंदू वाहिनी संगठन वेबसाइट",
+    "आरएचवीएस",
+    "आर एच वी एस",
+    // Organization type
     "Hindu organization",
     "Hindu community organization",
-    "Sanatan Dharma",
-    "सनातन धर्म",
-    "Hindu community",
-    "Hindu culture",
     "Hindu religious organization",
     "religious organization",
+    "Hindu Sangathan",
+    "Hindu Vahini",
+    "Hindu community",
+    "Hindu community India",
+    "Hindu organization India",
+    // Religious & Cultural
+    "Sanatan Dharma",
+    "सनातन धर्म",
+    "Hindu culture",
+    "Hindu religion",
+    "Hinduism",
+    "हिंदू धर्म",
+    "हिंदू संस्कृति",
+    // Activities & Services
     "spiritual products",
     "Hindu events",
     "community service",
-    "Hindu community India",
-    "Hindu organization India",
-    "Hindu Sangathan",
-    "Hindu Vahini",
     "community activities",
     "spiritual gatherings",
     "Hindu festivals",
-    "religious events"
+    "religious events",
+    "Hindu community service",
+    // Location-based
+    "Hindu organization Delhi",
+    "Hindu organization India",
+    "Hindu community Delhi",
+    "Hindu community India"
   ],
   authors: [{ name: "राष्ट्रीय हिंदू वाहिनी संगठन" }],
   creator: "राष्ट्रीय हिंदू वाहिनी संगठन",
@@ -64,10 +86,15 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
     ],
-    apple: "/icons/icon-192x192.png"
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
+    ],
+    shortcut: "/favicon.ico"
   },
   openGraph: {
     type: "website",
@@ -130,24 +157,81 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "राष्ट्रीय हिंदू वाहिनी संगठन",
-    "alternateName": ["Rashtriya Hindu Vahini Sangathan", "RHVS"],
+    "alternateName": [
+      "Rashtriya Hindu Vahini Sangathan",
+      "RHVS",
+      "राष्ट्रीय हिंदू वाहिनी संगठन",
+      "आरएचवीएस"
+    ],
     "url": siteUrl,
-    "logo": logoUrl,
+    "logo": {
+      "@type": "ImageObject",
+      "url": logoUrl,
+      "width": 1200,
+      "height": 630
+    },
+    "image": logoUrl,
     "description": "राष्ट्रीय हिंदू वाहिनी संगठन (RHVS) की आधिकारिक वेबसाइट। हिंदू समुदाय की सेवा और एकता के लिए समर्पित। सनातन धर्म और हिंदू संस्कृति के संरक्षण में हमारे साथ जुड़ें।",
+    "foundingDate": "2020",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "IN",
+      "addressLocality": "New Delhi",
+      "addressRegion": "Delhi"
+    },
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "General Inquiry",
-      "availableLanguage": ["en", "hi"]
-    }
+      "availableLanguage": ["en", "hi", "Hindi", "English"]
+    },
+    "sameAs": [
+      siteUrl
+    ],
+    "knowsAbout": [
+      "Hinduism",
+      "Sanatan Dharma",
+      "सनातन धर्म",
+      "Hindu Community",
+      "Religious Organization",
+      "Community Service"
+    ]
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "राष्ट्रीय हिंदू वाहिनी संगठन",
+    "alternateName": ["Rashtriya Hindu Vahini Sangathan", "RHVS"],
+    "url": siteUrl,
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": `${siteUrl}/?q={search_term_string}`
+      },
+      "query-input": "required name=search_term_string"
+    },
+    "inLanguage": ["hi", "en", "hi-IN", "en-IN"]
   };
 
   return (
     <html lang="hi" suppressHydrationWarning>
       <head>
+        {/* Organization Schema */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
+        {/* Website Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+        />
+        {/* Additional meta tags for better SEO - Next.js metadata handles canonical and hreflang, but explicit tags help */}
+        <link rel="canonical" href={siteUrl} />
+        <link rel="alternate" hrefLang="hi" href={siteUrl} />
+        <link rel="alternate" hrefLang="en" href={siteUrl} />
+        <link rel="alternate" hrefLang="x-default" href={siteUrl} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ServiceWorkerProvider />
