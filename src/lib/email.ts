@@ -264,24 +264,31 @@ export async function sendTokenEmail(
       : (isHindi ? 'सदस्यता सत्यापन ओटीपी' : 'Verification OTP');
     
     const html = `
-      <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif; max-width:640px; margin:0 auto; background:#f8fafc; padding:24px;">
-        <div style="background:linear-gradient(135deg,#f97316,#ea580c); border-radius:16px 16px 0 0; color:#fff; text-align:center; padding:24px 16px;">
-          <h1 style="margin:0; font-size:28px; letter-spacing:0.4px;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
-          <p style="margin:8px 0 0; font-size:16px; color:#fde68a; font-weight:600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      </head>
+      <body style="margin:0; padding:0; background:#f8fafc;">
+      <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif; max-width:640px; margin:0 auto; background:#f8fafc; padding:16px; box-sizing:border-box;">
+        <div style="background:linear-gradient(135deg,#f97316,#ea580c); border-radius:12px 12px 0 0; color:#fff; text-align:center; padding:20px 12px;">
+          <h1 style="margin:0; font-size:clamp(20px, 5vw, 28px); letter-spacing:0.4px; line-height:1.3;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
+          <p style="margin:8px 0 0; font-size:clamp(14px, 3.5vw, 16px); color:#fde68a; font-weight:600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
           </div>
-        <div style="background:#ffffff; border:1px solid #ffe0c4; border-top:none; padding:28px 24px; border-radius:0 0 16px 16px; box-shadow:0 15px 35px rgba(16,24,40,0.08);">
+        <div style="background:#ffffff; border:1px solid #ffe0c4; border-top:none; padding:20px 16px; border-radius:0 0 12px 12px; box-shadow:0 15px 35px rgba(16,24,40,0.08); box-sizing:border-box;">
           <p style="margin:0 0 12px; color:#111827; font-weight:600;">${greeting}</p>
           <p style="margin:0 0 20px; color:#374151; line-height:1.6;">${introText}</p>
           
-          <div style="max-width:100%; border-radius:14px; padding:18px; text-align:center; background:#ffffff; border:1px solid #ffe8d1; overflow:hidden;">
-            <p style="margin:0; color:#ea580c; font-weight:600; letter-spacing:1.1px; text-transform:uppercase;">${heroLabel}</p>
-            <div style="margin:12px auto; display:inline-flex; align-items:center; justify-content:center; gap:${isRegistration ? '8px' : '4px'}; padding:${isRegistration ? '12px 16px' : '14px 18px'}; color:#7c2d12; font-size:${isRegistration ? '18px' : '24px'}; font-weight:700; border-radius:12px; font-family:'SFMono-Regular','Consolas',monospace; letter-spacing:${isRegistration ? '0.8px' : '3px'}; white-space:nowrap; max-width:100%; box-sizing:border-box; border:1px solid #fde68a; background:#fff;">
+          <div style="max-width:100%; border-radius:14px; padding:18px; text-align:center; background:#ffffff; border:1px solid #ffe8d1; overflow:hidden; box-sizing:border-box;">
+            <p style="margin:0 0 16px; color:#ea580c; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:14px;">${heroLabel}</p>
+            <div style="margin:12px auto; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:${isRegistration ? '6px' : '4px'}; padding:${isRegistration ? '16px 12px' : '14px 18px'}; color:#7c2d12; font-size:${isRegistration ? 'clamp(16px, 4vw, 22px)' : 'clamp(20px, 5vw, 28px)'}; font-weight:700; border-radius:12px; font-family:'SFMono-Regular','Consolas',monospace; letter-spacing:${isRegistration ? '0.5px' : '2px'}; max-width:100%; box-sizing:border-box; border:2px solid #fde68a; background:#fff; word-break:break-all; line-height:1.4;">
               ${tokenParts.map((segment, idx) => `
-                <span style="display:block;">${segment}</span>
-                ${idx < tokenParts.length - 1 ? '<span style="color:#b45309; font-weight:700;">-</span>' : ''}
+                <span style="display:inline-block; white-space:nowrap;">${segment}</span>
+                ${idx < tokenParts.length - 1 ? '<span style="color:#b45309; font-weight:700; margin:0 2px;">-</span>' : ''}
               `).join('')}
             </div>
-            <p style="margin:0; color:#4b5563; font-size:14px;">${expiryText}</p>
+            <p style="margin:16px 0 0; color:#4b5563; font-size:14px; line-height:1.5;">${expiryText}</p>
           </div>
           
           ${isRegistration ? `
@@ -303,10 +310,12 @@ export async function sendTokenEmail(
             <p style="margin:0; color:#374151; font-size:14px; line-height:1.6;">${confidentialityNote}</p>
           </div>
           
-          <p style="margin:20px 0 0; color:#9ca3af; font-size:12px;">${footerText}</p>
+          <p style="margin:20px 0 0; color:#9ca3af; font-size:12px; line-height:1.5;">${footerText}</p>
           <p style="margin:6px 0 0; color:#9ca3af; font-size:12px;">© ${currentYear} राष्ट्रीय हिन्दू वाहिनी संगठन • All Rights Reserved</p>
         </div>
       </div>
+      </body>
+      </html>
     `;
 
     const result = await transporter.sendMail({

@@ -11,6 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Search,
   RefreshCw,
   CheckCircle,
@@ -62,6 +72,10 @@ export function TokenVerification() {
   const { t } = useLanguage();
   const [tokens, setTokens] = useState<RegistrationToken[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [tokenToReject, setTokenToReject] = useState<string | null>(null);
+  const [showQuickVerifyDialog, setShowQuickVerifyDialog] = useState(false);
+  const [tokenToQuickVerify, setTokenToQuickVerify] = useState<RegistrationToken | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('pending');
@@ -170,6 +184,39 @@ export function TokenVerification() {
 
     return () => clearTimeout(timer);
   }, [searchTerm, currentPage, fetchTokens]);
+
+  const handleQuickVerify = async (dbToken: string) => {
+    try {
+      setVerifying(true);
+      setTokenError(null);
+
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/verify-token', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ 
+          token: dbToken, 
+          action: 'verify', 
+          adminId: 1 // TODO: Get from auth context
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setError(null);
+        fetchTokens();
+      } else {
+        setError(data.message || 'Failed to verify token');
+      }
+    } catch (err) {
+      setError('Failed to verify token');
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   const handleVerifyToken = async (dbToken: string, action: 'verify' | 'reject') => {
     try {
@@ -508,33 +555,33 @@ export function TokenVerification() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 truncate">{token.email}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">{token.phone}</div>
+                    <td className="px-3 sm:px-4 xl:px-6 py-3 sm:py-4">
+                      <div className="text-xs sm:text-sm text-gray-900 truncate max-w-[150px] sm:max-w-none">{token.email}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[150px] sm:max-w-none">{token.phone}</div>
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
-                      <div className="text-xs sm:text-sm font-mono text-gray-900 max-w-xs truncate">
+                    <td className="px-3 sm:px-4 xl:px-6 py-3 sm:py-4">
+                      <div className="text-[10px] sm:text-xs font-mono text-gray-900 max-w-[120px] sm:max-w-xs truncate">
                         {token.token}
                       </div>
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-4 xl:px-6 py-3 sm:py-4 whitespace-nowrap">
                       {getStatusBadge(token.status)}
                     </td>
-                    <td className="px-4 xl:px-6 py-4">
-                      <div className="text-sm text-gray-900">
+                    <td className="px-3 sm:px-4 xl:px-6 py-3 sm:py-4">
+                      <div className="text-xs sm:text-sm text-gray-900">
                         <div className="font-medium">{t('admin.members.tokens.expiresAt')} {formatDate(token.expires_at)}</div>
                         {token.created_at && (
-                          <div className="text-xs text-gray-500 mt-1">
+                          <div className="text-[10px] sm:text-xs text-gray-500 mt-1">
                             {t('admin.members.tokens.issued')} {formatDate(token.created_at)}
-                      </div>
+                          </div>
                         )}
                       </div>
-                      <div className={`text-xs sm:text-sm mt-1 font-medium ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-green-600'}`}>
+                      <div className={`text-[10px] sm:text-xs mt-1 font-medium ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-green-600'}`}>
                         {isTokenExpired(token.expires_at) ? t('admin.members.tokens.expired') : t('admin.members.tokens.valid')}
                       </div>
                     </td>
-                    <td className="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-1 xl:space-x-2">
+                    <td className="px-3 sm:px-4 xl:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center gap-1 xl:gap-2">
                         <Button
                           size="sm"
                           variant="outline"
@@ -542,7 +589,8 @@ export function TokenVerification() {
                             setSelectedToken(token);
                             setShowDetails(true);
                           }}
-                          className="cursor-pointer h-8 w-8 p-0"
+                          className="cursor-pointer h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
+                          title={t('admin.members.tokens.viewDetails')}
                         >
                           <User className="h-3.5 w-3.5" />
                         </Button>
@@ -551,18 +599,26 @@ export function TokenVerification() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleVerifyToken(token.token, 'verify')}
-                              className="text-green-600 hover:text-green-700 cursor-pointer disabled:cursor-not-allowed h-8 w-8 p-0"
+                              onClick={() => {
+                                setTokenToQuickVerify(token);
+                                setShowQuickVerifyDialog(true);
+                              }}
+                              className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300 hover:border-green-400 cursor-pointer disabled:cursor-not-allowed h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
                               disabled={verifying}
+                              title={t('admin.members.tokens.quickVerify') || 'Quick Verify'}
                             >
                               <CheckCircle className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleVerifyToken(token.token, 'reject')}
-                              className="text-red-600 hover:text-red-700 cursor-pointer disabled:cursor-not-allowed h-8 w-8 p-0"
+                              onClick={() => {
+                                setTokenToReject(token.token);
+                                setShowRejectConfirm(true);
+                              }}
+                              className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 cursor-pointer disabled:cursor-not-allowed h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
                               disabled={verifying}
+                              title={t('admin.members.tokens.reject')}
                             >
                               <XCircle className="h-3.5 w-3.5" />
                             </Button>
@@ -573,8 +629,9 @@ export function TokenVerification() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownloadCertificate(token)}
-                            className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
+                            className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
                             disabled={downloading}
+                            title={t('admin.members.tokens.downloadCertificate')}
                           >
                             <Download className="h-3.5 w-3.5" />
                           </Button>
@@ -628,35 +685,35 @@ export function TokenVerification() {
                     </div>
 
                     {/* Contact Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                      <div className="flex items-start space-x-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2 pt-2 border-t border-gray-100">
+                      <div className="flex items-start gap-2">
                         <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs text-gray-500">Email</p>
-                          <p className="text-sm text-gray-900 truncate">{token.email}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">{t('admin.members.tokens.email')}</p>
+                          <p className="text-xs sm:text-sm text-gray-900 break-words">{token.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-start space-x-2">
+                      <div className="flex items-start gap-2">
                         <Phone className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs text-gray-500">Phone</p>
-                          <p className="text-sm text-gray-900">{token.phone}</p>
+                          <p className="text-xs text-gray-500 mb-0.5">{t('admin.members.tokens.phone')}</p>
+                          <p className="text-xs sm:text-sm text-gray-900 break-words">{token.phone}</p>
                         </div>
                       </div>
                     </div>
 
                     {/* Token & Expiry */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
-                      <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2 pt-2 border-t border-gray-100">
+                      <div className="min-w-0">
                         <p className="text-xs text-gray-500 mb-1">{t('admin.members.tokens.token')}</p>
-                        <p className="text-xs font-mono text-gray-900 break-all">{token.token}</p>
+                        <p className="text-[10px] sm:text-xs font-mono text-gray-900 break-all">{token.token}</p>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-gray-500 mb-1">{t('admin.members.tokens.expires')}</p>
-                        <p className="text-sm text-gray-900">
+                        <p className="text-xs sm:text-sm text-gray-900">
                           {formatDate(token.expires_at)}
                         </p>
-                        <p className={`text-xs ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
+                        <p className={`text-[10px] sm:text-xs ${isTokenExpired(token.expires_at) ? 'text-red-500' : 'text-gray-500'}`}>
                           {isTokenExpired(token.expires_at) ? t('admin.members.tokens.expired') : t('admin.members.tokens.valid')}
                         </p>
                       </div>
@@ -664,39 +721,76 @@ export function TokenVerification() {
 
                     {/* Actions */}
                     <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedToken(token);
-                          setShowDetails(true);
-                        }}
-                        className="flex-1 sm:flex-none cursor-pointer text-xs"
-                      >
-                        <User className="h-3.5 w-3.5 mr-1.5" />
-                        View
-                      </Button>
-                      {token.status === 'pending' && !isTokenExpired(token.expires_at) && (
+                      <div className="flex items-center gap-2 flex-1 sm:flex-none">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedToken(token);
+                            setShowDetails(true);
+                          }}
+                          className="flex-1 sm:flex-none cursor-pointer text-xs min-w-[80px]"
+                        >
+                          <User className="h-3.5 w-3.5 mr-1.5" />
+                          {t('admin.members.tokens.viewDetails')}
+                        </Button>
+                        {token.status === 'pending' && !isTokenExpired(token.expires_at) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setTokenToQuickVerify(token);
+                              setShowQuickVerifyDialog(true);
+                            }}
+                            className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300 hover:border-green-400 cursor-pointer h-8 w-8 p-0 flex-shrink-0"
+                            disabled={verifying}
+                            title={t('admin.members.tokens.quickVerify') || 'Quick Verify'}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                        {token.status === 'pending' && !isTokenExpired(token.expires_at) && (
                         <>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleVerifyToken(token.token, 'verify')}
-                            className="flex-1 sm:flex-none text-green-600 hover:text-green-700 cursor-pointer text-xs"
+                            onClick={() => {
+                              setTokenToQuickVerify(token);
+                              setShowQuickVerifyDialog(true);
+                            }}
+                            className="flex-1 sm:flex-none bg-green-50 hover:bg-green-100 text-green-700 border-green-300 hover:border-green-400 cursor-pointer text-xs"
                             disabled={verifying}
                           >
                             <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-                            Verify
+                            {t('admin.members.tokens.quickVerify')}
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleVerifyToken(token.token, 'reject')}
-                            className="flex-1 sm:flex-none text-red-600 hover:text-red-700 cursor-pointer text-xs"
+                            onClick={() => {
+                              setSelectedToken(token);
+                              setShowDetails(true);
+                              setTokenInput(token.token);
+                            }}
+                            className="flex-1 sm:flex-none text-green-600 hover:text-green-700 border-green-200 hover:border-green-300 cursor-pointer text-xs"
+                            disabled={verifying}
+                          >
+                            <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                            {t('admin.members.tokens.verify')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setTokenToReject(token.token);
+                              setShowRejectConfirm(true);
+                            }}
+                            className="flex-1 sm:flex-none text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 cursor-pointer text-xs"
                             disabled={verifying}
                           >
                             <XCircle className="h-3.5 w-3.5 mr-1.5" />
-                            Reject
+                            {t('admin.members.tokens.reject')}
                           </Button>
                         </>
                       )}
@@ -705,11 +799,11 @@ export function TokenVerification() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleDownloadCertificate(token)}
-                          className="flex-1 sm:flex-none text-blue-600 hover:text-blue-700 text-xs"
+                          className="flex-1 sm:flex-none text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 text-xs"
                           disabled={downloading}
                         >
                           <Download className="h-3.5 w-3.5 mr-1.5" />
-                          Download
+                          {t('admin.members.tokens.downloadCertificate')}
                         </Button>
                       )}
                     </div>
@@ -752,31 +846,32 @@ export function TokenVerification() {
 
       {/* Token Details Modal */}
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-orange-600" />
+        <DialogContent className="w-[95vw] sm:w-[90vw] max-w-6xl max-h-[95vh] p-3 sm:p-4 md:p-6 flex flex-col">
+          <DialogHeader className="px-0 sm:px-0 pb-2 sm:pb-3 flex-shrink-0">
+            <DialogTitle className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg md:text-xl">
+              <div className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 text-orange-600" />
               </div>
-              Registration Token Details
+              <span className="break-words">{t('admin.members.tokens.registrationTokenDetails')}</span>
             </DialogTitle>
-            <DialogDescription>
-              Review member information and complete verification
+            <DialogDescription className="text-[10px] sm:text-xs md:text-sm mt-1">
+              {t('admin.members.tokens.reviewMemberInfo')}
             </DialogDescription>
           </DialogHeader>
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1 -mr-1">
           {selectedToken && (
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-4 md:space-y-6 mt-2 sm:mt-3 md:mt-4">
               {/* Member Profile Header */}
-              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-6 rounded-lg border border-orange-200">
-                <div className="flex items-center space-x-4">
-                  <div className="h-20 w-20 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-3 sm:p-4 md:p-5 rounded-lg border border-orange-200">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="h-14 w-14 sm:h-16 sm:w-16 md:h-20 md:w-20 bg-white rounded-full flex items-center justify-center shadow-sm flex-shrink-0 mx-auto sm:mx-0">
                     {isValidImageUrl(selectedToken.profile_photo_path) ? (
                       <Image
                         src={getValidImageUrl(selectedToken.profile_photo_path)!}
                         alt={selectedToken.name}
                         width={80}
                         height={80}
-                        className="rounded-full object-cover"
+                        className="rounded-full object-cover w-full h-full"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
@@ -786,19 +881,19 @@ export function TokenVerification() {
                       />
                     ) : null}
                     <span 
-                      className="text-orange-600 font-bold text-2xl"
+                      className="text-orange-600 font-bold text-lg sm:text-xl md:text-2xl"
                       style={{ display: !isValidImageUrl(selectedToken.profile_photo_path) ? 'block' : 'none' }}
                     >
                       {selectedToken.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl font-bold text-gray-900 break-words">{selectedToken.name}</h3>
-                    <div className="flex flex-wrap items-center gap-4 mt-2">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto text-center sm:text-left">
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">{selectedToken.name}</h3>
+                    <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-3 mt-1.5">
                       {getStatusBadge(selectedToken.status)}
-                      <div className="text-sm text-gray-600">
-                        <Calendar className="h-4 w-4 inline mr-1" />
-                        Registered: {new Date(selectedToken.registration_date).toLocaleDateString()}
+                      <div className="text-[10px] sm:text-xs md:text-sm text-gray-600 flex items-center justify-center sm:justify-start">
+                        <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5 inline mr-1" />
+                        {t('admin.members.tokens.registered')} {new Date(selectedToken.registration_date).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -806,143 +901,143 @@ export function TokenVerification() {
               </div>
               
               {/* Information Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-5">
                 {/* Contact Information */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Mail className="h-5 w-5 text-orange-600" />
-                      Contact Information
+                <Card className="h-full">
+                  <CardHeader className="pb-2 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                      <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-600 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.contactInformation')}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-start space-x-3">
+                  <CardContent className="space-y-2 sm:space-y-2.5 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <Mail className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-900 break-words min-w-0">{selectedToken.email}</span>
+                      <span className="text-xs sm:text-sm text-gray-900 break-words min-w-0 flex-1">{selectedToken.email}</span>
                     </div>
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm text-gray-900 break-words min-w-0">{selectedToken.phone}</span>
+                      <span className="text-xs sm:text-sm text-gray-900 break-words min-w-0 flex-1">{selectedToken.phone}</span>
                     </div>
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-900 break-words min-w-0">{selectedToken.address}</span>
+                      <span className="text-xs sm:text-sm text-gray-900 break-words min-w-0 flex-1">{selectedToken.address}</span>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Personal Information */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <User className="h-5 w-5 text-orange-600" />
-                      Personal Information
+                <Card className="h-full">
+                  <CardHeader className="pb-2 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-600 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.personalInformation')}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 sm:space-y-2.5 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Father/Husband:</span>
-                      <p className="text-sm text-gray-900 break-words">{selectedToken.father_husband_name}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.fatherHusband')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">{selectedToken.father_husband_name}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Mother/Wife:</span>
-                      <p className="text-sm text-gray-900 break-words">{selectedToken.mother_wife_name}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.motherWife')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">{selectedToken.mother_wife_name}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Aadhar Number:</span>
-                      <p className="text-sm text-gray-900 font-mono break-words">{selectedToken.aadhar_card_number || 'N/A'}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.aadharNumber')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 font-mono break-words">{selectedToken.aadhar_card_number || t('admin.members.tokens.notAvailable')}</p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Location Information */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-orange-600" />
-                      Location
+                <Card className="h-full">
+                  <CardHeader className="pb-2 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-600 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.location')}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 sm:space-y-2.5 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">State:</span>
-                      <p className="text-sm text-gray-900 break-words">{selectedToken.state || 'N/A'}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.state')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">{selectedToken.state || t('admin.members.tokens.notAvailable')}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">District:</span>
-                      <p className="text-sm text-gray-900 break-words">{selectedToken.district || 'N/A'}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.district')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">{selectedToken.district || t('admin.members.tokens.notAvailable')}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Department:</span>
-                      <p className="text-sm text-gray-900 break-words">{selectedToken.department || 'N/A'}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.department')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">{selectedToken.department || t('admin.members.tokens.notAvailable')}</p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Token Information */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-orange-600" />
-                      Token Information
+                <Card className="h-full">
+                  <CardHeader className="pb-2 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                      <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-600 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.tokenInformation')}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 sm:space-y-2.5 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Token ID:</span>
-                      <p className="text-xs text-gray-500 font-mono break-all bg-gray-50 p-2 rounded border">{selectedToken.token}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.tokenId')}</span>
+                      <p className="text-[10px] sm:text-xs text-gray-500 font-mono break-all bg-gray-50 p-2 rounded border">{selectedToken.token}</p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Expires:</span>
-                      <p className={`text-sm ${isTokenExpired(selectedToken.expires_at) ? 'text-red-500 font-semibold' : 'text-gray-900'}`}>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.expires')}</span>
+                      <p className={`text-xs sm:text-sm ${isTokenExpired(selectedToken.expires_at) ? 'text-red-500 font-semibold' : 'text-gray-900'}`}>
                         {formatDate(selectedToken.expires_at)}
-                        {isTokenExpired(selectedToken.expires_at) && ' (Expired)'}
+                        {isTokenExpired(selectedToken.expires_at) && t('admin.members.tokens.expiredLabel')}
                       </p>
                       {selectedToken.created_at && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          Issued: {formatDate(selectedToken.created_at)}
+                        <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
+                          {t('admin.members.tokens.issued')} {formatDate(selectedToken.created_at)}
                         </p>
                       )}
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Existing Member ID:</span>
-                      <p className="text-sm text-gray-900 font-mono break-words">{selectedToken.existing_member_reg_number}</p>
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.existingMemberId')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 font-mono break-words">{selectedToken.existing_member_reg_number}</p>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Initiated By */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <UserPlus className="h-5 w-5 text-orange-600" />
-                      Initiated By
+                <Card className="h-full">
+                  <CardHeader className="pb-2 px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2">
+                      <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 text-orange-600 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.initiatedBy')}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 sm:space-y-2.5 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Member Name:</span>
-                      <p className="text-sm text-gray-900 break-words">
-                        {selectedToken.initiated_by_name || 'Not Provided'}
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.memberName')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 break-words">
+                        {selectedToken.initiated_by_name || t('admin.members.tokens.notProvided')}
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm font-medium text-gray-600">Member Reg No.:</span>
-                      <p className="text-sm text-gray-900 font-mono break-words">
-                        {selectedToken.existing_member_reg_number || 'N/A'}
+                      <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.memberRegNo')}</span>
+                      <p className="text-xs sm:text-sm text-gray-900 font-mono break-words">
+                        {selectedToken.existing_member_reg_number || t('admin.members.tokens.notAvailable')}
                       </p>
                     </div>
                     <div className="grid grid-cols-1 gap-3">
                       <div>
-                        <span className="text-sm font-medium text-gray-600">Email:</span>
-                        <p className="text-sm text-gray-900 break-words">
-                          {selectedToken.initiated_by_email || 'N/A'}
+                        <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.email')}</span>
+                        <p className="text-xs sm:text-sm text-gray-900 break-words">
+                          {selectedToken.initiated_by_email || t('admin.members.tokens.notAvailable')}
                         </p>
                       </div>
                       <div>
-                        <span className="text-sm font-medium text-gray-600">Phone:</span>
-                        <p className="text-sm text-gray-900 break-words">
-                          {selectedToken.initiated_by_phone || 'N/A'}
+                        <span className="text-xs sm:text-sm font-medium text-gray-600 block mb-1">{t('admin.members.tokens.phone')}</span>
+                        <p className="text-xs sm:text-sm text-gray-900 break-words">
+                          {selectedToken.initiated_by_phone || t('admin.members.tokens.notAvailable')}
                         </p>
                       </div>
                     </div>
@@ -953,26 +1048,26 @@ export function TokenVerification() {
               {/* Action Section */}
               {selectedToken.status === 'pending' && !isTokenExpired(selectedToken.expires_at) && (
                 <Card className="border-orange-200 bg-orange-50">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2 text-orange-900">
-                      <Shield className="h-5 w-5" />
-                      Token Verification Required
+                  <CardHeader className="px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-6 pb-2">
+                    <CardTitle className="text-sm sm:text-base md:text-lg flex items-center gap-1.5 sm:gap-2 text-orange-900">
+                      <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5 flex-shrink-0" />
+                      <span className="break-words">{t('admin.members.tokens.tokenVerificationRequired')}</span>
                     </CardTitle>
-                    <CardDescription className="text-orange-700">
-                      Ask the member to provide their registration token to complete verification
+                    <CardDescription className="text-[10px] sm:text-xs md:text-sm text-orange-700 mt-1">
+                      {t('admin.members.tokens.askMemberForToken')}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
                     <div className="space-y-2">
-                      <Label htmlFor="popup-token-input" className="text-sm font-medium text-gray-700">
-                        Enter Member&apos;s Token
+                      <Label htmlFor="popup-token-input" className="text-xs sm:text-sm font-medium text-gray-700">
+                        {t('admin.members.tokens.enterMemberToken')}
                       </Label>
                       <Input
                         id="popup-token-input"
-                        placeholder="Enter token from member (e.g., 523B334515310FD22364FDBA0C89527EF9CD968C998193F1C0CD20C1EFE98552)..."
+                        placeholder={t('admin.members.tokens.enterTokenPlaceholder')}
                         value={tokenInput}
                         onChange={(e) => setTokenInput(e.target.value)}
-                        className="font-mono text-sm"
+                        className="font-mono text-xs sm:text-sm"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             handleVerifyToken(selectedToken.token, 'verify');
@@ -980,29 +1075,32 @@ export function TokenVerification() {
                         }}
                       />
                       {tokenError && (
-                        <p className="text-red-600 text-sm">{tokenError}</p>
+                        <p className="text-red-600 text-xs sm:text-sm">{tokenError}</p>
                       )}
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 min-w-0">
                       <Button
                         onClick={() => handleVerifyToken(selectedToken.token, 'verify')}
-                        className="bg-green-600 hover:bg-green-700 flex-1"
+                        className="bg-green-600 hover:bg-green-700 w-full sm:flex-1 min-w-0 h-auto sm:h-11 py-2.5 sm:py-0"
                         disabled={verifying || !tokenInput.trim()}
-                        size="lg"
+                        size="default"
                       >
-                        <CheckCircle className="h-5 w-5 mr-2" />
-                        {verifying ? 'Verifying...' : 'Verify & Register Member'}
+                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm text-center leading-tight">{verifying ? t('admin.members.tokens.verifying') : t('admin.members.tokens.verifyAndRegister')}</span>
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={() => handleVerifyToken(selectedToken.token, 'reject')}
-                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 flex-1"
+                        onClick={() => {
+                          setTokenToReject(selectedToken.token);
+                          setShowRejectConfirm(true);
+                        }}
+                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 w-full sm:flex-1 min-w-0 h-auto sm:h-11 py-2.5 sm:py-0"
                         disabled={verifying}
-                        size="lg"
+                        size="default"
                       >
-                        <XCircle className="h-5 w-5 mr-2" />
-                        Reject Registration
+                        <XCircle className="h-4 w-4 sm:h-5 sm:w-5 mr-2 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm text-center leading-tight">{t('admin.members.tokens.rejectRegistration')}</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -1011,27 +1109,27 @@ export function TokenVerification() {
 
               {selectedToken.status === 'verified' && (
                 <Card className="border-green-200 bg-green-50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-5 w-5 text-green-600" />
-                      <h4 className="font-semibold text-green-900">Token Verified</h4>
+                  <CardContent className="pt-3 sm:pt-4 md:pt-6 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+                      <h4 className="font-semibold text-sm sm:text-base text-green-900">{t('admin.members.tokens.tokenVerified')}</h4>
                     </div>
-                    <p className="text-sm text-green-700 mt-1">
-                      This token has been verified and the member has been registered.
+                    <p className="text-xs sm:text-sm text-green-700 mt-2">
+                      {t('admin.members.tokens.tokenVerifiedDesc')}
                     </p>
                     {selectedToken.verified_at && (
-                      <p className="text-xs text-green-600 mt-2">
-                        Verified on: {new Date(selectedToken.verified_at).toLocaleDateString()}
+                      <p className="text-[10px] sm:text-xs text-green-600 mt-2">
+                        {t('admin.members.tokens.verifiedOn')} {new Date(selectedToken.verified_at).toLocaleDateString()}
                       </p>
                     )}
                     <div className="mt-4">
                       <Button
                         onClick={() => handleDownloadCertificate(selectedToken)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto h-10 sm:h-11"
                         disabled={downloading}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        {downloading ? t('admin.members.tokens.downloading') : t('admin.members.tokens.downloadCertificate')}
+                        <span className="text-xs sm:text-sm">{downloading ? t('admin.members.tokens.downloading') : t('admin.members.tokens.downloadCertificate')}</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -1039,8 +1137,81 @@ export function TokenVerification() {
               )}
             </div>
           )}
+          </div>
         </DialogContent>
       </Dialog>
+
+      {/* Reject Confirmation Dialog */}
+      <AlertDialog open={showRejectConfirm} onOpenChange={setShowRejectConfirm}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base sm:text-lg">
+              {t('admin.members.tokens.confirmRejectTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {t('admin.members.tokens.confirmRejectDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">
+              {t('admin.members.tokens.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (tokenToReject) {
+                  handleVerifyToken(tokenToReject, 'reject');
+                  setShowRejectConfirm(false);
+                  setTokenToReject(null);
+                }
+              }}
+              className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+              disabled={verifying}
+            >
+              {t('admin.members.tokens.confirmReject')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Quick Verify Confirmation Dialog */}
+      <AlertDialog open={showQuickVerifyDialog} onOpenChange={setShowQuickVerifyDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base sm:text-lg flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              {t('admin.members.tokens.confirmQuickVerifyTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {t('admin.members.tokens.confirmQuickVerifyDescription')}
+            </AlertDialogDescription>
+            {tokenToQuickVerify && (
+              <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 mt-3">
+                <p className="text-xs font-medium text-gray-600 mb-1">{t('admin.members.tokens.tokenId')}</p>
+                <p className="text-sm font-mono text-gray-900 break-all">{tokenToQuickVerify.token}</p>
+                <p className="text-xs text-gray-500 mt-2">{t('admin.members.tokens.memberName')} {tokenToQuickVerify.name}</p>
+              </div>
+            )}
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="w-full sm:w-auto">
+              {t('admin.members.tokens.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (tokenToQuickVerify) {
+                  handleQuickVerify(tokenToQuickVerify.token);
+                  setShowQuickVerifyDialog(false);
+                  setTokenToQuickVerify(null);
+                }
+              }}
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+              disabled={verifying}
+            >
+              {t('admin.members.tokens.proceedToConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

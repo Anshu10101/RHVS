@@ -13,13 +13,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Upload, User, UserRound, Mail, Phone, Home, MapPin, Map, IdCard, Calendar as CalendarIcon, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown, Bell, Send } from 'lucide-react';
+import { Upload, User, UserRound, Mail, Phone, Home, MapPin, Map, IdCard, Calendar as CalendarIcon, Shield, CheckCircle, ArrowRight, Camera, Sparkles, ChevronDown, Bell, Send, Copy, CheckCircle2 } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import Image from 'next/image';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const memberSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -55,6 +56,7 @@ interface District {
 
 export default function MemberRegistrationPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [signature, setSignature] = useState<File | null>(null);
   const [profilePhotoPreview, setProfilePhotoPreview] = useState<string | null>(null);
@@ -79,6 +81,8 @@ export default function MemberRegistrationPage() {
     profilePhotoUrl: string | null;
   } | null>(null);
   const [otpEnabled, setOtpEnabled] = useState(true);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [registrationToken, setRegistrationToken] = useState<string | null>(null);
 
   const form = useForm<MemberFormData>({
     resolver: zodResolver(memberSchema),
@@ -123,22 +127,36 @@ export default function MemberRegistrationPage() {
 
   // Fetch OTP settings with cache-busting and real-time updates
   useEffect(() => {
-    const updateOtpState = (enabled: boolean) => {
+    const updateOtpState = (enabled: boolean, isInitialLoad = false) => {
       setOtpEnabled(enabled);
       // If OTP is disabled, auto-set OTP as sent and set default existing member reg number
       if (!enabled) {
         setOtpSent(true);
-        form.setValue('existingMemberRegNumber', 'RHVS000000');
+        const currentValue = form.getValues('existingMemberRegNumber');
+        // Only set default if field is empty or it's initial load
+        if (!currentValue || isInitialLoad) {
+          form.setValue('existingMemberRegNumber', 'RHVS000000');
+        }
         form.setValue('otp', '000000'); // Dummy OTP that will be bypassed
       } else {
         // If OTP is enabled, reset OTP sent state
-        setOtpSent(false);
-        form.setValue('existingMemberRegNumber', '');
-        form.setValue('otp', '');
+        // Only clear fields if it's initial load, don't clear user input
+        if (isInitialLoad) {
+          setOtpSent(false);
+          form.setValue('existingMemberRegNumber', '');
+          form.setValue('otp', '');
+        } else {
+          // On subsequent updates, only reset OTP sent if user hasn't entered reg number
+          const currentRegNumber = form.getValues('existingMemberRegNumber');
+          if (!currentRegNumber || currentRegNumber === 'RHVS000000') {
+            setOtpSent(false);
+          }
+        }
       }
     };
 
-    const fetchOtpSettings = async () => {
+    let isFirstLoad = true;
+    const fetchOtpSettings = async (isInitial = false) => {
       try {
         // Add cache-busting timestamp to prevent caching
         const response = await fetch(`/api/admin/members/otp-settings?_t=${Date.now()}`, {
@@ -151,7 +169,8 @@ export default function MemberRegistrationPage() {
         const data = await response.json();
         if (data.success && data.settings) {
           const enabled = data.settings.otp_verification_enabled !== false;
-          updateOtpState(enabled);
+          updateOtpState(enabled, isInitial || isFirstLoad);
+          isFirstLoad = false;
         }
       } catch (error) {
         console.error('Error fetching OTP settings:', error);
@@ -160,8 +179,8 @@ export default function MemberRegistrationPage() {
       }
     };
     
-    // Fetch immediately
-    fetchOtpSettings();
+    // Fetch immediately (initial load)
+    fetchOtpSettings(true);
     
     // Set up BroadcastChannel for real-time updates across tabs
     let broadcastChannel: BroadcastChannel | null = null;
@@ -169,8 +188,8 @@ export default function MemberRegistrationPage() {
       broadcastChannel = new BroadcastChannel('otp-settings-update');
       broadcastChannel.onmessage = (event) => {
         if (event.data.type === 'otp-settings-changed') {
-          // Immediately update when admin changes settings
-          updateOtpState(event.data.enabled);
+          // Immediately update when admin changes settings (not initial load)
+          updateOtpState(event.data.enabled, false);
         }
       };
     } catch (err) {
@@ -178,7 +197,7 @@ export default function MemberRegistrationPage() {
     }
     
     // Fallback: Refresh OTP settings every 2 seconds (faster polling as backup)
-    const interval = setInterval(fetchOtpSettings, 2000);
+    const interval = setInterval(() => fetchOtpSettings(false), 2000);
     
     // Also refresh when page becomes visible (user switches tabs back)
     const handleVisibilityChange = () => {
@@ -513,8 +532,9 @@ export default function MemberRegistrationPage() {
       const registerResult = await registerResponse.json();
       
       if (registerResult.success) {
-        // Success message for token-based registration
-        alert(`${t('register.registrationSuccess')} ${registerResult.token}. ${t('register.bringTokenToAdmin')}`);
+        // Show success dialog with token
+        setRegistrationToken(registerResult.token);
+        setShowSuccessDialog(true);
         
         // Reset form and cleanup preview URLs
         if (profilePhotoPreview && profilePhotoPreview.startsWith('blob:')) {
@@ -615,6 +635,81 @@ export default function MemberRegistrationPage() {
             <Button onClick={() => setShowInitiatedNotice(false)} className="w-full bg-orange-600 hover:bg-orange-700">
               {t('register.bringToken')}
             </Button>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+          <DialogContent className="sm:max-w-md max-w-[95vw] rounded-2xl border border-green-200 bg-white/95">
+            <DialogHeader className="space-y-3">
+              <div className="flex items-center justify-center">
+                <div className="p-3 bg-green-100 rounded-full">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+              <DialogTitle className="text-center text-xl sm:text-2xl font-bold text-green-800">
+                {t('register.registrationSuccess')}
+              </DialogTitle>
+              <DialogDescription className="text-center text-sm text-slate-700 leading-relaxed">
+                {t('register.bringTokenToAdmin')}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-4 sm:p-6 border-2 border-orange-200">
+                <p className="text-xs sm:text-sm font-semibold text-orange-700 uppercase tracking-wide text-center mb-3">
+                  {t('register.registrationToken')}
+                </p>
+                <div className="flex items-center justify-center gap-2 flex-wrap">
+                  {registrationToken && registrationToken.split('-').map((segment, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-lg sm:text-2xl md:text-3xl font-bold text-orange-700 font-mono tracking-wider">
+                        {segment}
+                      </span>
+                      {idx < registrationToken.split('-').length - 1 && (
+                        <span className="text-orange-500 font-bold text-xl">-</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (registrationToken) {
+                        navigator.clipboard.writeText(registrationToken);
+                        toast({
+                          title: t('register.tokenCopied'),
+                          description: t('register.tokenCopiedDesc'),
+                        });
+                      }
+                    }}
+                    className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    {t('register.copyToken')}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+                <p className="text-xs sm:text-sm text-blue-800 leading-relaxed">
+                  <strong>{t('register.note')}</strong> {t('register.checkEmailForToken')}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                onClick={() => {
+                  setShowSuccessDialog(false);
+                  setRegistrationToken(null);
+                }} 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {t('register.understood')}
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 

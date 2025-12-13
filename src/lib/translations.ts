@@ -748,6 +748,30 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'समझ गया',
     en: 'Understood'
   },
+  'register.registrationToken': {
+    hi: 'पंजीकरण टोकन',
+    en: 'Registration Token'
+  },
+  'register.tokenCopied': {
+    hi: 'टोकन कॉपी हो गया',
+    en: 'Token Copied'
+  },
+  'register.tokenCopiedDesc': {
+    hi: 'पंजीकरण टोकन क्लिपबोर्ड पर कॉपी हो गया है',
+    en: 'Registration token copied to clipboard'
+  },
+  'register.copyToken': {
+    hi: 'टोकन कॉपी करें',
+    en: 'Copy Token'
+  },
+  'register.checkEmailForToken': {
+    hi: 'कृपया पंजीकरण टोकन के लिए अपना ईमेल जांचें। सत्यापन के लिए इस टोकन को एडमिन कार्यालय में लाएं।',
+    en: 'Please check your email for the registration token. Bring this token to the admin office for verification.'
+  },
+  'register.note': {
+    hi: 'नोट:',
+    en: 'Note:'
+  },
   'register.name': {
     hi: 'नाम',
     en: 'Name'
@@ -767,10 +791,6 @@ export const translations: Record<string, Record<Language, string>> = {
   'register.registrationDateLabel': {
     hi: 'पंजीकरण तिथि',
     en: 'Registration Date'
-  },
-  'register.note': {
-    hi: 'नोट:',
-    en: 'Note:'
   },
   'register.noteText': {
     hi: 'यदि आपको अपना जिला बदलना है या अपनी जानकारी अपडेट करनी है, तो कृपया अपने जिला प्रशासक से संपर्क करें। आप अपने पंजीकृत ईमेल में अपनी सदस्यता विवरण और पंजीकरण पुष्टि भी जांच सकते हैं।',
@@ -2440,7 +2460,7 @@ export const translations: Record<string, Record<Language, string>> = {
   },
   'admin.members.tokens.enterMemberToken': {
     hi: 'सदस्य का टोकन दर्ज करें',
-    en: 'Enter the member\'s token'
+    en: 'Enter Member\'s Token'
   },
   'admin.members.tokens.tokenDoesNotMatch': {
     hi: 'टोकन मेल नहीं खाता। कृपया सदस्य के साथ टोकन सत्यापित करें।',
@@ -2485,6 +2505,162 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.members.tokens.downloadCertificate': {
     hi: 'प्रमाणपत्र डाउनलोड करें',
     en: 'Download Certificate'
+  },
+  'admin.members.tokens.registrationTokenDetails': {
+    hi: 'पंजीकरण टोकन विवरण',
+    en: 'Registration Token Details'
+  },
+  'admin.members.tokens.reviewMemberInfo': {
+    hi: 'सदस्य जानकारी की समीक्षा करें और सत्यापन पूरा करें',
+    en: 'Review member information and complete verification'
+  },
+  'admin.members.tokens.contactInformation': {
+    hi: 'संपर्क जानकारी',
+    en: 'Contact Information'
+  },
+  'admin.members.tokens.personalInformation': {
+    hi: 'व्यक्तिगत जानकारी',
+    en: 'Personal Information'
+  },
+  'admin.members.tokens.location': {
+    hi: 'स्थान',
+    en: 'Location'
+  },
+  'admin.members.tokens.tokenInformation': {
+    hi: 'टोकन जानकारी',
+    en: 'Token Information'
+  },
+  'admin.members.tokens.fatherHusband': {
+    hi: 'पिता/पति:',
+    en: 'Father/Husband:'
+  },
+  'admin.members.tokens.motherWife': {
+    hi: 'माता/पत्नी:',
+    en: 'Mother/Wife:'
+  },
+  'admin.members.tokens.aadharNumber': {
+    hi: 'आधार संख्या:',
+    en: 'Aadhar Number:'
+  },
+  'admin.members.tokens.state': {
+    hi: 'राज्य:',
+    en: 'State:'
+  },
+  'admin.members.tokens.district': {
+    hi: 'जिला:',
+    en: 'District:'
+  },
+  'admin.members.tokens.department': {
+    hi: 'विभाग:',
+    en: 'Department:'
+  },
+  'admin.members.tokens.tokenId': {
+    hi: 'टोकन आईडी:',
+    en: 'Token ID:'
+  },
+  'admin.members.tokens.existingMemberId': {
+    hi: 'मौजूदा सदस्य आईडी:',
+    en: 'Existing Member ID:'
+  },
+  'admin.members.tokens.memberName': {
+    hi: 'सदस्य नाम:',
+    en: 'Member Name:'
+  },
+  'admin.members.tokens.memberRegNo': {
+    hi: 'सदस्य पंजीकरण संख्या:',
+    en: 'Member Reg No.:'
+  },
+  'admin.members.tokens.email': {
+    hi: 'ईमेल:',
+    en: 'Email:'
+  },
+  'admin.members.tokens.phone': {
+    hi: 'फोन:',
+    en: 'Phone:'
+  },
+  'admin.members.tokens.tokenVerificationRequired': {
+    hi: 'टोकन सत्यापन आवश्यक',
+    en: 'Token Verification Required'
+  },
+  'admin.members.tokens.askMemberForToken': {
+    hi: 'सदस्य से उनका पंजीकरण टोकन प्रदान करने के लिए कहें ताकि सत्यापन पूरा हो सके',
+    en: 'Ask the member to provide their registration token to complete verification'
+  },
+  'admin.members.tokens.enterTokenPlaceholder': {
+    hi: 'सदस्य का टोकन दर्ज करें...',
+    en: 'Enter token from member...'
+  },
+  'admin.members.tokens.verifyAndRegister': {
+    hi: 'सत्यापित करें और सदस्य पंजीकृत करें',
+    en: 'Verify & Register Member'
+  },
+  'admin.members.tokens.verifying': {
+    hi: 'सत्यापन हो रहा है...',
+    en: 'Verifying...'
+  },
+  'admin.members.tokens.rejectRegistration': {
+    hi: 'पंजीकरण अस्वीकार करें',
+    en: 'Reject Registration'
+  },
+  'admin.members.tokens.tokenVerified': {
+    hi: 'टोकन सत्यापित',
+    en: 'Token Verified'
+  },
+  'admin.members.tokens.tokenVerifiedDesc': {
+    hi: 'यह टोकन सत्यापित हो चुका है और सदस्य पंजीकृत हो चुका है।',
+    en: 'This token has been verified and the member has been registered.'
+  },
+  'admin.members.tokens.verifiedOn': {
+    hi: 'सत्यापित किया गया:',
+    en: 'Verified on:'
+  },
+  'admin.members.tokens.registered': {
+    hi: 'पंजीकृत:',
+    en: 'Registered:'
+  },
+  'admin.members.tokens.notAvailable': {
+    hi: 'उपलब्ध नहीं',
+    en: 'N/A'
+  },
+  'admin.members.tokens.notProvided': {
+    hi: 'प्रदान नहीं किया गया',
+    en: 'Not Provided'
+  },
+  'admin.members.tokens.expiredLabel': {
+    hi: ' (समाप्त)',
+    en: ' (Expired)'
+  },
+  'admin.members.tokens.quickVerify': {
+    hi: 'त्वरित सत्यापन',
+    en: 'Quick Verify'
+  },
+  'admin.members.tokens.confirmRejectTitle': {
+    hi: 'टोकन अस्वीकार करें?',
+    en: 'Reject Registration Token?'
+  },
+  'admin.members.tokens.confirmRejectDescription': {
+    hi: 'क्या आप वाकई इस पंजीकरण टोकन को अस्वीकार करना चाहते हैं? यह कार्रवाई टोकन को हटा देगी और इसे पुनर्प्राप्त नहीं किया जा सकता है।',
+    en: 'Are you sure you want to reject this registration token? This action will remove the token and cannot be undone.'
+  },
+  'admin.members.tokens.confirmReject': {
+    hi: 'हाँ, अस्वीकार करें',
+    en: 'Yes, Reject'
+  },
+  'admin.members.tokens.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.members.tokens.confirmQuickVerifyTitle': {
+    hi: 'सदस्य पंजीकरण की पुष्टि करें',
+    en: 'Confirm Member Registration'
+  },
+  'admin.members.tokens.confirmQuickVerifyDescription': {
+    hi: 'क्या आप इस सदस्य के पंजीकरण की पुष्टि करना चाहते हैं? नीचे टोकन विवरण देखें:',
+    en: 'Do you want to confirm this member\'s registration? See the token details below:'
+  },
+  'admin.members.tokens.proceedToConfirm': {
+    hi: 'पुष्टि करने के लिए आगे बढ़ें',
+    en: 'Proceed to Confirm'
   },
   
   // Admin Permissions - Assign Permissions Page
