@@ -11,6 +11,10 @@ import Footer from '@/components/Home/Footer';
 import LatestNewsSection from '@/components/Home/LatestNewsSection';
 import LatestEventsSection from '@/components/Home/LatestEventsSection';
 
+// Force dynamic rendering to prevent caching
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
   

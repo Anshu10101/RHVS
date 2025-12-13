@@ -4,14 +4,46 @@ import Link from 'next/link';
 import { Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Footer() {
   const { t, language, setLanguage } = useLanguage();
   const [languageOpen, setLanguageOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for footer updates via BroadcastChannel
+  useEffect(() => {
+    let broadcastChannel: BroadcastChannel | null = null;
+    try {
+      broadcastChannel = new BroadcastChannel('footer-update');
+      broadcastChannel.onmessage = (event) => {
+        if (event.data.type === 'footer-updated') {
+          // Force re-render by updating key
+          setRefreshKey(prev => prev + 1);
+        }
+      };
+    } catch (err) {
+      console.log('BroadcastChannel not supported');
+    }
+
+    // Also refresh when page becomes visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   return (
-    <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50 shadow-inner">
+    <footer key={refreshKey} className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50 shadow-inner">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Organization Info */}

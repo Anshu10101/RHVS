@@ -63,6 +63,20 @@ export function OTPManagement() {
       const data = await response.json();
       if (data.success) {
         setOtpEnabled(enabled);
+        
+        // Broadcast the change to all tabs/windows using BroadcastChannel
+        try {
+          const channel = new BroadcastChannel('otp-settings-update');
+          channel.postMessage({ 
+            type: 'otp-settings-changed', 
+            enabled: enabled,
+            timestamp: Date.now()
+          });
+          channel.close();
+        } catch (err) {
+          console.log('BroadcastChannel not supported, using polling fallback');
+        }
+        
         toast({
           title: t('admin.members.otp.success'),
           description: enabled ? t('admin.members.otp.enabledSuccess') : t('admin.members.otp.disabledSuccess'),

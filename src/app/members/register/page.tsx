@@ -80,21 +80,78 @@ export default function MemberRegistrationPage() {
   } | null>(null);
   const [otpEnabled, setOtpEnabled] = useState(true);
 
-  // Fetch OTP settings
+  const form = useForm<MemberFormData>({
+    resolver: zodResolver(memberSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      stateId: '',
+      districtId: '',
+      aadharCardNumber: '',
+      fatherHusbandName: '',
+      motherWifeName: '',
+      registrationDate: new Date(),
+      existingMemberRegNumber: '',
+      otp: '',
+      feePaid: false,
+    },
+    mode: 'onChange',
+  });
+
+  // Fetch districts when state changes (for backward compatibility)
+  const fetchDistricts = async (stateId: string) => {
+    if (!stateId) {
+      setDistricts([]);
+      return;
+    }
+    
+    setLoadingDistricts(true);
+    try {
+      const response = await fetch(`/api/districts?stateId=${stateId}`);
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
+
+  // Fetch OTP settings with cache-busting and real-time updates
   useEffect(() => {
+    const updateOtpState = (enabled: boolean) => {
+      setOtpEnabled(enabled);
+      // If OTP is disabled, auto-set OTP as sent and set default existing member reg number
+      if (!enabled) {
+        setOtpSent(true);
+        form.setValue('existingMemberRegNumber', 'RHVS000000');
+        form.setValue('otp', '000000'); // Dummy OTP that will be bypassed
+      } else {
+        // If OTP is enabled, reset OTP sent state
+        setOtpSent(false);
+        form.setValue('existingMemberRegNumber', '');
+        form.setValue('otp', '');
+      }
+    };
+
     const fetchOtpSettings = async () => {
       try {
-        const response = await fetch('/api/admin/members/otp-settings');
+        // Add cache-busting timestamp to prevent caching
+        const response = await fetch(`/api/admin/members/otp-settings?_t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          }
+        });
         const data = await response.json();
         if (data.success && data.settings) {
           const enabled = data.settings.otp_verification_enabled !== false;
-          setOtpEnabled(enabled);
-          // If OTP is disabled, auto-set OTP as sent and set default existing member reg number
-          if (!enabled) {
-            setOtpSent(true);
-            form.setValue('existingMemberRegNumber', 'RHVS000000');
-            form.setValue('otp', '000000'); // Dummy OTP that will be bypassed
-          }
+          updateOtpState(enabled);
         }
       } catch (error) {
         console.error('Error fetching OTP settings:', error);
@@ -103,8 +160,42 @@ export default function MemberRegistrationPage() {
       }
     };
     
+    // Fetch immediately
     fetchOtpSettings();
-  }, []);
+    
+    // Set up BroadcastChannel for real-time updates across tabs
+    let broadcastChannel: BroadcastChannel | null = null;
+    try {
+      broadcastChannel = new BroadcastChannel('otp-settings-update');
+      broadcastChannel.onmessage = (event) => {
+        if (event.data.type === 'otp-settings-changed') {
+          // Immediately update when admin changes settings
+          updateOtpState(event.data.enabled);
+        }
+      };
+    } catch (err) {
+      console.log('BroadcastChannel not supported, using polling fallback');
+    }
+    
+    // Fallback: Refresh OTP settings every 2 seconds (faster polling as backup)
+    const interval = setInterval(fetchOtpSettings, 2000);
+    
+    // Also refresh when page becomes visible (user switches tabs back)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchOtpSettings();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (broadcastChannel) {
+        broadcastChannel.close();
+      }
+    };
+  }, [form]);
 
   // Fetch states on component mount
   useEffect(() => {
@@ -153,47 +244,6 @@ export default function MemberRegistrationPage() {
       return [];
     }
   };
-
-  // Fetch districts when state changes (for backward compatibility)
-  const fetchDistricts = async (stateId: string) => {
-    if (!stateId) {
-      setDistricts([]);
-      return;
-    }
-    
-    setLoadingDistricts(true);
-    try {
-      const response = await fetch(`/api/districts?stateId=${stateId}`);
-      const data = await response.json();
-      if (data.success) {
-        setDistricts(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching districts:', error);
-    } finally {
-      setLoadingDistricts(false);
-    }
-  };
-
-  const form = useForm<MemberFormData>({
-    resolver: zodResolver(memberSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      stateId: '',
-      districtId: '',
-      aadharCardNumber: '',
-      fatherHusbandName: '',
-      motherWifeName: '',
-      registrationDate: new Date(),
-      existingMemberRegNumber: '',
-      otp: '',
-      feePaid: false,
-    },
-    mode: 'onChange',
-  });
 
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
