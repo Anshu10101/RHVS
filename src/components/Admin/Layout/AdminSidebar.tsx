@@ -36,6 +36,7 @@ import {
   LogOut as LogOutIcon,
   Phone,
   BookOpen,
+  KeyRound,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -92,6 +93,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           href: '/admin/members/tokens',
           icon: Shield,
           permission: 'verify_tokens', // District admins can verify tokens for their district
+        },
+        {
+          name: t('admin.sidebar.otpManagement'),
+          href: '/admin/members/otp-settings',
+          icon: KeyRound,
+          roles: ['superadmin'],
         },
       ],
     },

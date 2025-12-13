@@ -170,18 +170,19 @@ export default function LatestPhotosSection() {
             <Link
               href="/gallery"
               aria-label={t('photos.viewAll')}
-              className="absolute top-0 right-0 hidden md:block text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap"
+              className="group absolute top-0 right-0 hidden md:flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer whitespace-nowrap"
             >
-              {t('photos.viewAll')} →
+              {t('photos.viewAll')}
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
             </Link>
             <div className="flex justify-center md:hidden mt-4">
               <Link
                 href="/gallery"
                 aria-label={t('photos.viewAll')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                className="group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer"
               >
                 {t('photos.viewAll')}
-                <span>→</span>
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
               </Link>
             </div>
           </div>

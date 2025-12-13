@@ -79,7 +79,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
-              <span>🇮🇳</span>
               <span>हिंदी</span>
             </button>
             <button
@@ -93,7 +92,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
-              <span>🇬🇧</span>
               <span>English</span>
             </button>
           </div>
@@ -136,7 +134,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
-              <span>🇮🇳</span>
               <span>हिंदी</span>
             </button>
             <button
@@ -150,7 +147,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                   : 'hover:bg-gray-100 text-gray-700'
               }`}
             >
-              <span>🇬🇧</span>
               <span>English</span>
             </button>
           </div>
@@ -187,7 +183,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                 : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
-            <span>🇮🇳</span>
             <span>हिंदी</span>
           </button>
           <button
@@ -198,7 +193,6 @@ export default function LanguageSwitcher({ variant = 'button', onLanguageChange 
                 : 'hover:bg-gray-100 text-gray-700'
             }`}
           >
-            <span>🇬🇧</span>
             <span>English</span>
           </button>
         </div>

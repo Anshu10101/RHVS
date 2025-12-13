@@ -78,6 +78,33 @@ export default function MemberRegistrationPage() {
     registrationDate: string | null;
     profilePhotoUrl: string | null;
   } | null>(null);
+  const [otpEnabled, setOtpEnabled] = useState(true);
+
+  // Fetch OTP settings
+  useEffect(() => {
+    const fetchOtpSettings = async () => {
+      try {
+        const response = await fetch('/api/admin/members/otp-settings');
+        const data = await response.json();
+        if (data.success && data.settings) {
+          const enabled = data.settings.otp_verification_enabled !== false;
+          setOtpEnabled(enabled);
+          // If OTP is disabled, auto-set OTP as sent and set default existing member reg number
+          if (!enabled) {
+            setOtpSent(true);
+            form.setValue('existingMemberRegNumber', 'RHVS000000');
+            form.setValue('otp', '000000'); // Dummy OTP that will be bypassed
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching OTP settings:', error);
+        // Default to enabled if fetch fails
+        setOtpEnabled(true);
+      }
+    };
+    
+    fetchOtpSettings();
+  }, []);
 
   // Fetch states on component mount
   useEffect(() => {
@@ -322,27 +349,33 @@ export default function MemberRegistrationPage() {
         setIsSubmitting(false);
         return;
       }
-       // First verify OTP
-       const otpResponse = await fetch('/api/register-token', {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-         },
-         body: JSON.stringify({
-           action: 'verify-otp',
-           data: {
-             existingMemberRegNumber: data.existingMemberRegNumber,
-             otp: data.otp
-           }
-         }),
-       });
-
-      const otpResult = await otpResponse.json();
       
-      if (!otpResult.success) {
-        form.setError('otp', { message: otpResult.message });
-        setIsSubmitting(false);
-        return;
+      // Verify OTP only if OTP is enabled
+      if (otpEnabled) {
+        const otpResponse = await fetch('/api/register-token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'verify-otp',
+            data: {
+              existingMemberRegNumber: data.existingMemberRegNumber,
+              otp: data.otp
+            }
+          }),
+        });
+
+        const otpResult = await otpResponse.json();
+        
+        if (!otpResult.success) {
+          form.setError('otp', { message: otpResult.message });
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        // When OTP is disabled, use superadmin as default existing member reg number
+        data.existingMemberRegNumber = 'RHVS000000';
       }
 
       // Upload profile photo
@@ -666,103 +699,105 @@ export default function MemberRegistrationPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[360px,1fr] gap-4 sm:gap-6 md:gap-8">
           {/* Existing Member Verification */}
-          <Card className="rounded-2xl sm:rounded-3xl border border-slate-100 shadow-lg bg-white">
-            <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white rounded-t-2xl sm:rounded-t-3xl p-4 sm:p-6">
-              <CardTitle className="flex items-center gap-2 sm:gap-3 text-slate-900 text-base sm:text-lg">
-                <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-lg sm:rounded-xl text-orange-600">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
-                </div>
-                {t('register.memberVerification')}
-              </CardTitle>
-              <CardDescription className="text-slate-500 text-xs sm:text-sm mt-1">
-                {t('register.memberVerificationDesc')}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
-              <Form {...form}>
-                <FormField
-                  control={form.control}
-                  name="existingMemberRegNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
-                        <IdCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                        {t('register.existingMemberRegNumber')}
-                      </FormLabel>
-                      <FormControl>
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                          <Input
-                            placeholder={t('register.existingMemberRegNumberPlaceholder')}
-                            {...field}
-                            onChange={(e) => {
-                              field.onChange(e);
-                              if (otpSent) {
-                                handleChangeRegNumber();
-                              }
-                            }}
-                            className="flex-1 h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 text-sm sm:text-base focus-visible:ring-orange-200 focus-visible:border-orange-300"
-                          />
-                          <Button
-                            type="button"
-                            onClick={handleSendOTP}
-                            disabled={otpSent}
-                            className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 sm:px-6 h-11 sm:h-12 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 cursor-pointer text-sm sm:text-base whitespace-nowrap"
-                          >
-                            {otpSent ? (
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span>{t('register.sent')}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1.5 sm:gap-2">
-                                <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span className="hidden sm:inline">{t('register.sendOTP')}</span>
-                                <span className="sm:hidden">{t('register.send')}</span>
-                              </div>
-                            )}
-                          </Button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {otpSent && (
+          {otpEnabled && (
+            <Card className="rounded-2xl sm:rounded-3xl border border-slate-100 shadow-lg bg-white">
+              <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-orange-50 to-white rounded-t-2xl sm:rounded-t-3xl p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 sm:gap-3 text-slate-900 text-base sm:text-lg">
+                  <div className="p-1.5 sm:p-2 bg-orange-500/10 rounded-lg sm:rounded-xl text-orange-600">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500" />
+                  </div>
+                  {t('register.memberVerification')}
+                </CardTitle>
+                <CardDescription className="text-slate-500 text-xs sm:text-sm mt-1">
+                  {t('register.memberVerificationDesc')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+                <Form {...form}>
                   <FormField
                     control={form.control}
-                    name="otp"
+                    name="existingMemberRegNumber"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
-                          <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
-                          {t('register.otpVerification')}
+                          <IdCard className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+                          {t('register.existingMemberRegNumber')}
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder={t('register.otpPlaceholder')}
-                            {...field}
-                            maxLength={6}
-                            className="text-center text-lg sm:text-xl tracking-[0.5em] h-11 sm:h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400/20 rounded-xl font-mono"
-                          />
+                          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                            <Input
+                              placeholder={t('register.existingMemberRegNumberPlaceholder')}
+                              {...field}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                if (otpSent) {
+                                  handleChangeRegNumber();
+                                }
+                              }}
+                              className="flex-1 h-11 sm:h-12 border border-slate-200 rounded-xl sm:rounded-2xl px-3 sm:px-4 text-sm sm:text-base focus-visible:ring-orange-200 focus-visible:border-orange-300"
+                            />
+                            <Button
+                              type="button"
+                              onClick={handleSendOTP}
+                              disabled={otpSent}
+                              className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-4 sm:px-6 h-11 sm:h-12 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 cursor-pointer text-sm sm:text-base whitespace-nowrap"
+                            >
+                              {otpSent ? (
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                  <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                  <span>{t('register.sent')}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                  <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                  <span className="hidden sm:inline">{t('register.sendOTP')}</span>
+                                  <span className="sm:hidden">{t('register.send')}</span>
+                                </div>
+                              )}
+                            </Button>
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                )}
-              </Form>
 
-              {otpSent && (
-                <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <div className="p-1 bg-green-500 rounded-full flex-shrink-0 mt-0.5 sm:mt-0">
-                    <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                  {otpSent && (
+                    <FormField
+                      control={form.control}
+                      name="otp"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-slate-700 font-semibold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                            <Shield className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
+                            {t('register.otpVerification')}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={t('register.otpPlaceholder')}
+                              {...field}
+                              maxLength={6}
+                              className="text-center text-lg sm:text-xl tracking-[0.5em] h-11 sm:h-12 border-orange-200 focus:border-orange-400 focus:ring-orange-400/20 rounded-xl font-mono"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </Form>
+
+                {otpSent && (
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl">
+                    <div className="p-1 bg-green-500 rounded-full flex-shrink-0 mt-0.5 sm:mt-0">
+                      <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
+                    </div>
+                    <span className="text-green-700 font-medium text-xs sm:text-sm">{t('register.otpSent')}</span>
                   </div>
-                  <span className="text-green-700 font-medium text-xs sm:text-sm">{t('register.otpSent')}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Main Registration Form */}
           <Card className="rounded-2xl sm:rounded-3xl border border-slate-100 shadow-lg bg-white">
@@ -1211,7 +1246,7 @@ export default function MemberRegistrationPage() {
                     <div className="space-y-4 sm:space-y-6">
                       <Button
                         type="submit"
-                        disabled={isSubmitting || !otpSent}
+                        disabled={isSubmitting || (otpEnabled && !otpSent)}
                         className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl sm:rounded-2xl shadow-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isSubmitting ? (
@@ -1227,7 +1262,7 @@ export default function MemberRegistrationPage() {
                         )}
                       </Button>
 
-                      {!otpSent && (
+                      {otpEnabled && !otpSent && (
                         <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-orange-50 border border-orange-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm text-orange-800">
                           <Shield className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5 sm:mt-0" />
                           <div>
@@ -1237,15 +1272,15 @@ export default function MemberRegistrationPage() {
                         </div>
                       )}
 
-                      {otpSent && (
+                      {(otpEnabled && otpSent) || !otpEnabled ? (
                         <div className="flex items-start sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-green-50 border border-green-100 rounded-xl sm:rounded-2xl text-xs sm:text-sm text-green-800">
                           <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 mt-0.5 sm:mt-0" />
                           <div>
                             <p className="font-semibold">{t('register.readyToRegister')}</p>
-                            <p>{t('register.readyToRegisterDesc')}</p>
+                            <p>{otpEnabled ? t('register.readyToRegisterDesc') : 'You can proceed with registration directly.'}</p>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 </form>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
@@ -406,18 +407,18 @@ export function TokenVerification() {
             
             <div>
               <Label htmlFor="status" className="text-xs sm:text-sm">Status</Label>
-              <select
-                id="status"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full mt-1 px-3 py-2 h-9 sm:h-10 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-              >
-                <option value="all">{t('admin.members.tokens.allStatus')}</option>
-                <option value="pending">{t('admin.members.tokens.pending')}</option>
-                <option value="verified">{t('admin.members.tokens.verified')}</option>
-                <option value="rejected">{t('admin.members.tokens.rejected')}</option>
-                <option value="expired">{t('admin.members.tokens.expired')}</option>
-              </select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger id="status" className="w-full mt-1 h-9 sm:h-10 text-sm">
+                  <SelectValue placeholder={t('admin.members.tokens.allStatus')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('admin.members.tokens.allStatus')}</SelectItem>
+                  <SelectItem value="pending">{t('admin.members.tokens.pending')}</SelectItem>
+                  <SelectItem value="verified">{t('admin.members.tokens.verified')}</SelectItem>
+                  <SelectItem value="rejected">{t('admin.members.tokens.rejected')}</SelectItem>
+                  <SelectItem value="expired">{t('admin.members.tokens.expired')}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="flex items-end sm:col-span-2 lg:col-span-1">

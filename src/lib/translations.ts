@@ -2003,6 +2003,100 @@ export const translations: Record<string, Record<Language, string>> = {
     en: 'Rejected'
   },
   
+  // Admin Members - OTP Management Page
+  'admin.members.otp.title': {
+    hi: 'OTP सत्यापन प्रबंधन',
+    en: 'OTP Verification Management'
+  },
+  'admin.members.otp.subtitle': {
+    hi: 'सदस्य पंजीकरण के लिए OTP सत्यापन को नियंत्रित करें',
+    en: 'Control OTP verification for member registration'
+  },
+  'admin.members.otp.statusTitle': {
+    hi: 'OTP सत्यापन स्थिति',
+    en: 'OTP Verification Status'
+  },
+  'admin.members.otp.statusDescription': {
+    hi: 'सदस्य पंजीकरण के लिए OTP सत्यापन को सक्षम या अक्षम करें',
+    en: 'Enable or disable OTP verification for member registration'
+  },
+  'admin.members.otp.enabled': {
+    hi: 'सक्षम',
+    en: 'Enabled'
+  },
+  'admin.members.otp.disabled': {
+    hi: 'अक्षम',
+    en: 'Disabled'
+  },
+  'admin.members.otp.enabledMessage': {
+    hi: 'OTP सत्यापन <strong>सक्षम</strong> है। सदस्यों को पंजीकरण करने से पहले किसी मौजूदा सदस्य के पंजीकरण नंबर से OTP सत्यापित करना होगा। यह पंजीकरण प्रक्रिया शुरू करने वाले को ट्रैक करने में मदद करता है।',
+    en: 'OTP verification is <strong>enabled</strong>. Members must verify OTP from an existing member\'s registration number before they can register. This helps track who initiated the registration process.'
+  },
+  'admin.members.otp.disabledMessage': {
+    hi: 'OTP सत्यापन <strong>अक्षम</strong> है। सदस्य OTP सत्यापन के बिना सीधे पंजीकरण कर सकते हैं। सुपरएडमिन (RHVS000000) को ट्रैकिंग उद्देश्यों के लिए डिफ़ॉल्ट प्रारंभकर्ता के रूप में सेट किया जाएगा। नोट: जब अक्षम हो, तो पंजीकरण प्रक्रिया शुरू करने वाले का कोई ट्रैक नहीं होगा।',
+    en: 'OTP verification is <strong>disabled</strong>. Members can register directly without OTP verification. Superadmin (RHVS000000) will be set as the default initiator for tracking purposes. Note: When disabled, there will be no track of who initiated the registration process.'
+  },
+  'admin.members.otp.howItWorks': {
+    hi: 'यह कैसे काम करता है:',
+    en: 'How it works:'
+  },
+  'admin.members.otp.whenEnabled': {
+    hi: 'जब सक्षम हो:',
+    en: 'When Enabled:'
+  },
+  'admin.members.otp.whenEnabledDesc': {
+    hi: 'सदस्यों को किसी मौजूदा सदस्य का पंजीकरण नंबर दर्ज करना होगा और उस सदस्य के ईमेल पर भेजे गए OTP को सत्यापित करना होगा, इसके बाद ही वे पंजीकरण पूरा कर सकते हैं।',
+    en: 'Members need to enter an existing member\'s registration number and verify the OTP sent to that member\'s email before they can complete registration.'
+  },
+  'admin.members.otp.whenDisabled': {
+    hi: 'जब अक्षम हो:',
+    en: 'When Disabled:'
+  },
+  'admin.members.otp.whenDisabledDesc': {
+    hi: 'सदस्य OTP सत्यापन के बिना सीधे पंजीकरण कर सकते हैं। पंजीकरण पृष्ठ OTP सत्यापन अनुभाग को छुपा देगा, और सदस्य तुरंत पंजीकरण के साथ आगे बढ़ सकते हैं।',
+    en: 'Members can register directly without OTP verification. The registration page will hide the OTP verification section, and members can proceed with registration immediately.'
+  },
+  'admin.members.otp.defaultInitiator': {
+    hi: 'डिफ़ॉल्ट प्रारंभकर्ता:',
+    en: 'Default Initiator:'
+  },
+  'admin.members.otp.defaultInitiatorDesc': {
+    hi: 'जब OTP अक्षम हो, तो सभी पंजीकरण सिस्टम में सुपरएडमिन (RHVS000000) को प्रारंभकर्ता के रूप में दिखाएंगे।',
+    en: 'When OTP is disabled, all registrations will show Superadmin (RHVS000000) as the initiator in the system.'
+  },
+  'admin.members.otp.loading': {
+    hi: 'OTP सेटिंग्स लोड हो रही हैं...',
+    en: 'Loading OTP settings...'
+  },
+  'admin.members.otp.error': {
+    hi: 'त्रुटि',
+    en: 'Error'
+  },
+  'admin.members.otp.success': {
+    hi: 'सफल',
+    en: 'Success'
+  },
+  'admin.members.otp.enabledSuccess': {
+    hi: 'OTP सत्यापन सफलतापूर्वक सक्षम किया गया',
+    en: 'OTP verification enabled successfully'
+  },
+  'admin.members.otp.disabledSuccess': {
+    hi: 'OTP सत्यापन सफलतापूर्वक अक्षम किया गया',
+    en: 'OTP verification disabled successfully'
+  },
+  'admin.members.otp.failedToLoad': {
+    hi: 'OTP सेटिंग्स लोड करने में विफल',
+    en: 'Failed to load OTP settings'
+  },
+  'admin.members.otp.failedToUpdate': {
+    hi: 'OTP सेटिंग्स अपडेट करने में विफल',
+    en: 'Failed to update OTP settings'
+  },
+  'admin.members.otp.accessDenied': {
+    hi: 'आपके पास इस पृष्ठ तक पहुंचने की अनुमति नहीं है।',
+    en: 'You don\'t have permission to access this page.'
+  },
+  
   // Additional translations for Add Member page
   'admin.members.add.memberInfo': {
     hi: 'सदस्य जानकारी',
@@ -5873,6 +5967,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.sidebar.tokenVerification': {
     hi: 'टोकन सत्यापन',
     en: 'Token Verification'
+  },
+  'admin.sidebar.otpManagement': {
+    hi: 'OTP प्रबंधन',
+    en: 'OTP Management'
   },
   'admin.sidebar.permissionManagement': {
     hi: 'अनुमति प्रबंधन',

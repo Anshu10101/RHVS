@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { Facebook, Twitter, Instagram, Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
+import { Code2, ExternalLink, ArrowRight, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useState } from 'react';
@@ -11,66 +11,84 @@ export default function Footer() {
   const [languageOpen, setLanguageOpen] = useState(false);
 
   return (
-    <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50">
+    <footer className="bg-gradient-to-b from-orange-50/30 to-orange-100/20 text-orange-900/80 py-16 border-t border-orange-200/50 shadow-inner">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Organization Info */}
           <div className="col-span-1">
-            <h3 className="text-xl font-semibold mb-4 text-orange-800/90">Rashtriya Hindu Vahini Sangathan</h3>
-            <p className="text-orange-700/70 mb-6 leading-relaxed">
+            <h3 className="text-xl font-semibold mb-4 text-orange-800/90">
+              {language === 'hi' ? 'राष्ट्रीय हिंदू वाहिनी संगठन' : 'Rashtriya Hindu Vahini Sangathan'}
+            </h3>
+            <p className="text-orange-700/70 mb-6 leading-relaxed text-sm">
               {t('footer.description')}
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-orange-600/60 hover:text-orange-600 transition-colors">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="text-orange-600/60 hover:text-orange-600 transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-orange-600/60 hover:text-orange-600 transition-colors">
-                <Instagram size={20} />
+            <div className="flex items-center">
+              <a 
+                href="https://www.youtube.com/@RHVS-1" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="group inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-600 hover:bg-red-700 text-white transition-all duration-300 hover:scale-110 hover:shadow-lg shadow-md"
+                aria-label="YouTube"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="24" 
+                  height="24" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="text-white"
+                >
+                  <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/>
+                  <path d="m10 15 5-3-5-3z"/>
+                </svg>
               </a>
             </div>
           </div>
           
           {/* Useful Links */}
           <div className="col-span-1">
-            <h4 className="text-lg font-semibold mb-4 text-orange-800/90">{t('footer.usefulLinks')}</h4>
-            <ul className="space-y-3">
+            <h4 className="text-lg font-semibold mb-5 text-orange-800/90 border-b border-orange-200/50 pb-2">
+              {t('footer.usefulLinks')}
+            </h4>
+            <ul className="space-y-2.5">
               <li>
-                <Link href="/" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('nav.home')}
                 </Link>
               </li>
               <li>
-                <Link href="/gallery" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/about" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
+                  {t('nav.about')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/gallery" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('nav.gallery')}
                 </Link>
               </li>
               <li>
-                <Link href="/proposal" className="text-orange-700/70 hover:text-orange-600 transition-colors">
-                  {t('footer.proposal')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/karya-samiti" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/karya-samiti" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('nav.committee')}
                 </Link>
               </li>
               <li>
-                <Link href="/offices" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/offices" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('nav.offices')}
                 </Link>
               </li>
               <li>
-                <Link href="/admin/login" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/admin/login" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('footer.adminPanel')}
                 </Link>
               </li>
-              <li>
+              <li className="pt-2">
                 <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
                   <PopoverTrigger asChild>
-                    <button className="text-orange-700/70 hover:text-orange-600 transition-colors flex items-center gap-1.5 w-full">
+                    <button className="text-orange-700/70 hover:text-orange-600 transition-colors flex items-center gap-1.5 w-full hover:translate-x-1 duration-200">
                       <span>{language === 'hi' ? 'हिंदी' : 'English'}</span>
                       <ChevronDown size={14} className="opacity-70" />
                     </button>
@@ -88,7 +106,6 @@ export default function Footer() {
                             : 'hover:bg-gray-100 text-gray-700'
                         }`}
                       >
-                        <span>🇮🇳</span>
                         <span>हिंदी</span>
                       </button>
                       <button
@@ -102,7 +119,6 @@ export default function Footer() {
                             : 'hover:bg-gray-100 text-gray-700'
                         }`}
                       >
-                        <span>🇬🇧</span>
                         <span>English</span>
                       </button>
                     </div>
@@ -114,30 +130,32 @@ export default function Footer() {
           
           {/* RHVS */}
           <div className="col-span-1">
-            <h4 className="text-lg font-semibold mb-4 text-orange-800/90">{t('footer.rhvs')}</h4>
-            <ul className="space-y-3">
+            <h4 className="text-lg font-semibold mb-5 text-orange-800/90 border-b border-orange-200/50 pb-2">
+              RHVS
+            </h4>
+            <ul className="space-y-2.5">
               <li>
-                <Link href="/duty" className="text-orange-700/70 hover:text-orange-600 transition-colors">
-                  {t('footer.duty')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/roles" className="text-orange-700/70 hover:text-orange-600 transition-colors">
-                  {t('footer.roles')}
-                </Link>
-              </li>
-              <li>
-                <Link href="/activities" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/activities" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('footer.activities')}
                 </Link>
               </li>
               <li>
-                <Link href="/products" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/products" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('footer.products')}
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-orange-700/70 hover:text-orange-600 transition-colors">
+                <Link href="/news" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
+                  {t('nav.news')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/events" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
+                  {t('nav.events')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200">
                   {t('nav.contact')}
                 </Link>
               </li>
@@ -146,14 +164,16 @@ export default function Footer() {
           
           {/* Contact */}
           <div className="col-span-1">
-            <h4 className="text-lg font-semibold mb-4 text-orange-800/90">{t('footer.contactUs')}</h4>
+            <h4 className="text-lg font-semibold mb-5 text-orange-800/90 border-b border-orange-200/50 pb-2">
+              {t('footer.contactUs')}
+            </h4>
             <div className="space-y-4">
-              <p className="text-orange-700/70 text-sm leading-relaxed mb-4">
+              <p className="text-orange-700/70 text-sm leading-relaxed mb-5">
                 {t('footer.contactDescription') || 'For contact information, please visit our contact page.'}
               </p>
               <Link 
                 href="/contact" 
-                className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors group"
+                className="inline-flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition-all duration-200 group px-4 py-2 rounded-lg hover:bg-orange-50"
               >
                 <span>{t('footer.viewContactPage') || 'View Contact Page'}</span>
                 <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />

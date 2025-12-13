@@ -259,13 +259,14 @@ export default function LatestNewsSection() {
               {t('news.description')}
             </p>
           </div>
-          <Link href="/news" className="absolute top-0 right-0 hidden md:block text-sm font-semibold text-orange-700 hover:text-orange-800 hover:underline whitespace-nowrap">
-            {t('news.viewAll')} →
+          <Link href="/news" className="group absolute top-0 right-0 hidden md:flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer whitespace-nowrap">
+            {t('news.viewAll')}
+            <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
           </Link>
           <div className="flex justify-center md:hidden mt-4">
-            <Link href="/news" className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors">
+            <Link href="/news" className="group inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer">
               {t('news.viewAll')}
-              <span>→</span>
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
             </Link>
           </div>
         </div>

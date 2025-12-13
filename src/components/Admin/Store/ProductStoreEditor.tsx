@@ -37,7 +37,9 @@ import {
   ChevronsLeft as ChevronsLeftIcon,
   ChevronsRight as ChevronsRightIcon,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Menu,
+  X
 } from 'lucide-react';
 
 interface Product {
@@ -1280,75 +1282,104 @@ export default function ProductStoreEditor() {
     setCategoriesPage(1);
   }, [categorySearch]);
 
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col w-full max-w-full overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-6 border-b bg-white">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 md:p-6 border-b bg-white">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
           <Button
             variant="outline"
             size="sm"
             onClick={() => window.history.back()}
-            className="cursor-pointer hover:bg-gray-50"
+            className="cursor-pointer hover:bg-gray-50 flex-shrink-0"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {t('admin.store.products.back') || 'Back'}
+            <ArrowLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">{t('admin.store.products.back') || 'Back'}</span>
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('admin.store.products.title')}</h1>
-            <p className="text-sm text-gray-600">{t('admin.store.products.description') || 'Manage your product catalog'}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words leading-tight">{t('admin.store.products.title')}</h1>
+            <p className="text-xs sm:text-sm text-gray-600 break-words">{t('admin.store.products.description') || 'Manage your product catalog'}</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <Button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            variant="outline"
+            size="sm"
+            className="lg:hidden"
+          >
+            <Menu className="h-4 w-4" />
+          </Button>
           <Button
             onClick={saveChanges}
             disabled={saveStatus === 'saving'}
-            className="cursor-pointer hover:bg-blue-600 disabled:cursor-not-allowed"
+            className="cursor-pointer hover:bg-blue-600 disabled:cursor-not-allowed text-xs sm:text-sm flex-1 sm:flex-initial"
+            size="sm"
           >
-            <Save className="h-4 w-4 mr-2" />
-            {saveStatus === 'saving' ? t('admin.store.products.saving') : t('admin.store.products.saveChanges')}
+            <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="truncate">{saveStatus === 'saving' ? t('admin.store.products.saving') : t('admin.store.products.saveChanges')}</span>
           </Button>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="h-full flex">
+        {/* Overlay for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        <div className="h-full flex relative">
           {/* Sidebar - Categories */}
-          <div className="w-80 border-r bg-gray-50 p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">{t('admin.store.products.categories')}</h3>
-                <span className="text-xs text-gray-500">({categories.length})</span>
+          <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-40 lg:z-auto w-72 sm:w-80 border-r bg-gray-50 p-3 sm:p-4 overflow-y-auto transition-transform duration-300 ease-in-out lg:transition-none shadow-lg lg:shadow-none`}>
+            <div className="lg:hidden flex items-center justify-between mb-4 pb-4 border-b">
+              <h3 className="text-base font-semibold">Categories</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold truncate">{t('admin.store.products.categories')}</h3>
+                <span className="text-xs text-gray-500 flex-shrink-0">({categories.length})</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => setCategoriesCompactMode(!categoriesCompactMode)}
                   className="p-1 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors"
                   title={categoriesCompactMode ? 'Normal View' : 'Compact View'}
                 >
-                  {categoriesCompactMode ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                  {categoriesCompactMode ? <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
                 </button>
                 <Button
                   onClick={() => setCreatingCategoryDraft({ id: `category_${Date.now()}`, name: '', description: '', isVisible: true })}
                   size="sm"
-                  className="cursor-pointer hover:bg-blue-600"
+                  className="cursor-pointer hover:bg-blue-600 h-7 w-7 sm:h-8 sm:w-8 p-0"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Button>
               </div>
             </div>
             
             {/* Category Search */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <div className="relative mb-2 sm:mb-3">
+              <Search className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <Input
                 type="text"
                 placeholder="Search categories..."
                 value={categorySearch}
                 onChange={(e) => setCategorySearch(e.target.value)}
-                className="pl-10 h-9 text-sm"
+                className="pl-8 sm:pl-10 h-8 sm:h-9 text-xs sm:text-sm"
               />
             </div>
             
@@ -1462,12 +1493,12 @@ export default function ProductStoreEditor() {
             
             {/* Location Filters (Superadmin only) */}
             {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">{t('admin.store.products.locationFilters')}</h3>
+              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200">
+                <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-3 sm:mb-4">{t('admin.store.products.locationFilters')}</h3>
                 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.state')}</label>
+                    <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">{t('admin.store.sellers.state')}</label>
                     <Select
                       value={selectedStateId || 'all'}
                       onValueChange={async (id) => {
@@ -1486,7 +1517,7 @@ export default function ProductStoreEditor() {
                         }
                       }}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-9">
                         <SelectValue placeholder={t('admin.store.sellers.allStates')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1499,13 +1530,13 @@ export default function ProductStoreEditor() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-2">{t('admin.store.sellers.district')}</label>
+                    <label className="block text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">{t('admin.store.sellers.district')}</label>
                     <Select
                       value={selectedDistrictName || 'All'}
                       onValueChange={(value) => setSelectedDistrictName(value)}
                       disabled={!selectedStateId}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-9">
                         <SelectValue placeholder={t('admin.store.sellers.allDistricts')} />
                       </SelectTrigger>
                       <SelectContent>
@@ -1529,7 +1560,7 @@ export default function ProductStoreEditor() {
                       setSelectedDistrictName('All');
                       setDistrictOptions([]);
                     }}
-                    className="w-full"
+                    className="w-full text-xs sm:text-sm"
                   >
                     {t('admin.store.products.clearFilters')}
                   </Button>
@@ -1539,56 +1570,59 @@ export default function ProductStoreEditor() {
           </div>
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Toolbar */}
-            <div className="flex items-center justify-between p-4 border-b bg-white">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border-b bg-white">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:space-x-0">
                 <Button
                   onClick={startAddingProduct}
-                  className="cursor-pointer hover:bg-blue-600"
+                  className="cursor-pointer hover:bg-blue-600 text-xs sm:text-sm flex-1 sm:flex-initial"
+                  size="sm"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t('admin.store.products.addProduct')}
+                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="truncate">{t('admin.store.products.addProduct')}</span>
                 </Button>
                 <Button
                   onClick={() => router.push('/admin/content/store/sellers')}
                   variant="outline"
-                  className="cursor-pointer hover:bg-green-50 hover:border-green-300"
+                  className="cursor-pointer hover:bg-green-50 hover:border-green-300 text-xs sm:text-sm flex-1 sm:flex-initial"
+                  size="sm"
                 >
-                  <Users className="h-4 w-4 mr-2" />
-                  {t('admin.store.products.manageSellers')}
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline truncate">{t('admin.store.products.manageSellers')}</span>
+                  <span className="sm:hidden">Sellers</span>
                 </Button>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     variant={viewMode === 'grid' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setViewMode('grid')}
-                    className="cursor-pointer hover:bg-gray-100"
+                    className="cursor-pointer hover:bg-gray-100 h-7 w-7 sm:h-8 sm:w-8 p-0"
                   >
-                    <Grid3X3 className="h-4 w-4" />
+                    <Grid3X3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                   <Button
                     variant={viewMode === 'list' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setViewMode('list')}
-                    className="cursor-pointer hover:bg-gray-100"
+                    className="cursor-pointer hover:bg-gray-100 h-7 w-7 sm:h-8 sm:w-8 p-0"
                   >
-                    <List className="h-4 w-4" />
+                    <List className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </div>
               
-              <div className="flex flex-col items-end space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 w-full sm:w-auto">
                 {/* Search + sort row */}
-                <div className="flex items-center space-x-2">
-                  <div className="relative hidden md:block">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+                  <div className="relative flex-1 sm:flex-initial min-w-[150px] sm:min-w-0">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 w-3 h-3" />
                     <Input
                       type="text"
                       placeholder={t('admin.store.products.searchPlaceholder') || 'Search products...'}
                       value={productSearch}
                       onChange={(e) => setProductSearch(e.target.value)}
-                      className="pl-7 pr-2 h-8 text-xs w-52"
+                      className="pl-7 pr-2 h-8 text-xs w-full sm:w-48"
                     />
                   </div>
 
@@ -1596,7 +1630,7 @@ export default function ProductStoreEditor() {
                     value={productsSortBy}
                     onValueChange={(value) => setProductsSortBy(value as typeof productsSortBy)}
                   >
-                    <SelectTrigger className="h-8 text-xs w-32">
+                    <SelectTrigger className="h-8 text-xs w-full sm:w-28 md:w-32">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1610,30 +1644,30 @@ export default function ProductStoreEditor() {
                   <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 flex-shrink-0"
                     onClick={() =>
                       setProductsSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))
                     }
                     title={productsSortOrder === 'asc' ? 'Sort descending' : 'Sort ascending'}
                   >
                     {productsSortOrder === 'asc' ? (
-                      <SortAsc className="w-4 h-4" />
+                      <SortAsc className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     ) : (
-                      <SortDesc className="w-4 h-4" />
+                      <SortDesc className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     )}
                   </Button>
 
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 flex-shrink-0"
                     onClick={() => setProductsCompactMode((prev) => !prev)}
                     title={productsCompactMode ? 'Normal view' : 'Compact view'}
                   >
                     {productsCompactMode ? (
-                      <Maximize2 className="w-4 h-4" />
+                      <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     ) : (
-                      <Minimize2 className="w-4 h-4" />
+                      <Minimize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     )}
                   </Button>
 
@@ -1644,7 +1678,7 @@ export default function ProductStoreEditor() {
                       setProductsPage(1);
                     }}
                   >
-                    <SelectTrigger className="h-8 text-xs w-20">
+                    <SelectTrigger className="h-8 text-xs w-16 sm:w-20 flex-shrink-0">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1657,14 +1691,14 @@ export default function ProductStoreEditor() {
                 </div>
 
                 {/* Counts + filters row */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm text-gray-600">
+                <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                  <span className="break-words">
                     {t('admin.store.products.showingProducts').replace('{showing}', String(paginatedProducts.length)).replace('{total}', String(filteredAndSortedProducts.length))}
                   </span>
                   
                   {(currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin') &&
                     (selectedStateName !== 'All' || selectedDistrictName !== 'All') && (
-                      <div className="flex items-center space-x-1">
+                      <div className="flex items-center flex-wrap gap-1">
                         {selectedStateName !== 'All' && (
                           <Badge variant="secondary" className="text-xs">
                             State: {selectedStateName}
@@ -1679,12 +1713,12 @@ export default function ProductStoreEditor() {
                     )}
                   
                   {saveStatus === 'saved' && (
-                    <Badge variant="outline" className="text-green-600">
+                    <Badge variant="outline" className="text-green-600 text-xs">
                       Saved
                     </Badge>
                   )}
                   {saveStatus === 'error' && (
-                    <Badge variant="outline" className="text-red-600">
+                    <Badge variant="outline" className="text-red-600 text-xs">
                       Error
                     </Badge>
                   )}
@@ -1693,15 +1727,15 @@ export default function ProductStoreEditor() {
             </div>
 
             {/* Products Grid/List */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4">
               {viewMode === 'grid' ? (
                 <div
-                  className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
-                    productsCompactMode ? 'gap-3' : 'gap-4'
+                  className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
+                    productsCompactMode ? 'gap-2 sm:gap-3' : 'gap-3 sm:gap-4'
                   }`}
                 >
                   {paginatedProducts.map(product => (
-                    <Card key={product.id} className="overflow-hidden">
+                    <Card key={product.id} className="overflow-hidden w-full">
                       <div className="relative">
                         <div
                           className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
@@ -1720,9 +1754,9 @@ export default function ProductStoreEditor() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="text-center text-gray-400">
-                              <ImageIcon className="h-12 w-12 mx-auto mb-2" />
-                              <p className="text-sm">Click to upload</p>
+                            <div className="text-center text-gray-400 p-2">
+                              <ImageIcon className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-1 sm:mb-2" />
+                              <p className="text-xs sm:text-sm">Click to upload</p>
                             </div>
                           )}
                           <input
@@ -1737,60 +1771,67 @@ export default function ProductStoreEditor() {
                           />
                         </div>
                         
-                        <div className="absolute top-2 right-2 flex space-x-1">
+                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex gap-1">
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               const input = document.getElementById(`file-upload-${product.id}`) as HTMLInputElement;
                               input?.click();
                             }}
-                            className="h-8 w-8 p-0 cursor-pointer hover:bg-blue-100"
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-blue-100"
                           >
-                            <Upload className="h-4 w-4" />
+                            <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => startEditingProduct(product.id)}
-                            className="h-8 w-8 p-0 cursor-pointer hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              startEditingProduct(product.id);
+                            }}
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-gray-100"
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={() => deleteProduct(product.id)}
-                            className="h-8 w-8 p-0 cursor-pointer hover:bg-red-100 text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteProduct(product.id);
+                            }}
+                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-red-100 text-red-600"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
                           </Button>
                         </div>
                       </div>
                       
-                      <CardContent className="p-3">
-                        <h3 className="font-semibold text-sm mb-1 truncate">{product.name}</h3>
-                        <p className="text-xs text-gray-600 mb-2 line-clamp-2">{product.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-green-600">
+                      <CardContent className="p-2 sm:p-3">
+                        <h3 className="font-semibold text-xs sm:text-sm mb-1 truncate">{product.name}</h3>
+                        <p className="text-xs text-gray-600 mb-1.5 sm:mb-2 line-clamp-2 break-words">{product.description}</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs sm:text-sm font-bold text-green-600 truncate">
                             ₹{product.price}
                           </span>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => moveProduct(product.id, 'up')}
-                              className="h-6 w-6 p-0 cursor-pointer hover:bg-gray-100"
+                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
                             >
-                              <ArrowLeft className="h-3 w-3" />
+                              <ArrowLeft className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => moveProduct(product.id, 'down')}
-                              className="h-6 w-6 p-0 cursor-pointer hover:bg-gray-100"
+                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
                             >
-                              <ArrowRight className="h-3 w-3" />
+                              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                             </Button>
                           </div>
                         </div>
@@ -1799,13 +1840,13 @@ export default function ProductStoreEditor() {
                   ))}
                 </div>
               ) : (
-                <div className={productsCompactMode ? 'space-y-1.5' : 'space-y-2'}>
+                <div className={productsCompactMode ? 'space-y-1.5' : 'space-y-2 sm:space-y-3'}>
                   {paginatedProducts.map(product => (
-                    <Card key={product.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center space-x-4">
+                    <Card key={product.id} className="w-full overflow-hidden">
+                      <CardContent className="p-2.5 sm:p-3 md:p-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 md:gap-4">
                           <div
-                            className="w-16 h-16 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                            className="w-full sm:w-16 sm:h-16 h-32 bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors flex-shrink-0 rounded"
                             onDragOver={handleDragOver}
                             onDragLeave={handleDragLeave}
                             onDrop={(e) => handleDrop(e, product.id)}
@@ -1818,10 +1859,10 @@ export default function ProductStoreEditor() {
                               <img
                                 src={product.imageUrl}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover rounded"
                               />
                             ) : (
-                              <ImageIcon className="h-6 w-6 text-gray-400" />
+                              <ImageIcon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                             )}
                             <input
                               id={`file-upload-list-${product.id}`}
@@ -1835,40 +1876,40 @@ export default function ProductStoreEditor() {
                             />
                           </div>
                           
-                          <div className="flex-1">
-                            <h3 className={`font-semibold ${productsCompactMode ? 'text-sm' : ''}`}>
+                          <div className="flex-1 min-w-0 w-full sm:w-auto">
+                            <h3 className={`font-semibold text-sm sm:text-base mb-1 break-words ${productsCompactMode ? 'text-xs sm:text-sm' : ''}`}>
                               {product.name}
                             </h3>
                             <p
-                              className={`text-gray-600 line-clamp-2 ${
-                                productsCompactMode ? 'text-xs' : 'text-sm'
+                              className={`text-gray-600 line-clamp-2 break-words mb-2 ${
+                                productsCompactMode ? 'text-xs' : 'text-xs sm:text-sm'
                               }`}
                             >
                               {product.description}
                             </p>
                             <div
-                              className={`flex items-center space-x-4 ${
+                              className={`flex flex-wrap items-center gap-1.5 sm:gap-2 md:gap-4 ${
                                 productsCompactMode ? 'mt-1' : 'mt-2'
                               }`}
                             >
-                              <span className="text-sm font-bold text-green-600">
+                              <span className="text-xs sm:text-sm font-bold text-green-600">
                                 ₹{product.price}
                               </span>
                               <span className="text-xs text-gray-500">
                                 Stock: {product.stock}
                               </span>
-                              <Badge variant={product.isVisible ? 'default' : 'secondary'}>
+                              <Badge variant={product.isVisible ? 'default' : 'secondary'} className="text-xs">
                                 {product.isVisible ? 'Visible' : 'Hidden'}
                               </Badge>
                               {product.isFeatured && (
-                                <Badge variant="outline" className="text-yellow-600">
+                                <Badge variant="outline" className="text-yellow-600 text-xs">
                                   Featured
                                 </Badge>
                               )}
                             </div>
                           </div>
                           
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                             <Button
                               size="sm"
                               variant="outline"
@@ -1876,42 +1917,42 @@ export default function ProductStoreEditor() {
                                 const input = document.getElementById(`file-upload-list-${product.id}`) as HTMLInputElement;
                                 input?.click();
                               }}
-                              className="cursor-pointer hover:bg-blue-100"
+                              className="cursor-pointer hover:bg-blue-100 h-7 w-7 sm:h-8 sm:w-8 p-0"
                             >
-                              <Upload className="h-4 w-4" />
+                              <Upload className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => startEditingProduct(product.id)}
-                              className="cursor-pointer hover:bg-gray-100"
+                              className="cursor-pointer hover:bg-gray-100 h-7 w-7 sm:h-8 sm:w-8 p-0"
                             >
-                              <Edit2 className="h-4 w-4" />
+                              <Edit2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => deleteProduct(product.id)}
-                              className="cursor-pointer hover:bg-red-100 text-red-600"
+                              className="cursor-pointer hover:bg-red-100 text-red-600 h-7 w-7 sm:h-8 sm:w-8 p-0"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                             </Button>
-                            <div className="flex flex-col space-y-1">
+                            <div className="flex flex-col gap-1">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => moveProduct(product.id, 'up')}
-                                className="h-6 w-6 p-0 cursor-pointer hover:bg-gray-100"
+                                className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
                               >
-                                <ArrowLeft className="h-3 w-3" />
+                                <ArrowLeft className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                               </Button>
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => moveProduct(product.id, 'down')}
-                                className="h-6 w-6 p-0 cursor-pointer hover:bg-gray-100"
+                                className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
                               >
-                                <ArrowRight className="h-3 w-3" />
+                                <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                               </Button>
                             </div>
                           </div>
@@ -1928,16 +1969,17 @@ export default function ProductStoreEditor() {
 
       {/* Product Editor Modal */}
       {editingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">{t('admin.store.products.editProduct')}</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+              <h2 className="text-base sm:text-lg md:text-xl font-bold break-words flex-1 min-w-0">{t('admin.store.products.editProduct')}</h2>
               <Button
                 variant="outline"
                 onClick={cancelEditingProduct}
-                className="cursor-pointer hover:bg-gray-100"
+                className="cursor-pointer hover:bg-gray-100 h-8 w-8 p-0 flex-shrink-0"
+                size="sm"
               >
-                ×
+                <X className="h-4 w-4" />
               </Button>
             </div>
             
@@ -1946,23 +1988,23 @@ export default function ProductStoreEditor() {
               if (!product) return null;
               
               return (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Name</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Name</label>
                       <Input
                         value={product.name}
                         onChange={(e) => setEditingProductData({ ...product, name: e.target.value })}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Category</label>
                       <Select
                         value={product.category || ''}
                         onValueChange={(value) => setEditingProductData({ ...product, category: value })}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full text-sm">
                           <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1977,13 +2019,13 @@ export default function ProductStoreEditor() {
                         <p className="text-xs text-red-500 mt-1">No categories available. Please add a category first.</p>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Seller</label>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Seller</label>
                       <Select
                         value={product.seller_id || 'none'}
                         onValueChange={(value) => setEditingProductData({ ...product, seller_id: value === 'none' ? undefined : value })}
                       >
-                        <SelectTrigger className="w-full">
+                        <SelectTrigger className="w-full text-sm">
                           <SelectValue placeholder="Select a seller" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1996,7 +2038,7 @@ export default function ProductStoreEditor() {
                         </SelectContent>
                       </Select>
                       {sellers.length === 0 && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-1 break-words">
                           No sellers available. <a href="/admin/content/store/sellers" className="text-blue-600 hover:underline">Add sellers first</a>
                         </p>
                       )}
@@ -2004,72 +2046,72 @@ export default function ProductStoreEditor() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium mb-1">Description</label>
+                    <label className="block text-xs sm:text-sm font-medium mb-1">Description</label>
                     <Textarea
                       value={product.description || ''}
                       onChange={(e) => setEditingProductData({ ...product, description: e.target.value })}
                       rows={3}
-                      className="cursor-pointer"
+                      className="cursor-pointer text-sm"
                     />
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Price (₹)</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Price (₹)</label>
                       <Input
                         type="number"
                         min={0}
                         value={product.price}
                         onChange={(e) => setEditingProductData({ ...product, price: Math.max(0, Number(e.target.value)) })}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Original Price (₹)</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Original Price (₹)</label>
                       <Input
                         type="number"
                         min={0}
                         value={product.originalPrice || 0}
                         onChange={(e) => setEditingProductData({ ...product, originalPrice: Math.max(0, Number(e.target.value)) })}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Stock</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Stock</label>
                       <Input
                         type="number"
                         value={product.stock}
                         onChange={(e) => setEditingProductData({ ...product, stock: Number(e.target.value) })}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Thumbnail Image</label>
-                      <div className="space-y-3">
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Thumbnail Image</label>
+                      <div className="space-y-2 sm:space-y-3">
                         {/* Image Type Selection */}
-                        <div className="flex space-x-4">
-                          <label className="flex items-center cursor-pointer">
+                        <div className="flex flex-wrap gap-3 sm:gap-4">
+                          <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                             <input
                               type="radio"
                               name="editingImageType"
                               value="file"
                               checked={editingProductImageType === 'file'}
                               onChange={() => setEditingProductImageType('file')}
-                              className="mr-2"
+                              className="mr-1.5 sm:mr-2"
                             />
                             Upload File
                           </label>
-                          <label className="flex items-center cursor-pointer">
+                          <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                             <input
                               type="radio"
                               name="editingImageType"
                               value="url"
                               checked={editingProductImageType === 'url'}
                               onChange={() => setEditingProductImageType('url')}
-                              className="mr-2"
+                              className="mr-1.5 sm:mr-2"
                             />
                             Image URL
                           </label>
@@ -2082,7 +2124,7 @@ export default function ProductStoreEditor() {
                               type="file"
                               accept="image/*"
                               onChange={handleEditingImageUpload}
-                              className="w-full p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full p-1.5 sm:p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                             />
                             <p className="text-xs text-gray-500">Set one thumbnail image.</p>
                           </div>
@@ -2094,28 +2136,28 @@ export default function ProductStoreEditor() {
                             value={editingProductImageUrl}
                             onChange={(e) => handleEditingImageUrlChange(e.target.value)}
                             placeholder="Enter image URL"
-                            className="cursor-pointer"
+                            className="cursor-pointer text-sm"
                           />
                         )}
                         
                         {/* Supporting Images manager */}
-                        <div className="mt-4">
-                          <label className="block text-sm font-medium mb-1">Supporting Images (up to 3)</label>
+                        <div className="mt-3 sm:mt-4">
+                          <label className="block text-xs sm:text-sm font-medium mb-1">Supporting Images (up to 3)</label>
                           <input
                             type="file"
                             accept="image/*"
                             multiple
                             onChange={addEditingGalleryFiles}
-                            className="w-full p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full p-1.5 sm:p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                           />
                           <div className="flex flex-wrap gap-2 mt-2">
                             {(editingProductImages || []).filter(u => u !== editingProductData?.imageUrl).map((url) => (
                               <div key={url} className="relative">
-                                <img src={url} alt="" className="w-16 h-16 object-cover rounded border" />
+                                <img src={url} alt="" className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded border" />
                                 <button
                                   type="button"
                                   onClick={() => removeEditingGalleryImage(url)}
-                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                  className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-xs hover:bg-red-600"
                                 >
                                   ×
                                 </button>
@@ -2127,72 +2169,75 @@ export default function ProductStoreEditor() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
+                      <label className="block text-xs sm:text-sm font-medium mb-1">Tags (comma-separated)</label>
                       <Input
                         value={editingProductTagsInput}
                         onChange={(e) => handleEditingTagsInputChange(e.target.value)}
                         onKeyDown={handleEditingTagsKeyDown}
                         placeholder="tag1, tag2, tag3"
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                       {product.tags && product.tags.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {product.tags.map((tag, index) => (
                             <span 
                               key={index}
-                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                              className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full break-words"
                             >
                               {tag}
                             </span>
                           ))}
-                    </div>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                    <div className="flex items-center space-x-4">
-                      <label className="flex items-center cursor-pointer">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                      <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                         <input
                           type="checkbox"
                           checked={product.isVisible}
                           onChange={(e) => setEditingProductData({ ...product, isVisible: e.target.checked })}
-                          className="mr-2 cursor-pointer"
+                          className="mr-1.5 sm:mr-2 cursor-pointer"
                         />
                         Visible
                       </label>
-                      <label className="flex items-center cursor-pointer">
+                      <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                         <input
                           type="checkbox"
                           checked={product.isFeatured}
                           onChange={(e) => setEditingProductData({ ...product, isFeatured: e.target.checked })}
-                          className="mr-2 cursor-pointer"
+                          className="mr-1.5 sm:mr-2 cursor-pointer"
                         />
                         Featured
                       </label>
                     </div>
                   
                   {/* Save/Cancel Buttons */}
-                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                  <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
                     <Button
                       variant="outline"
                       onClick={cancelEditingProduct}
                       disabled={saveStatus === 'saving'}
+                      className="w-full sm:w-auto text-sm"
+                      size="sm"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={saveEditingProduct}
                       disabled={saveStatus === 'saving'}
-                      className="min-w-[100px]"
+                      className="w-full sm:w-auto min-w-[100px] text-sm"
+                      size="sm"
                     >
                       {saveStatus === 'saving' ? (
                         <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                           Saving...
                         </>
                       ) : saveStatus === 'saved' ? (
                         <>
-                          <CheckCircle className="mr-2 h-4 w-4" />
+                          <CheckCircle className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           Saved!
                         </>
                       ) : saveStatus === 'error' ? (
@@ -2211,36 +2256,37 @@ export default function ProductStoreEditor() {
 
       {/* Add Product Modal */}
       {addingProduct && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Add New Product</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white rounded-lg p-3 sm:p-4 md:p-6 w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-3 sm:mb-4 gap-2">
+              <h2 className="text-base sm:text-lg md:text-xl font-bold break-words flex-1 min-w-0">Add New Product</h2>
               <Button
                 variant="outline"
                 onClick={cancelAddingProduct}
-                className="cursor-pointer hover:bg-gray-100"
+                className="cursor-pointer hover:bg-gray-100 h-8 w-8 p-0 flex-shrink-0"
+                size="sm"
               >
-                ×
+                <X className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Name *</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Name *</label>
                   <Input
                     value={newProductData.name || ''}
                     onChange={(e) => setNewProductData({ ...newProductData, name: e.target.value })}
                     placeholder="Enter product name"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Category</label>
                   <select
                     value={newProductData.category || ''}
                     onChange={(e) => setNewProductData({ ...newProductData, category: e.target.value })}
-                    className="w-full p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-1.5 sm:p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   >
                     <option value="">Select a category</option>
                     {categories.map(category => (
@@ -2256,76 +2302,76 @@ export default function ProductStoreEditor() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-xs sm:text-sm font-medium mb-1">Description</label>
                 <Textarea
                   value={newProductData.description || ''}
                   onChange={(e) => setNewProductData({ ...newProductData, description: e.target.value })}
                   rows={3}
                   placeholder="Enter product description"
-                  className="cursor-pointer"
+                  className="cursor-pointer text-sm"
                 />
               </div>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price (₹) *</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Price (₹) *</label>
                   <Input
                     type="number"
                     min={0}
                     value={newProductData.price || 0}
                     onChange={(e) => setNewProductData({ ...newProductData, price: Math.max(0, Number(e.target.value)) })}
                     placeholder="0"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Original Price (₹)</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Original Price (₹)</label>
                   <Input
                     type="number"
                     min={0}
                     value={newProductData.originalPrice || 0}
                     onChange={(e) => setNewProductData({ ...newProductData, originalPrice: Math.max(0, Number(e.target.value)) })}
                     placeholder="0"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Stock</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Stock</label>
                   <Input
                     type="number"
                     value={newProductData.stock || 10}
                     onChange={(e) => setNewProductData({ ...newProductData, stock: Number(e.target.value) })}
                     placeholder="10"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Thumbnail Image</label>
-                  <div className="space-y-3">
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Thumbnail Image</label>
+                  <div className="space-y-2 sm:space-y-3">
                     {/* Image Type Selection */}
-                    <div className="flex space-x-4">
-                      <label className="flex items-center cursor-pointer">
+                    <div className="flex flex-wrap gap-3 sm:gap-4">
+                      <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                         <input
                           type="radio"
                           name="imageType"
                           value="file"
                           checked={newProductImageType === 'file'}
                           onChange={() => setNewProductImageType('file')}
-                          className="mr-2"
+                          className="mr-1.5 sm:mr-2"
                         />
                         Upload File
                       </label>
-                      <label className="flex items-center cursor-pointer">
+                      <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                         <input
                           type="radio"
                           name="imageType"
                           value="url"
                           checked={newProductImageType === 'url'}
                           onChange={() => setNewProductImageType('url')}
-                          className="mr-2"
+                          className="mr-1.5 sm:mr-2"
                         />
                         Image URL
                       </label>
@@ -2339,7 +2385,7 @@ export default function ProductStoreEditor() {
                           accept="image/*"
                           multiple
                           onChange={handleMultipleImageUpload}
-                          className="w-full p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          className="w-full p-1.5 sm:p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                         />
                         <p className="text-xs text-gray-500">Select multiple images (up to 4)</p>
                       </div>
@@ -2351,24 +2397,24 @@ export default function ProductStoreEditor() {
                         value={newProductImageUrl}
                         onChange={(e) => handleImageUrlChange(e.target.value)}
                         placeholder="Enter image URL"
-                        className="cursor-pointer"
+                        className="cursor-pointer text-sm"
                       />
                     )}
                     
                     {/* Image Preview */}
                     {newProductImages.length > 0 && (
                       <div className="mt-2">
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {newProductImages.map((image, index) => (
                             <div key={index} className="relative">
                               <img 
                                 src={image} 
                                 alt={`Preview ${index + 1}`} 
-                                className="w-16 h-16 object-cover rounded border"
+                                className="w-full h-16 sm:w-16 sm:h-16 object-cover rounded border"
                               />
                               <button
                                 onClick={() => removeImage(index)}
-                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                                className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-xs hover:bg-red-600"
                               >
                                 ×
                               </button>
@@ -2387,7 +2433,7 @@ export default function ProductStoreEditor() {
                         <img 
                           src={newProductData.imageUrl} 
                           alt="Preview" 
-                          className="w-20 h-20 object-cover rounded border"
+                          className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded border"
                         />
                         <p className="text-xs text-gray-500 mt-1">Image preview</p>
                       </div>
@@ -2396,40 +2442,40 @@ export default function ProductStoreEditor() {
                 </div>
                 {/* Supporting Images */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Supporting Images (up to 3)</label>
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Supporting Images (up to 3)</label>
                   <div className="space-y-2">
                     <input
                       type="file"
                       accept="image/*"
                       multiple
                       onChange={handleMultipleImageUpload}
-                      className="w-full p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-1.5 sm:p-2 border rounded-md cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                     />
                     <p className="text-xs text-gray-500">These will appear as additional gallery images.</p>
                     {newProductImages.length > 0 && (
-                      <div className="grid grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {newProductImages.map((image, index) => (
-                          <img key={index} src={image} alt="" className="w-16 h-16 object-cover rounded border" />
+                          <img key={index} src={image} alt="" className="w-full h-16 sm:w-16 sm:h-16 object-cover rounded border" />
                         ))}
                       </div>
                     )}
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Tags (comma-separated)</label>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs sm:text-sm font-medium mb-1">Tags (comma-separated)</label>
                   <Input
                     value={newProductTagsInput}
                     onChange={(e) => handleTagsInputChange(e.target.value)}
                     onKeyDown={handleTagsKeyDown}
                     placeholder="tag1, tag2, tag3"
-                    className="cursor-pointer"
+                    className="cursor-pointer text-sm"
                   />
                   {newProductData.tags && newProductData.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {newProductData.tags.map((tag, index) => (
                         <span 
                           key={index}
-                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+                          className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full break-words"
                         >
                           {tag}
                         </span>
@@ -2439,22 +2485,22 @@ export default function ProductStoreEditor() {
                 </div>
               </div>
               
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center cursor-pointer">
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                   <input
                     type="checkbox"
                     checked={newProductData.isVisible !== false}
                     onChange={(e) => setNewProductData({ ...newProductData, isVisible: e.target.checked })}
-                    className="mr-2 cursor-pointer"
+                    className="mr-1.5 sm:mr-2 cursor-pointer"
                   />
                   Visible
                 </label>
-                <label className="flex items-center cursor-pointer">
+                <label className="flex items-center cursor-pointer text-xs sm:text-sm">
                   <input
                     type="checkbox"
                     checked={newProductData.isFeatured || false}
                     onChange={(e) => setNewProductData({ ...newProductData, isFeatured: e.target.checked })}
-                    className="mr-2 cursor-pointer"
+                    className="mr-1.5 sm:mr-2 cursor-pointer"
                   />
                   Featured
                 </label>
@@ -2537,27 +2583,30 @@ export default function ProductStoreEditor() {
               </div>
               
               {/* Save/Cancel Buttons */}
-              <div className="flex justify-end space-x-3 pt-4 border-t">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={cancelAddingProduct}
                   disabled={saveStatus === 'saving'}
+                  className="w-full sm:w-auto text-sm"
+                  size="sm"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={saveNewProduct}
                   disabled={saveStatus === 'saving' || !newProductData.name || !newProductData.price}
-                  className="min-w-[100px]"
+                  className="w-full sm:w-auto min-w-[100px] text-sm"
+                  size="sm"
                 >
                   {saveStatus === 'saving' ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {newProductImageFiles.length > 0 ? 'Uploading images...' : 'Creating...'}
+                      <Loader2 className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                      <span className="truncate">{newProductImageFiles.length > 0 ? 'Uploading images...' : 'Creating...'}</span>
                     </>
                   ) : saveStatus === 'saved' ? (
                     <>
-                      <CheckCircle className="mr-2 h-4 w-4" />
+                      <CheckCircle className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Created!
                     </>
                   ) : saveStatus === 'error' ? (

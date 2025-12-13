@@ -70,7 +70,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
   };
 
   return (
-    <div className="bg-orange-50 border-t border-orange-200 py-6 pb-8 overflow-visible relative">
+    <div className="bg-orange-50 border-t border-orange-200 py-6 pb-12 sm:pb-8 overflow-visible relative">
       {/* Navigation Buttons */}
       <button
         onClick={() => scroll('left')}
@@ -123,7 +123,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
               </div>
 
               {/* Product Info */}
-              <div className="p-2 sm:p-3 pb-3 sm:pb-4 bg-white rounded-b-xl">
+              <div className="p-2 sm:p-3 pb-3 sm:pb-4 md:pb-4 bg-white rounded-b-xl">
                 <h3 className="font-semibold text-gray-900 text-xs sm:text-sm mb-0.5 line-clamp-1">
                   {product.name}
                 </h3>
@@ -162,7 +162,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
           overflow-x: auto;
           overflow-y: visible;
           padding: 0 3.5rem;
-          padding-bottom: 1rem;
+          padding-bottom: 2rem;
           scroll-behavior: smooth;
           scrollbar-width: none;
           -ms-overflow-style: none;
@@ -268,6 +268,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
         @media (max-width: 640px) {
           .marquee-wrapper {
             padding: 0 1.5rem;
+            padding-bottom: 2.5rem;
           }
 
           .marquee-content {
@@ -283,6 +284,7 @@ export default function FeaturedProductsMarquee({ products, onProductClick }: Fe
         @media (max-width: 480px) {
           .marquee-wrapper {
             padding: 0 1rem;
+            padding-bottom: 2.5rem;
           }
 
           .marquee-card {

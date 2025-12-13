@@ -283,90 +283,91 @@ export function MarqueeManagement() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.marquee.title')}</h1>
-          <p className="text-gray-600">{t('admin.marquee.description')}</p>
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 break-words leading-tight">{t('admin.marquee.title')}</h1>
+          <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1 break-words leading-relaxed">{t('admin.marquee.description')}</p>
         </div>
-        <Button onClick={startCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          {t('admin.marquee.addMarquee')}
+        <Button onClick={startCreate} className="gap-2 w-full sm:w-auto flex-shrink-0 text-xs sm:text-sm" size="sm">
+          <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          <span className="truncate">{t('admin.marquee.addMarquee')}</span>
         </Button>
       </div>
 
       {/* Form */}
       {(isCreating || editingId) && (
-        <Card className="border-2 border-orange-200">
-          <CardHeader className="bg-orange-50">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-orange-800">
+        <Card className="border-2 border-orange-200 w-full max-w-full overflow-hidden">
+          <CardHeader className="bg-orange-50 p-2.5 sm:p-3 md:p-4 lg:p-6">
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <CardTitle className="text-xs sm:text-sm md:text-base lg:text-lg text-orange-800 break-words flex-1 min-w-0 pr-2">
                 {isCreating ? t('admin.marquee.createMarquee') : t('admin.marquee.editMarquee')}
               </CardTitle>
-              <Button variant="ghost" size="sm" onClick={resetForm}>
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="sm" onClick={resetForm} className="h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0">
+                <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
-            <div>
-              <Label htmlFor="text">{t('admin.marquee.marqueeText')}</Label>
+          <CardContent className="p-2.5 sm:p-3 md:p-4 lg:p-6 space-y-3 sm:space-y-4">
+            <div className="w-full">
+              <Label htmlFor="text" className="text-sm">{t('admin.marquee.marqueeText')}</Label>
               <Input
                 id="text"
                 value={formData.text}
                 onChange={(e) => setFormData({ ...formData, text: e.target.value })}
                 placeholder={t('admin.marquee.textPlaceholder')}
                 maxLength={1000}
+                className="mt-1 text-sm w-full"
               />
               <p className="text-xs text-gray-500 mt-1">
                 {t('admin.marquee.characters').replace('{count}', String(formData.text.length))}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="text_color">{t('admin.marquee.textColor')}</Label>
-                <div className="flex gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+              <div className="w-full min-w-0">
+                <Label htmlFor="text_color" className="text-sm">{t('admin.marquee.textColor')}</Label>
+                <div className="flex gap-2 mt-1 w-full">
                   <Input
                     id="text_color"
                     type="color"
                     value={formData.text_color}
                     onChange={(e) => setFormData({ ...formData, text_color: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-14 sm:w-16 md:w-20 h-9 sm:h-10 cursor-pointer flex-shrink-0"
                   />
                   <Input
                     type="text"
                     value={formData.text_color}
                     onChange={(e) => setFormData({ ...formData, text_color: e.target.value })}
                     placeholder="#92400e"
-                    className="flex-1"
+                    className="flex-1 min-w-0 text-sm"
                   />
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="background_color">{t('admin.marquee.backgroundColor')}</Label>
-                <div className="flex gap-2">
+              <div className="w-full min-w-0">
+                <Label htmlFor="background_color" className="text-sm">{t('admin.marquee.backgroundColor')}</Label>
+                <div className="flex gap-2 mt-1 w-full">
                   <Input
                     id="background_color"
                     type="color"
                     value={formData.background_color}
                     onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
-                    className="w-20 h-10"
+                    className="w-14 sm:w-16 md:w-20 h-9 sm:h-10 cursor-pointer flex-shrink-0"
                   />
                   <Input
                     type="text"
                     value={formData.background_color}
                     onChange={(e) => setFormData({ ...formData, background_color: e.target.value })}
                     placeholder="#fef3c7"
-                    className="flex-1"
+                    className="flex-1 min-w-0 text-sm"
                   />
                 </div>
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="speed">{t('admin.marquee.speed')}</Label>
+            <div className="w-full">
+              <Label htmlFor="speed" className="text-sm">{t('admin.marquee.speed')}</Label>
               <Input
                 id="speed"
                 type="number"
@@ -374,13 +375,14 @@ export function MarqueeManagement() {
                 onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) || 40 })}
                 min={10}
                 max={100}
+                className="mt-1 text-sm w-full"
               />
               <p className="text-xs text-gray-500 mt-1">{t('admin.marquee.speedRecommended')}</p>
             </div>
 
             {canSelectStateDistrict && (
-              <div>
-                <div className="flex items-center space-x-2 mb-4">
+              <div className="w-full">
+                <div className="flex items-center space-x-2 mb-3 sm:mb-4">
                   <Switch
                     id="is_global"
                     checked={formData.is_global}
@@ -388,13 +390,13 @@ export function MarqueeManagement() {
                       setFormData({ ...formData, is_global: checked, district: '', state: '' });
                     }}
                   />
-                  <Label htmlFor="is_global">{t('admin.marquee.globalMarquee')}</Label>
+                  <Label htmlFor="is_global" className="text-sm">{t('admin.marquee.globalMarquee')}</Label>
                 </div>
 
                 {!formData.is_global && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="state">{t('admin.marquee.state')}</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full">
+                    <div className="w-full min-w-0">
+                      <Label htmlFor="state" className="text-sm">{t('admin.marquee.state')}</Label>
                       <Select
                         value={formData.state}
                         onValueChange={(value) => {
@@ -402,7 +404,7 @@ export function MarqueeManagement() {
                         }}
                         disabled={loadingStates}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm w-full">
                           <SelectValue placeholder={t('admin.marquee.selectState')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -415,14 +417,14 @@ export function MarqueeManagement() {
                       </Select>
                     </div>
 
-                    <div>
-                      <Label htmlFor="district">{t('admin.marquee.district')}</Label>
+                    <div className="w-full min-w-0">
+                      <Label htmlFor="district" className="text-sm">{t('admin.marquee.district')}</Label>
                       <Select
                         value={formData.district}
                         onValueChange={(value) => setFormData({ ...formData, district: value })}
                         disabled={!formData.state || loadingDistricts}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm w-full">
                           <SelectValue placeholder={t('admin.marquee.selectDistrict')} />
                         </SelectTrigger>
                         <SelectContent>
@@ -445,18 +447,17 @@ export function MarqueeManagement() {
                 checked={formData.is_active}
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
-              <Label htmlFor="is_active">{t('admin.marquee.isActive')}</Label>
+              <Label htmlFor="is_active" className="text-sm">{t('admin.marquee.isActive')}</Label>
             </div>
 
             {/* Preview */}
-            <div className="border rounded-lg p-4 bg-gray-50">
-              <Label className="mb-2 block">{t('admin.marquee.preview')}</Label>
+            <div className="border rounded-lg p-2 sm:p-3 md:p-4 bg-gray-50 w-full overflow-hidden">
+              <Label className="mb-1.5 sm:mb-2 block text-xs sm:text-sm">{t('admin.marquee.preview')}</Label>
               <div
-                className="p-3 rounded"
+                className="p-1.5 sm:p-2 md:p-3 rounded overflow-hidden w-full max-w-full"
                 style={{
                   backgroundColor: formData.background_color,
                   color: formData.text_color,
-                  overflow: 'hidden',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -464,20 +465,20 @@ export function MarqueeManagement() {
                   style={{
                     animation: `marquee ${60 / formData.speed}s linear infinite`,
                   }}
-                  className="inline-block"
+                  className="inline-block text-xs sm:text-sm md:text-base"
                 >
                   {formData.text || t('admin.marquee.previewText')}
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3 pt-4 border-t">
-              <Button variant="outline" onClick={resetForm}>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t w-full">
+              <Button variant="outline" onClick={resetForm} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
                 {t('admin.marquee.cancel')}
               </Button>
-              <Button onClick={handleSave} className="gap-2">
-                <Save className="h-4 w-4" />
-                {isCreating ? t('admin.marquee.create') : t('admin.marquee.update')}
+              <Button onClick={handleSave} className="gap-1.5 sm:gap-2 w-full sm:w-auto text-xs sm:text-sm" size="sm">
+                <Save className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="truncate">{isCreating ? t('admin.marquee.create') : t('admin.marquee.update')}</span>
               </Button>
             </div>
           </CardContent>
@@ -485,56 +486,64 @@ export function MarqueeManagement() {
       )}
 
       {/* List */}
-      <div className="space-y-4">
+      <div className="space-y-2.5 sm:space-y-3 md:space-y-4 w-full">
         {marquees.map((marquee) => (
-          <Card key={marquee.id}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+          <Card key={marquee.id} className="w-full max-w-full overflow-hidden">
+            <CardContent className="p-2.5 sm:p-3 md:p-4">
+              <div className="flex flex-col gap-2.5 sm:gap-3 md:gap-4 w-full">
+                <div className="flex-1 min-w-0 w-full">
                   <div
-                    className="p-3 rounded mb-3"
+                    className="p-2 sm:p-2.5 md:p-3 rounded mb-2 sm:mb-2.5 md:mb-3 text-xs sm:text-sm md:text-base break-words overflow-hidden max-w-full"
                     style={{
                       backgroundColor: marquee.background_color,
                       color: marquee.text_color,
+                      wordBreak: 'break-word',
+                      overflowWrap: 'break-word',
                     }}
                   >
-                    {marquee.text}
+                    <div className="whitespace-normal sm:whitespace-nowrap overflow-hidden">
+                      {marquee.text}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>{t('admin.marquee.speedLabel').replace('{speed}', String(marquee.speed))}</p>
-                    <p>{t('admin.marquee.statusLabel').replace('{status}', marquee.is_active ? t('admin.marquee.active') : t('admin.marquee.inactive'))}</p>
-                    <p>{t('admin.marquee.scopeLabel').replace('{scope}', marquee.is_global ? t('admin.marquee.global') : `${marquee.district || 'N/A'}, ${marquee.state || 'N/A'}`)}</p>
-                    <p>{t('admin.marquee.updatedLabel').replace('{date}', new Date(marquee.updated_at).toLocaleString())}</p>
+                  <div className="text-xs sm:text-sm text-gray-600 space-y-0.5 sm:space-y-1 break-words">
+                    <p className="break-words leading-tight">{t('admin.marquee.speedLabel').replace('{speed}', String(marquee.speed))}</p>
+                    <p className="break-words leading-tight">{t('admin.marquee.statusLabel').replace('{status}', marquee.is_active ? t('admin.marquee.active') : t('admin.marquee.inactive'))}</p>
+                    <p className="break-words leading-tight">{t('admin.marquee.scopeLabel').replace('{scope}', marquee.is_global ? t('admin.marquee.global') : `${marquee.district || 'N/A'}, ${marquee.state || 'N/A'}`)}</p>
+                    <p className="text-xs break-words leading-tight">{t('admin.marquee.updatedLabel').replace('{date}', new Date(marquee.updated_at).toLocaleString())}</p>
                   </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 sm:gap-2 justify-start sm:justify-end flex-wrap sm:flex-nowrap w-full sm:w-auto">
                   <Button
                     variant={marquee.is_active ? "default" : "outline"}
                     size="sm"
                     onClick={() => handleSetActive(marquee)}
-                    className={marquee.is_active ? "bg-green-600 hover:bg-green-700" : ""}
+                    className={`h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-auto md:px-3 p-0 flex-shrink-0 ${marquee.is_active ? "bg-green-600 hover:bg-green-700" : ""}`}
                     title={marquee.is_active ? "Click to deactivate" : "Click to activate"}
                   >
                     {marquee.is_active ? (
-                      <CheckCircle className="h-4 w-4" />
+                      <CheckCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:mr-1" />
                     ) : (
-                      <Circle className="h-4 w-4" />
+                      <Circle className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:mr-1" />
                     )}
+                    <span className="hidden md:inline whitespace-nowrap text-xs">{marquee.is_active ? 'Active' : 'Inactive'}</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEdit(marquee)}
+                    className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-auto md:px-3 p-0 flex-shrink-0"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:mr-1" />
+                    <span className="hidden md:inline whitespace-nowrap text-xs">Edit</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleDelete(marquee.id)}
-                    className="text-red-600"
+                    className="text-red-600 h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-auto md:px-3 p-0 flex-shrink-0"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:mr-1" />
+                    <span className="hidden md:inline whitespace-nowrap text-xs">Delete</span>
                   </Button>
                 </div>
               </div>
@@ -543,9 +552,9 @@ export function MarqueeManagement() {
         ))}
 
         {marquees.length === 0 && !isCreating && (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <p className="text-gray-500">{t('admin.marquee.noMarqueesFound')}</p>
+          <Card className="w-full">
+            <CardContent className="p-6 sm:p-8 text-center">
+              <p className="text-sm sm:text-base text-gray-500">{t('admin.marquee.noMarqueesFound')}</p>
             </CardContent>
           </Card>
         )}

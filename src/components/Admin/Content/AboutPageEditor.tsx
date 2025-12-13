@@ -374,164 +374,187 @@ export function AboutPageEditor() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col px-2 sm:px-4 md:px-6 py-4 sm:py-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col space-y-4 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('admin.content.about.title')}</h1>
-          <p className="text-gray-600">{t('admin.content.about.subtitle')}</p>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{t('admin.content.about.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">{t('admin.content.about.subtitle')}</p>
         </div>
-        <div className="flex items-center space-x-2 mt-4 sm:mt-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
+            size="sm"
             onClick={() => setPreviewMode(!previewMode)}
+            className="flex-1 sm:flex-initial"
           >
-            <Eye className="h-4 w-4 mr-2" />
-            {previewMode ? t('admin.content.about.editMode') : t('admin.content.about.previewMode')}
+            <Eye className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">{previewMode ? t('admin.content.about.editMode') : t('admin.content.about.previewMode')}</span>
+            <span className="sm:hidden">{previewMode ? t('admin.content.about.editMode')?.slice(0, 4) : t('admin.content.about.previewMode')?.slice(0, 4)}</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={undo}
             disabled={historyIndex <= 0}
+            className="flex-1 sm:flex-initial"
           >
-            <Undo className="h-4 w-4 mr-2" />
-            {t('admin.content.about.undo')}
+            <Undo className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('admin.content.about.undo')}</span>
           </Button>
           <Button
             variant="outline"
+            size="sm"
             onClick={redo}
             disabled={historyIndex >= history.length - 1}
+            className="flex-1 sm:flex-initial"
           >
-            <Redo className="h-4 w-4 mr-2" />
-            {t('admin.content.about.redo')}
+            <Redo className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{t('admin.content.about.redo')}</span>
           </Button>
           <Button
+            size="sm"
             onClick={saveChanges}
             disabled={saving}
-            className={saveStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : saveStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : ''}
+            className={`flex-1 sm:flex-initial ${saveStatus === 'success' ? 'bg-green-600 hover:bg-green-700' : saveStatus === 'error' ? 'bg-red-600 hover:bg-red-700' : ''}`}
           >
-            <Save className="h-4 w-4 mr-2" />
-            {saving ? t('admin.content.about.saving') : saveStatus === 'success' ? t('admin.content.about.saved') : saveStatus === 'error' ? t('admin.content.about.error') : t('admin.content.about.saveChanges')}
+            <Save className="h-4 w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">
+              {saving ? t('admin.content.about.saving') : saveStatus === 'success' ? t('admin.content.about.saved') : saveStatus === 'error' ? t('admin.content.about.error') : t('admin.content.about.saveChanges')}
+            </span>
           </Button>
         </div>
       </div>
 
       {/* Add Section Buttons */}
-      <Card className="p-4 mb-6">
+      <Card className="p-3 sm:p-4 mb-4 sm:mb-6">
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('hero')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <Heading1 className="h-4 w-4 mr-2" />
-            {t('admin.content.about.heroSection')}
+            <Heading1 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.heroSection')}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('card')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <Card className="h-4 w-4 mr-2" />
-            {t('admin.content.about.cardSection')}
+            <Card className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.cardSection')}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('quote')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <Quote className="h-4 w-4 mr-2" />
-            {t('admin.content.about.quoteSection')}
+            <Quote className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.quoteSection')}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('heading')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <Heading2 className="h-4 w-4 mr-2" />
-            {t('admin.content.about.heading')}
+            <Heading2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.heading')}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('paragraph')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <Type className="h-4 w-4 mr-2" />
-            {t('admin.content.about.paragraph')}
+            <Type className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.paragraph')}</span>
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addSection('image')}
+            className="flex-1 min-w-[calc(50%-0.25rem)] sm:flex-initial sm:min-w-0"
           >
-            <ImageIcon className="h-4 w-4 mr-2" />
-            {t('admin.content.about.imageSection') || 'Image'}
+            <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="text-xs sm:text-sm">{t('admin.content.about.imageSection') || 'Image'}</span>
           </Button>
         </div>
       </Card>
 
       {/* Sections List */}
-      <div className="flex-1 space-y-4 overflow-y-auto">
+      <div className="flex-1 space-y-3 sm:space-y-4 overflow-y-auto pb-4">
         {sections
           .sort((a, b) => a.order - b.order)
           .map((section, index) => (
-            <Card key={section.id} className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-lg ${getSectionColor(section.type)}`}>
+            <Card key={section.id} className="p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3 sm:mb-4">
+                <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                  <div className={`p-1.5 sm:p-2 rounded-lg flex-shrink-0 ${getSectionColor(section.type)}`}>
                     {getSectionIcon(section.type)}
                   </div>
-                  <div>
-                    <h3 className="font-medium text-gray-900">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-medium text-sm sm:text-base text-gray-900 truncate">
                       {section.title || `${t('admin.content.about.section')} ${section.order}`}
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-xs sm:text-sm text-gray-500">
                       {section.type.charAt(0).toUpperCase() + section.type.slice(1)} • {t('admin.content.about.order')}: {section.order}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-end sm:justify-start gap-1.5 sm:gap-2 flex-shrink-0">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => moveSection(section.id, 'up')}
                     disabled={index === 0}
+                    className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                   >
-                    <MoveUp className="h-4 w-4" />
+                    <MoveUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Up</span>
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => moveSection(section.id, 'down')}
                     disabled={index === sections.length - 1}
+                    className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                   >
-                    <MoveDown className="h-4 w-4" />
+                    <MoveDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Down</span>
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => setEditingSection(editingSection === section.id ? null : section.id)}
+                    className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Edit</span>
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => deleteSection(section.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="h-8 w-8 p-0 sm:h-9 sm:w-auto sm:px-3 text-red-600 hover:text-red-700"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Delete</span>
                   </Button>
                 </div>
               </div>
 
               {/* Section Preview */}
               {!previewMode && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-2">{t('admin.content.about.preview')}</div>
-                  <div className="prose max-w-none">
+                <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                  <div className="text-xs sm:text-sm text-gray-600 mb-2">{t('admin.content.about.preview')}</div>
+                  <div className="prose max-w-none prose-sm sm:prose-base">
                     {section.title && (
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                         {section.title}
                       </h3>
                     )}
@@ -540,14 +563,14 @@ export function AboutPageEditor() {
                         <img 
                           src={section.imageUrl} 
                           alt={section.content || section.title || 'Section image'} 
-                          className="max-w-full h-auto rounded-lg border border-gray-200 max-h-48 object-contain"
+                          className="max-w-full h-auto rounded-lg border border-gray-200 max-h-32 sm:max-h-48 object-contain"
                         />
                         {section.content && (
-                          <p className="text-sm text-gray-600 mt-2 italic">{section.content}</p>
+                          <p className="text-xs sm:text-sm text-gray-600 mt-2 italic">{section.content}</p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-gray-700 whitespace-pre-wrap">
+                      <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap break-words">
                         {section.content || t('admin.content.about.noContent')}
                       </p>
                     )}
@@ -557,24 +580,25 @@ export function AboutPageEditor() {
 
               {/* Section Editor */}
               {editingSection === section.id && (
-                <div className="mt-4 space-y-4 border-t pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="mt-3 sm:mt-4 space-y-3 sm:space-y-4 border-t pt-3 sm:pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor={`title-${section.id}`}>{t('admin.content.about.titleLabel')}</Label>
+                      <Label htmlFor={`title-${section.id}`} className="text-sm">{t('admin.content.about.titleLabel')}</Label>
                       <Input
                         id={`title-${section.id}`}
                         value={section.title || ''}
                         onChange={(e) => updateSection(section.id, { title: e.target.value })}
                         placeholder={t('admin.content.about.titlePlaceholder')}
+                        className="mt-1 text-sm"
                       />
                     </div>
                     <div>
-                      <Label htmlFor={`type-${section.id}`}>{t('admin.content.about.sectionType')}</Label>
+                      <Label htmlFor={`type-${section.id}`} className="text-sm">{t('admin.content.about.sectionType')}</Label>
                       <Select
                         value={section.type}
                         onValueChange={(value: AboutSection['type']) => updateSection(section.id, { type: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -592,16 +616,16 @@ export function AboutPageEditor() {
                   {/* Image Upload for Image Sections */}
                   {section.type === 'image' && (
                     <div>
-                      <Label>{t('admin.content.about.imageUpload') || 'Upload Image'}</Label>
+                      <Label className="text-sm">{t('admin.content.about.imageUpload') || 'Upload Image'}</Label>
                       <div className="mt-2 space-y-2">
                         {section.imageUrl ? (
                           <div className="space-y-2">
                             <img 
                               src={section.imageUrl} 
                               alt={section.title || 'Section image'} 
-                              className="max-w-full h-auto rounded-lg border border-gray-200 max-h-64 object-contain"
+                              className="max-w-full h-auto rounded-lg border border-gray-200 max-h-48 sm:max-h-64 object-contain"
                             />
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <label className="flex-1 cursor-pointer">
                                 <Input
                                   type="file"
@@ -625,9 +649,9 @@ export function AboutPageEditor() {
                                     input?.click();
                                   }}
                                   disabled={uploadingImage === section.id}
-                                  className="w-full"
+                                  className="w-full text-xs sm:text-sm"
                                 >
-                                  <ImageIcon className="h-4 w-4 mr-2" />
+                                  <ImageIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                   {uploadingImage === section.id 
                                     ? (t('admin.content.about.uploading') || 'Uploading...')
                                     : (t('admin.content.about.replaceImage') || 'Replace Image')
@@ -639,9 +663,9 @@ export function AboutPageEditor() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => updateSection(section.id, { imageUrl: undefined })}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs sm:text-sm"
                               >
-                                <Trash2 className="h-4 w-4 mr-2" />
+                                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                 {t('admin.content.about.removeImage') || 'Remove'}
                               </Button>
                             </div>
@@ -658,10 +682,10 @@ export function AboutPageEditor() {
                                 }
                               }}
                               disabled={uploadingImage === section.id}
-                              className="cursor-pointer"
+                              className="cursor-pointer text-xs sm:text-sm"
                             />
                             {uploadingImage === section.id && (
-                              <p className="text-sm text-gray-500 mt-1">{t('admin.content.about.uploading') || 'Uploading...'}</p>
+                              <p className="text-xs sm:text-sm text-gray-500 mt-1">{t('admin.content.about.uploading') || 'Uploading...'}</p>
                             )}
                           </div>
                         )}
@@ -674,9 +698,9 @@ export function AboutPageEditor() {
 
                   {/* Image Alignment and Width for Image Sections */}
                   {section.type === 'image' && section.imageUrl && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
-                        <Label htmlFor={`imageAlign-${section.id}`}>{t('admin.content.about.imageAlignment') || 'Image Alignment'}</Label>
+                        <Label htmlFor={`imageAlign-${section.id}`} className="text-sm">{t('admin.content.about.imageAlignment') || 'Image Alignment'}</Label>
                         <Select
                           value={section.styling?.imageAlign || 'center'}
                           onValueChange={(value: 'left' | 'center' | 'right') => 
@@ -685,7 +709,7 @@ export function AboutPageEditor() {
                             })
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="mt-1 text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -696,7 +720,7 @@ export function AboutPageEditor() {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor={`imageWidth-${section.id}`}>{t('admin.content.about.imageWidth') || 'Image Width'}</Label>
+                        <Label htmlFor={`imageWidth-${section.id}`} className="text-sm">{t('admin.content.about.imageWidth') || 'Image Width'}</Label>
                         <Select
                           value={section.styling?.imageWidth || 'full'}
                           onValueChange={(value: 'full' | 'half' | 'third' | 'quarter') => 
@@ -705,7 +729,7 @@ export function AboutPageEditor() {
                             })
                           }
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="mt-1 text-sm">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -722,13 +746,14 @@ export function AboutPageEditor() {
                   {/* Content for non-image sections */}
                   {section.type !== 'image' && (
                     <div>
-                      <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.contentLabel')}</Label>
+                      <Label htmlFor={`content-${section.id}`} className="text-sm">{t('admin.content.about.contentLabel')}</Label>
                       <Textarea
                         id={`content-${section.id}`}
                         value={section.content}
                         onChange={(e) => updateSection(section.id, { content: e.target.value })}
                         placeholder={t('admin.content.about.contentPlaceholder')}
                         rows={6}
+                        className="mt-1 text-sm"
                       />
                     </div>
                   )}
@@ -736,20 +761,21 @@ export function AboutPageEditor() {
                   {/* Caption/Alt text for image sections */}
                   {section.type === 'image' && (
                     <div>
-                      <Label htmlFor={`content-${section.id}`}>{t('admin.content.about.imageCaption') || 'Image Caption/Alt Text'}</Label>
+                      <Label htmlFor={`content-${section.id}`} className="text-sm">{t('admin.content.about.imageCaption') || 'Image Caption/Alt Text'}</Label>
                       <Textarea
                         id={`content-${section.id}`}
                         value={section.content}
                         onChange={(e) => updateSection(section.id, { content: e.target.value })}
                         placeholder={t('admin.content.about.imageCaptionPlaceholder') || 'Enter image caption or alt text...'}
                         rows={3}
+                        className="mt-1 text-sm"
                       />
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor={`textAlign-${section.id}`}>{t('admin.content.about.textAlignment')}</Label>
+                      <Label htmlFor={`textAlign-${section.id}`} className="text-sm">{t('admin.content.about.textAlignment')}</Label>
                       <Select
                         value={section.styling?.textAlign || 'left'}
                         onValueChange={(value: 'left' | 'center' | 'right') => 
@@ -758,7 +784,7 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -769,7 +795,7 @@ export function AboutPageEditor() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor={`fontSize-${section.id}`}>{t('admin.content.about.fontSize')}</Label>
+                      <Label htmlFor={`fontSize-${section.id}`} className="text-sm">{t('admin.content.about.fontSize')}</Label>
                       <Select
                         value={section.styling?.fontSize || 'base'}
                         onValueChange={(value: 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl') => 
@@ -778,7 +804,7 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -794,7 +820,7 @@ export function AboutPageEditor() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor={`color-${section.id}`}>{t('admin.content.about.textColor')}</Label>
+                      <Label htmlFor={`color-${section.id}`} className="text-sm">{t('admin.content.about.textColor')}</Label>
                       <Select
                         value={section.styling?.color || 'gray'}
                         onValueChange={(value: 'gray' | 'orange' | 'red' | 'blue' | 'green') => 
@@ -803,7 +829,7 @@ export function AboutPageEditor() {
                           })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="mt-1 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -817,10 +843,12 @@ export function AboutPageEditor() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-end pt-2">
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => setEditingSection(null)}
+                      className="w-full sm:w-auto"
                     >
                       {t('admin.content.about.doneEditing')}
                     </Button>
@@ -833,20 +861,20 @@ export function AboutPageEditor() {
 
       {/* Preview Mode */}
       {previewMode && (
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('admin.content.about.livePreview')}</h2>
-          <div className="prose max-w-none">
+        <Card className="p-4 sm:p-6">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">{t('admin.content.about.livePreview')}</h2>
+          <div className="prose prose-sm sm:prose-base max-w-none">
             {sections
               .sort((a, b) => a.order - b.order)
               .filter(section => section.isVisible)
               .map((section) => (
-                <div key={section.id} className="mb-6">
+                <div key={section.id} className="mb-4 sm:mb-6">
                   {section.title && (
-                    <h2 className="text-2xl font-bold text-orange-800 mb-4">
+                    <h2 className="text-xl sm:text-2xl font-bold text-orange-800 mb-3 sm:mb-4">
                       {section.title}
                     </h2>
                   )}
-                  <div className="text-gray-800 leading-8 whitespace-pre-wrap">
+                  <div className="text-sm sm:text-base text-gray-800 leading-6 sm:leading-8 whitespace-pre-wrap break-words">
                     {section.content}
                   </div>
                 </div>

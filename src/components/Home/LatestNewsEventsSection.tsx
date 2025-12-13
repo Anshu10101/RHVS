@@ -80,7 +80,10 @@ export default function LatestNewsEventsSection() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xl font-semibold text-orange-800">नवीनतम समाचार</h3>
-              <Link href="/events" className="text-sm text-orange-700 hover:text-orange-800 font-medium">View all</Link>
+              <Link href="/news" className="group inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer">
+                View all
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </Link>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 3 }).map(() => undefined) : news.slice(0, 3)).map((item, i) => (
@@ -147,7 +150,10 @@ export default function LatestNewsEventsSection() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xl font-semibold text-orange-800">नवीनतम आयोजन</h3>
-              <Link href="/events" className="text-sm text-orange-700 hover:text-orange-800 font-medium">View all</Link>
+              <Link href="/events" className="group inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 hover:text-orange-800 rounded-lg transition-all duration-200 hover:shadow-md hover:scale-105 cursor-pointer">
+                View all
+                <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
+              </Link>
             </div>
             <div className="grid grid-cols-1 gap-4">
               {(loading ? Array.from<Record<string, unknown> | undefined>({ length: 3 }).map(() => undefined) : events.slice(0, 3)).map((item, i) => (

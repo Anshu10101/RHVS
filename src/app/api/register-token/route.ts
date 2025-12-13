@@ -77,6 +77,22 @@ export async function POST(request: NextRequest) {
       });
 
     } else if (action === 'verify-otp') {
+      // Check if OTP verification is enabled
+      const otpSettings = await executeQuery(
+        'SELECT setting_value FROM otp_settings WHERE setting_key = ?',
+        ['otp_verification_enabled']
+      ) as Array<{ setting_value: string }>;
+      
+      const otpEnabled = otpSettings.length === 0 || otpSettings[0].setting_value === 'true';
+      
+      // If OTP is disabled, skip verification
+      if (!otpEnabled) {
+        return NextResponse.json({
+          success: true,
+          message: 'OTP verification skipped (disabled)'
+        });
+      }
+
       const { existingMemberRegNumber, otp } = data;
 
       // Verify OTP from database
@@ -118,12 +134,25 @@ export async function POST(request: NextRequest) {
         fatherHusbandName, 
         motherWifeName, 
         registrationDate,
-        existingMemberRegNumber,
+        existingMemberRegNumber: incomingExistingMemberRegNumber,
         profilePhotoPath,
         signaturePath,
         district,
         department
       } = data;
+
+      // Check if OTP verification is enabled
+      const otpSettings = await executeQuery(
+        'SELECT setting_value FROM otp_settings WHERE setting_key = ?',
+        ['otp_verification_enabled']
+      ) as Array<{ setting_value: string }>;
+      
+      const otpEnabled = otpSettings.length === 0 || otpSettings[0].setting_value === 'true';
+      
+      // If OTP is disabled, set superadmin as default existing member reg number
+      const existingMemberRegNumber = otpEnabled 
+        ? incomingExistingMemberRegNumber 
+        : 'RHVS000000';
 
       // Validate profile photo is required
       if (!profilePhotoPath || profilePhotoPath.trim() === '') {
