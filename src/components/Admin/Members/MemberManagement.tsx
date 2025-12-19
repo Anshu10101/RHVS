@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -58,7 +59,11 @@ interface Member {
   status: 'pending' | 'verified' | 'rejected';
   state?: string;
   district?: string;
-  departments?: string; // This will contain the formatted department assignments
+  // Optional Hindi translations resolved from DB joins
+  state_hi?: string | null;
+  district_hi?: string | null;
+  departments?: string; // English formatted department assignments
+  departments_hi?: string | null; // Hindi formatted department assignments (if available)
   verified_by_member_id?: number;
   verified_by_name?: string;
   aadhar_card_number?: string;
@@ -84,7 +89,8 @@ interface MemberStats {
 }
 
 export function MemberManagement() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { toast } = useToast();
   const [members, setMembers] = useState<Member[]>([]);
   const [stats, setStats] = useState<MemberStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -416,6 +422,17 @@ export function MemberManagement() {
           } catch (err) {
             console.error('Failed to refresh member details:', err);
           }
+        }
+        if (data.membershipEmailSent) {
+          toast({
+            title: 'Member updated & email sent',
+            description: 'Membership email with updated certificate and ID card has been sent to the member.',
+          });
+        } else {
+          toast({
+            title: 'Member updated',
+            description: 'Member details have been updated successfully.',
+          });
         }
         setShowEditModal(false);
         setEditingMember(null);
@@ -812,9 +829,17 @@ export function MemberManagement() {
                       <div className="text-xs sm:text-sm text-gray-500">{member.phone}</div>
                     </td>
                     <td className="px-4 xl:px-6 py-4" style={{ maxWidth: '350px', wordWrap: 'break-word' }}>
-                      <div className="text-sm text-gray-900">{member.state || t('admin.members.na')}</div>
-                      <div className="text-xs sm:text-sm text-gray-500">{member.district || t('admin.members.na')}</div>
-                      {member.departments ? (
+                      <div className="text-sm text-gray-900">
+                        {language === 'hi'
+                          ? member.state_hi || member.state || t('admin.members.na')
+                          : member.state || member.state_hi || t('admin.members.na')}
+                      </div>
+                      <div className="text-xs sm:text-sm text-gray-500">
+                        {language === 'hi'
+                          ? member.district_hi || member.district || t('admin.members.na')
+                          : member.district || member.district_hi || t('admin.members.na')}
+                      </div>
+                      {member.departments || member.departments_hi ? (
                         <div 
                           className="text-xs sm:text-sm text-blue-600 font-medium break-words leading-relaxed" 
                           style={{ 
@@ -823,9 +848,15 @@ export function MemberManagement() {
                             wordBreak: 'break-word',
                             overflowWrap: 'anywhere'
                           }}
-                          title={member.departments}
+                          title={language === 'hi'
+                            ? (member.departments_hi || member.departments || '')
+                            : (member.departments || member.departments_hi || '')
+                          }
                         >
-                          {member.departments}
+                          {language === 'hi'
+                            ? (member.departments_hi || member.departments)
+                            : (member.departments || member.departments_hi)
+                          }
                         </div>
                       ) : (
                         <div className="text-xs sm:text-sm text-gray-400 italic">{t('admin.members.noAssignments')}</div>
@@ -1004,17 +1035,31 @@ export function MemberManagement() {
                       <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-gray-500">{t('admin.members.location')}</p>
-                        <p className="text-sm text-gray-900">{member.state || t('admin.members.na')}, {member.district || t('admin.members.na')}</p>
-                        {member.departments ? (
+                        <p className="text-sm text-gray-900">
+                          {language === 'hi'
+                            ? (member.state_hi || member.state || t('admin.members.na'))
+                            : (member.state || member.state_hi || t('admin.members.na'))}
+                          {', '}
+                          {language === 'hi'
+                            ? (member.district_hi || member.district || t('admin.members.na'))
+                            : (member.district || member.district_hi || t('admin.members.na'))}
+                        </p>
+                        {member.departments || member.departments_hi ? (
                           <p 
                             className="text-xs text-blue-600 font-medium mt-1 break-words leading-relaxed" 
                             style={{ 
                               wordBreak: 'break-word',
                               overflowWrap: 'anywhere'
                             }}
-                            title={member.departments}
+                            title={language === 'hi'
+                              ? (member.departments_hi || member.departments || '')
+                              : (member.departments || member.departments_hi || '')
+                            }
                           >
-                            {member.departments}
+                            {language === 'hi'
+                              ? (member.departments_hi || member.departments)
+                              : (member.departments || member.departments_hi)
+                            }
                           </p>
                         ) : (
                           <p className="text-xs text-gray-400 italic mt-1">{t('admin.members.noAssignments')}</p>
@@ -1298,16 +1343,20 @@ export function MemberManagement() {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-lg sm:text-xl">Edit Member</DialogTitle>
+            <DialogTitle className="text-lg sm:text-xl">
+              {t('admin.members.editMemberTitle') || 'Edit Member | सदस्य संपादन'}
+            </DialogTitle>
             <DialogDescription className="text-sm">
-              Update member information
+              {t('admin.members.editMemberDescription') || 'Update member information | सदस्य की जानकारी अपडेट करें'}
             </DialogDescription>
           </DialogHeader>
           {editingMember && (
             <form onSubmit={handleUpdateMember} className="space-y-4">
               {/* Profile Photo Upload */}
               <div>
-                <Label className="text-xs sm:text-sm">Profile Photo</Label>
+                <Label className="text-xs sm:text-sm">
+                  {t('admin.members.editProfilePhotoLabel') || 'Profile Photo | प्रोफ़ाइल फोटो'}
+                </Label>
                 <div className="flex flex-col items-center gap-3 p-4 rounded-xl border border-slate-100 bg-white mt-2">
                   <div className="relative">
                     <div className="relative w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center overflow-hidden border border-slate-200">
@@ -1344,10 +1393,13 @@ export function MemberManagement() {
                       className="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-orange-200 text-orange-600 font-semibold bg-white hover:bg-orange-50 transition-colors duration-200 text-sm w-full sm:w-auto"
                     >
                       <Upload className="h-4 w-4" />
-                      {profilePhoto ? 'Change Photo' : 'Upload New Photo'}
+                      {profilePhoto
+                        ? t('admin.members.editChangePhoto') || 'Change Photo | फोटो बदलें'
+                        : t('admin.members.editUploadPhoto') || 'Upload New Photo | नया फोटो अपलोड करें'}
                     </Label>
                     <p className="text-xs text-slate-500 text-center">
-                      Maximum file size: 500KB. Supported formats: JPG, PNG, GIF
+                      {t('admin.members.editPhotoHelpText') ||
+                        'Maximum file size: 500KB. Supported formats: JPG, PNG'}
                     </p>
                   </div>
                 </div>
@@ -1355,7 +1407,9 @@ export function MemberManagement() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="edit_name" className="text-xs sm:text-sm">Full Name *</Label>
+                  <Label htmlFor="edit_name" className="text-xs sm:text-sm">
+                    {t('admin.members.fullNameLabel') || 'Full Name * | पूरा नाम *'}
+                  </Label>
                   <Input
                     id="edit_name"
                     name="name"
@@ -1365,7 +1419,9 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_email" className="text-xs sm:text-sm">Email *</Label>
+                  <Label htmlFor="edit_email" className="text-xs sm:text-sm">
+                    {t('admin.members.emailLabel') || 'Email * | ईमेल *'}
+                  </Label>
                   <Input
                     id="edit_email"
                     name="email"
@@ -1376,7 +1432,9 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_phone" className="text-xs sm:text-sm">Phone *</Label>
+                  <Label htmlFor="edit_phone" className="text-xs sm:text-sm">
+                    {t('admin.members.phoneLabel') || 'Phone * | मोबाइल *'}
+                  </Label>
                   <Input
                     id="edit_phone"
                     name="phone"
@@ -1386,20 +1444,30 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_status" className="text-xs sm:text-sm">Status</Label>
+                  <Label htmlFor="edit_status" className="text-xs sm:text-sm">
+                    {t('admin.members.status') || 'Status | स्थिति'}
+                  </Label>
                   <Select name="status" defaultValue={editingMember.status}>
                     <SelectTrigger className="h-9 sm:h-10 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="verified">Verified</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
+                      <SelectItem value="verified">
+                        {t('admin.members.verified') || 'Verified | सत्यापित'}
+                      </SelectItem>
+                      <SelectItem value="pending">
+                        {t('admin.members.pending') || 'Pending | लंबित'}
+                      </SelectItem>
+                      <SelectItem value="rejected">
+                        {t('admin.members.rejected') || 'Rejected | अस्वीकृत'}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="edit_father_husband_name" className="text-xs sm:text-sm">Father/Husband Name *</Label>
+                  <Label htmlFor="edit_father_husband_name" className="text-xs sm:text-sm">
+                    {t('admin.members.fatherHusbandNameLabel') || 'Father/Husband Name * | पिता/पति का नाम *'}
+                  </Label>
                   <Input
                     id="edit_father_husband_name"
                     name="father_husband_name"
@@ -1409,7 +1477,9 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_mother_wife_name" className="text-xs sm:text-sm">Mother/Wife Name *</Label>
+                  <Label htmlFor="edit_mother_wife_name" className="text-xs sm:text-sm">
+                    {t('admin.members.motherWifeNameLabel') || 'Mother/Wife Name * | माता/पत्नी का नाम *'}
+                  </Label>
                   <Input
                     id="edit_mother_wife_name"
                     name="mother_wife_name"
@@ -1419,21 +1489,27 @@ export function MemberManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_aadhar_card_number" className="text-xs sm:text-sm">Aadhaar Card Number</Label>
+                  <Label htmlFor="edit_aadhar_card_number" className="text-xs sm:text-sm">
+                    {t('admin.members.aadhaarLabel') || 'Aadhaar Card Number | आधार कार्ड नंबर'}
+                  </Label>
                   <Input
                     id="edit_aadhar_card_number"
                     name="aadhar_card_number"
                     type="text"
                     maxLength={12}
                     pattern="[0-9]{12}"
-                    placeholder="Enter 12-digit Aadhaar number"
+                    placeholder={
+                      t('admin.members.aadhaarPlaceholder') || 'Enter 12-digit Aadhaar number | 12 अंकों का आधार दर्ज करें'
+                    }
                     defaultValue={editingMember.aadhar_card_number || ''}
                     className="h-9 sm:h-10 text-sm"
                   />
                 </div>
               </div>
               <div>
-                <Label htmlFor="edit_address" className="text-xs sm:text-sm">Address *</Label>
+                <Label htmlFor="edit_address" className="text-xs sm:text-sm">
+                  {t('admin.members.addressLabel') || 'Address * | पता *'}
+                </Label>
                 <Input
                   id="edit_address"
                   className="h-9 sm:h-10 text-sm"
@@ -1455,10 +1531,10 @@ export function MemberManagement() {
                   size="sm"
                   className="w-full sm:w-auto cursor-pointer text-sm"
                 >
-                  Cancel
+                  {t('admin.members.cancel') || 'Cancel | रद्द करें'}
                 </Button>
                 <Button type="submit" size="sm" className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 cursor-pointer text-sm">
-                  Update Member
+                  {t('admin.members.updateMember') || 'Update Member | सदस्य अपडेट करें'}
                 </Button>
               </div>
             </form>
@@ -1535,9 +1611,15 @@ export function MemberManagement() {
                         {t('admin.members.details.departmentAssignments') || 'Department Assignments | विभाग असाइनमेंट:'}
                       </span>
                       <div className="text-sm text-gray-900 mt-1">
-                        {selectedMember.departments ? (
+                        {selectedMember.departments || selectedMember.departments_hi ? (
                           <div className="space-y-1">
-                            {selectedMember.departments.split(' | ').map((assignment, index) => (
+                            {(language === 'hi'
+                              ? (selectedMember.departments_hi || selectedMember.departments || '')
+                              : (selectedMember.departments || selectedMember.departments_hi || '')
+                             )
+                              .split(' | ')
+                              .filter(Boolean)
+                              .map((assignment, index) => (
                               <div key={index} className="bg-blue-50 px-2 py-1 rounded text-xs">
                                 {assignment}
                               </div>

@@ -191,6 +191,105 @@ export async function sendAdminOTPEmail(to: string, otp: string, adminName: stri
   }
 }
 
+// Send OTP email for member self-verification (email verification + detail edit)
+export async function sendSelfVerificationOtpEmail(
+  to: string,
+  otp: string,
+  memberName: string,
+  language: 'hi' | 'en' = 'hi'
+) {
+  try {
+    const isHindi = language === 'hi';
+    const currentYear = new Date().getFullYear();
+
+    const subject = isHindi
+      ? 'आरएचवीएस सदस्य स्वयं सत्यापन ओटीपी'
+      : 'RHVS Member Self Verification OTP';
+
+    const greeting = isHindi ? `प्रिय ${memberName} जी,` : `Dear ${memberName},`;
+
+    const intro = isHindi
+      ? 'आपके पंजीकृत ईमेल पर स्वयं-सत्यापन (Self Verification) हेतु यह ओटीपी भेजा गया है।'
+      : 'This OTP has been sent to your registered email for self-verification of your membership details.';
+
+    const purpose = isHindi
+      ? 'इस ओटीपी का उपयोग करके आप अपना नाम, माता-पिता / पति / पत्नी का नाम, मोबाइल नंबर और पता सुरक्षित रूप से अपडेट कर सकते हैं।'
+      : 'Using this OTP you can safely update your name, parents / spouse name, mobile number and address.';
+
+    const expiry = isHindi
+      ? 'यह ओटीपी 10 मिनट में समाप्त हो जाएगा।'
+      : 'This OTP will expire in 10 minutes.';
+
+    const security = isHindi
+      ? 'यह ओटीपी केवल आपके सदस्यता विवरण के स्वयं-सत्यापन और अद्यतन के लिए है। कृपया इसे किसी के साथ साझा न करें।'
+      : 'This OTP is only for self-verification and updating of your membership details. Do not share it with anyone.';
+
+    const ignoreNote = isHindi
+      ? 'यदि आपने यह अनुरोध नहीं किया है तो इस ईमेल को अनदेखा करें।'
+      : 'If you did not request this, please ignore this email.';
+
+    const footerNote = isHindi
+      ? 'यह RHVS द्वारा भेजा गया स्वचालित संदेश है; कृपया इसका प्रत्यक्ष उत्तर न दें।'
+      : 'This is an automated message from RHVS; please do not reply directly.';
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      </head>
+      <body style="margin:0; padding:0; background:#f8fafc;">
+        <div style="font-family:'Segoe UI',Helvetica,Arial,sans-serif; max-width:640px; margin:0 auto; background:#f8fafc; padding:16px;">
+          <div style="background:linear-gradient(135deg,#f97316,#ea580c); border-radius:12px 12px 0 0; color:#fff; text-align:center; padding:20px 12px;">
+            <h1 style="margin:0; font-size:clamp(20px, 5vw, 28px); letter-spacing:0.4px; line-height:1.3;">राष्ट्रीय हिन्दू वाहिनी संगठन</h1>
+            <p style="margin:8px 0 0; font-size:clamp(14px, 3.5vw, 16px); color:#fde68a; font-weight:600;">।। गर्व से कहो हम हिन्दू हैं ।।</p>
+          </div>
+          <div style="background:#ffffff; border:1px solid #ffe0c4; border-top:none; padding:20px 16px 24px; border-radius:0 0 12px 12px;">
+            <p style="margin:0 0 12px; color:#111827; font-weight:600;">${greeting}</p>
+            <p style="margin:0 0 10px; color:#374151; line-height:1.6;">${intro}</p>
+            <p style="margin:0 0 20px; color:#374151; line-height:1.6;">${purpose}</p>
+
+            <div style="text-align:center; margin:20px 0;">
+              <p style="margin:0 0 8px; color:#ea580c; font-weight:600; font-size:14px; letter-spacing:0.08em; text-transform:uppercase;">
+                ${isHindi ? 'सदस्यता सत्यापन ओटीपी' : 'Membership Verification OTP'}
+              </p>
+              <div style="display:inline-block; padding:16px 28px; border-radius:12px; background:#111827; color:#f9fafb; font-size:28px; font-weight:700; letter-spacing:0.3em; font-family:'SFMono-Regular','Consolas',monospace;">
+                ${otp}
+              </div>
+              <p style="margin:10px 0 0; color:#6b7280; font-size:13px;">${expiry}</p>
+            </div>
+
+            <div style="background:#fef3c7; border-radius:10px; padding:14px 12px; border:1px solid #fde68a; margin-top:10px;">
+              <p style="margin:0; color:#92400e; font-size:13px; line-height:1.6;">${security}</p>
+            </div>
+
+            <p style="margin:14px 0 0; color:#6b7280; font-size:13px; line-height:1.6;">${ignoreNote}</p>
+            <p style="margin:18px 0 0; color:#9ca3af; font-size:12px; line-height:1.5;">${footerNote}</p>
+            <p style="margin:4px 0 0; color:#9ca3af; font-size:12px;">© ${currentYear} राष्ट्रीय हिन्दू वाहिनी संगठन • All Rights Reserved</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const result = await transporter.sendMail({
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${
+        process.env.EMAIL_FROM || process.env.EMAIL_USER || 'admin@rashtriyahinduvahinisangathan.org'
+      }>`,
+      to,
+      subject,
+      html,
+    });
+
+    console.log('✅ Self-verification OTP email sent:', result.messageId);
+    return { success: true, messageId: result.messageId };
+  } catch (error) {
+    console.error('❌ Failed to send self-verification OTP email:', error);
+    return { success: false, error };
+  }
+}
+
 export default transporter;
 
 // Send token email for registration verification

@@ -86,15 +86,23 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
+      { url: "/rhvs_logo.png", sizes: "any", type: "image/png" },
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
     ],
     apple: [
+      { url: "/rhvs_logo.png", sizes: "180x180", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" }
     ],
-    shortcut: "/favicon.ico"
+    shortcut: "/rhvs_logo.png",
+    other: [
+      {
+        rel: "apple-touch-icon",
+        url: "/rhvs_logo.png"
+      }
+    ]
   },
   openGraph: {
     type: "website",
@@ -227,6 +235,15 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
         />
+        {/* Favicon links - Explicit links for Google Search */}
+        <link rel="icon" href="/rhvs_logo.png" type="image/png" sizes="any" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/rhvs_logo.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/rhvs_logo.png" type="image/png" sizes="16x16" />
+        <link rel="icon" href="/icons/icon-192x192.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="/icons/icon-512x512.png" type="image/png" sizes="512x512" />
+        <link rel="apple-touch-icon" href="/rhvs_logo.png" />
+        <link rel="shortcut icon" href="/rhvs_logo.png" />
         {/* Additional meta tags for better SEO - Next.js metadata handles canonical and hreflang, but explicit tags help */}
         <link rel="canonical" href={siteUrl} />
         <link rel="alternate" hrefLang="hi" href={siteUrl} />

@@ -126,9 +126,13 @@ export async function GET(request: NextRequest) {
         END AS profile_photo_path,
         m.member_reg_number, 
         m.created_at, m.updated_at, m.status, 
-        m.state, m.district, m.aadhar_card_number,
+        m.state,
+        m.district,
+        s.state_name_hindi AS state_hi,
+        m.aadhar_card_number,
         m.verified_by_member_id,
         verifier.name as verified_by_name,
+        -- English department string (existing behaviour)
         GROUP_CONCAT(
           CONCAT(d.name_en, ' (', dp.name_en, ' - ', dm.level, 
             CASE 
@@ -138,12 +142,30 @@ export async function GET(request: NextRequest) {
             END,
           ')')
           SEPARATOR ' | '
-        ) as departments
+        ) as departments,
+        -- Hindi department string (if available, with English fallback)
+        GROUP_CONCAT(
+          CONCAT(
+            COALESCE(d.name_hi, d.name_en),
+            ' (',
+            COALESCE(dp.name_hi, dp.name_en),
+            ' - ',
+            dm.level,
+            CASE 
+              WHEN dm.level = 'district' THEN CONCAT(', ', dm.state, ', ', dm.district)
+              WHEN dm.level = 'state' THEN CONCAT(', ', dm.state)
+              ELSE ''
+            END,
+          ')')
+          SEPARATOR ' | '
+        ) as departments_hi
       FROM members m
       LEFT JOIN members verifier ON m.verified_by_member_id = verifier.id
       LEFT JOIN department_members dm ON m.id = dm.member_id
       LEFT JOIN departments d ON dm.department_id = d.id
       LEFT JOIN department_posts dp ON dm.post_id = dp.id
+      LEFT JOIN states s ON s.state_name_english = m.state
+      LEFT JOIN districts di ON di.district_name_english = m.district
       ${whereClause}
       GROUP BY m.id
       ${havingClause}

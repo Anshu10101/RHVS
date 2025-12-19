@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,11 +45,13 @@ interface ContactInfo {
   title: string;
   value: string;
   description?: string | null;
+  district?: string | null;
   order: number;
   isVisible: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  ownerAdminId?: number | null;
 }
 
 interface ContactOffice {
@@ -59,6 +61,7 @@ interface ContactOffice {
   address: string;
   city: string;
   state: string;
+  district?: string | null;
   pincode?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -68,6 +71,7 @@ interface ContactOffice {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  ownerAdminId?: number | null;
 }
 
 export function ContactPageEditor() {
@@ -83,6 +87,15 @@ export function ContactPageEditor() {
   const [isCreatingOffice, setIsCreatingOffice] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
+  
+  // State and district filters (superadmin only)
+  const isSuperAdmin = currentUser?.type === 'superadmin' || currentUser?.role === 'superadmin';
+  const [states, setStates] = useState<Array<{ id: string; name: string }>>([]);
+  const [districts, setDistricts] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedStateId, setSelectedStateId] = useState<string>('');
+  const [selectedStateName, setSelectedStateName] = useState<string>('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
+  const [selectedDistrictName, setSelectedDistrictName] = useState<string>('');
 
   // List management state (pagination, sorting, compact mode)
   const [itemsPage, setItemsPage] = useState(1);
@@ -117,16 +130,67 @@ export function ContactPageEditor() {
     isVisible: true,
   });
 
-  // Fetch data
+  // Fetch states (superadmin only)
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isSuperAdmin) {
+      const fetchStates = async () => {
+        try {
+          const response = await fetch('/api/states', { cache: 'no-store' });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setStates(data.data.map((s: { id: string | number; name: string }) => ({
+                id: String(s.id),
+                name: s.name
+              })));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching states:', error);
+        }
+      };
+      fetchStates();
+    }
+  }, [isSuperAdmin]);
 
-  const fetchData = async () => {
+  // Fetch districts when state changes (superadmin only)
+  useEffect(() => {
+    if (isSuperAdmin && selectedStateId) {
+      const fetchDistricts = async () => {
+        try {
+          const response = await fetch(`/api/districts?stateId=${selectedStateId}`, { cache: 'no-store' });
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.data) {
+              setDistricts(data.data.map((d: { id: string | number; name: string }) => ({
+                id: String(d.id),
+                name: d.name
+              })));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching districts:', error);
+        }
+      };
+      fetchDistricts();
+    } else {
+      setDistricts([]);
+      setSelectedDistrictId('');
+      setSelectedDistrictName('');
+    }
+  }, [isSuperAdmin, selectedStateId]);
+
+  // Fetch data
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`/api/content/contact?_t=${Date.now()}`, {
+      const params = new URLSearchParams();
+      if (isSuperAdmin && selectedStateName) params.append('state', selectedStateName);
+      if (isSuperAdmin && selectedDistrictName) params.append('district', selectedDistrictName);
+      params.append('_t', Date.now().toString());
+
+      const response = await fetch(`/api/content/contact?${params.toString()}`, {
         cache: 'no-store',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -144,16 +208,36 @@ export function ContactPageEditor() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isSuperAdmin, selectedStateName, selectedDistrictName]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleSaveContact = async () => {
     if (!currentUser) return;
 
     try {
+      const isSuperAdmin = currentUser.type === 'superadmin' || currentUser.role === 'superadmin';
+      const district = isSuperAdmin ? null : (currentUser.district || null);
+      const adminId = isSuperAdmin ? null : (currentUser.id ? parseInt(currentUser.id) : null);
+
       const data = {
         contactInfo: editingContact 
-          ? contactInfo.map(c => c.id === editingContact.id ? { ...contactForm, id: editingContact.id, createdAt: editingContact.createdAt } : c)
-          : [...contactInfo, { ...contactForm, id: `contact_${Date.now()}`, createdAt: new Date() }],
+          ? contactInfo.map(c => c.id === editingContact.id ? { 
+              ...contactForm, 
+              id: editingContact.id, 
+              createdAt: editingContact.createdAt,
+              district: editingContact.district || district,
+              ownerAdminId: editingContact.ownerAdminId || adminId
+            } : c)
+          : [...contactInfo, { 
+              ...contactForm, 
+              id: `contact_${Date.now()}`, 
+              createdAt: new Date(),
+              district: district,
+              ownerAdminId: adminId
+            }],
         offices,
         updatedBy: currentUser.name
       };
@@ -184,11 +268,33 @@ export function ContactPageEditor() {
     if (!currentUser) return;
 
     try {
+      const isSuperAdmin = currentUser.type === 'superadmin' || currentUser.role === 'superadmin';
+      const district = isSuperAdmin ? null : (currentUser.district || null);
+      const adminState = isSuperAdmin ? null : (currentUser.state || null);
+      const adminId = isSuperAdmin ? null : (currentUser.id ? parseInt(currentUser.id) : null);
+
+      // For district admins, ensure state matches their assigned state
+      const officeState = isSuperAdmin ? officeForm.state : (adminState || officeForm.state);
+
       const data = {
         contactInfo,
         offices: editingOffice 
-          ? offices.map(o => o.id === editingOffice.id ? { ...officeForm, id: editingOffice.id, createdAt: editingOffice.createdAt } : o)
-          : [...offices, { ...officeForm, id: `office_${Date.now()}`, createdAt: new Date() }],
+          ? offices.map(o => o.id === editingOffice.id ? { 
+              ...officeForm, 
+              state: officeState,
+              id: editingOffice.id, 
+              createdAt: editingOffice.createdAt,
+              district: editingOffice.district || district,
+              ownerAdminId: editingOffice.ownerAdminId || adminId
+            } : o)
+          : [...offices, { 
+              ...officeForm, 
+              state: officeState,
+              id: `office_${Date.now()}`, 
+              createdAt: new Date(),
+              district: district,
+              ownerAdminId: adminId
+            }],
         updatedBy: currentUser.name
       };
 
@@ -318,6 +424,7 @@ export function ContactPageEditor() {
       order: contact.order,
       isVisible: contact.isVisible,
     });
+    // Preserve district and ownerAdminId when editing
   };
 
   const startEditOffice = (office: ContactOffice) => {
@@ -366,6 +473,10 @@ export function ContactPageEditor() {
       if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
           !item.value.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (filterType !== 'all' && item.contactType !== filterType) return false;
+      // Filter by district if selected (superadmin only)
+      if (isSuperAdmin && selectedDistrictName && item.district !== selectedDistrictName) {
+        return false;
+      }
       return true;
     });
 
@@ -387,7 +498,7 @@ export function ContactPageEditor() {
     });
 
     return filtered;
-  }, [contactInfo, searchQuery, filterType, itemsSortBy, itemsSortOrder]);
+  }, [contactInfo, searchQuery, filterType, itemsSortBy, itemsSortOrder, isSuperAdmin, selectedDistrictName]);
 
   // Filter and sort offices
   const filteredAndSortedOffices = useMemo(() => {
@@ -395,6 +506,13 @@ export function ContactPageEditor() {
       if (searchQuery && !office.name.toLowerCase().includes(searchQuery.toLowerCase()) && 
           !office.city.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       if (filterType !== 'all' && office.officeType !== filterType) return false;
+      // Filter by district/state if selected (superadmin only)
+      if (isSuperAdmin && selectedDistrictName && office.district !== selectedDistrictName) {
+        return false;
+      }
+      if (isSuperAdmin && selectedStateName && !selectedDistrictName && office.state !== selectedStateName) {
+        return false;
+      }
       return true;
     });
 
@@ -416,7 +534,7 @@ export function ContactPageEditor() {
     });
 
     return filtered;
-  }, [offices, searchQuery, filterType, itemsSortBy, itemsSortOrder]);
+  }, [offices, searchQuery, filterType, itemsSortBy, itemsSortOrder, isSuperAdmin, selectedStateName, selectedDistrictName]);
 
   // Get current filtered items based on active tab
   const filteredAndSortedItems = activeTab === 'contact-info' 
@@ -436,7 +554,7 @@ export function ContactPageEditor() {
   // Reset to page 1 when filters/sort/search/tab changes
   useEffect(() => {
     setItemsPage(1);
-  }, [searchQuery, filterType, itemsSortBy, itemsSortOrder, activeTab]);
+  }, [searchQuery, filterType, itemsSortBy, itemsSortOrder, activeTab, selectedStateName, selectedDistrictName]);
 
   if (loading) {
     return (
@@ -508,6 +626,83 @@ export function ContactPageEditor() {
           </div>
           
           <div className="flex flex-wrap items-center gap-2">
+            {/* State filter (superadmin only) */}
+            {isSuperAdmin && (
+              <Select
+                value={selectedStateId || 'all'}
+                onValueChange={async (id) => {
+                  const actualId = id === 'all' ? '' : id;
+                  setSelectedStateId(actualId);
+                  const state = states.find(s => s.id === actualId);
+                  setSelectedStateName(state?.name || '');
+                  setSelectedDistrictId('');
+                  setSelectedDistrictName('');
+                }}
+              >
+                <SelectTrigger className="h-9 w-40">
+                  <SelectValue placeholder="All States" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All States</SelectItem>
+                  {states.map((state) => (
+                    <SelectItem key={state.id} value={state.id}>
+                      {state.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* District filter (superadmin only) */}
+            {isSuperAdmin && (
+              <Select
+                value={selectedDistrictId || 'all'}
+                onValueChange={(id) => {
+                  const actualId = id === 'all' ? '' : id;
+                  setSelectedDistrictId(actualId);
+                  const district = districts.find(d => d.id === actualId);
+                  setSelectedDistrictName(district?.name || '');
+                }}
+                disabled={!selectedStateId || districts.length === 0}
+              >
+                <SelectTrigger className="h-9 w-40">
+                  <SelectValue placeholder={
+                    !selectedStateId
+                      ? "Select state first"
+                      : districts.length === 0
+                        ? "Loading districts..."
+                        : "All Districts"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districts.map((district) => (
+                    <SelectItem key={district.id} value={district.id}>
+                      {district.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Clear filters button (superadmin only, when filters are active) */}
+            {isSuperAdmin && (selectedStateName || selectedDistrictName) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => {
+                  setSelectedStateId('');
+                  setSelectedStateName('');
+                  setSelectedDistrictId('');
+                  setSelectedDistrictName('');
+                  setDistricts([]);
+                }}
+              >
+                Clear Location
+              </Button>
+            )}
+
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="h-9 w-48">
                 <SelectValue placeholder={t('admin.newsEvents.filterByType')} />

@@ -573,19 +573,9 @@ export default function AddSignPage() {
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">{t('admin.certificates.signs.title')}</h1>
-          <p className="text-gray-500 mt-1">{t('admin.certificates.signs.description')}</p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={() => router.push('/admin/certificates')}
-          className="flex items-center"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {t('admin.certificates.signs.backToCertificates')}
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">{t('admin.certificates.signs.title')}</h1>
+        <p className="text-gray-500 mt-1">{t('admin.certificates.signs.description')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

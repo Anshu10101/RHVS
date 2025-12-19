@@ -73,9 +73,11 @@ export function MarqueeManagement() {
   const fetchMarquees = async () => {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch('/api/marquee?admin=true&list=true', {
+      const response = await fetch(`/api/marquee?admin=true&list=true&_t=${Date.now()}`, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
         },
         cache: 'no-store',
       });
@@ -201,27 +203,52 @@ export function MarqueeManagement() {
   };
 
   const handleSetActive = async (marquee: Marquee) => {
+    const newActiveState = !marquee.is_active;
+    
+    // Optimistically update the UI immediately
+    setMarquees(prevMarquees =>
+      prevMarquees.map(m =>
+        m.id === marquee.id ? { ...m, is_active: newActiveState } : m
+      )
+    );
+
     try {
       const token = localStorage.getItem('admin_token');
       const response = await fetch('/api/marquee', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           id: marquee.id,
-          is_active: !marquee.is_active,
+          is_active: newActiveState,
         }),
+        cache: 'no-store',
       });
 
       const data = await response.json();
       if (data.success) {
-        fetchMarquees();
+        // Refresh to ensure consistency with server state
+        await fetchMarquees();
       } else {
+        // Revert optimistic update on error
+        setMarquees(prevMarquees =>
+          prevMarquees.map(m =>
+            m.id === marquee.id ? { ...m, is_active: marquee.is_active } : m
+          )
+        );
         alert(data.error || t('admin.marquee.failedToUpdate'));
       }
     } catch (error) {
+      // Revert optimistic update on error
+      setMarquees(prevMarquees =>
+        prevMarquees.map(m =>
+          m.id === marquee.id ? { ...m, is_active: marquee.is_active } : m
+        )
+      );
       console.error('Error updating marquee status:', error);
       alert(t('admin.marquee.failedToUpdate'));
     }

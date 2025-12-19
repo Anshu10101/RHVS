@@ -199,11 +199,13 @@ export interface ContactInfo {
   title: string;
   value: string;
   description?: string | null;
+  district?: string | null;
   order: number;
   isVisible: boolean;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  ownerAdminId?: number | null;
 }
 
 export interface ContactOffice {
@@ -213,6 +215,7 @@ export interface ContactOffice {
   address: string;
   city: string;
   state: string;
+  district?: string | null;
   pincode?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -222,6 +225,7 @@ export interface ContactOffice {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  ownerAdminId?: number | null;
 }
 
 export interface ContentScopeFilter {
@@ -292,9 +296,22 @@ export class ContentService {
   }
 
   // Contact Content Methods
-  static async getContactInfo(): Promise<ContactInfo[]> {
+  static async getContactInfo(scope?: ContentScopeFilter): Promise<ContactInfo[]> {
     try {
-      const [rows] = await pool.execute('SELECT * FROM contact_info ORDER BY `order` ASC');
+      let sql = 'SELECT * FROM contact_info WHERE 1=1';
+      const params: (string | number)[] = [];
+
+      // Filter by district for district admins (contact_info doesn't have state column)
+      if (scope && !scope.unrestricted && scope.district) {
+        const districtNameForMatch = scope.district.split(',')[0]?.trim() || scope.district;
+        // Show contacts that match the district OR are global (district IS NULL)
+        sql += ' AND (district = ? OR district LIKE ? OR SUBSTRING_INDEX(district, ",", 1) = ? OR district IS NULL)';
+        params.push(districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch);
+      }
+
+      sql += ' ORDER BY `order` ASC';
+      
+      const [rows] = await pool.execute(sql, params);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (rows as any[]).map((row: any) => ({
         id: row.id,
@@ -302,11 +319,13 @@ export class ContentService {
         title: row.title,
         value: row.value,
         description: row.description,
+        district: row.district || null,
         order: row.order,
         isVisible: Boolean(row.isVisible),
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
-        createdBy: String(row.created_by)
+        createdBy: String(row.created_by),
+        ownerAdminId: row.owner_admin_id || null
       }));
     } catch (error) {
       console.error('Error fetching contact info:', error);
@@ -314,9 +333,29 @@ export class ContentService {
     }
   }
 
-  static async getContactOffices(): Promise<ContactOffice[]> {
+  static async getContactOffices(scope?: ContentScopeFilter): Promise<ContactOffice[]> {
     try {
-      const [rows] = await pool.execute('SELECT * FROM offices ORDER BY `order` ASC');
+      let sql = 'SELECT * FROM offices WHERE 1=1';
+      const params: (string | number)[] = [];
+
+      // Filter by district/state for district admins or public filtering
+      if (scope && scope.district) {
+        const districtNameForMatch = scope.district.split(',')[0]?.trim() || scope.district;
+        // Show offices that match the district OR are global (district IS NULL)
+        sql += ' AND (district = ? OR district LIKE ? OR SUBSTRING_INDEX(district, ",", 1) = ? OR district IS NULL)';
+        params.push(districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch);
+        
+        // If state is provided, filter by it (but allow NULL states too for backward compatibility)
+        // Also match offices where state matches OR is NULL (for backward compatibility)
+        if (scope.state) {
+          sql += ' AND (state = ? OR state IS NULL OR state = "")';
+          params.push(scope.state);
+        }
+      }
+
+      sql += ' ORDER BY `order` ASC';
+      
+      const [rows] = await pool.execute(sql, params);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (rows as any[]).map((row: any) => ({
         id: row.id,
@@ -325,6 +364,7 @@ export class ContentService {
         address: row.address,
         city: row.city,
         state: row.state,
+        district: row.district || null,
         pincode: row.pincode,
         phone: row.phone,
         email: row.email,
@@ -333,7 +373,8 @@ export class ContentService {
         isVisible: Boolean(row.isVisible),
         createdAt: new Date(row.created_at as string),
         updatedAt: new Date(row.updated_at as string),
-        createdBy: String(row.created_by)
+        createdBy: String(row.created_by),
+        ownerAdminId: row.owner_admin_id || null
       }));
     } catch (error) {
       console.error('Error fetching contact offices:', error);
@@ -344,7 +385,8 @@ export class ContentService {
   static async saveContactContent(
     contactInfo: ContactInfo[],
     offices: ContactOffice[],
-    updatedBy: string
+    updatedBy: string,
+    scope?: ContentScopeFilter
   ): Promise<boolean> {
     try {
       // Helper function to convert Date to MySQL datetime format
@@ -356,38 +398,104 @@ export class ContentService {
 
       await pool.execute('START TRANSACTION');
       
-      // Clear existing contact info
-      await pool.execute('DELETE FROM contact_info');
+      // Determine district and admin ID for filtering
+      const district = scope?.district || null;
+      const adminId = scope?.adminId || null;
+      const isSuperAdmin = scope?.unrestricted || false;
+
+      // Determine which records to delete based on admin scope
+      // When an admin saves, they're replacing all the data they can see
+      if (isSuperAdmin) {
+        // Superadmin: Check if payload contains district-specific data
+        // If all contacts/offices have no district, delete only global ones
+        // Otherwise, we can't determine scope from payload alone, so skip delete (let inserts handle updates)
+        const hasDistrictContacts = contactInfo.some(c => c.district);
+        const hasDistrictOffices = offices.some(o => o.district);
+        
+        if (!hasDistrictContacts && contactInfo.length > 0) {
+          // All contacts are global - replace global contacts
+          await pool.execute('DELETE FROM contact_info WHERE district IS NULL');
+        }
+        
+        if (!hasDistrictOffices && offices.length > 0) {
+          // All offices are global - replace global offices
+          await pool.execute('DELETE FROM offices WHERE district IS NULL');
+        }
+      } else if (district) {
+        // District admin: always replace their district's data
+        // All admins for this district share the data
+        const districtNameForMatch = district.split(',')[0]?.trim() || district;
+        
+        if (contactInfo.length > 0) {
+          await pool.execute(
+            'DELETE FROM contact_info WHERE (district = ? OR district LIKE ? OR SUBSTRING_INDEX(district, ",", 1) = ?)',
+            [districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch]
+          );
+        }
+        
+        if (offices.length > 0) {
+          await pool.execute(
+            'DELETE FROM offices WHERE (district = ? OR district LIKE ? OR SUBSTRING_INDEX(district, ",", 1) = ?)',
+            [districtNameForMatch, `${districtNameForMatch},%`, districtNameForMatch]
+          );
+        }
+      }
       
-      // Insert new contact info
+      // Insert or update contact info (use ON DUPLICATE KEY UPDATE to handle existing records)
       for (const info of contactInfo) {
         // Title is NOT NULL in database, so provide a default if missing
         const title = info.title?.trim() || info.contactType || 'Contact';
         await pool.execute(
-          `INSERT INTO contact_info (id, contact_type, title, value, description, \`order\`, isVisible, created_at, updated_at, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+          `INSERT INTO contact_info (id, contact_type, district, title, value, description, \`order\`, isVisible, created_at, updated_at, created_by, owner_admin_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+           ON DUPLICATE KEY UPDATE
+             contact_type = VALUES(contact_type),
+             district = VALUES(district),
+             title = VALUES(title),
+             value = VALUES(value),
+             description = VALUES(description),
+             \`order\` = VALUES(\`order\`),
+             isVisible = VALUES(isVisible),
+             updated_at = NOW(),
+             created_by = VALUES(created_by),
+             owner_admin_id = VALUES(owner_admin_id)`,
           [
             info.id,
             info.contactType,
+            info.district || district || null,
             title,
             info.value,
             info.description || null,
             info.order,
             info.isVisible ? 1 : 0,
             toMySQLDateTime(info.createdAt),
-            updatedBy
+            updatedBy,
+            info.ownerAdminId || adminId || null
           ]
         );
       }
       
-      // Clear existing offices
-      await pool.execute('DELETE FROM offices');
-      
-      // Insert new offices
+      // Insert or update offices
       for (const office of offices) {
         await pool.execute(
-          `INSERT INTO offices (id, name, name_hindi, address, city, state, pincode, phone, email, office_type, \`order\`, isVisible, created_at, updated_at, created_by)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?)`,
+          `INSERT INTO offices (id, name, name_hindi, address, city, state, district, pincode, phone, email, office_type, \`order\`, isVisible, created_at, updated_at, created_by, owner_admin_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+           ON DUPLICATE KEY UPDATE
+             name = VALUES(name),
+             name_hindi = VALUES(name_hindi),
+             address = VALUES(address),
+             city = VALUES(city),
+             state = VALUES(state),
+             district = VALUES(district),
+             pincode = VALUES(pincode),
+             phone = VALUES(phone),
+             email = VALUES(email),
+             office_type = VALUES(office_type),
+             \`order\` = VALUES(\`order\`),
+             isVisible = VALUES(isVisible),
+             updated_at = NOW(),
+             created_by = VALUES(created_by),
+             owner_admin_id = VALUES(owner_admin_id)`,
           [
             office.id,
             office.name,
@@ -395,6 +503,7 @@ export class ContentService {
             office.address,
             office.city || null,
             office.state || null,
+            office.district || district || null,
             office.pincode || null,
             office.phone || null,
             office.email || null,
@@ -402,7 +511,8 @@ export class ContentService {
             office.order,
             office.isVisible ? 1 : 0,
             toMySQLDateTime(office.createdAt),
-            updatedBy
+            updatedBy,
+            office.ownerAdminId || adminId || null
           ]
         );
       }

@@ -21,6 +21,7 @@ import { SearchableSelect } from '@/components/ui/searchable-select';
 import { AsyncSearchableSelect } from '@/components/ui/async-searchable-select';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 const memberSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -55,7 +56,7 @@ interface District {
 }
 
 export default function MemberRegistrationPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
   const [signature, setSignature] = useState<File | null>(null);
@@ -820,7 +821,7 @@ export default function MemberRegistrationPage() {
           <div className="inline-flex items-center justify-center">
             <Image
               src="/rhvs_logo.png"
-              alt="RHVS"
+              alt="Rashtriya Hindu Vahini Sangathan (RHVS) Logo - राष्ट्रीय हिन्दू वाहिनी संगठन"
               width={144}
               height={144}
               className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32 object-contain drop-shadow-xl"
@@ -829,16 +830,56 @@ export default function MemberRegistrationPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-slate-900 px-2">
             {t('register.title')}
+            <span className="sr-only"> - RHVS Registration | Rashtriya Hindu Vahini Sangathan Member Registration | राष्ट्रीय हिन्दू वाहिनी संगठन पंजीकरण</span>
           </h1>
           <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed px-2">
             {t('register.description')}
+            <span className="sr-only"> Register as a member of Rashtriya Hindu Vahini Sangathan (RHVS). Join thousands of members dedicated to preserving and promoting Sanatan Dharma and Hindu culture. Online registration available in Hindi and English. राष्ट्रीय हिन्दू वाहिनी संगठन में सदस्य के रूप में पंजीकरण करें।</span>
           </p>
+        </div>
+
+        {/* SEO-friendly content section */}
+        <div className="mb-6 sm:mb-8 md:mb-10">
+          <div className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-gradient-to-br from-orange-50/50 to-amber-50/30 shadow-sm p-4 sm:p-6 text-sm text-slate-700 leading-relaxed">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900 mb-3">
+              {language === 'hi' 
+                ? 'राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) सदस्य पंजीकरण'
+                : 'Rashtriya Hindu Vahini Sangathan (RHVS) Member Registration'}
+            </h2>
+            <p className="mb-3">
+              {language === 'hi' 
+                ? 'राष्ट्रीय हिन्दू वाहिनी संगठन (RHVS) में सदस्य के रूप में पंजीकरण करें और सनातन धर्म की रक्षा, संरक्षण और प्रचार में योगदान दें। हमारे ऑनलाइन पंजीकरण पोर्टल के माध्यम से आसानी से जुड़ें।'
+                : 'Register as a member of Rashtriya Hindu Vahini Sangathan (RHVS) and contribute to protecting, preserving, and promoting Sanatan Dharma. Join easily through our online registration portal.'}
+            </p>
+            <p>
+              {language === 'hi' 
+                ? 'RHVS पंजीकरण प्रक्रिया सरल और सुरक्षित है। आप हिंदी या अंग्रेजी में अपना पंजीकरण पूरा कर सकते हैं।'
+                : 'The RHVS registration process is simple and secure. You can complete your registration in Hindi or English.'}
+            </p>
+          </div>
         </div>
 
         <div className="mb-6 sm:mb-8 md:mb-10">
           <div className="rounded-2xl sm:rounded-3xl border border-slate-100 bg-white/95 shadow-sm p-4 sm:p-6 text-sm text-slate-600 leading-relaxed">
             <div className="font-semibold text-slate-800 mb-2">{t('register.noticeTitle')}</div>
             <p>{t('register.noticeDescription')}</p>
+            <div className="mt-4 p-3 sm:p-4 rounded-xl border border-orange-200 bg-orange-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-orange-600" />
+                <span className="text-xs sm:text-sm text-orange-800 font-medium">
+                  {t('register.alreadyMember')}
+                </span>
+              </div>
+              <Link href="/members/register/verification" className="w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full sm:w-auto border-orange-300 text-orange-700 hover:bg-orange-100"
+                >
+                  {t('register.selfVerification')}
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

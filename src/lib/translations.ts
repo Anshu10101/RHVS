@@ -496,6 +496,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'और देखें',
     en: 'See More'
   },
+  'common.connectWithUs': {
+    hi: 'संपर्क करें • सहायता • जुड़ें',
+    en: 'Reach Out • Support • Connect'
+  },
 
   // Install App
   'install.app': {
@@ -527,6 +531,14 @@ export const translations: Record<string, Record<Language, string>> = {
   'register.noticeDescription': {
     hi: 'उत्पन्न टोकन 10 दिनों तक सक्रिय रहता है। इसे RHVS प्रशासक के साथ साझा करें और डुप्लिकेट सबमिशन से बचें, हमारी टीम आपको अंतिम सत्यापन के माध्यम से मार्गदर्शन करेगी।',
     en: 'Generated Token remains active for 10 days. Share it with the RHVS admin and avoid duplicate submissions, our team will guide you through the final verification.'
+  },
+  'register.alreadyMember': {
+    hi: 'पहले से सदस्य हैं? अपने विवरण सत्यापित करें और अपडेट करें।',
+    en: 'Already a member? Verify and update your details.'
+  },
+  'register.selfVerification': {
+    hi: 'स्वयं सत्यापन',
+    en: 'Self Verification'
   },
   'register.memberVerification': {
     hi: 'सदस्य सत्यापन',
@@ -891,6 +903,208 @@ export const translations: Record<string, Record<Language, string>> = {
   'register.registrationFailed': {
     hi: 'पंजीकरण विफल। कृपया पुनः प्रयास करें।',
     en: 'Registration failed. Please try again.'
+  },
+
+  // Member Self Verification Page
+  'selfVerification.title': {
+    hi: 'सदस्य विवरण सत्यापन',
+    en: 'Member Self Verification'
+  },
+  'selfVerification.description': {
+    hi: 'अपना पंजीकृत ईमेल दर्ज करें, OTP द्वारा सत्यापित करें और नाम, पिता/पति का नाम, माता/पत्नी का नाम, मोबाइल नंबर और पता अपडेट करें। नाम अधिकतम 3 बार ही बदला जा सकता है।',
+    en: 'Enter your registered email, verify via OTP, and update your name, father/husband name, mother/wife name, mobile number, and address. Name can be changed a maximum of 3 times.'
+  },
+  'selfVerification.emailVerificationTitle': {
+    hi: 'पंजीकृत ईमेल सत्यापन',
+    en: 'Registered Email Verification'
+  },
+  'selfVerification.emailVerificationDesc': {
+    hi: 'अपना पंजीकृत ईमेल दर्ज करें, OTP प्राप्त करने के लिए।',
+    en: 'Enter your registered email to receive an OTP.'
+  },
+  'selfVerification.email': {
+    hi: 'ईमेल',
+    en: 'Email'
+  },
+  'selfVerification.emailPlaceholder': {
+    hi: 'अपना पंजीकृत ईमेल दर्ज करें',
+    en: 'Enter your registered email'
+  },
+  'selfVerification.sendOtp': {
+    hi: 'OTP भेजें',
+    en: 'Send OTP'
+  },
+  'selfVerification.sendingOtp': {
+    hi: 'OTP भेजा जा रहा है...',
+    en: 'Sending OTP...'
+  },
+  'selfVerification.otpSent': {
+    hi: 'OTP भेज दिया गया',
+    en: 'OTP sent'
+  },
+  'selfVerification.otpSentDesc': {
+    hi: 'आपके पंजीकृत ईमेल पर OTP भेज दिया गया है।',
+    en: 'An OTP has been sent to your registered email address.'
+  },
+  'selfVerification.failedToSendOtp': {
+    hi: 'OTP भेजने में समस्या हुई',
+    en: 'Failed to send OTP'
+  },
+  'selfVerification.otpVerificationTitle': {
+    hi: 'OTP सत्यापन',
+    en: 'OTP Verification'
+  },
+  'selfVerification.otpSentTo': {
+    hi: 'पर OTP भेजा गया है।',
+    en: 'An OTP has been sent to'
+  },
+  'selfVerification.otpSentToContinue': {
+    hi: 'कृपया आगे बढ़ने के लिए नीचे दर्ज करें।',
+    en: 'Enter it below to continue.'
+  },
+  'selfVerification.changeEmail': {
+    hi: 'ईमेल बदलें',
+    en: 'Change email'
+  },
+  'selfVerification.verifyOtp': {
+    hi: 'OTP सत्यापित करें',
+    en: 'Verify OTP'
+  },
+  'selfVerification.verifying': {
+    hi: 'सत्यापित किया जा रहा है...',
+    en: 'Verifying...'
+  },
+  'selfVerification.invalidOtp': {
+    hi: 'अमान्य या समाप्त OTP',
+    en: 'Invalid or expired OTP'
+  },
+  'selfVerification.failedToVerifyOtp': {
+    hi: 'OTP सत्यापित करने में समस्या हुई',
+    en: 'Failed to verify OTP'
+  },
+  'selfVerification.memberDetails': {
+    hi: 'सदस्य विवरण',
+    en: 'Member Details'
+  },
+  'selfVerification.latestDetails': {
+    hi: 'आपके नवीनतम सहेजे गए विवरण नीचे दिखाए गए हैं।',
+    en: 'Your latest saved details are shown below.'
+  },
+  'selfVerification.reviewDetails': {
+    hi: 'अपने सदस्यता विवरण की समीक्षा करें और अनुमत फ़ील्ड अपडेट करें।',
+    en: 'Review your membership details and update allowed fields.'
+  },
+  'selfVerification.close': {
+    hi: 'बंद करें',
+    en: 'Close'
+  },
+  'selfVerification.detailsUpdated': {
+    hi: 'विवरण सफलतापूर्वक अपडेट हो गए हैं।',
+    en: 'Details updated successfully.'
+  },
+  'selfVerification.nameUpdated': {
+    hi: 'आपका नाम अपडेट कर दिया गया है। कृपया अपडेटेड सदस्यता प्रमाणपत्र और ID कार्ड के लिए अपना ईमेल देखें।',
+    en: 'Your name was updated. Please check your email for the updated membership certificate and ID card.'
+  },
+  'selfVerification.regNo': {
+    hi: 'पंजीकरण संख्या',
+    en: 'Reg. No.'
+  },
+  'selfVerification.registeredOn': {
+    hi: 'पंजीकरण दिनांक',
+    en: 'Registered on'
+  },
+  'selfVerification.location': {
+    hi: 'स्थान',
+    en: 'Location'
+  },
+  'selfVerification.nameChangesRemaining': {
+    hi: 'आप अपना नाम अभी भी',
+    en: 'You can still change your name'
+  },
+  'selfVerification.time': {
+    hi: 'बार',
+    en: 'time'
+  },
+  'selfVerification.times': {
+    hi: 'बार',
+    en: 'times'
+  },
+  'selfVerification.maxChanges': {
+    hi: 'कुल अधिकतम',
+    en: 'maximum'
+  },
+  'selfVerification.inTotal': {
+    hi: 'बार',
+    en: 'in total'
+  },
+  'selfVerification.fullName': {
+    hi: 'पूरा नाम',
+    en: 'Full Name'
+  },
+  'selfVerification.fatherHusbandName': {
+    hi: 'पिता / पति का नाम',
+    en: 'Father / Husband Name'
+  },
+  'selfVerification.motherWifeName': {
+    hi: 'माता / पत्नी का नाम',
+    en: 'Mother / Wife Name'
+  },
+  'selfVerification.mobileNumber': {
+    hi: 'मोबाइल नंबर',
+    en: 'Mobile Number'
+  },
+  'selfVerification.address': {
+    hi: 'पता',
+    en: 'Address'
+  },
+  'selfVerification.saveChanges': {
+    hi: 'परिवर्तन सहेजें',
+    en: 'Save Changes'
+  },
+  'selfVerification.saving': {
+    hi: 'सहेजा जा रहा है...',
+    en: 'Saving...'
+  },
+  'selfVerification.failedToUpdate': {
+    hi: 'विवरण अपडेट करने में समस्या हुई',
+    en: 'Failed to update details'
+  },
+  'selfVerification.failedToUpdateWithLimit': {
+    hi: 'विवरण अपडेट करने में समस्या हुई। यदि आप पहले ही 3 बार नाम बदल चुके हैं, तो आगे परिवर्तन संभव नहीं है। कृपया संबंधित प्रशासक से संपर्क करें।',
+    en: 'Failed to update details. If you have already changed your name 3 times, further changes are blocked. Please contact your admin.'
+  },
+  'selfVerification.nameChangeLimitReached': {
+    hi: 'नाम बदलने की सीमा पूरी हो चुकी है',
+    en: 'Name change limit reached'
+  },
+  'selfVerification.nameChangeLimitReachedDesc': {
+    hi: 'आपने नाम बदलने की 3 अनुमत सीमाओं का उपयोग कर लिया है। अब और परिवर्तन संभव नहीं है। कृपया अपने संबंधित प्रशासक से संपर्क करें।',
+    en: 'You have utilized your 3 allowed name changes. Further changes are not permitted. Please contact your respective admin.'
+  },
+  'selfVerification.emailRequired': {
+    hi: 'कृपया मान्य ईमेल दर्ज करें',
+    en: 'Please enter a valid email address'
+  },
+  'selfVerification.otpRequired': {
+    hi: 'OTP 6 अंकों का होना चाहिए',
+    en: 'OTP must be 6 digits'
+  },
+  'selfVerification.nameMinLength': {
+    hi: 'नाम कम से कम 2 अक्षरों का होना चाहिए',
+    en: 'Name must be at least 2 characters'
+  },
+  'selfVerification.fieldRequired': {
+    hi: 'यह जानकारी आवश्यक है',
+    en: 'This field is required'
+  },
+  'selfVerification.phoneMinLength': {
+    hi: 'मोबाइल नंबर कम से कम 10 अंकों का होना चाहिए',
+    en: 'Phone number must be at least 10 digits'
+  },
+  'selfVerification.addressMinLength': {
+    hi: 'पता कम से कम 10 अक्षरों का होना चाहिए',
+    en: 'Address must be at least 10 characters'
   },
 
   // About Page
@@ -1476,6 +1690,196 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'लोड हो रहा है...',
     en: 'Loading...'
   },
+  'contact.quickSupport': {
+    hi: 'त्वरित सहायता',
+    en: 'Quick Support'
+  },
+  'contact.quickSupportSubtitle': {
+    hi: 'हम कार्य दिवसों में 24 घंटे के भीतर जवाब देते हैं।',
+    en: 'We respond within 24 hours on working days.'
+  },
+  'contact.callUs': {
+    hi: 'हमें कॉल करें',
+    en: 'Call us'
+  },
+
+  // Contact form on home page
+  'contact.form.badge': {
+    hi: 'औपचारिक संपर्क',
+    en: 'Official Contact'
+  },
+  'contact.form.title': {
+    hi: 'किसी भी आधिकारिक विषय पर हमसे सीधे संपर्क करें',
+    en: 'Contact us directly for any official matter'
+  },
+  'contact.form.description': {
+    hi: 'सदस्यता, प्रमाणपत्र, वेबसाइट सामग्री, ईमेल, तकनीकी समस्या या अन्य किसी भी आधिकारिक विषय पर आप सीधे सुपरएडमिन या अपने संबंधित जिला प्रशासक से संपर्क कर सकते हैं।',
+    en: 'Reach out directly to the Super Admin or your District Admin for membership, certificates, website content, email issues, technical problems or any other official matter.'
+  },
+  'contact.form.trustedChannelTitle': {
+    hi: 'सुरक्षित आधिकारिक चैनल',
+    en: 'Secure official channel'
+  },
+  'contact.form.trustedChannelDescription': {
+    hi: 'आपकी शिकायतें और सुझाव सीधे अधिकृत प्रशासक तक सुरक्षित रूप से पहुंचते हैं।',
+    en: 'Your concerns and suggestions reach the authorized administrators securely.'
+  },
+  'contact.form.officialSupportTitle': {
+    hi: 'संगठन का आधिकारिक समर्थन',
+    en: 'Official organization support'
+  },
+  'contact.form.officialSupportDescription': {
+    hi: 'राष्ट्रीय हिन्दू वाहिनी संगठन की ओर से प्रमाणपत्र, सदस्यता और वेबसाइट से जुड़े सभी आधिकारिक मामलों के लिए यही प्राथमिक संपर्क माध्यम है।',
+    en: 'This is the primary official channel for all matters related to membership, certificates and website content of Rashtriya Hindu Vahini Sangathan.'
+  },
+  'contact.form.cardTitle': {
+    hi: 'अपना संदेश भेजें',
+    en: 'Send your message'
+  },
+  'contact.form.nameLabel': {
+    hi: 'पूरा नाम',
+    en: 'Full Name'
+  },
+  'contact.form.namePlaceholder': {
+    hi: 'अपना नाम लिखें',
+    en: 'Enter your full name'
+  },
+  'contact.form.emailLabel': {
+    hi: 'ईमेल',
+    en: 'Email'
+  },
+  'contact.form.emailPlaceholder': {
+    hi: 'आपका आधिकारिक / सक्रिय ईमेल',
+    en: 'Your official / active email'
+  },
+  'contact.form.phoneLabel': {
+    hi: 'मोबाइल नंबर',
+    en: 'Mobile Number'
+  },
+  'contact.form.phonePlaceholder': {
+    hi: 'कॉल / WhatsApp नंबर (वैकल्पिक)',
+    en: 'Call / WhatsApp number (optional)'
+  },
+  'contact.form.memberRegLabel': {
+    hi: 'सदस्य पंजीकरण संख्या',
+    en: 'Member Registration Number'
+  },
+  'contact.form.memberRegPlaceholder': {
+    hi: 'यदि आप पंजीकृत सदस्य हैं, तो यहाँ लिखें',
+    en: 'If you are a registered member, enter your registration number'
+  },
+  'contact.form.topicLabel': {
+    hi: 'विषय / टॉपिक चुनें',
+    en: 'Select topic'
+  },
+  'contact.form.topic.membership': {
+    hi: 'सदस्यता, पंजीकरण, विवरण संशोधन / नाम परिवर्तन',
+    en: 'Membership, registration, profile update / name change'
+  },
+  'contact.form.topic.certificate': {
+    hi: 'प्रमाणपत्र, नियुक्ति पत्र, आईडी कार्ड',
+    en: 'Certificates, appointment letters, ID cards'
+  },
+  'contact.form.topic.emailIssue': {
+    hi: 'ईमेल, लॉगिन, ओटीपी या पासवर्ड से जुड़ी समस्या',
+    en: 'Email, login, OTP or password related issue'
+  },
+  'contact.form.topic.contentIssue': {
+    hi: 'वेबसाइट पर प्रकाशित समाचार, फोटो, वीडियो या कंटेंट से संबंधित आपत्ति / सुधार',
+    en: 'Issue or objection related to website content (news, photos, videos etc.)'
+  },
+  'contact.form.topic.technical': {
+    hi: 'तकनीकी समस्या (वेबसाइट काम न करना, एरर, फॉर्म सबमिट न होना आदि)',
+    en: 'Technical issue (website not working, errors, form issues, etc.)'
+  },
+  'contact.form.topic.storeIssue': {
+    hi: 'स्टोर / उत्पाद / भुगतान से संबंधित समस्या',
+    en: 'Store / product / payment related issue'
+  },
+  'contact.form.topic.complaint': {
+    hi: 'शिकायत / अनुशासनात्मक मामला',
+    en: 'Complaint / disciplinary matter'
+  },
+  'contact.form.topic.feedback': {
+    hi: 'सुझाव / प्रतिक्रिया',
+    en: 'Suggestion / feedback'
+  },
+  'contact.form.topic.other': {
+    hi: 'अन्य (अपना विषय स्वयं लिखें)',
+    en: 'Other (write your topic manually)'
+  },
+  'contact.form.customTopicLabel': {
+    hi: 'अपना विषय लिखें',
+    en: 'Write your topic'
+  },
+  'contact.form.customTopicPlaceholder': {
+    hi: 'जैसे - सदस्यता स्थिति जानकारी, प्रमाणपत्र में सुधार आदि',
+    en: 'e.g. Membership status enquiry, correction in certificate, etc.'
+  },
+  'contact.form.recipientLabel': {
+    hi: 'किसे भेजना चाहते हैं?',
+    en: 'Whom do you want to contact?'
+  },
+  'contact.form.recipientSuperadmin': {
+    hi: 'सुपरएडमिन (डिफॉल्ट)',
+    en: 'Super Admin (default)'
+  },
+  'contact.form.recipientSuperadminHint': {
+    hi: 'यदि आपको यह समझ नहीं आ रहा कि किसे चुनें, तो सुपरएडमिन को ही चुनें। आपका संदेश उचित अधिकारी तक अग्रेषित किया जाएगा।',
+    en: 'If you are not sure whom to choose, contact the Super Admin. Your message will be forwarded to the right official.'
+  },
+  'contact.form.recipientDistrictAdmin': {
+    hi: 'विशिष्ट जिला प्रशासक को सीधे भेजें',
+    en: 'Send directly to a specific District Admin'
+  },
+  'contact.form.recipientDistrictAdminHint': {
+    hi: 'यदि आपकी समस्या किसी विशेष जिले से जुड़ी है, तो उस जिले के सक्रिय/नियुक्त जिला प्रशासक का चयन करें।',
+    en: 'If your issue is related to a specific district, select the active/appointed district admin of that district.'
+  },
+  'contact.form.loadingAdmins': {
+    hi: 'जिला प्रशासक लोड हो रहे हैं...',
+    en: 'Loading district admins...'
+  },
+  'contact.form.noAdmins': {
+    hi: 'कोई सक्रिय जिला प्रशासक उपलब्ध नहीं',
+    en: 'No active district admins available'
+  },
+  'contact.form.selectAdminPlaceholder': {
+    hi: 'सक्रिय / नियुक्त जिला प्रशासक चुनें',
+    en: 'Select an active / appointed district admin'
+  },
+  'contact.form.messageLabel': {
+    hi: 'विस्तृत विवरण / संदेश',
+    en: 'Detailed message'
+  },
+  'contact.form.messagePlaceholder': {
+    hi: 'कृपया पूरी जानकारी स्पष्ट रूप से लिखें ताकि प्रशासन तुरंत समझ सके और सही कार्रवाई कर सके।',
+    en: 'Please describe your issue clearly so that the administration can understand and respond properly.'
+  },
+  'contact.form.messageHint': {
+    hi: 'यदि कोई संदर्भ संख्या, तारीख, स्क्रीनशॉट या लिंक हो तो कृपया संदेश में ज़रूर लिखें।',
+    en: 'If you have any reference number, date, screenshot or links, please mention them here.'
+  },
+  'contact.form.disclaimer': {
+    hi: 'आपकी दी गई जानकारी केवल संगठन के आधिकारिक उपयोग के लिए है। इसे गोपनीय रखा जाएगा।',
+    en: 'Your information will be used only for official RHVS purposes and will be kept confidential.'
+  },
+  'contact.form.submitButton': {
+    hi: 'संदेश भेजें',
+    en: 'Send Message'
+  },
+  'contact.form.success': {
+    hi: 'आपका संदेश सफलतापूर्वक भेज दिया गया है। संबंधित अधिकारी शीघ्र ही आपसे संपर्क करेंगे।',
+    en: 'Your message has been sent successfully. The concerned authority will contact you soon.'
+  },
+  'contact.form.error': {
+    hi: 'संदेश भेजते समय कोई त्रुटि हुई। कृपया बाद में पुनः प्रयास करें।',
+    en: 'Something went wrong while sending your message. Please try again later.'
+  },
+  'contact.form.validationRequired': {
+    hi: 'कृपया नाम, ईमेल और संदेश अनिवार्य रूप से भरें।',
+    en: 'Please fill in your name, email and message.'
+  },
 
   // Admin Dashboard
   'admin.dashboard.superadmin': {
@@ -1622,6 +2026,26 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'हस्ताक्षर जोड़ें',
     en: 'Add Sign'
   },
+  'admin.dashboard.items.newsEditors': {
+    hi: 'समाचार संपादक',
+    en: 'News Editors'
+  },
+  'admin.dashboard.items.otpManagement': {
+    hi: 'OTP प्रबंधन',
+    en: 'OTP Management'
+  },
+  'admin.dashboard.sections.contactInbox': {
+    hi: 'संपर्क इनबॉक्स',
+    en: 'Contact Inbox'
+  },
+  'admin.dashboard.sections.helpGuide': {
+    hi: 'सहायता गाइड',
+    en: 'Help Guide'
+  },
+  'admin.dashboard.sections.quickAccess': {
+    hi: 'अन्य सुविधाएं',
+    en: 'Other Features'
+  },
   'admin.dashboard.open': {
     hi: 'खोलें →',
     en: 'Open →'
@@ -1669,6 +2093,10 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.dashboard.activity': {
     hi: 'गतिविधि',
     en: 'Activity'
+  },
+  'admin.dashboard.recentMembers': {
+    hi: 'हाल के सदस्य (30 दिन)',
+    en: 'Recent Members (30 days)'
   },
   'admin.dashboard.loading': {
     hi: 'लोड हो रहा है…',
@@ -1831,6 +2259,70 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.members.edit': {
     hi: 'संपादित करें',
     en: 'Edit'
+  },
+  'admin.members.editMemberTitle': {
+    hi: 'सदस्य संपादन',
+    en: 'Edit Member'
+  },
+  'admin.members.editMemberDescription': {
+    hi: 'सदस्य की जानकारी अपडेट करें',
+    en: 'Update member information'
+  },
+  'admin.members.editProfilePhotoLabel': {
+    hi: 'प्रोफ़ाइल फोटो',
+    en: 'Profile Photo'
+  },
+  'admin.members.editUploadPhoto': {
+    hi: 'नया फोटो अपलोड करें',
+    en: 'Upload New Photo'
+  },
+  'admin.members.editChangePhoto': {
+    hi: 'फोटो बदलें',
+    en: 'Change Photo'
+  },
+  'admin.members.editPhotoHelpText': {
+    hi: 'अधिकतम फ़ाइल आकार: 500KB. समर्थित फार्मैट: JPG, PNG',
+    en: 'Maximum file size: 500KB. Supported formats: JPG, PNG'
+  },
+  'admin.members.fullNameLabel': {
+    hi: 'पूरा नाम *',
+    en: 'Full Name *'
+  },
+  'admin.members.emailLabel': {
+    hi: 'ईमेल *',
+    en: 'Email *'
+  },
+  'admin.members.phoneLabel': {
+    hi: 'मोबाइल *',
+    en: 'Phone *'
+  },
+  'admin.members.fatherHusbandNameLabel': {
+    hi: 'पिता/पति का नाम *',
+    en: 'Father/Husband Name *'
+  },
+  'admin.members.motherWifeNameLabel': {
+    hi: 'माता/पत्नी का नाम *',
+    en: 'Mother/Wife Name *'
+  },
+  'admin.members.aadhaarLabel': {
+    hi: 'आधार कार्ड नंबर',
+    en: 'Aadhaar Card Number'
+  },
+  'admin.members.aadhaarPlaceholder': {
+    hi: '12 अंकों का आधार नंबर दर्ज करें',
+    en: 'Enter 12-digit Aadhaar number'
+  },
+  'admin.members.addressLabel': {
+    hi: 'पता *',
+    en: 'Address *'
+  },
+  'admin.members.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.members.updateMember': {
+    hi: 'सदस्य अपडेट करें',
+    en: 'Update Member'
   },
   'admin.members.delete': {
     hi: 'हटाएं',
@@ -4563,6 +5055,124 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.contact.officeHours': {
     hi: 'कार्यालय समय',
     en: 'Office Hours'
+  },
+
+  // Admin Contact Inbox
+  'admin.contact.inbox.title': {
+    hi: 'संपर्क इनबॉक्स',
+    en: 'Contact Inbox'
+  },
+  'admin.contact.inbox.subtitle': {
+    hi: 'सदस्यों और आगन्तुकों द्वारा भेजे गए सभी आधिकारिक संदेश यहाँ देखें, पढ़ें और प्रबंधित करें।',
+    en: 'View, read and manage all official messages sent by members and visitors.'
+  },
+  'admin.contact.inbox.tabMy': {
+    hi: 'मेरा इनबॉक्स',
+    en: 'My Inbox'
+  },
+  'admin.contact.inbox.tabDistricts': {
+    hi: 'जिला इनबॉक्स (सुपरएडमिन)',
+    en: 'District Inboxes (Super Admin)'
+  },
+  'admin.contact.inbox.superadminInbox': {
+    hi: 'सुपरएडमिन इनबॉक्स',
+    en: 'Super Admin Inbox'
+  },
+  'admin.contact.inbox.districtInbox': {
+    hi: 'जिला प्रशासक इनबॉक्स',
+    en: 'District Admin Inbox'
+  },
+  'admin.contact.inbox.refresh': {
+    hi: 'रीफ्रेश',
+    en: 'Refresh'
+  },
+  'admin.contact.inbox.select': {
+    hi: 'चयन',
+    en: 'Select'
+  },
+  'admin.contact.inbox.markRead': {
+    hi: 'पढ़ा हुआ चिह्नित करें',
+    en: 'Mark as read'
+  },
+  'admin.contact.inbox.markUnread': {
+    hi: 'अपठित चिह्नित करें',
+    en: 'Mark as unread'
+  },
+  'admin.contact.inbox.delete': {
+    hi: 'हटाएँ',
+    en: 'Delete'
+  },
+  'admin.contact.inbox.filterAll': {
+    hi: 'सभी',
+    en: 'All'
+  },
+  'admin.contact.inbox.filterUnread': {
+    hi: 'केवल अपठित',
+    en: 'Unread only'
+  },
+  'admin.contact.inbox.filterRead': {
+    hi: 'केवल पढ़े हुए',
+    en: 'Read only'
+  },
+  'admin.contact.inbox.searchPlaceholder': {
+    hi: 'नाम, ईमेल, पंजीकरण संख्या या टेक्स्ट से खोजें...',
+    en: 'Search by name, email, registration number or text...'
+  },
+  'admin.contact.inbox.loading': {
+    hi: 'संदेश लोड हो रहे हैं...',
+    en: 'Loading messages...'
+  },
+  'admin.contact.inbox.empty': {
+    hi: 'इस इनबॉक्स में अभी कोई संदेश नहीं है।',
+    en: 'There are no messages in this inbox yet.'
+  },
+  'admin.contact.inbox.selectDistrictAdmin': {
+    hi: 'किस जिला प्रशासक का इनबॉक्स देखना चाहते हैं?',
+    en: 'Which district admin inbox do you want to view?'
+  },
+  'admin.contact.inbox.selectDistrictAdminPlaceholder': {
+    hi: 'जिला प्रशासक चुनें',
+    en: 'Select district admin'
+  },
+  'admin.contact.inbox.confirmDelete': {
+    hi: 'क्या आप चयनित संदेशों को स्थायी रूप से हटाना चाहते हैं? यह क्रिया वापस नहीं की जा सकेगी।',
+    en: 'Do you really want to permanently delete the selected messages? This action cannot be undone.'
+  },
+  'admin.contact.inbox.badgeUnread': {
+    hi: 'नया',
+    en: 'New'
+  },
+  'admin.contact.inbox.badgeRead': {
+    hi: 'पढ़ा गया',
+    en: 'Read'
+  },
+  'admin.contact.inbox.memberRegShort': {
+    hi: 'पंजीकरण',
+    en: 'Reg.'
+  },
+  'admin.contact.inbox.noMessageSelected': {
+    hi: 'कोई संदेश चयनित नहीं है।',
+    en: 'No message selected.'
+  },
+  'admin.contact.inbox.noMessageSelectedHint': {
+    hi: 'बाएँ से किसी संदेश पर क्लिक करके उसका पूरा विवरण देखें।',
+    en: 'Click a message on the left to view its full details.'
+  },
+  'admin.contact.inbox.pagination': {
+    hi: '{{total}} संदेश • पेज {{page}} / {{totalPages}}',
+    en: '{{total}} messages • Page {{page}} / {{totalPages}}'
+  },
+  'admin.contact.inbox.prev': {
+    hi: 'पिछला',
+    en: 'Previous'
+  },
+  'admin.contact.inbox.next': {
+    hi: 'अगला',
+    en: 'Next'
+  },
+  'admin.contact.inbox.back': {
+    hi: 'इनबॉक्स पर वापस जाएं',
+    en: 'Back to Inbox'
   },
   'admin.contact.social': {
     hi: 'सामाजिक',
@@ -8931,6 +9541,27 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.logs.noPermission': {
     hi: 'आपके पास गतिविधि लॉग देखने की अनुमति नहीं है।',
     en: 'You don\'t have permission to view activity logs.'
+  },
+  // Contact Form
+  'contact.form.selectStatePlaceholder': {
+    hi: 'राज्य चुनें',
+    en: 'Select state'
+  },
+  'contact.form.selectDistrictPlaceholder': {
+    hi: 'जिला चुनें',
+    en: 'Select district'
+  },
+  'contact.form.loadingStates': {
+    hi: 'राज्य लोड हो रहे हैं...',
+    en: 'Loading states...'
+  },
+  'contact.form.loadingDistricts': {
+    hi: 'जिले लोड हो रहे हैं...',
+    en: 'Loading districts...'
+  },
+  'contact.form.noDistricts': {
+    hi: 'कोई जिला उपलब्ध नहीं',
+    en: 'No districts available'
   }
 };
 

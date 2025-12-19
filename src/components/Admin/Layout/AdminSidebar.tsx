@@ -55,7 +55,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       nameKey: 'dashboard',
       href: '/admin/dashboard',
       icon: BarChart3,
-      roles: ['superadmin', 'admin', 'verified_member', 'news_editor'],
+      // Show dashboard link for all admin types, including district admins
+      roles: ['superadmin', 'admin', 'verified_member', 'district_admin', 'news_editor'],
     },
     {
       name: t('admin.sidebar.members'),
@@ -170,7 +171,9 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           name: t('admin.sidebar.contactInfo'),
           href: '/admin/content/contact',
           icon: Phone,
-          roles: ['superadmin'],
+          // Controlled via permission instead of superadmin-only role so that
+          // district admins with the proper content permission can see it
+          permission: 'edit_offices',
         },
       ],
     },
@@ -204,7 +207,6 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
     {
       name: t('admin.sidebar.certificates'),
       nameKey: 'certificates',
-      href: '/admin/certificates',
       icon: FileText,
       roles: ['superadmin'],
       children: [
@@ -309,8 +311,13 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
       return false;
     }
     
-    // For district admins, check permissions and show member management
+    // For district admins, check permissions and show key sections
     if (currentUser.type === 'district_admin') {
+      // Always show Dashboard link for district admins
+      if (item.nameKey === 'dashboard') {
+        return true;
+      }
+
       // Always show Members section for district admins
       if (item.nameKey === 'members') {
         return true;
@@ -331,8 +338,8 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
         if (item.children) {
           return item.children.some(child => {
             // For other sections, exclude superadmin-only children
-            if (child.roles && child.roles.includes('superadmin')) return false;
-            if (child.permission) {
+            if ('roles' in child && child.roles && child.roles.includes('superadmin')) return false;
+            if ('permission' in child && child.permission) {
               return hasPermission(child.permission);
             }
             return false;
@@ -462,7 +469,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                     </div>
                       <Menu className="h-4 w-4" />
                     </div>
-                  ) : (
+                  ) : item.href ? (
                     <Link
                       href={item.href}
                       className={cn(
@@ -478,7 +485,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         <span>{item.name}</span>
                   </div>
                     </Link>
-                  )}
+                  ) : null}
 
                   {/* Children */}
                   {hasChildren && isExpanded && (
@@ -489,7 +496,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
 
                         // For superadmin, check roles
                         if (currentUser?.type === 'superadmin') {
-                          canAccess = !child.roles || child.roles.includes('superadmin');
+                          canAccess = !('roles' in child && child.roles) || ('roles' in child && child.roles && child.roles.includes('superadmin'));
                         }
                         // For news editor, only show news/events
                         else if (currentUser?.type === 'news_editor' || currentUser?.role === 'news_editor' || currentUser?.role === 'news_reporter') {
@@ -503,11 +510,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         // For district admin, check permissions and show relevant items
                         else if (currentUser?.type === 'district_admin') {
                           // Items with permissions - check permission first (this overrides roles)
-                          if (child.permission) {
+                          if ('permission' in child && child.permission) {
                             canAccess = hasPermission(child.permission);
                           }
                           // Superadmin-only items (only if no permission is specified)
-                          else if (child.roles && child.roles.includes('superadmin')) {
+                          else if ('roles' in child && child.roles && child.roles.includes('superadmin')) {
                             canAccess = false;
                           }
                           // Token Verification is always available for district admins (they can verify their district's tokens)
@@ -525,7 +532,11 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                         }
                         // For other user types
                         else {
-                          canAccess = !child.permission || hasPermission(child.permission);
+                          if ('permission' in child && child.permission) {
+                            canAccess = hasPermission(child.permission);
+                          } else {
+                            canAccess = true;
+                          }
                         }
 
                         if (!canAccess) return null;

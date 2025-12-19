@@ -401,7 +401,9 @@ export function ContentManagement() {
       id: 'contact',
       name: 'Contact Info',
       icon: Phone,
-      permission: 'edit_contact',
+      // Use the same unified permission key that district admins get for
+      // managing both contact details and office details
+      permission: 'edit_offices',
     },
     {
       id: 'navigation',
@@ -790,7 +792,7 @@ export function ContentManagement() {
                   </Button>
                   <Button
                     onClick={() => window.location.href = '/admin/content/contact'}
-                    disabled={!canEdit('edit_contact')}
+                    disabled={!canEdit('edit_offices')}
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Open Editor

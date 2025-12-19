@@ -15,7 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/events',
     '/news',
     '/activities',
-    '/members',
+    '/members/register',
     '/offices',
     '/karya-samiti',
   ].map((route) => ({

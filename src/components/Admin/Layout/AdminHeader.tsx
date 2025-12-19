@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,7 @@ import {
   LogOut,
   ChevronDown,
   BookOpen,
+  Mail,
 } from 'lucide-react';
 import Link from 'next/link';
 import { ProfileModal } from '@/components/Admin/Profile/ProfileModal';
@@ -25,6 +26,8 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [loadingInbox, setLoadingInbox] = useState(false);
 
   // Handle hover for dropdown - keep menu open when hovering over trigger or menu
   const handleMouseEnter = () => {
@@ -51,6 +54,60 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       }
     };
   }, []);
+
+  const loadInboxSummary = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      setLoadingInbox(true);
+      const token =
+        typeof window !== 'undefined'
+          ? localStorage.getItem('admin_token')
+          : null;
+      const res = await fetch('/api/admin/contact/messages?summary=1', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+      });
+      const data = await res.json();
+      if (res.ok && data?.success && data.data) {
+        setUnreadCount(data.data.unreadCount || 0);
+      }
+    } catch (err) {
+      console.error('Failed to load inbox summary', err);
+    } finally {
+      setLoadingInbox(false);
+    }
+  }, [currentUser]);
+
+  // Initial load + refresh when user changes
+  useEffect(() => {
+    void loadInboxSummary();
+  }, [loadInboxSummary]);
+
+  // Poll in background to approximate real-time updates on dashboard/admin pages
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const interval = setInterval(() => {
+      void loadInboxSummary();
+    }, 15000); // 15s
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadInboxSummary();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [currentUser, loadInboxSummary]);
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -87,7 +144,26 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
               <BookOpen className="h-4 w-4" />
             </Button>
           </Link>
-          
+
+          {/* Inbox icon */}
+          {currentUser && (
+            <Link href="/admin/contact/inbox">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative text-gray-600 hover:text-gray-900"
+                title={t('admin.contact.inbox.title')}
+              >
+                <Mail className={`h-5 w-5 ${loadingInbox ? 'animate-pulse' : ''}`} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+          )}
+
           {/* User avatar */}
           {currentUser && (
           <div 

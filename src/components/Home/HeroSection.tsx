@@ -41,6 +41,7 @@ function WelcomeMarqueeContent({ ariaHidden }: { ariaHidden?: boolean }) {
 }
 
 export default function HeroSection() {
+  const { t } = useLanguage();
   const [heroImages, setHeroImages] = useState<HeroImage[]>([]);
   const [heroSettings, setHeroSettings] = useState<HeroSettings>({
     marquee_speed: 30,
@@ -113,16 +114,32 @@ export default function HeroSection() {
       if (!node) return;
       
       // Remeasure width after DOM update
+      // Measure one track width including gap for seamless loop
       const track = welcomeTrackRef.current;
-      if (track) {
-        welcomeWidthRef.current = track.scrollWidth || track.offsetWidth || 0;
+      const container = welcomeMarqueeRef.current;
+      if (track && container) {
+        // Measure the offset of the second track to get exact wrap point
+        const tracks = container.children;
+        if (tracks.length >= 2) {
+          const secondTrack = tracks[1] as HTMLElement;
+          welcomeWidthRef.current = secondTrack.offsetLeft || (track.scrollWidth || track.offsetWidth || 0);
+        } else {
+          // Fallback: measure first track + estimated gap
+          const trackWidth = track.scrollWidth || track.offsetWidth || 0;
+          const gapStyle = window.getComputedStyle(container).gap;
+          const gap = gapStyle ? parseFloat(gapStyle) || 12 : 12;
+          welcomeWidthRef.current = trackWidth + gap;
+        }
       }
       
       let lastTs = performance.now();
 
       const step = (ts: number) => {
         const currentNode = welcomeMarqueeRef.current;
-        if (!currentNode) return;
+        if (!currentNode) {
+          welcomeRafRef.current = requestAnimationFrame(step);
+          return;
+        }
         
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         // Use custom marquee speed if available, otherwise use default
@@ -136,10 +153,29 @@ export default function HeroSection() {
         const firstWidth = welcomeWidthRef.current || 0;
         if (firstWidth > 0) {
           currentNode.scrollLeft += speedPxPerSec * dt;
-          while (currentNode.scrollLeft >= firstWidth) {
-            currentNode.scrollLeft -= firstWidth;
+          // Wrap when we've scrolled past one track width
+          // This creates seamless infinite loop
+          if (currentNode.scrollLeft >= firstWidth) {
+            currentNode.scrollLeft = currentNode.scrollLeft - firstWidth;
+          }
+        } else {
+          // If width not calculated yet, remeasure
+          const track = welcomeTrackRef.current;
+          const container = welcomeMarqueeRef.current;
+          if (track && container) {
+            const tracks = container.children;
+            if (tracks.length >= 2) {
+              const secondTrack = tracks[1] as HTMLElement;
+              welcomeWidthRef.current = secondTrack.offsetLeft || (track.scrollWidth || track.offsetWidth || 0);
+            } else {
+              const trackWidth = track.scrollWidth || track.offsetWidth || 0;
+              const gapStyle = window.getComputedStyle(container).gap;
+              const gap = gapStyle ? parseFloat(gapStyle) || 12 : 12;
+              welcomeWidthRef.current = trackWidth + gap;
+            }
           }
         }
+        // Always continue the animation loop
         welcomeRafRef.current = requestAnimationFrame(step);
       };
 
@@ -482,15 +518,8 @@ export default function HeroSection() {
               ref={welcomeMarqueeRef}
               className="overflow-x-scroll flex gap-3 sm:gap-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
               style={{ msOverflowStyle: 'none' as unknown as undefined }}
-              onScroll={(e) => {
-                const node = e.currentTarget;
-                const firstWidth = welcomeWidthRef.current || 0;
-                if (firstWidth > 0 && node.scrollLeft >= firstWidth) {
-                  node.scrollLeft = node.scrollLeft - firstWidth;
-                }
-              }}
             >
-              {/* Track A */}
+              {/* Multiple tracks for seamless infinite loop */}
               <div ref={welcomeTrackRef} className="flex gap-3 sm:gap-4 whitespace-nowrap">
                 <span 
                   className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block font-bold tracking-wide text-sm sm:text-base md:text-lg"
@@ -499,7 +528,14 @@ export default function HeroSection() {
                   {customMarquee.text}
                 </span>
               </div>
-              {/* Track B (duplicate for seamless loop) */}
+              <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
+                <span 
+                  className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block font-bold tracking-wide text-sm sm:text-base md:text-lg"
+                  style={{ color: customMarquee.text_color }}
+                >
+                  {customMarquee.text}
+                </span>
+              </div>
               <div aria-hidden className="flex gap-3 sm:gap-4 whitespace-nowrap">
                 <span 
                   className="mx-2 sm:mx-4 md:mx-6 lg:mx-8 inline-block font-bold tracking-wide text-sm sm:text-base md:text-lg"

@@ -10,6 +10,8 @@ import ActivitiesSection from '@/components/Home/ActivitiesSection';
 import Footer from '@/components/Home/Footer';
 import LatestNewsSection from '@/components/Home/LatestNewsSection';
 import LatestEventsSection from '@/components/Home/LatestEventsSection';
+import { ContactFormSection } from '@/components/Home/ContactFormSection';
+import FloatingJoinButton from '@/components/Home/FloatingJoinButton';
 
 // Force dynamic rendering to prevent caching
 export const dynamic = 'force-dynamic';
@@ -78,8 +80,10 @@ export default function Home() {
           <FeaturedProductsSection />
           <CoreValuesSection />
           <ActivitiesSection />
+          <ContactFormSection />
         </main>
         <Footer />
+        <FloatingJoinButton />
       </div>
     </>
   );

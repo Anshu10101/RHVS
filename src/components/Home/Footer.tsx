@@ -191,6 +191,16 @@ export default function Footer() {
                   {t('nav.contact')}
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/members/register/verification"
+                  className="text-orange-700/70 hover:text-orange-600 transition-colors inline-block hover:translate-x-1 duration-200"
+                >
+                  {language === 'hi'
+                    ? 'सदस्य विवरण सत्यापन'
+                    : 'Member Self Verification'}
+                </Link>
+              </li>
             </ul>
           </div>
           
@@ -214,8 +224,25 @@ export default function Footer() {
           </div>
         </div>
         
+        {/* Join Now CTA Section - Prominent call to action */}
+        <div className="border-t border-orange-200/50 mt-12 pt-8 pb-6 text-center">
+          <h3 className="text-xl sm:text-2xl font-bold text-orange-800 mb-3 sm:mb-4">
+            {language === 'hi' ? 'हमारे साथ जुड़ें' : 'Join Us Today'}
+          </h3>
+          <p className="text-orange-700/70 mb-6 text-sm sm:text-base max-w-2xl mx-auto">
+            {language === 'hi' 
+              ? 'राष्ट्रीय हिन्दू वाहिनी संगठन का हिस्सा बनें और सनातन धर्म की सेवा में योगदान दें' 
+              : 'Become a part of Rashtriya Hindu Vahini Sangathan and contribute to serving Sanatan Dharma'}
+          </p>
+          <Link href="/members/register">
+            <button className="bg-orange-600 hover:bg-orange-700 text-white px-8 sm:px-10 md:px-12 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+              {t('nav.join')}
+            </button>
+          </Link>
+        </div>
+        
         {/* Copyright */}
-        <div className="border-t border-orange-200/50 mt-12 pt-8 text-center">
+        <div className="border-t border-orange-200/50 pt-8 text-center">
           <p className="text-orange-700/60 text-sm">
             &copy; {new Date().getFullYear()} Rashtriya Hindu Vahini Sangathan. {t('footer.allRightsReserved')}
           </p>
