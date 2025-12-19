@@ -662,6 +662,9 @@ export async function POST(
               certificateNumber,
               idCardPath: appointmentIdCardPath || undefined,
               language: languagePreference,
+              printAsNameEn: departmentPost[0].print_as_name_en || null,
+              printAsNameHi: departmentPost[0].print_as_name_hi || null,
+              isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
             };
 
             const emailResult = await sendCertificateEmail(emailData);

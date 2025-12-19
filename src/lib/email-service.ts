@@ -18,6 +18,9 @@ interface EmailData {
   certificateNumber: string;
   idCardPath?: string;
   language?: 'hi' | 'en';
+  printAsNameEn?: string | null;
+  printAsNameHi?: string | null;
+  isNationalExecutive?: boolean;
 }
 
 const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
@@ -77,6 +80,69 @@ const createTransporter = () => {
   });
 };
 
+// Helper function to format post exactly as on certificate
+const formatPostDesignation = (data: EmailData): string => {
+  const {
+    departmentName,
+    postName,
+    level,
+    state,
+    district,
+    division,
+    language = 'hi',
+    printAsNameEn,
+    printAsNameHi,
+    isNationalExecutive = false,
+  } = data;
+
+  const isHindi = language === 'hi';
+  const printAsHi = printAsNameHi?.trim() || null;
+  const printAsEn = printAsNameEn?.trim() || null;
+  const hasPrintAs = (isHindi && printAsHi) || (!isHindi && printAsEn);
+  
+  let deptPostPhrase: string;
+  
+  if (hasPrintAs) {
+    // Use print_as directly with level prefix only (print_as already contains post + department)
+    const printAs = isHindi ? printAsHi! : printAsEn!;
+    
+    if (!isNationalExecutive) {
+      const levelPrefix = isHindi
+        ? (level === 'national' ? 'राष्ट्रीय' : level === 'state' ? 'प्रदेश' : level === 'district' ? 'जिला' : 'संभाग')
+        : (level === 'national' ? 'National' : level === 'state' ? 'State' : level === 'district' ? 'District' : 'Divisional');
+      deptPostPhrase = `${levelPrefix} ${printAs}`.trim();
+    } else {
+      deptPostPhrase = printAs;
+    }
+  } else {
+    // Default method: [level_prefix] [post] [department]
+    let formattedPostName = postName.trim();
+    
+    // Add level prefix to post name, but NOT if department is National Executive
+    if (!isNationalExecutive) {
+      const levelPrefix = isHindi
+        ? (level === 'national' ? 'राष्ट्रीय' : level === 'state' ? 'प्रदेश' : level === 'district' ? 'जिला' : 'संभाग')
+        : (level === 'national' ? 'National' : level === 'state' ? 'State' : level === 'district' ? 'District' : 'Divisional');
+      formattedPostName = `${levelPrefix} ${formattedPostName}`.trim();
+    }
+    
+    deptPostPhrase = isHindi
+      ? `${formattedPostName} ${departmentName}`.trim()
+      : `${formattedPostName}${departmentName ? ` of ${departmentName}` : ''}`.trim();
+  }
+  
+  // Add location (state/district) if applicable
+  if (level === 'state' && state) {
+    deptPostPhrase = `${deptPostPhrase}, ${state}`;
+  } else if (level === 'district' && district && state) {
+    deptPostPhrase = `${deptPostPhrase}, ${district}, ${state}`;
+  } else if (level === 'divisional' && division && state) {
+    deptPostPhrase = `${deptPostPhrase}, ${division}, ${state}`;
+  }
+  
+  return deptPostPhrase;
+};
+
 // Generate creative email templates
 const generateEmailTemplate = (data: EmailData) => {
   const {
@@ -95,6 +161,9 @@ const generateEmailTemplate = (data: EmailData) => {
   } = data;
 
   const isHindi = language === 'hi';
+  
+  // Get the full post designation as it appears on certificate
+  const fullPostDesignation = formatPostDesignation(data);
 
   const formatLevelText = () => {
     if (isHindi) {
@@ -150,7 +219,7 @@ const generateEmailTemplate = (data: EmailData) => {
           प्रिय <strong>${memberName}</strong> जी,
         </p>
         <p style="font-size: 16px; line-height: 1.6;">
-          आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${postName}</strong> पद (<strong>${departmentName}</strong>) में ${levelText} नियुक्त किया गया है।
+          आपको <strong>राष्ट्रीय हिन्दू वाहिनी संगठन</strong> में <strong>${fullPostDesignation}</strong> पद में नियुक्त किया गया है।
         </p>
         <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
           <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
@@ -166,9 +235,7 @@ const generateEmailTemplate = (data: EmailData) => {
           <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
             <li><strong>नाम:</strong> ${memberName}</li>
             <li><strong>पंजीकरण संख्या:</strong> ${memberRegNumber}</li>
-            <li><strong>विभाग:</strong> ${departmentName}</li>
-            <li><strong>पद:</strong> ${postName}</li>
-            <li><strong>स्तर:</strong> ${levelText}</li>
+            <li><strong>पद:</strong> ${fullPostDesignation}</li>
             <li><strong>नियुक्ति दिनांक:</strong> ${appointmentDateText}</li>
             <li><strong>प्रमाणपत्र संख्या:</strong> ${certificateNumber}</li>
           </ul>
@@ -182,7 +249,7 @@ const generateEmailTemplate = (data: EmailData) => {
           Dear <strong>${memberName}</strong>,
         </p>
         <p style="font-size: 16px; line-height: 1.6;">
-          We are delighted to inform you that you have been appointed as <strong>${postName}</strong> in the <strong>${departmentName}</strong> department of <strong>Rashtriya Hindu Vahini Sangathan</strong> at the <strong>${levelText}</strong>.
+          We are delighted to inform you that you have been appointed as <strong>${fullPostDesignation}</strong> in <strong>Rashtriya Hindu Vahini Sangathan</strong>.
         </p>
         <div style="background: linear-gradient(135deg, #FEF3C7, #FCD34D); padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 5px solid #DC2626;">
           <p style="font-size: 16px; font-weight: bold; color: #92400E; margin: 0;">
@@ -198,9 +265,7 @@ const generateEmailTemplate = (data: EmailData) => {
           <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
             <li><strong>Name:</strong> ${memberName}</li>
             <li><strong>Registration Number:</strong> ${memberRegNumber}</li>
-            <li><strong>Department:</strong> ${departmentName}</li>
-            <li><strong>Post:</strong> ${postName}</li>
-            <li><strong>Level:</strong> ${levelText}</li>
+            <li><strong>Post:</strong> ${fullPostDesignation}</li>
             <li><strong>Appointment Date:</strong> ${appointmentDateText}</li>
             <li><strong>Certificate Number:</strong> ${certificateNumber}</li>
           </ul>

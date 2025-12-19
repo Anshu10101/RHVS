@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -27,9 +30,6 @@ const nextConfig: NextConfig = {
     // Image optimization enabled - make sure cache directory has proper permissions
     // See scripts/fix-cache-permissions-ubuntu.sh to fix permissions
     unoptimized: false,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
   compress: true,
   poweredByHeader: false,

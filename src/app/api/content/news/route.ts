@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     const [countRows] = await pool.execute(countQuery, countParams);
     const total = Array.isArray(countRows) && countRows.length > 0 ? (countRows[0] as { total: number }).total : 0;
 
-    query += ` ORDER BY published_at DESC, \`order\` ASC`;
+    query += ` ORDER BY published_at DESC`;
 
     // Pagination parameters
     const page = parseInt(searchParams.get('page') || '1');
@@ -195,7 +195,6 @@ export async function POST(request: NextRequest) {
       priority,
       is_featured,
       is_published,
-      order,
       created_by,
       district: districtInput,
       state: stateInput
@@ -360,8 +359,8 @@ export async function POST(request: NextRequest) {
     await pool.execute(
       `INSERT INTO news 
        (id, title, title_hindi, content, excerpt, image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
-        youtube_video_url, news_type, priority, is_featured, is_published, \`order\`, district, state, owner_admin_id, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        youtube_video_url, news_type, priority, is_featured, is_published, district, state, owner_admin_id, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, 
         safeValue(title), 
@@ -379,7 +378,6 @@ export async function POST(request: NextRequest) {
         safeValue(priority),
         safeValue(is_featured), 
         safeValue(is_published), 
-        safeValue(order), 
         finalDistrict,  // Use finalDistrict to ensure it's not undefined
         finalState,     // Use finalState to ensure it's not undefined
         safeValue(owner_admin_id),
@@ -440,7 +438,6 @@ export async function PUT(request: NextRequest) {
       priority,
       is_featured,
       is_published,
-      order,
       district: districtInput,
       state: stateInput
     } = body;
@@ -528,8 +525,7 @@ export async function PUT(request: NextRequest) {
       'news_type = ?',
       'priority = ?',
       'is_featured = ?',
-      'is_published = ?',
-      '`order` = ?'
+      'is_published = ?'
     ];
     const updateParams: unknown[] = [
         safeValue(title), 
@@ -540,8 +536,7 @@ export async function PUT(request: NextRequest) {
         safeValue(news_type), 
         safeValue(priority),
         safeValue(is_featured), 
-        safeValue(is_published), 
-      safeValue(order)
+        safeValue(is_published)
     ];
     
     // Add district/state to update if provided (for superadmin and news editors)

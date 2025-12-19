@@ -285,6 +285,9 @@ export async function POST(request: NextRequest) {
         certificateNumber,
         idCardPath: appointmentIdCardPath || undefined,
         language: languagePreference,
+        printAsNameEn: departmentPost[0].print_as_name_en || null,
+        printAsNameHi: departmentPost[0].print_as_name_hi || null,
+        isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
       };
 
       console.log(`[Email] Attempting to send certificate email to ${member[0].email}`);

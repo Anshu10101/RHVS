@@ -910,10 +910,11 @@ export function MemberManagement() {
                             // Reset photo state when opening edit modal
                             setProfilePhoto(null);
                             setProfilePhotoPreview(null);
-                            // Fetch full member data to ensure we have aadhar_card_number
+                            // Fetch full member data to ensure we have latest info (and avoid any caching)
                             try {
                               const token = localStorage.getItem('admin_token');
-                              const response = await fetch(`/api/admin/members/${member.id}`, {
+                              const response = await fetch(`/api/admin/members/${member.id}?_t=${Date.now()}`, {
+                                cache: 'no-store',
                                 headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                               });
                               if (response.ok) {
@@ -1119,10 +1120,11 @@ export function MemberManagement() {
                           // Reset photo state when opening edit modal
                           setProfilePhoto(null);
                           setProfilePhotoPreview(null);
-                          // Fetch full member data to ensure we have aadhar_card_number
+                          // Fetch full member data to ensure we have latest info (and avoid any caching)
                           try {
                             const token = localStorage.getItem('admin_token');
-                            const response = await fetch(`/api/admin/members/${member.id}`, {
+                            const response = await fetch(`/api/admin/members/${member.id}?_t=${Date.now()}`, {
+                              cache: 'no-store',
                               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
                             });
                             if (response.ok) {

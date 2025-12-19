@@ -1037,22 +1037,22 @@ export default function AssignMembersPage() {
                                     size="sm"
                                     variant={hasAssignments ? "outline" : "default"}
                                     disabled={post.position_order === 1 && hasAssignments}
-                                    title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
+                                    title={post.position_order === 1 && hasAssignments ? t('admin.departments.assign.presidentOneMemberOnly') : ''}
                                   >
                                     <UserPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                     <span className="hidden sm:inline">
                                     {post.position_order === 1 && hasAssignments 
-                                      ? 'Remove Existing First' 
+                                      ? t('admin.departments.assign.removeExistingFirst')
                                       : hasAssignments 
-                                        ? 'Assign More' 
-                                        : 'Assign Members'}
+                                        ? t('admin.departments.assign.assignMore')
+                                        : t('admin.departments.assign.assignMembersButton')}
                                     </span>
                                     <span className="sm:hidden">
                                       {post.position_order === 1 && hasAssignments 
-                                        ? 'Remove First' 
+                                        ? t('admin.departments.assign.removeFirst')
                                         : hasAssignments 
-                                          ? 'Assign More' 
-                                          : 'Assign'}
+                                          ? t('admin.departments.assign.assignMore')
+                                          : t('admin.departments.assign.assign')}
                                     </span>
                                   </Button>
                                 </div>
@@ -1442,22 +1442,22 @@ export default function AssignMembersPage() {
                                     size="sm"
                                     variant={hasAssignments ? "outline" : "default"}
                                     disabled={post.position_order === 1 && hasAssignments}
-                                    title={post.position_order === 1 && hasAssignments ? 'President post can only have one member. Remove existing assignment first.' : ''}
+                                    title={post.position_order === 1 && hasAssignments ? t('admin.departments.assign.presidentOneMemberOnly') : ''}
                                   >
                                     <UserPlus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                                     <span className="hidden sm:inline">
                                     {post.position_order === 1 && hasAssignments 
-                                      ? 'Remove Existing First' 
+                                      ? t('admin.departments.assign.removeExistingFirst')
                                       : hasAssignments 
-                                        ? 'Assign More' 
-                                        : 'Assign Members'}
+                                        ? t('admin.departments.assign.assignMore')
+                                        : t('admin.departments.assign.assignMembersButton')}
                                     </span>
                                     <span className="sm:hidden">
                                       {post.position_order === 1 && hasAssignments 
-                                        ? 'Remove First' 
+                                        ? t('admin.departments.assign.removeFirst')
                                         : hasAssignments 
-                                          ? 'Assign More' 
-                                          : 'Assign'}
+                                          ? t('admin.departments.assign.assignMore')
+                                          : t('admin.departments.assign.assign')}
                                     </span>
                                   </Button>
                                 </div>

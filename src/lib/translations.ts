@@ -4612,6 +4612,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'स्टॉक से क्रमबद्ध करें',
     en: 'Stock'
   },
+  'admin.store.products.searchPlaceholder': {
+    hi: 'उत्पाद खोजें...',
+    en: 'Search products...'
+  },
   'admin.store.products.itemsPerPage': {
     hi: '{count}/पृष्ठ',
     en: '{count}/page'
@@ -5933,6 +5937,14 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.departments.assign.assignMembersButton': {
     hi: 'सदस्य असाइन करें',
     en: 'Assign Members'
+  },
+  'admin.departments.assign.assign': {
+    hi: 'असाइन करें',
+    en: 'Assign'
+  },
+  'admin.departments.assign.removeFirst': {
+    hi: 'पहले हटाएं',
+    en: 'Remove First'
   },
   'admin.departments.assign.presidentOneMemberOnly': {
     hi: 'अध्यक्ष पद में केवल एक सदस्य हो सकता है। पहले मौजूदा असाइनमेंट हटाएं।',

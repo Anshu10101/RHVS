@@ -1730,15 +1730,15 @@ export default function ProductStoreEditor() {
             <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-4">
               {viewMode === 'grid' ? (
                 <div
-                  className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
-                    productsCompactMode ? 'gap-2 sm:gap-3' : 'gap-3 sm:gap-4'
+                  className={`grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ${
+                    productsCompactMode ? 'gap-1.5 sm:gap-2 md:gap-3' : 'gap-2 sm:gap-3 md:gap-4'
                   }`}
                 >
                   {paginatedProducts.map(product => (
                     <Card key={product.id} className="overflow-hidden w-full">
                       <div className="relative">
                         <div
-                          className="aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
+                          className="aspect-[4/3] sm:aspect-square bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors"
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={(e) => handleDrop(e, product.id)}
@@ -1755,8 +1755,8 @@ export default function ProductStoreEditor() {
                             />
                           ) : (
                             <div className="text-center text-gray-400 p-2">
-                              <ImageIcon className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-1 sm:mb-2" />
-                              <p className="text-xs sm:text-sm">Click to upload</p>
+                              <ImageIcon className="h-6 w-6 sm:h-10 sm:w-10 md:h-12 md:w-12 mx-auto mb-1 sm:mb-2" />
+                              <p className="text-[10px] sm:text-xs md:text-sm">Click to upload</p>
                             </div>
                           )}
                           <input
@@ -1771,7 +1771,7 @@ export default function ProductStoreEditor() {
                           />
                         </div>
                         
-                        <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex gap-1">
+                        <div className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 md:top-2 md:right-2 flex gap-0.5 sm:gap-1">
                           <Button
                             size="sm"
                             variant="secondary"
@@ -1780,9 +1780,9 @@ export default function ProductStoreEditor() {
                               const input = document.getElementById(`file-upload-${product.id}`) as HTMLInputElement;
                               input?.click();
                             }}
-                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-blue-100"
+                            className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 cursor-pointer hover:bg-blue-100"
                           >
-                            <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                            <Upload className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
                           </Button>
                           <Button
                             size="sm"
@@ -1791,9 +1791,9 @@ export default function ProductStoreEditor() {
                               e.stopPropagation();
                               startEditingProduct(product.id);
                             }}
-                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-gray-100"
+                            className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 cursor-pointer hover:bg-gray-100"
                           >
-                            <Edit2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                            <Edit2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
                           </Button>
                           <Button
                             size="sm"
@@ -1802,36 +1802,36 @@ export default function ProductStoreEditor() {
                               e.stopPropagation();
                               deleteProduct(product.id);
                             }}
-                            className="h-7 w-7 sm:h-8 sm:w-8 p-0 cursor-pointer hover:bg-red-100 text-red-600"
+                            className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 p-0 cursor-pointer hover:bg-red-100 text-red-600"
                           >
-                            <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4" />
+                            <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3 md:h-3.5 md:w-3.5" />
                           </Button>
                         </div>
                       </div>
                       
-                      <CardContent className="p-2 sm:p-3">
-                        <h3 className="font-semibold text-xs sm:text-sm mb-1 truncate">{product.name}</h3>
-                        <p className="text-xs text-gray-600 mb-1.5 sm:mb-2 line-clamp-2 break-words">{product.description}</p>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs sm:text-sm font-bold text-green-600 truncate">
+                      <CardContent className="p-1.5 sm:p-2 md:p-3">
+                        <h3 className="font-semibold text-[11px] sm:text-xs md:text-sm mb-0.5 sm:mb-1 truncate">{product.name}</h3>
+                        <p className="text-[10px] sm:text-xs text-gray-600 mb-1 sm:mb-1.5 md:mb-2 line-clamp-2 break-words">{product.description}</p>
+                        <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                          <span className="text-[11px] sm:text-xs md:text-sm font-bold text-green-600 truncate">
                             ₹{product.price}
                           </span>
-                          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 flex-shrink-0">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => moveProduct(product.id, 'up')}
-                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
+                              className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 p-0 cursor-pointer hover:bg-gray-100"
                             >
-                              <ArrowLeft className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ArrowLeft className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
                             </Button>
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => moveProduct(product.id, 'down')}
-                              className="h-5 w-5 sm:h-6 sm:w-6 p-0 cursor-pointer hover:bg-gray-100"
+                              className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 p-0 cursor-pointer hover:bg-gray-100"
                             >
-                              <ArrowRight className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                              <ArrowRight className="h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3" />
                             </Button>
                           </div>
                         </div>

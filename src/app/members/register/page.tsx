@@ -1161,6 +1161,11 @@ export default function MemberRegistrationPage() {
                             <UserRound className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             {t('register.fullName')} *
                           </FormLabel>
+                          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mt-1 mb-2">
+                            {language === 'hi' 
+                              ? 'यह नाम सदस्यता और नियुक्ति प्रमाणपत्रों पर दिखेगा, इसलिए सावधानी से लिखें। जिस भाषा (हिंदी/अंग्रेजी) में आप लिखेंगे, वही दिखेगी।'
+                              : 'This name will be printed on membership and appointment certificates, so write carefully. The language (Hindi/English) you write will be printed as is.'}
+                          </p>
                           <FormControl>
                             <Input
                               placeholder={t('register.fullNamePlaceholder')}
@@ -1182,6 +1187,11 @@ export default function MemberRegistrationPage() {
                             <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-orange-500" />
                             {t('register.emailAddress')} *
                           </FormLabel>
+                          <p className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5 mt-1 mb-2">
+                            {language === 'hi'
+                              ? 'इस ईमेल पर आपके सभी दस्तावेज़ और मेल भेजे जाएंगे, इसलिए इसे सावधानी से लिखें।'
+                              : 'All your documents and mails will be sent to this email, so write it carefully.'}
+                          </p>
                           <FormControl>
                             <Input
                               type="email"

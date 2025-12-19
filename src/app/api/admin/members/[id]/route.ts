@@ -6,6 +6,7 @@ import { generateCertificate } from '@/lib/certificate';
 import { getStateLanguagePreference } from '@/lib/language-preference';
 import { sendWelcomeEmail } from '@/lib/email';
 import { generateIDCard } from '@/lib/id-card-generator';
+import { noCacheJsonResponse } from '@/lib/api-helpers';
 
 const retainCertificateFiles = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
@@ -121,7 +122,7 @@ export async function GET(
       registration_date: new Date(member.registration_date as string)
     };
 
-    return NextResponse.json({
+    return noCacheJsonResponse({
       success: true,
       data: memberWithVerifier
     });

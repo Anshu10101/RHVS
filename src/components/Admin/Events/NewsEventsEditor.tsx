@@ -57,7 +57,6 @@ interface News {
   is_featured: boolean;
   is_published: boolean;
   published_at: string;
-  order: number;
   created_at: string;
   updated_at: string;
   created_by: string;
@@ -82,7 +81,6 @@ interface Event {
   max_participants?: number;
   current_participants: number;
   event_type: 'festival' | 'meeting' | 'celebration' | 'workshop' | 'conference' | 'other';
-  order: number;
   isVisible: boolean;
   created_at: string;
   updated_at: string;
@@ -130,7 +128,6 @@ export default function NewsEventsEditor() {
     priority: 'medium' as News['priority'],
     is_featured: false,
     is_published: true,
-    order: 0,
     district: '',
     state: '',
   });
@@ -156,7 +153,6 @@ export default function NewsEventsEditor() {
     registration_url: '',
     max_participants: 0,
     event_type: 'other' as Event['event_type'],
-    order: 0,
     isVisible: true,
     district: '',
     state: '',
@@ -621,7 +617,6 @@ export default function NewsEventsEditor() {
       priority: 'medium',
       is_featured: false,
       is_published: true,
-      order: 0,
       district: '',
       state: '',
     });
@@ -640,7 +635,6 @@ export default function NewsEventsEditor() {
       registration_url: '',
       max_participants: 0,
       event_type: 'other',
-      order: 0,
       isVisible: true,
       district: '',
       state: '',
@@ -713,7 +707,6 @@ export default function NewsEventsEditor() {
         priority: newsItem.priority,
         is_featured: newsItem.is_featured,
         is_published: newsItem.is_published,
-        order: newsItem.order,
         district: '', // Will be set after districts load via useEffect
         state: stateId,
       });
@@ -772,7 +765,6 @@ export default function NewsEventsEditor() {
         registration_url: eventItem.registration_url || '',
         max_participants: eventItem.max_participants || 0,
         event_type: eventItem.event_type,
-        order: eventItem.order,
         isVisible: eventItem.isVisible,
         district: '', // Will be set after districts load via useEffect
         state: '', // Will be set below
@@ -1187,16 +1179,6 @@ export default function NewsEventsEditor() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div>
-                      <Label htmlFor="order">{t('admin.newsEvents.order')}</Label>
-                      <Input
-                        id="order"
-                        type="number"
-                        value={newsForm.order}
-                        onChange={(e) => setNewsForm({ ...newsForm, order: parseInt(e.target.value) || 0 })}
-                        placeholder={t('admin.newsEvents.displayOrder')}
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -1417,17 +1399,7 @@ export default function NewsEventsEditor() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="order">Order</Label>
-                      <Input
-                        id="order"
-                        type="number"
-                        value={eventForm.order}
-                        onChange={(e) => setEventForm({ ...eventForm, order: parseInt(e.target.value) || 0 })}
-                        placeholder="Display order"
-                      />
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="max_participants">Max Participants</Label>
                       <Input
@@ -1691,7 +1663,6 @@ export default function NewsEventsEditor() {
 
               <div className="mt-3 pt-3 border-t text-xs text-gray-500">
                 <div className="flex items-center justify-between">
-                  <span>Order: {item.order}</span>
                   <span>{new Date(item.created_at).toLocaleDateString()}</span>
                 </div>
               </div>

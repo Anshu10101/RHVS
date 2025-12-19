@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
     const [countRows] = await pool.execute(countQuery, countParams);
     const total = Array.isArray(countRows) && countRows.length > 0 ? (countRows[0] as { total: number }).total : 0;
 
-    query += ` ORDER BY event_date ASC, \`order\` ASC`;
+    query += ` ORDER BY event_date ASC`;
 
     // Pagination parameters
     const page = parseInt(searchParams.get('page') || '1');
@@ -195,7 +195,6 @@ export async function POST(request: NextRequest) {
       registration_url,
       max_participants,
       event_type,
-      order,
       created_by,
       district: districtInput,
       state: stateInput
@@ -269,8 +268,8 @@ export async function POST(request: NextRequest) {
        (id, title, title_hindi, description, event_date, event_time, end_date, end_time,
         location, address, image_path, image_blob, image_mime, image_hash, image_size, image_original_name,
         registration_required, registration_url,
-        max_participants, event_type, \`order\`, isVisible, district, state, owner_admin_id, created_by) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        max_participants, event_type, isVisible, district, state, owner_admin_id, created_by) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         id, 
         safeValue(title), 
@@ -292,7 +291,6 @@ export async function POST(request: NextRequest) {
         safeValue(registration_url),
         safeValue(max_participants), 
         safeValue(event_type), 
-        safeValue(order), 
         true,
         safeValue(district),
         safeValue(state),
@@ -355,7 +353,6 @@ export async function PUT(request: NextRequest) {
       registration_url,
       max_participants,
       event_type,
-      order,
       isVisible
     } = body;
 
@@ -376,7 +373,6 @@ export async function PUT(request: NextRequest) {
       'registration_url = ?',
       'max_participants = ?',
       'event_type = ?',
-      '`order` = ?',
       'isVisible = ?'
     ];
     const updateParams: unknown[] = [
@@ -393,7 +389,6 @@ export async function PUT(request: NextRequest) {
         safeValue(registration_url),
         safeValue(max_participants), 
         safeValue(event_type), 
-        safeValue(order), 
       safeValue(isVisible)
     ];
 
