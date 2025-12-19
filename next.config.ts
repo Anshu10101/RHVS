@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Explicitly set workspace root to avoid lockfile detection issues
+  outputFileTracingRoot: path.resolve(process.cwd()),
   images: {
     remotePatterns: [
       {
