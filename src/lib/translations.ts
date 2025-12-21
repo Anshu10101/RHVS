@@ -950,6 +950,10 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'OTP भेजने में समस्या हुई',
     en: 'Failed to send OTP'
   },
+  'selfVerification.emailNotRegistered': {
+    hi: 'यह ईमेल सदस्य के रूप में पंजीकृत नहीं है। यदि आपका ईमेल पंजीकृत नहीं है, तो कृपया मुख्य पृष्ठ के संपर्क करें अनुभाग के माध्यम से अपने संबंधित प्रशासक से संपर्क करें।',
+    en: 'This email is not registered as a member. If your email is not registered, please contact your respective admin via the Contact Us section on the main page.'
+  },
   'selfVerification.otpVerificationTitle': {
     hi: 'OTP सत्यापन',
     en: 'OTP Verification'

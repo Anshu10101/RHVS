@@ -137,45 +137,53 @@ export default function HeroSection() {
       const step = (ts: number) => {
         const currentNode = welcomeMarqueeRef.current;
         if (!currentNode) {
+          // Ensure RAF continues even if node is temporarily unavailable
           welcomeRafRef.current = requestAnimationFrame(step);
           return;
         }
         
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-        // Use custom marquee speed if available, otherwise use default
-        const speedPxPerSec = customMarquee 
-          ? customMarquee.speed 
-          : (isMobile ? 50 : 40);
-        
-        const dt = Math.max(0, ts - lastTs) / 1000;
-        lastTs = ts;
-        
-        const firstWidth = welcomeWidthRef.current || 0;
-        if (firstWidth > 0) {
-          currentNode.scrollLeft += speedPxPerSec * dt;
-          // Wrap when we've scrolled past one track width
-          // This creates seamless infinite loop
-          if (currentNode.scrollLeft >= firstWidth) {
-            currentNode.scrollLeft = currentNode.scrollLeft - firstWidth;
-          }
-        } else {
-          // If width not calculated yet, remeasure
-          const track = welcomeTrackRef.current;
-          const container = welcomeMarqueeRef.current;
-          if (track && container) {
-            const tracks = container.children;
-            if (tracks.length >= 2) {
-              const secondTrack = tracks[1] as HTMLElement;
-              welcomeWidthRef.current = secondTrack.offsetLeft || (track.scrollWidth || track.offsetWidth || 0);
-            } else {
-              const trackWidth = track.scrollWidth || track.offsetWidth || 0;
-              const gapStyle = window.getComputedStyle(container).gap;
-              const gap = gapStyle ? parseFloat(gapStyle) || 12 : 12;
-              welcomeWidthRef.current = trackWidth + gap;
+        try {
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          // Use custom marquee speed if available, otherwise use default
+          const speedPxPerSec = customMarquee 
+            ? customMarquee.speed 
+            : (isMobile ? 50 : 40);
+          
+          const dt = Math.max(0, ts - lastTs) / 1000;
+          lastTs = ts;
+          
+          const firstWidth = welcomeWidthRef.current || 0;
+          if (firstWidth > 0) {
+            currentNode.scrollLeft += speedPxPerSec * dt;
+            // Wrap when we've scrolled past one track width
+            // Use while loop to ensure proper wrapping even if scrollLeft is much larger
+            // This creates seamless infinite loop
+            while (currentNode.scrollLeft >= firstWidth) {
+              currentNode.scrollLeft -= firstWidth;
+            }
+          } else {
+            // If width not calculated yet, remeasure
+            const track = welcomeTrackRef.current;
+            const container = welcomeMarqueeRef.current;
+            if (track && container) {
+              const tracks = container.children;
+              if (tracks.length >= 2) {
+                const secondTrack = tracks[1] as HTMLElement;
+                welcomeWidthRef.current = secondTrack.offsetLeft || (track.scrollWidth || track.offsetWidth || 0);
+              } else {
+                const trackWidth = track.scrollWidth || track.offsetWidth || 0;
+                const gapStyle = window.getComputedStyle(container).gap;
+                const gap = gapStyle ? parseFloat(gapStyle) || 12 : 12;
+                welcomeWidthRef.current = trackWidth + gap;
+              }
             }
           }
+        } catch (error) {
+          // Log error but continue animation
+          console.error('Marquee animation error:', error);
         }
-        // Always continue the animation loop
+        
+        // Always continue the animation loop - ensure RAF is always requested
         welcomeRafRef.current = requestAnimationFrame(step);
       };
 

@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
       if (memberRows.length === 0) {
         return NextResponse.json(
-          { success: false, message: 'This email is not registered as a member' },
+          { success: false, message: 'This email is not registered as a member. If your email is not registered, please contact your respective admin via the Contact Us section on the main page.' },
           { status: 404 }
         );
       }

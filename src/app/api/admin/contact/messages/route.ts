@@ -220,8 +220,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === 'delete') {
+      // Use proper DELETE syntax with alias
       await executeQuery(
-        `DELETE FROM contact_messages cm
+        `DELETE cm FROM contact_messages cm
          WHERE cm.id IN (${placeholders})
          ${scopeFilter}`,
         [...baseParams, ...scopeParams]

@@ -19,15 +19,30 @@ export const revalidate = 0;
 
 export default function Home() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://rashtriyahinduvahinisangathan.in';
+  // Square logo for Google search results (must be 1:1 aspect ratio)
+  const squareLogoUrl = `${baseUrl}/icons/icon-512x512.png`;
   
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Rashtriya Hindu Vahini Sangathan",
-    "alternateName": "RHVS",
+    "alternateName": [
+      "RHVS",
+      "rhvs",
+      "Rashtriya Hindu Vahini Sangathan",
+      "RHVS India",
+      "RHVS Organization",
+      "राष्ट्रीय हिंदू वाहिनी संगठन",
+      "आरएचवीएस"
+    ],
     "url": baseUrl,
-    "logo": `${baseUrl}/rhvs_logo.png`,
-    "description": "Official website of Rashtriya Hindu Vahini Sangathan (RHVS) dedicated to serving and uniting the Hindu community. Join us in preserving Sanatan Dharma and Hindu culture.",
+    "logo": {
+      "@type": "ImageObject",
+      "url": squareLogoUrl,
+      "width": 512,
+      "height": 512
+    },
+    "description": "RHVS (Rashtriya Hindu Vahini Sangathan) - Official website dedicated to serving and uniting the Hindu community. Join us in preserving Sanatan Dharma and Hindu culture.",
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "IN",
@@ -45,9 +60,15 @@ export default function Home() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Rashtriya Hindu Vahini Sangathan",
+    "name": "RHVS - Rashtriya Hindu Vahini Sangathan",
+    "alternateName": [
+      "RHVS",
+      "rhvs",
+      "Rashtriya Hindu Vahini Sangathan",
+      "RHVS Official Website"
+    ],
     "url": baseUrl,
-    "description": "Official website of Rashtriya Hindu Vahini Sangathan (RHVS)",
+    "description": "RHVS (Rashtriya Hindu Vahini Sangathan) - Official website dedicated to serving and uniting the Hindu community.",
     "publisher": {
       "@type": "Organization",
       "name": "Rashtriya Hindu Vahini Sangathan"

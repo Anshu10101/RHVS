@@ -184,7 +184,7 @@ export default function MessageDetailPage() {
           ? localStorage.getItem("admin_token")
           : null;
 
-      await fetch("/api/admin/contact/messages", {
+      const res = await fetch("/api/admin/contact/messages", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -196,7 +196,16 @@ export default function MessageDetailPage() {
         }),
       });
 
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data?.error || `Failed to ${action} message`);
+      }
+
       if (action === "delete") {
+        // Dispatch event before navigation
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inboxUpdated'));
+        }
         router.push("/admin/contact/inbox");
       } else {
         setMessage((prev) =>
@@ -211,9 +220,14 @@ export default function MessageDetailPage() {
               }
             : null
         );
+        // Dispatch event to notify header
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('inboxUpdated'));
+        }
       }
     } catch (err) {
       console.error(`Failed to ${action} message`, err);
+      alert(err instanceof Error ? err.message : `Failed to ${action} message. Please try again.`);
     } finally {
       setUpdating(false);
     }

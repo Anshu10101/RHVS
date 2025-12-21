@@ -188,6 +188,11 @@ export function ContactInbox() {
 
       setMessages(data.data.messages || []);
       setPagination(data.data.pagination || null);
+      
+      // Dispatch event to notify header to refresh badge count
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('inboxUpdated'));
+      }
     } catch (err) {
       console.error("Failed to load contact messages", err);
     } finally {
@@ -323,7 +328,8 @@ export function ContactInbox() {
       }
 
       if (action === "delete") {
-        setMessages((prev) => prev.filter((m) => !bulkSelection.includes(m.id)));
+        // Reload messages after deletion to ensure UI is in sync
+        await loadMessages(pagination?.page || 1);
       } else {
         setMessages((prev) =>
           prev.map((m) =>
@@ -339,8 +345,15 @@ export function ContactInbox() {
         );
       }
       setBulkSelection([]);
+      
+      // Dispatch custom event to notify header to refresh badge count
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('inboxUpdated'));
+      }
     } catch (err) {
       console.error("Bulk action failed", err);
+      // Show error to user
+      alert(err instanceof Error ? err.message : "Failed to perform action. Please try again.");
     } finally {
       setUpdating(false);
     }

@@ -12,6 +12,7 @@ import {
   Mail,
 } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ProfileModal } from '@/components/Admin/Profile/ProfileModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -22,6 +23,7 @@ interface AdminHeaderProps {
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
   const { currentUser, logout } = useAdmin();
   const { t } = useLanguage();
+  const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -63,11 +65,15 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
         typeof window !== 'undefined'
           ? localStorage.getItem('admin_token')
           : null;
-      const res = await fetch('/api/admin/contact/messages?summary=1', {
+      // Add timestamp to bust cache in production
+      const timestamp = Date.now();
+      const res = await fetch(`/api/admin/contact/messages?summary=1&_t=${timestamp}`, {
         cache: 'no-store',
+        method: 'GET',
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
@@ -87,13 +93,21 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     void loadInboxSummary();
   }, [loadInboxSummary]);
 
+  // Refresh when navigating to/from inbox pages
+  useEffect(() => {
+    if (pathname?.includes('/admin/contact')) {
+      void loadInboxSummary();
+    }
+  }, [pathname, loadInboxSummary]);
+
   // Poll in background to approximate real-time updates on dashboard/admin pages
   useEffect(() => {
     if (!currentUser) return;
 
+    // Reduced interval for faster updates (5 seconds)
     const interval = setInterval(() => {
       void loadInboxSummary();
-    }, 15000); // 15s
+    }, 5000); // 5s for faster real-time updates
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
@@ -101,11 +115,24 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
       }
     };
 
+    const handleFocus = () => {
+      void loadInboxSummary();
+    };
+
+    // Listen for custom event when messages are updated
+    const handleInboxUpdate = () => {
+      void loadInboxSummary();
+    };
+
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('inboxUpdated', handleInboxUpdate);
 
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('inboxUpdated', handleInboxUpdate);
     };
   }, [currentUser, loadInboxSummary]);
 

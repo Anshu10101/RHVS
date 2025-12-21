@@ -100,8 +100,11 @@ export default function MemberSelfVerificationPage() {
       });
       const data = await res.json();
       if (!data.success) {
+        const errorMessage = data.message?.includes('not registered as a member') 
+          ? t('selfVerification.emailNotRegistered')
+          : (data.message || t('selfVerification.failedToSendOtp'));
         sendOtpForm.setError("email", {
-          message: data.message || t('selfVerification.failedToSendOtp'),
+          message: errorMessage,
         });
         return;
       }
@@ -277,7 +280,7 @@ export default function MemberSelfVerificationPage() {
                 {t('selfVerification.otpVerificationTitle')}
               </CardTitle>
               <CardDescription>
-                {t('selfVerification.otpSentTo')} <span className="font-semibold">{currentEmail}</span>. {t('selfVerification.otpSentToContinue')}
+                <span className="font-semibold">{currentEmail}</span> {t('selfVerification.otpSentTo')} {t('selfVerification.otpSentToContinue')}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-2 sm:pt-4">
