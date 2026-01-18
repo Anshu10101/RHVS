@@ -29,14 +29,17 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'DESC';
 
-    console.log('Members API called with params:', {
-      page, limit, search, regNumber, status, state, district, department, sortBy, sortOrder
-    });
-    console.log('Admin scope:', {
-      isSuperAdmin: scope.isSuperAdmin,
-      isDistrictAdmin: scope.isDistrictAdmin,
-      districtName: scope.districtName
-    });
+    // Reduced logging for production - only log in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Members API called with params:', {
+        page, limit, search, regNumber, status, state, district, department, sortBy, sortOrder
+      });
+      console.log('Admin scope:', {
+        isSuperAdmin: scope.isSuperAdmin,
+        isDistrictAdmin: scope.isDistrictAdmin,
+        districtName: scope.districtName
+      });
+    }
 
     // Build WHERE clause
     const whereConditions = [];
@@ -74,29 +77,27 @@ export async function GET(request: NextRequest) {
 
     // State filter - convert ID to name
     if (state && state !== 'all') {
-      console.log('Filtering by state ID:', state);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Filtering by state ID:', state);
+      }
       const stateNameQuery = 'SELECT state_name_english FROM states WHERE id = ?';
       const stateNameResult = await executeQuery(stateNameQuery, [state]) as Array<{ state_name_english: string }>;
       if (stateNameResult.length > 0) {
-        console.log('State name found:', stateNameResult[0].state_name_english);
         whereConditions.push('m.state = ?');
         queryParams.push(stateNameResult[0].state_name_english);
-      } else {
-        console.log('No state found for ID:', state);
       }
     }
 
     // District filter - convert ID to name
     if (district && district !== 'all') {
-      console.log('Filtering by district ID:', district);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Filtering by district ID:', district);
+      }
       const districtNameQuery = 'SELECT district_name_english FROM districts WHERE district_code = ?';
       const districtNameResult = await executeQuery(districtNameQuery, [district]) as Array<{ district_name_english: string }>;
       if (districtNameResult.length > 0) {
-        console.log('District name found:', districtNameResult[0].district_name_english);
         whereConditions.push('m.district = ?');
         queryParams.push(districtNameResult[0].district_name_english);
-      } else {
-        console.log('No district found for ID:', district);
       }
     }
 
@@ -109,9 +110,12 @@ export async function GET(request: NextRequest) {
       queryParams.push(`%${department}%`);
     }
     
-    console.log('Final WHERE clause:', whereClause);
-    console.log('HAVING clause:', havingClause);
-    console.log('Query parameters:', queryParams);
+    // Only log query details in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Final WHERE clause:', whereClause);
+      console.log('HAVING clause:', havingClause);
+      console.log('Query parameters:', queryParams);
+    }
 
     // Build the main query with department assignments
     const offset = (page - 1) * limit;
@@ -196,7 +200,10 @@ export async function GET(request: NextRequest) {
     const total = countResult[0].total;
     const totalPages = Math.ceil(total / limit);
 
-    console.log('Members fetched:', members.length, 'Total:', total);
+    // Only log in development to reduce production log noise
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Members fetched:', members.length, 'Total:', total);
+    }
     
     return noCacheJsonResponse({
       success: true,

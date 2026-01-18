@@ -70,6 +70,81 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Cron] Found ${expiredAssignments.length} expired assignment(s) to clean up.`);
 
+    // Batch fetch all certificates for all expired assignments in a single query (fixes N+1)
+    const certificatesByAssignment = new Map<number, Array<{
+      id: number;
+      certificate_path: string | null;
+      id_card_path: string | null;
+    }>>();
+
+    if (expiredAssignments.length > 0) {
+      // Build WHERE conditions for all assignments using OR
+      const conditions: string[] = [];
+      const params: Array<string | number | null> = [];
+
+      for (const assignment of expiredAssignments) {
+        conditions.push(`(
+          member_id = ? AND
+          department_id = ? AND
+          post_id = ? AND
+          level = ? AND
+          (state <=> ?) AND
+          (district <=> ?)
+        )`);
+        params.push(
+          assignment.member_id,
+          assignment.department_id,
+          assignment.post_id,
+          assignment.level,
+          assignment.state,
+          assignment.district
+        );
+      }
+
+      const batchQuery = `
+        SELECT id, certificate_path, id_card_path, member_id, department_id, post_id, level, state, district
+        FROM certificates
+        WHERE ${conditions.join(' OR ')}
+      `;
+
+      const allCertificates = await executeQuery(batchQuery, params) as Array<{
+        id: number;
+        certificate_path: string | null;
+        id_card_path: string | null;
+        member_id: number;
+        department_id: number;
+        post_id: number;
+        level: string;
+        state: string | null;
+        district: string | null;
+      }>;
+
+      // Match certificates to assignments using a key-based approach
+      // Create keys for assignments for O(1) lookup
+      const assignmentKeys = new Map<string, number>();
+      for (const assignment of expiredAssignments) {
+        const key = `${assignment.member_id}-${assignment.department_id}-${assignment.post_id}-${assignment.level}-${assignment.state ?? 'NULL'}-${assignment.district ?? 'NULL'}`;
+        assignmentKeys.set(key, assignment.id);
+      }
+
+      // Group certificates by assignment
+      for (const cert of allCertificates) {
+        const key = `${cert.member_id}-${cert.department_id}-${cert.post_id}-${cert.level}-${cert.state ?? 'NULL'}-${cert.district ?? 'NULL'}`;
+        const assignmentId = assignmentKeys.get(key);
+        
+        if (assignmentId !== undefined) {
+          if (!certificatesByAssignment.has(assignmentId)) {
+            certificatesByAssignment.set(assignmentId, []);
+          }
+          certificatesByAssignment.get(assignmentId)!.push({
+            id: cert.id,
+            certificate_path: cert.certificate_path,
+            id_card_path: cert.id_card_path
+          });
+        }
+      }
+    }
+
     let deletedCount = 0;
     let errorCount = 0;
     const errors: Array<{ assignment_id: number; error: string }> = [];
@@ -78,28 +153,8 @@ export async function GET(request: NextRequest) {
       try {
         console.log(`[Cron] Processing expired assignment ID ${assignment.id} (Member: ${assignment.member_name}, Expired: ${assignment.valid_until})`);
 
-        // Find related certificates for this assignment
-        const certificates = await executeQuery(`
-          SELECT id, certificate_path, id_card_path
-          FROM certificates
-          WHERE member_id = ?
-            AND department_id = ?
-            AND post_id = ?
-            AND level = ?
-            AND (state <=> ?)
-            AND (district <=> ?)
-        `, [
-          assignment.member_id,
-          assignment.department_id,
-          assignment.post_id,
-          assignment.level,
-          assignment.state,
-          assignment.district
-        ]) as Array<{
-          id: number;
-          certificate_path: string | null;
-          id_card_path: string | null;
-        }>;
+        // Get certificates for this assignment (already fetched in batch)
+        const certificates = certificatesByAssignment.get(assignment.id) || [];
 
         console.log(`[Cron] Found ${certificates.length} related certificate(s) for assignment ${assignment.id}`);
 

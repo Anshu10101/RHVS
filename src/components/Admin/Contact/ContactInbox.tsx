@@ -172,11 +172,15 @@ export function ContactInbox() {
         ? localStorage.getItem("admin_token")
         : null;
 
+      // Add cache-busting timestamp to prevent caching
+      params.set("_t", String(Date.now()));
+
       const res = await fetch(`/api/admin/contact/messages?${params.toString()}`, {
         cache: "no-store",
         headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
           Pragma: "no-cache",
+          Expires: "0",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
@@ -316,8 +320,12 @@ export function ContactInbox() {
           : null;
       const res = await fetch("/api/admin/contact/messages", {
         method: "PATCH",
+        cache: "no-store",
         headers: {
           "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+          Expires: "0",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ action, ids: bulkSelection }),
@@ -328,7 +336,9 @@ export function ContactInbox() {
       }
 
       if (action === "delete") {
-        // Reload messages after deletion to ensure UI is in sync
+        // Force immediate reload with cache-busting after deletion
+        // Small delay to ensure DB transaction is committed
+        await new Promise(resolve => setTimeout(resolve, 100));
         await loadMessages(pagination?.page || 1);
       } else {
         setMessages((prev) =>

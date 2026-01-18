@@ -404,102 +404,71 @@ export async function POST(request: NextRequest) {
         ['verified', scope.adminId, tokenData.id]
       );
 
-      // Generate membership certificate
-      let certificatePath = null;
-      let certificateNumber = null;
-      let certificateRecordId: number | null = null;
-      
+      // Queue PDF generation and email sending (async, non-blocking)
+      // This allows rapid verifications without blocking
+      // Use internal API call to avoid importing Bull in this route (prevents Turbopack bundling)
       try {
-        console.log('Generating membership certificate for:', memberRegNumber);
-        const certificateResult = await generateCertificate({
-          memberId: memberId,
-          memberName: tokenData.name,
-          memberRegNumber: memberRegNumber,
-          registrationDate: tokenData.registration_date,
-          profilePhotoPath: memberProfilePath || undefined,
-          language: languagePreference
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 
+                       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+        const queueResponse = await fetch(`${baseUrl}/api/admin/queue-member-verification`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            memberId,
+            memberName: tokenData.name,
+            memberRegNumber,
+            email: tokenData.email,
+            registrationDate: tokenData.registration_date,
+            profilePhotoPath: memberProfilePath || undefined,
+            address: tokenData.address,
+            language: languagePreference,
+            state: tokenData.state,
+            district: tokenData.district,
+            adminId: scope.adminId || undefined,
+          }),
         });
         
-        certificatePath = certificateResult.certificatePath;
-        certificateNumber = certificateResult.certificateNumber;
-        
-        console.log('✅ Certificate generated:', certificateNumber, certificatePath);
-        
-        // Store certificate info in database
-        const certificateQuery = `
-          INSERT INTO member_certificates (member_id, certificate_number, certificate_path, generated_by_admin_id)
-          VALUES (?, ?, ?, ?)
-        `;
-        
-        const certificateInsertResult = await executeQuery(certificateQuery, [
-          memberId,
-          certificateNumber,
-          certificatePath,
-          scope.adminId
-        ]) as { insertId: number };
-        
-        certificateRecordId = certificateInsertResult.insertId ?? null;
-        
-        console.log('✅ Certificate record saved to database');
-      } catch (error) {
-        console.error('❌ Error generating certificate:', error);
-        // Continue without certificate - don't fail the registration
-      }
-
-      // Generate ID card
-      let idCardPath = null;
-      
-      try {
-        console.log('Generating ID card for:', memberRegNumber);
-        const idCardResult = await generateIDCard({
-          memberId: memberId,
-          memberName: tokenData.name,
-          memberRegNumber: memberRegNumber,
-          profilePhotoPath: memberProfilePath || undefined,
-          address: tokenData.address,
-          designation: 'Member',
-          cardType: 'membership',
-          language: languagePreference
-        });
-        
-        idCardPath = idCardResult.idCardPath;
-        
-        console.log('✅ ID card generated:', idCardPath);
-      } catch (error) {
-        console.error('❌ Error generating ID card:', error);
-        // Continue without ID card - don't fail the registration
-      }
-
-      // Send welcome email with certificate and ID card
-      try {
-        console.log('Sending welcome email to:', tokenData.email, 'with certificate:', certificatePath, 'and ID card:', idCardPath);
-        const welcomeEmailResult = await sendWelcomeEmail(
-          tokenData.email,
-          tokenData.name,
-          memberRegNumber,
-          certificatePath || undefined,
-          idCardPath || undefined,
-          languagePreference
-        );
-        
-        if (welcomeEmailResult?.success) {
-          console.log('✅ Welcome email sent successfully');
+        if (queueResponse.ok) {
+          console.log('✅ Queued PDF generation and email for:', memberRegNumber);
         } else {
-          console.error('❌ Welcome email failed:', welcomeEmailResult?.error);
+          throw new Error('Queue API failed');
         }
-        
-        if (
-          !retainCertificateFiles &&
-          welcomeEmailResult?.success &&
-          certificateRecordId
-        ) {
-          await executeQuery(
-            'UPDATE member_certificates SET certificate_path = NULL WHERE id = ?',
-            [certificateRecordId]
+      } catch (queueError) {
+        console.error('❌ Error queueing member verification (falling back to sync):', queueError);
+        // Fallback to synchronous processing if queue fails
+        try {
+          const certificateResult = await generateCertificate({
+            memberId: memberId,
+            memberName: tokenData.name,
+            memberRegNumber: memberRegNumber,
+            registrationDate: tokenData.registration_date,
+            profilePhotoPath: memberProfilePath || undefined,
+            language: languagePreference
+          });
+          
+          const idCardResult = await generateIDCard({
+            memberId: memberId,
+            memberName: tokenData.name,
+            memberRegNumber: memberRegNumber,
+            profilePhotoPath: memberProfilePath || undefined,
+            address: tokenData.address,
+            designation: 'Member',
+            cardType: 'membership',
+            language: languagePreference
+          });
+          
+          await sendWelcomeEmail(
+            tokenData.email,
+            tokenData.name,
+            memberRegNumber,
+            certificateResult.certificatePath || undefined,
+            idCardResult.idCardPath || undefined,
+            languagePreference
           );
+        } catch (syncError) {
+          console.error('❌ Sync fallback also failed:', syncError);
+          // Don't fail verification if PDF/email fails
         }
-      } catch (error) {
-        console.error('❌ Error sending welcome email:', error);
       }
 
       // Log the admin action
@@ -565,12 +534,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        message: 'Member registered successfully',
+        message: 'Member registered successfully. PDF generation and email are being processed in the background.',
         memberId: memberId,
         memberRegNumber: memberRegNumber,
-        certificatePath: certificatePath,
-        certificateNumber: certificateNumber,
-        idCardPath: idCardPath
+        queued: true, // Indicates PDF/email are queued
       });
     }
 

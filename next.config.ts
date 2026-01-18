@@ -37,6 +37,31 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
+  // Mark Bull and ioredis as external to prevent bundling (they're Node.js-only)
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      if (Array.isArray(config.externals)) {
+        config.externals.push('bull', 'ioredis');
+      } else {
+        const existingExternals = config.externals;
+        config.externals = [
+          existingExternals,
+          (context: any, request: string, callback: any) => {
+            if (request === 'bull' || request === 'ioredis') {
+              return callback(null, `commonjs ${request}`);
+            }
+            if (typeof existingExternals === 'function') {
+              existingExternals(context, request, callback);
+            } else {
+              callback();
+            }
+          },
+        ];
+      }
+    }
+    return config;
+  },
   // Security headers
   async headers() {
     return [

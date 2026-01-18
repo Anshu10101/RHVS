@@ -166,24 +166,21 @@ export function TokenVerification() {
     }
   }, [currentPage, searchTerm, selectedStatus]);
 
-  // Load data on component mount and when filters change
+  // Load data on component mount and when filters/page change
   useEffect(() => {
     fetchTokens();
   }, [fetchTokens]);
 
 
-  // Handle search with debounce
+  // Handle search with debounce - reset to page 1 when search/filter changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      } else {
-        fetchTokens();
-      }
+      // Reset to page 1 when search term or status filter changes
+      setCurrentPage(1);
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, currentPage, fetchTokens]);
+  }, [searchTerm, selectedStatus]); // Only trigger when search/filter changes, not when page changes
 
   const handleQuickVerify = async (dbToken: string) => {
     try {
