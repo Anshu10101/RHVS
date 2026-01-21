@@ -25,20 +25,26 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Get user ID from claims.sub (JWT standard subject claim)
+    const userId = claims.sub ? Number(claims.sub) : null;
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
     // Update based on user type
     if (claims.type === 'superadmin') {
       await executeQuery(
-        `UPDATE superadmins 
-         SET name = ?, email = ?, phone = ?, updated_at = NOW()
+        `UPDATE superadmin 
+         SET name = ?, email = ?, updated_at = NOW()
          WHERE id = ?`,
-        [name, email, phone || null, claims.userId]
+        [name, email, userId]
       );
     } else if (claims.type === 'district_admin') {
       await executeQuery(
         `UPDATE district_admins 
          SET name = ?, email = ?, phone = ?, updated_at = NOW()
          WHERE id = ?`,
-        [name, email, phone || null, claims.userId]
+        [name, email, phone || null, userId]
       );
     } else {
       return NextResponse.json({ error: 'Invalid user type' }, { status: 400 });

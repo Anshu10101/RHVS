@@ -6862,6 +6862,129 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'हस्ताक्षर जोड़ें',
     en: 'Add Sign'
   },
+  'admin.sidebar.emailQueue': {
+    hi: 'ईमेल कतार',
+    en: 'Email Queue'
+  },
+  
+  // Email Queue Page
+  'admin.emailQueue.title': {
+    hi: 'ईमेल कतार मॉनिटर',
+    en: 'Email Queue Monitor'
+  },
+  'admin.emailQueue.subtitle': {
+    hi: 'ईमेल डिलीवरी कतार की निगरानी और प्रबंधन करें',
+    en: 'Monitor and manage email delivery queue'
+  },
+  'admin.emailQueue.refresh': {
+    hi: 'रिफ्रेश',
+    en: 'Refresh'
+  },
+  'admin.emailQueue.processNow': {
+    hi: 'अभी प्रोसेस करें',
+    en: 'Process Queue Now'
+  },
+  'admin.emailQueue.statistics': {
+    hi: 'आँकड़े',
+    en: 'Statistics'
+  },
+  'admin.emailQueue.failedEmails': {
+    hi: 'विफल ईमेल',
+    en: 'Failed Emails'
+  },
+  'admin.emailQueue.pendingRetries': {
+    hi: 'लंबित पुनर्प्रयास',
+    en: 'Pending Retries'
+  },
+  'admin.emailQueue.totalEmails': {
+    hi: 'कुल ईमेल (7 दिन)',
+    en: 'Total Emails (7 days)'
+  },
+  'admin.emailQueue.avgRetries': {
+    hi: 'औसत पुनर्प्रयास',
+    en: 'Avg retries'
+  },
+  'admin.emailQueue.failedAttention': {
+    hi: 'ध्यान देने योग्य विफल ईमेल',
+    en: 'Failed Emails Requiring Attention'
+  },
+  'admin.emailQueue.noFailedEmails': {
+    hi: 'कोई विफल ईमेल नहीं! सब कुछ सफलतापूर्वक डिलीवर हो रहा है।',
+    en: 'No failed emails! Everything is being delivered successfully.'
+  },
+  'admin.emailQueue.noPendingRetries': {
+    hi: 'इस समय कोई लंबित पुनर्प्रयास नहीं है।',
+    en: 'No pending retries at the moment.'
+  },
+  'admin.emailQueue.type': {
+    hi: 'प्रकार',
+    en: 'Type'
+  },
+  'admin.emailQueue.retries': {
+    hi: 'पुनर्प्रयास',
+    en: 'Retries'
+  },
+  'admin.emailQueue.attempt': {
+    hi: 'प्रयास',
+    en: 'Attempt'
+  },
+  'admin.emailQueue.error': {
+    hi: 'त्रुटि',
+    en: 'Error'
+  },
+  'admin.emailQueue.previousError': {
+    hi: 'पिछली त्रुटि',
+    en: 'Previous error'
+  },
+  'admin.emailQueue.created': {
+    hi: 'बनाया गया',
+    en: 'Created'
+  },
+  'admin.emailQueue.lastAttempt': {
+    hi: 'अंतिम प्रयास',
+    en: 'Last attempt'
+  },
+  'admin.emailQueue.retryNow': {
+    hi: 'अभी पुनः प्रयास करें',
+    en: 'Retry Now'
+  },
+  'admin.emailQueue.cancel': {
+    hi: 'रद्द करें',
+    en: 'Cancel'
+  },
+  'admin.emailQueue.nextRetryIn': {
+    hi: 'अगला पुनर्प्रयास',
+    en: 'Next retry in'
+  },
+  'admin.emailQueue.minutes': {
+    hi: 'मिनट में',
+    en: 'minutes'
+  },
+  'admin.emailQueue.readyForRetry': {
+    hi: 'पुनः प्रयास के लिए तैयार',
+    en: 'Ready for retry now'
+  },
+  'admin.emailQueue.status.sent': {
+    hi: 'भेजा गया',
+    en: 'Sent'
+  },
+  'admin.emailQueue.status.pending': {
+    hi: 'लंबित',
+    en: 'Pending'
+  },
+  'admin.emailQueue.status.processing': {
+    hi: 'प्रोसेसिंग',
+    en: 'Processing'
+  },
+  'admin.emailQueue.status.failed': {
+    hi: 'विफल',
+    en: 'Failed'
+  },
+  'admin.emailQueue.status.cancelled': {
+    hi: 'रद्द',
+    en: 'Cancelled'
+  },
+
   'admin.sidebar.analytics': {
     hi: 'विश्लेषण',
     en: 'Analytics'
@@ -8993,6 +9116,38 @@ export const translations: Record<string, Record<Language, string>> = {
   'admin.settings.failedToSavePreferences': {
     hi: 'प्राथमिकताएं सहेजने में विफल',
     en: 'Failed to save preferences'
+  },
+  'admin.settings.settingUpdated': {
+    hi: 'सेटिंग सफलतापूर्वक अपडेट की गई',
+    en: 'Setting updated successfully'
+  },
+  'admin.settings.emailSettings': {
+    hi: 'ईमेल सूचना सेटिंग्स',
+    en: 'Email Notification Settings'
+  },
+  'admin.settings.emailSettingsDesc': {
+    hi: 'नियंत्रित करें कि सदस्यों को कौन सी स्वचालित ईमेल भेजी जाएं',
+    en: 'Control which automated emails are sent to members'
+  },
+  'admin.settings.sendRemovalEmail': {
+    hi: 'पद हटाने की सूचना',
+    en: 'Post Removal Notification'
+  },
+  'admin.settings.sendRemovalEmailDesc': {
+    hi: 'जब किसी सदस्य को पद से हटाया जाए तो ईमेल भेजें',
+    en: 'Send email when a member is removed from a post'
+  },
+  'admin.settings.sendAppointmentEmail': {
+    hi: 'पद नियुक्ति सूचना',
+    en: 'Post Appointment Notification'
+  },
+  'admin.settings.sendAppointmentEmailDesc': {
+    hi: 'जब किसी सदस्य को पद पर नियुक्त किया जाए तो ईमेल भेजें',
+    en: 'Send email when a member is appointed to a post'
+  },
+  'admin.settings.emailSettingsNote': {
+    hi: 'नोट: जब बंद किया जाता है, तो सदस्यों को संबंधित कार्रवाई के लिए ईमेल सूचनाएं प्राप्त नहीं होंगी। गोपनीय निष्कासन के लिए इसका उपयोग करें।',
+    en: 'Note: When turned OFF, members will NOT receive email notifications for the respective action. Use this for confidential removals.'
   },
 
   // Analytics page

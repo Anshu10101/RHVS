@@ -37,6 +37,7 @@ import {
   Phone,
   BookOpen,
   KeyRound,
+  Mail,
 } from 'lucide-react';
 
 interface AdminSidebarProps {
@@ -214,6 +215,12 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           name: t('admin.sidebar.addSign'),
           href: '/admin/certificates/signs',
           icon: FileText,
+          roles: ['superadmin'],
+        },
+        {
+          name: t('admin.sidebar.emailQueue'),
+          href: '/admin/email-queue',
+          icon: Mail,
           roles: ['superadmin'],
         },
       ],
@@ -442,7 +449,7 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto flex flex-col">
             {filteredItems.map((item) => {
               const isActive = pathname === item.href;
               const hasChildren = item.children && item.children.length > 0;
@@ -563,32 +570,32 @@ export function AdminSidebar({ isOpen, onClose }: AdminSidebarProps) {
                 </div>
               );
             })}
-          </nav>
 
-          {/* Footer */}
-          <div className="px-4 py-4 border-t border-gray-200 space-y-2 mt-auto flex-shrink-0">
-            {/* Help Guide Link */}
-            <Link
-              href="/admin/help"
-              className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
-              onClick={onClose}
-            >
-              <BookOpen className="h-5 w-5" />
-              <span>{t('admin.sidebar.helpGuide')}</span>
-            </Link>
-            
-            {/* Language Toggle */}
-            <LanguageSwitcher variant="sidebar" />
-            
-            {/* Logout Button */}
-            <button
-              onClick={logout}
-              className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
-            >
-              <LogOut className="h-5 w-5" />
-              <span>{t('admin.sidebar.logout')}</span>
-            </button>
-          </div>
+            {/* Quick Actions - Inside nav, right after menu items */}
+            <div className="pt-4 mt-4 border-t border-gray-200 space-y-1">
+              {/* Help Guide Link */}
+              <Link
+                href="/admin/help"
+                className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                onClick={onClose}
+              >
+                <BookOpen className="h-5 w-5" />
+                <span>{t('admin.sidebar.helpGuide')}</span>
+              </Link>
+              
+              {/* Language Toggle */}
+              <LanguageSwitcher variant="sidebar" />
+              
+              {/* Logout Button */}
+              <button
+                onClick={logout}
+                className="flex w-full items-center space-x-3 px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>{t('admin.sidebar.logout')}</span>
+              </button>
+            </div>
+          </nav>
         </div>
       </div>
     </>

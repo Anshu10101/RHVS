@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { 
   RefreshCw, 
   Mail, 
@@ -39,6 +40,7 @@ interface QueueItem {
 }
 
 export default function EmailQueuePage() {
+  const { t } = useLanguage();
   const [stats, setStats] = useState<EmailQueueStats | null>(null);
   const [failedEmails, setFailedEmails] = useState<QueueItem[]>([]);
   const [pendingEmails, setPendingEmails] = useState<QueueItem[]>([]);
@@ -240,17 +242,17 @@ export default function EmailQueuePage() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Email Queue Monitor</h1>
-          <p className="text-muted-foreground">Monitor and manage email delivery queue</p>
+          <h1 className="text-3xl font-bold">{t('admin.emailQueue.title')}</h1>
+          <p className="text-muted-foreground">{t('admin.emailQueue.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button onClick={fetchData} disabled={loading} variant="outline">
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('admin.emailQueue.refresh')}
           </Button>
           <Button onClick={processQueue} disabled={processing}>
             <Play className={`h-4 w-4 mr-2 ${processing ? 'animate-pulse' : ''}`} />
-            Process Queue Now
+            {t('admin.emailQueue.processNow')}
           </Button>
         </div>
       </div>
@@ -265,7 +267,7 @@ export default function EmailQueuePage() {
           }`}
           onClick={() => setActiveTab('stats')}
         >
-          Statistics
+          {t('admin.emailQueue.statistics')}
         </button>
         <button
           className={`px-4 py-2 font-medium ${
@@ -275,7 +277,7 @@ export default function EmailQueuePage() {
           }`}
           onClick={() => setActiveTab('failed')}
         >
-          Failed Emails ({failedEmails.length})
+          {t('admin.emailQueue.failedEmails')} ({failedEmails.length})
         </button>
         <button
           className={`px-4 py-2 font-medium ${
@@ -285,7 +287,7 @@ export default function EmailQueuePage() {
           }`}
           onClick={() => setActiveTab('pending')}
         >
-          Pending Retries ({pendingEmails.length})
+          {t('admin.emailQueue.pendingRetries')} ({pendingEmails.length})
         </button>
       </div>
 
@@ -294,7 +296,7 @@ export default function EmailQueuePage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Emails (7 days)</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('admin.emailQueue.totalEmails')}</CardTitle>
               <Mail className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -305,13 +307,13 @@ export default function EmailQueuePage() {
           {Object.entries(stats.byStatus).map(([status, data]) => (
             <Card key={status}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium capitalize">{status}</CardTitle>
+                <CardTitle className="text-sm font-medium capitalize">{t(`admin.emailQueue.status.${status}`) || status}</CardTitle>
                 {getStatusBadge(status)}
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{data.count}</div>
                 <p className="text-xs text-muted-foreground">
-                  Avg retries: {data.avgRetries}
+                  {t('admin.emailQueue.avgRetries')}: {data.avgRetries}
                 </p>
               </CardContent>
             </Card>
@@ -323,13 +325,13 @@ export default function EmailQueuePage() {
       {activeTab === 'failed' && (
         <Card>
           <CardHeader>
-            <CardTitle>Failed Emails Requiring Attention</CardTitle>
+            <CardTitle>{t('admin.emailQueue.failedAttention')}</CardTitle>
           </CardHeader>
           <CardContent>
             {failedEmails.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 text-green-500" />
-                <p>No failed emails! Everything is being delivered successfully.</p>
+                <p>{t('admin.emailQueue.noFailedEmails')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -340,7 +342,7 @@ export default function EmailQueuePage() {
                         <div className="font-medium">{email.recipient_name || email.recipient_email}</div>
                         <div className="text-sm text-muted-foreground">{email.recipient_email}</div>
                         <div className="text-xs text-muted-foreground mt-1">
-                          Type: {email.email_type} • Retries: {email.retry_count}/{email.max_retries}
+                          {t('admin.emailQueue.type')}: {email.email_type} • {t('admin.emailQueue.retries')}: {email.retry_count}/{email.max_retries}
                         </div>
                       </div>
                       {getStatusBadge(email.status)}
@@ -348,23 +350,23 @@ export default function EmailQueuePage() {
                     
                     {email.last_error && (
                       <div className="bg-destructive/10 text-destructive text-sm p-2 rounded">
-                        <strong>Error:</strong> {email.last_error}
+                        <strong>{t('admin.emailQueue.error')}:</strong> {email.last_error}
                       </div>
                     )}
                     
                     <div className="text-xs text-muted-foreground">
-                      Created: {formatDate(email.created_at)} • 
-                      Last attempt: {formatDate(email.last_attempt_at)}
+                      {t('admin.emailQueue.created')}: {formatDate(email.created_at)} • 
+                      {t('admin.emailQueue.lastAttempt')}: {formatDate(email.last_attempt_at)}
                     </div>
                     
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => retryEmail(email.id)}>
                         <RefreshCw className="h-3 w-3 mr-1" />
-                        Retry Now
+                        {t('admin.emailQueue.retryNow')}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => cancelEmail(email.id)}>
                         <X className="h-3 w-3 mr-1" />
-                        Cancel
+                        {t('admin.emailQueue.cancel')}
                       </Button>
                     </div>
                   </div>
@@ -379,13 +381,13 @@ export default function EmailQueuePage() {
       {activeTab === 'pending' && (
         <Card>
           <CardHeader>
-            <CardTitle>Pending Retries</CardTitle>
+            <CardTitle>{t('admin.emailQueue.pendingRetries')}</CardTitle>
           </CardHeader>
           <CardContent>
             {pendingEmails.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="h-12 w-12 mx-auto mb-2" />
-                <p>No pending retries at the moment.</p>
+                <p>{t('admin.emailQueue.noPendingRetries')}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -398,7 +400,7 @@ export default function EmailQueuePage() {
                           <div className="font-medium">{email.recipient_name || email.recipient_email}</div>
                           <div className="text-sm text-muted-foreground">{email.recipient_email}</div>
                           <div className="text-xs text-muted-foreground mt-1">
-                            Type: {email.email_type} • Attempt: {email.retry_count + 1}/{email.max_retries}
+                            {t('admin.emailQueue.type')}: {email.email_type} • {t('admin.emailQueue.attempt')}: {email.retry_count + 1}/{email.max_retries}
                           </div>
                         </div>
                         {getStatusBadge(email.status)}
@@ -408,26 +410,26 @@ export default function EmailQueuePage() {
                         {minutesUntilRetry !== null && (
                           <div className="text-muted-foreground">
                             {minutesUntilRetry > 0 
-                              ? `Next retry in ${minutesUntilRetry} minutes` 
-                              : 'Ready for retry now'}
+                              ? `${t('admin.emailQueue.nextRetryIn')} ${minutesUntilRetry} ${t('admin.emailQueue.minutes')}` 
+                              : t('admin.emailQueue.readyForRetry')}
                           </div>
                         )}
                       </div>
                       
                       {email.last_error && (
                         <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 text-sm p-2 rounded">
-                          <strong>Previous error:</strong> {email.last_error}
+                          <strong>{t('admin.emailQueue.previousError')}:</strong> {email.last_error}
                         </div>
                       )}
                       
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => retryEmail(email.id)}>
                           <RefreshCw className="h-3 w-3 mr-1" />
-                          Retry Now
+                          {t('admin.emailQueue.retryNow')}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => cancelEmail(email.id)}>
                           <X className="h-3 w-3 mr-1" />
-                          Cancel
+                          {t('admin.emailQueue.cancel')}
                         </Button>
                       </div>
                     </div>

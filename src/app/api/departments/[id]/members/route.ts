@@ -672,7 +672,12 @@ export async function POST(
             certificateNumber, appointmentDate, scope.adminId, certificatePath, appointmentIdCardPath
           ]) as { insertId: number };
 
-          // Send email
+          // Check if appointment email notifications are enabled
+          const { isAppointmentEmailEnabled } = await import('@/lib/system-settings');
+          const sendAppointmentEmails = await isAppointmentEmailEnabled();
+
+          // Send email (if enabled)
+          if (sendAppointmentEmails) {
           try {
             // Validate email address before sending
             const memberEmail = member[0].email?.trim();
@@ -836,6 +841,15 @@ export async function POST(
                 console.error('❌ [Email] Failed to update certificate email status:', updateError);
               }
             }
+          }
+          } else {
+            console.log('[Email] Appointment email notifications are disabled in system settings');
+            // Update certificate status to indicate email was skipped
+            await executeQuery(`
+              UPDATE certificates 
+              SET email_status = 'skipped', status = 'generated'
+              WHERE id = ?
+            `, [certResult.insertId]);
           }
 
           console.log('✅ Certificate generated automatically:', certResult.insertId);

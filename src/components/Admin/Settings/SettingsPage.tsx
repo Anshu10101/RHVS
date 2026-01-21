@@ -59,6 +59,12 @@ export function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [systemNotifications, setSystemNotifications] = useState(true);
   
+  // System Settings (superadmin only)
+  const [sendRemovalEmail, setSendRemovalEmail] = useState(true);
+  const [sendAppointmentEmail, setSendAppointmentEmail] = useState(true);
+  const [systemSettingsLoading, setSystemSettingsLoading] = useState(false);
+  const [savingSystemSettings, setSavingSystemSettings] = useState(false);
+  
   // System info
   const [systemInfo, setSystemInfo] = useState<{
     totalMembers: number;
@@ -74,6 +80,11 @@ export function SettingsPage() {
       setProfileEmail(currentUser.email || '');
       // Load additional profile data if available
       fetchSystemInfo();
+      
+      // Load system settings for superadmin
+      if (currentUser.type === 'superadmin') {
+        fetchSystemSettings();
+      }
     }
   }, [currentUser]);
 
@@ -89,6 +100,75 @@ export function SettingsPage() {
       }
     } catch (error) {
       console.error('Error fetching system info:', error);
+    }
+  };
+
+  const fetchSystemSettings = async () => {
+    setSystemSettingsLoading(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/settings/system', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
+      const data = await response.json();
+      if (data.success && data.data) {
+        if (data.data.send_removal_email !== undefined) {
+          setSendRemovalEmail(data.data.send_removal_email.value);
+        }
+        if (data.data.send_appointment_email !== undefined) {
+          setSendAppointmentEmail(data.data.send_appointment_email.value);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching system settings:', error);
+    } finally {
+      setSystemSettingsLoading(false);
+    }
+  };
+
+  const handleUpdateSystemSetting = async (key: string, value: boolean) => {
+    setSavingSystemSettings(true);
+    try {
+      const token = localStorage.getItem('admin_token');
+      const response = await fetch('/api/admin/settings/system', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ key, value }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: t('admin.settings.success') || 'Success',
+          description: t('admin.settings.settingUpdated') || 'Setting updated successfully',
+        });
+        
+        // Update local state
+        if (key === 'send_removal_email') {
+          setSendRemovalEmail(value);
+        } else if (key === 'send_appointment_email') {
+          setSendAppointmentEmail(value);
+        }
+      } else {
+        throw new Error(data.error || 'Failed to update setting');
+      }
+    } catch (error) {
+      toast({
+        title: t('admin.settings.error') || 'Error',
+        description: error instanceof Error ? error.message : t('admin.settings.failedToUpdate') || 'Failed to update setting',
+        variant: 'destructive',
+      });
+      // Revert the toggle
+      if (key === 'send_removal_email') {
+        setSendRemovalEmail(!value);
+      } else if (key === 'send_appointment_email') {
+        setSendAppointmentEmail(!value);
+      }
+    } finally {
+      setSavingSystemSettings(false);
     }
   };
 
@@ -287,17 +367,6 @@ export function SettingsPage() {
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="phone" className="text-sm">{t('admin.settings.phone') || 'Phone Number'}</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={profilePhone}
-                  onChange={(e) => setProfilePhone(e.target.value)}
-                  placeholder={t('admin.settings.phonePlaceholder') || 'Enter your phone number'}
-                  className="mt-1"
-                />
-              </div>
               <div className="flex justify-end pt-2">
                 <Button onClick={handleUpdateProfile} disabled={saving}>
                   {saving ? (
@@ -457,6 +526,69 @@ export function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Email Notification Settings - Superadmin Only */}
+          {currentUser.type === 'superadmin' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base md:text-lg flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-orange-600" />
+                  {t('admin.settings.emailSettings') || 'Email Notification Settings'}
+                </CardTitle>
+                <CardDescription>
+                  {t('admin.settings.emailSettingsDesc') || 'Control which automated emails are sent to members'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {systemSettingsLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="sendRemovalEmail" className="text-sm">
+                          {t('admin.settings.sendRemovalEmail') || 'Post Removal Notification'}
+                        </Label>
+                        <p className="text-xs text-gray-500">
+                          {t('admin.settings.sendRemovalEmailDesc') || 'Send email when a member is removed from a post (पद हटाने पर ईमेल भेजें)'}
+                        </p>
+                      </div>
+                      <Switch
+                        id="sendRemovalEmail"
+                        checked={sendRemovalEmail}
+                        disabled={savingSystemSettings}
+                        onCheckedChange={(checked) => handleUpdateSystemSetting('send_removal_email', checked)}
+                      />
+                    </div>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="sendAppointmentEmail" className="text-sm">
+                          {t('admin.settings.sendAppointmentEmail') || 'Post Appointment Notification'}
+                        </Label>
+                        <p className="text-xs text-gray-500">
+                          {t('admin.settings.sendAppointmentEmailDesc') || 'Send email when a member is appointed to a post (पद नियुक्ति पर ईमेल भेजें)'}
+                        </p>
+                      </div>
+                      <Switch
+                        id="sendAppointmentEmail"
+                        checked={sendAppointmentEmail}
+                        disabled={savingSystemSettings}
+                        onCheckedChange={(checked) => handleUpdateSystemSetting('send_appointment_email', checked)}
+                      />
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-2">
+                      <p className="text-xs text-amber-800">
+                        {t('admin.settings.emailSettingsNote')}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}

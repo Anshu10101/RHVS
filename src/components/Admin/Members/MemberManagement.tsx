@@ -790,13 +790,13 @@ export function MemberManagement() {
                   <tr key={member.id} className="hover:bg-gray-50">
                     <td className="px-4 xl:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden relative">
                           {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
                               src={`${getValidImageUrl(member.profile_photo_path)!}?_t=${member.updated_at || Date.now()}`}
                               alt={member.name}
-                              width={40}
-                              height={40}
+                              fill
+                              sizes="40px"
                               className="rounded-full object-cover"
                               key={`list-photo-${member.id}-${member.updated_at}`}
                               onError={(e) => {
@@ -981,13 +981,13 @@ export function MemberManagement() {
                     {/* Member Info */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3 min-w-0 flex-1">
-                        <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <div className="h-12 w-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden relative">
                           {isValidImageUrl(member.profile_photo_path) ? (
                             <Image
                               src={`${getValidImageUrl(member.profile_photo_path)!}?_t=${member.updated_at || Date.now()}`}
                               alt={member.name}
-                              width={48}
-                              height={48}
+                              fill
+                              sizes="48px"
                               className="rounded-full object-cover"
                               key={`card-photo-${member.id}-${member.updated_at}`}
                               onError={(e) => {
@@ -1372,8 +1372,8 @@ export function MemberManagement() {
                         <Image
                           src={`${getValidImageUrl(editingMember.profile_photo_path)!}?_t=${Date.now()}`}
                           alt={editingMember.name}
-                          width={96}
-                          height={96}
+                          fill
+                          sizes="96px"
                           className="rounded-full object-cover"
                           key={`edit-photo-${editingMember.id}-${editingMember.updated_at}`}
                         />
@@ -1556,13 +1556,13 @@ export function MemberManagement() {
           {selectedMember && (
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
-                <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center">
+                <div className="h-16 w-16 bg-orange-100 rounded-full flex items-center justify-center overflow-hidden relative">
                   {isValidImageUrl(selectedMember.profile_photo_path) ? (
                     <Image
                       src={`${getValidImageUrl(selectedMember.profile_photo_path)!}?_t=${selectedMember.updated_at || Date.now()}`}
                       alt={selectedMember.name}
-                      width={64}
-                      height={64}
+                      fill
+                      sizes="64px"
                       className="rounded-full object-cover"
                       key={`details-photo-${selectedMember.id}-${selectedMember.updated_at}`}
                       onError={(e) => {

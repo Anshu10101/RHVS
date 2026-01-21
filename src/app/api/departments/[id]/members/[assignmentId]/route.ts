@@ -104,7 +104,12 @@ export async function DELETE(
       [assignmentId, departmentId]
     );
 
-    // Send removal notification email
+    // Check if removal email notifications are enabled
+    const { isRemovalEmailEnabled } = await import('@/lib/system-settings');
+    const sendRemovalEmails = await isRemovalEmailEnabled();
+
+    // Send removal notification email (if enabled)
+    if (sendRemovalEmails) {
     try {
       // Get member and assignment details for email
       const memberDetails = await executeQuery(
@@ -212,6 +217,9 @@ export async function DELETE(
     } catch (emailError) {
       console.error('[Removal] Error sending removal notification (non-fatal):', emailError);
       // Don't fail the removal if email fails
+    }
+    } else {
+      console.log('[Removal] Removal email notifications are disabled in system settings');
     }
 
     return NextResponse.json({
