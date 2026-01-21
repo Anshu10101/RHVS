@@ -155,7 +155,7 @@ export async function DELETE(
           const { sendRemovalEmail } = await import('@/lib/email-service');
           
           const removalEmailData = {
-            to: member.email,
+            to: member.email!, // Already validated above that email exists
             memberName: member.name,
             memberRegNumber: member.member_reg_number,
             departmentName: languagePreference === 'hi'
@@ -188,7 +188,7 @@ export async function DELETE(
             
             const { addToEmailQueue } = await import('@/lib/email-queue');
             const queueId = await addToEmailQueue({
-              recipient_email: member.email,
+              recipient_email: member.email!,
               recipient_name: member.name,
               email_type: 'removal_notification',
               email_subject: languagePreference === 'en'
