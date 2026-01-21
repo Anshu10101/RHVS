@@ -3,6 +3,8 @@ import { executeQuery } from '@/lib/database';
 import { getAdminScope } from '@/lib/admin-scope';
 import { z } from 'zod';
 import { noCacheJsonResponse } from '@/lib/api-helpers';
+import fs from 'fs';
+import path from 'path';
 
 // Schema for assigning a member to a post
 const assignMemberSchema = z.object({
@@ -388,7 +390,9 @@ export async function POST(
     }
 
     // Check if member belongs to the specified state/district
-    if (level === 'state' || level === 'district' || level === 'divisional') {
+    // Skip this validation for superadmin - they can appoint any member to any location
+    // Only enforce for district admins
+    if (!scope.isSuperAdmin && (level === 'state' || level === 'district' || level === 'divisional')) {
       const memberLocation = await executeQuery(
         'SELECT state, district FROM members WHERE id = ?',
         [member_id]
@@ -558,17 +562,25 @@ export async function POST(
           const certificateNumber = `CERT-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
           const appointmentDate = new Date().toISOString().split('T')[0];
 
-          // Get language preference
+          // Get language preference based on APPOINTMENT state (not member's registered state)
+          // Use the state where the member is being appointed, not where they're from
           const languagePreference = await getStateLanguagePreference({
-            stateName: member[0].state ?? state ?? null
+            stateName: state ?? null
           });
+          console.log(`[Certificate] Language preference for appointment state "${state}": ${languagePreference}`);
 
           // Generate certificate (with validity dates)
+          console.log(`[Certificate] Generating certificate for member ${member_id} at ${level} level`);
+          console.log(`[Certificate] Assignment state: ${state || 'N/A'}, district: ${district || 'N/A'}, division: ${normalizedDivision || 'N/A'}`);
+          console.log(`[Certificate] Member's registered state: ${member[0].state || 'N/A'}`);
+          
           const certificatePath = await generateAppointmentCertificate({
             member: {
               ...member[0],
               profile_photo_path: member[0].profile_photo_path ?? undefined,
-              state: member[0].state ?? undefined,
+              // Don't pass member's registered state/district - these are irrelevant for the appointment
+              // The appointment state/district are passed separately below
+              state: undefined,
               district: undefined
             },
             department: {
@@ -590,6 +602,25 @@ export async function POST(
             valid_from: validFrom,
             valid_until: validUntil
           });
+          
+          console.log(`[Certificate] Certificate generated successfully. Path: ${certificatePath}`);
+          
+          // Verify certificate file exists before proceeding
+          const fullCertificatePath = path.join(process.cwd(), 'public', certificatePath.replace(/^[/\\]+/, ''));
+          if (!fs.existsSync(fullCertificatePath)) {
+            console.error(`[Certificate] ❌ Certificate file not found at: ${fullCertificatePath}`);
+            console.error(`[Certificate] Original path: ${certificatePath}`);
+            console.error(`[Certificate] Process CWD: ${process.cwd()}`);
+            throw new Error(`Certificate file not found at ${fullCertificatePath}`);
+          }
+          
+          const certStats = fs.statSync(fullCertificatePath);
+          if (certStats.size === 0) {
+            console.error(`[Certificate] ❌ Certificate file is empty: ${fullCertificatePath}`);
+            throw new Error(`Certificate file is empty at ${fullCertificatePath}`);
+          }
+          
+          console.log(`[Certificate] ✅ Certificate file verified: ${fullCertificatePath} (${certStats.size} bytes)`);
 
           // Generate ID card
           let appointmentIdCardPath: string | null = null;
@@ -643,43 +674,168 @@ export async function POST(
 
           // Send email
           try {
-            const emailData = {
-              to: member[0].email,
-              memberName: member[0].name,
-              memberRegNumber: member[0].member_reg_number,
-              departmentName: languagePreference === 'hi'
-                ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || '')
-                : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || ''),
-              postName: languagePreference === 'hi'
-                ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || '')
-                : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || ''),
-              level,
-              state: state || undefined,
-              district: district || undefined,
-              division: normalizedDivision || undefined,
-              certificatePath,
-              appointmentDate,
-              certificateNumber,
-              idCardPath: appointmentIdCardPath || undefined,
-              language: languagePreference,
-              printAsNameEn: departmentPost[0].print_as_name_en || null,
-              printAsNameHi: departmentPost[0].print_as_name_hi || null,
-              isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
-            };
-
-            const emailResult = await sendCertificateEmail(emailData);
-            if (emailResult.success) {
-              console.log('✅ Certificate email sent automatically:', emailResult.messageId);
+            // Validate email address before sending
+            const memberEmail = member[0].email?.trim();
+            if (!memberEmail) {
+              console.error(`❌ [Email] Member ${member_id} (${member[0].name}) has no email address. Skipping email send.`);
               await executeQuery(`
                 UPDATE certificates 
-                SET email_status = 'sent', email_sent_at = NOW(), status = 'emailed'
+                SET email_status = 'failed', status = 'generated'
+                WHERE id = ?
+              `, [certResult.insertId]);
+            } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail)) {
+              console.error(`❌ [Email] Invalid email format for member ${member_id}: ${memberEmail}`);
+              await executeQuery(`
+                UPDATE certificates 
+                SET email_status = 'failed', status = 'generated'
                 WHERE id = ?
               `, [certResult.insertId]);
             } else {
-              console.error('❌ Failed to send certificate email:', emailResult.error);
+              console.log(`[Email] Sending certificate email to member ${member_id} (${member[0].name}) at ${memberEmail}`);
+              const emailData = {
+                to: memberEmail,
+                memberName: member[0].name,
+                memberRegNumber: member[0].member_reg_number,
+                departmentName: languagePreference === 'hi'
+                  ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || '')
+                  : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || ''),
+                postName: languagePreference === 'hi'
+                  ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || '')
+                  : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || ''),
+                level,
+                state: state || undefined,
+                district: district || undefined,
+                division: normalizedDivision || undefined,
+                certificatePath,
+                appointmentDate,
+                certificateNumber,
+                idCardPath: appointmentIdCardPath || undefined,
+                language: languagePreference,
+                printAsNameEn: departmentPost[0].print_as_name_en || null,
+                printAsNameHi: departmentPost[0].print_as_name_hi || null,
+                isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
+              };
+
+              const emailResult = await sendCertificateEmail(emailData);
+              if (emailResult.success) {
+                console.log(`✅ [Email] Certificate email sent successfully to ${memberEmail}. Message ID: ${emailResult.messageId}`);
+                await executeQuery(`
+                  UPDATE certificates 
+                  SET email_status = 'sent', email_sent_at = NOW(), status = 'emailed'
+                  WHERE id = ?
+                `, [certResult.insertId]);
+              } else {
+                // Email failed - add to queue for retry
+                console.error(`❌ [Email] Failed to send certificate email to ${memberEmail}:`, emailResult.error);
+                console.log(`[Email] Adding failed email to queue for retry...`);
+                
+                const { addToEmailQueue } = await import('@/lib/email-queue');
+                const queueId = await addToEmailQueue({
+                  recipient_email: memberEmail,
+                  recipient_name: member[0].name,
+                  email_type: 'appointment_certificate',
+                  email_subject: languagePreference === 'en'
+                    ? `🎉 Appointment Certificate - ${member[0].name} | Rashtriya Hindu Vahini Sangathan`
+                    : `🎉 नियुक्ति प्रमाणपत्र - ${member[0].name} | राष्ट्रीय हिन्दू वाहिनी संगठन`,
+                  email_data: emailData,
+                  certificate_path: certificatePath,
+                  id_card_path: appointmentIdCardPath || null,
+                  status: 'pending',
+                  priority: 5,
+                  retry_count: 0,
+                  max_retries: 5,
+                  related_member_id: member_id,
+                  related_certificate_id: certResult.insertId,
+                  created_by_admin_id: scope.adminId
+                });
+                
+                console.log(`[Email] Added to queue with ID ${queueId}. Will retry automatically.`);
+                
+                await executeQuery(`
+                  UPDATE certificates 
+                  SET email_status = 'queued', status = 'generated', email_queue_id = ?
+                  WHERE id = ?
+                `, [queueId, certResult.insertId]);
+              }
             }
-          } catch (emailError) {
-            console.error('❌ Error sending certificate email:', emailError);
+          } catch (emailError: any) {
+            console.error(`❌ [Email] Error sending certificate email to member ${member_id}:`, emailError);
+            console.error(`❌ [Email] Error details:`, {
+              message: emailError?.message,
+              stack: emailError?.stack,
+              code: emailError?.code,
+              response: emailError?.response
+            });
+            
+            // Add to queue for retry even on unexpected errors
+            console.log(`[Email] Adding to queue due to unexpected error...`);
+            try {
+              const memberEmail = member[0].email?.trim();
+              if (memberEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail)) {
+                const { addToEmailQueue } = await import('@/lib/email-queue');
+                const emailData = {
+                  to: memberEmail,
+                  memberName: member[0].name,
+                  memberRegNumber: member[0].member_reg_number,
+                  departmentName: languagePreference === 'hi'
+                    ? (departmentPost[0].dept_name_hi || departmentPost[0].dept_name_en || '')
+                    : (departmentPost[0].dept_name_en || departmentPost[0].dept_name_hi || ''),
+                  postName: languagePreference === 'hi'
+                    ? (departmentPost[0].post_name_hi || departmentPost[0].post_name_en || '')
+                    : (departmentPost[0].post_name_en || departmentPost[0].post_name_hi || ''),
+                  level,
+                  state: state || undefined,
+                  district: district || undefined,
+                  division: normalizedDivision || undefined,
+                  certificatePath,
+                  appointmentDate,
+                  certificateNumber,
+                  idCardPath: appointmentIdCardPath || undefined,
+                  language: languagePreference,
+                  printAsNameEn: departmentPost[0].print_as_name_en || null,
+                  printAsNameHi: departmentPost[0].print_as_name_hi || null,
+                  isNationalExecutive: departmentPost[0].is_national_executive === 1 || departmentPost[0].is_national_executive === true,
+                };
+                
+                const queueId = await addToEmailQueue({
+                  recipient_email: memberEmail,
+                  recipient_name: member[0].name,
+                  email_type: 'appointment_certificate',
+                  email_subject: languagePreference === 'en'
+                    ? `🎉 Appointment Certificate - ${member[0].name} | Rashtriya Hindu Vahini Sangathan`
+                    : `🎉 नियुक्ति प्रमाणपत्र - ${member[0].name} | राष्ट्रीय हिन्दू वाहिनी संगठन`,
+                  email_data: emailData,
+                  certificate_path: certificatePath,
+                  id_card_path: appointmentIdCardPath || null,
+                  status: 'pending',
+                  priority: 5,
+                  retry_count: 0,
+                  max_retries: 5,
+                  related_member_id: member_id,
+                  related_certificate_id: certResult.insertId,
+                  created_by_admin_id: scope.adminId
+                });
+                
+                console.log(`[Email] Added to queue with ID ${queueId} after error. Will retry automatically.`);
+                
+                await executeQuery(`
+                  UPDATE certificates 
+                  SET email_status = 'queued', status = 'generated', email_queue_id = ?
+                  WHERE id = ?
+                `, [queueId, certResult.insertId]);
+              }
+            } catch (queueError) {
+              console.error('❌ [Email] Failed to add email to queue:', queueError);
+              try {
+                await executeQuery(`
+                  UPDATE certificates 
+                  SET email_status = 'failed', status = 'generated'
+                  WHERE id = ?
+                `, [certResult.insertId]);
+              } catch (updateError) {
+                console.error('❌ [Email] Failed to update certificate email status:', updateError);
+              }
+            }
           }
 
           console.log('✅ Certificate generated automatically:', certResult.insertId);

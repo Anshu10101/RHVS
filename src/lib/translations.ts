@@ -6078,6 +6078,22 @@ export const translations: Record<string, Record<Language, string>> = {
     hi: 'नाम, ईमेल, या पंजीकरण संख्या से खोजें',
     en: 'Search by name, email, or registration number'
   },
+  'admin.departments.assign.postValidityPeriod': {
+    hi: 'पद वैधता अवधि',
+    en: 'Post Validity Period'
+  },
+  'admin.departments.assign.customValidity': {
+    hi: 'कस्टम वैधता',
+    en: 'Custom validity'
+  },
+  'admin.departments.assign.defaultValidity': {
+    hi: 'डिफ़ॉल्ट वैधता: असाइनमेंट तिथि से <strong>1 वर्ष</strong>',
+    en: 'Default validity: <strong>1 year</strong> from assignment date'
+  },
+  'admin.departments.assign.customValidityDescription': {
+    hi: 'डिफ़ॉल्ट: असाइनमेंट तिथि से 1 वर्ष। यदि आवश्यक हो तो एक कस्टम तिथि चुनें (उदाहरण: 2 वर्ष, 18 महीने)।',
+    en: 'Default: 1 year from assignment date. Choose a custom date if needed (e.g., 2 years, 18 months).'
+  },
   'admin.departments.assign.selectStateFirst': {
     hi: '⚠️ कृपया वापस जाएं और चरण 2 में एक राज्य चुनें',
     en: '⚠️ Please go back and select a state in Step 2'

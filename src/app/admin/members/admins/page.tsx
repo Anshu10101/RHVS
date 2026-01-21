@@ -227,6 +227,20 @@ export default function AdminsManagementPage() {
     }
   }, [filterState]);
 
+  // Fetch districts when selected state changes (for appointment)
+  useEffect(() => {
+    if (selectedState) {
+      // Find state ID from state name
+      const stateObj = states.find(s => s.name === selectedState);
+      if (stateObj) {
+        fetchDistricts(stateObj.id.toString());
+      }
+    } else {
+      setDistricts([]);
+      setSelectedDistrict("");
+    }
+  }, [selectedState, states]);
+
   // Fetch districts when admin filter state changes
   useEffect(() => {
     if (adminFilterState && adminFilterState !== 'all') {
@@ -294,8 +308,8 @@ export default function AdminsManagementPage() {
         },
         body: JSON.stringify({
           memberId: selectedMember.id,
-          state: selectedState,
-          district: selectedDistrict,
+          state: selectedState, // This is now the selected state name, not member's state
+          district: selectedDistrict, // This is now the selected district name, not member's district
           password: tempPassword,
         }),
       });
@@ -357,10 +371,13 @@ export default function AdminsManagementPage() {
     setDistricts([]);
   };
 
-  // Filter members based on state and district
+  // Filter members based on state and district (only for filtering/searching, not for restricting appointments)
+  // Superadmin can appoint any member to any location, so we don't restrict the member list
   useEffect(() => {
     let filtered = [...members];
     
+    // Only apply filters if they're set (for search/filter purposes, but don't restrict appointments)
+    // Note: Superadmin can still appoint members even if they don't match the filter
     if (filterState && filterState !== "all") {
       const selectedStateName = states.find(s => s.id.toString() === filterState)?.name;
       if (selectedStateName) {
@@ -379,13 +396,12 @@ export default function AdminsManagementPage() {
   }, [members, filterState, filterDistrict, states, districts]);
 
   const handleMemberSelect = (memberId: string) => {
-    const member = filteredMembers.find(m => m.id.toString() === memberId);
+    const member = filteredMembers.find(m => m.id.toString() === memberId) || members.find(m => m.id.toString() === memberId);
     setSelectedMember(member || null);
     
-    if (member) {
-      setSelectedState(member.state || "");
-      setSelectedDistrict(member.district || "");
-    } else {
+    // Don't auto-populate state/district - let superadmin choose any location
+    // Only clear if member not found
+    if (!member) {
       setSelectedState("");
       setSelectedDistrict("");
     }
@@ -706,7 +722,10 @@ export default function AdminsManagementPage() {
             {/* Filter Section */}
             <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
-                <Label className="text-sm sm:text-base font-medium">Filter Members</Label>
+                <div>
+                  <Label className="text-sm sm:text-base font-medium">Filter Members (Optional)</Label>
+                  <p className="text-xs text-gray-500 mt-1">Filters are for convenience only. You can appoint any member to any location.</p>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -769,19 +788,26 @@ export default function AdminsManagementPage() {
                 value={selectedMember ? selectedMember.id.toString() : ""}
               >
                 <SelectTrigger id="member" className="h-9 sm:h-10 text-sm">
-                  <SelectValue placeholder="Choose a member from the filtered list" />
+                  <SelectValue placeholder="Choose any member (filters are optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-60">
-                  {filteredMembers.length === 0 ? (
+                  {members.length === 0 ? (
                     <div className="p-4 text-center text-gray-500 text-xs sm:text-sm">
-                      No members available. Try adjusting your filters.
+                      No members available.
                     </div>
                   ) : (
-                    filteredMembers.map(member => (
+                    <>
+                      {filteredMembers.length > 0 && filteredMembers.length < members.length && (
+                        <div className="px-2 py-1.5 text-xs text-gray-500 border-b">
+                          Filtered: {filteredMembers.length} of {members.length} members
+                        </div>
+                      )}
+                      {(filteredMembers.length > 0 ? filteredMembers : members).map(member => (
                       <SelectItem key={member.id} value={member.id.toString()}>
-                        {member.name} - {member.email}
+                          {member.name} - {member.email} ({member.district}, {member.state})
                       </SelectItem>
-                    ))
+                      ))}
+                    </>
                   )}
                 </SelectContent>
               </Select>
@@ -797,31 +823,52 @@ export default function AdminsManagementPage() {
                 <div className="space-y-1 text-xs sm:text-sm text-green-700">
                   <p><span className="font-medium">Name:</span> {selectedMember.name}</p>
                   <p><span className="font-medium">Email:</span> {selectedMember.email}</p>
-                  <p><span className="font-medium">Location:</span> {selectedMember.district}, {selectedMember.state}</p>
+                  <p><span className="font-medium">Member's Location:</span> {selectedMember.district}, {selectedMember.state}</p>
+                  <p className="text-xs text-green-600 mt-2">
+                    ⚠️ Note: You can appoint this member to any state/district below, regardless of their current location.
+                  </p>
                 </div>
               </div>
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">State</Label>
-              <Input
-                id="state"
+              <Label htmlFor="state" className="text-xs sm:text-sm font-medium text-gray-700">State *</Label>
+              <Select
                 value={selectedState}
-                readOnly
-                className="bg-gray-50 h-9 sm:h-10 text-sm"
-                placeholder="Will be auto-populated from member data"
-              />
+                onValueChange={(value) => {
+                  setSelectedState(value);
+                  setSelectedDistrict(""); // Reset district when state changes
+                }}
+              >
+                <SelectTrigger id="state" className="h-9 sm:h-10 text-sm">
+                  <SelectValue placeholder="Select state for appointment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {states.map(state => (
+                    <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Select the state where this member will be appointed as admin</p>
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">District</Label>
-              <Input
-                id="district"
+              <Label htmlFor="district" className="text-xs sm:text-sm font-medium text-gray-700">District *</Label>
+              <Select
                 value={selectedDistrict}
-                readOnly
-                className="bg-gray-50 h-9 sm:h-10 text-sm"
-                placeholder="Will be auto-populated from member data"
-              />
+                onValueChange={setSelectedDistrict}
+                disabled={!selectedState || loadingDistricts}
+              >
+                <SelectTrigger id="district" className="h-9 sm:h-10 text-sm">
+                  <SelectValue placeholder={!selectedState ? "Select state first" : loadingDistricts ? "Loading..." : "Select district"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {districts.map(district => (
+                    <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">Select the district where this member will be appointed as admin</p>
             </div>
             
             <div className="space-y-2">

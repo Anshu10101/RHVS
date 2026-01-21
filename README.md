@@ -210,12 +210,17 @@ DB_PASSWORD=your_mysql_password
 DB_NAME=your_mysql_database
 DB_PORT=3306
 
-# Email Configuration (for OTP sending)
+# Email Configuration (REQUIRED - no fallback values)
+# Used for OTP sending, certificate emails, and notifications
 EMAIL_HOST=smtp.hostinger.com
-EMAIL_PORT=587
+EMAIL_PORT=465
 EMAIL_USER=your_email@yourdomain.com
 EMAIL_PASS=your_email_password
 EMAIL_FROM=your_email@yourdomain.com
+
+# Note: All EMAIL_* variables are REQUIRED. The application will fail to send
+# emails if any of these are missing. Port 465 uses SSL (secure: true),
+# Port 587 uses STARTTLS (secure: false)
 
 # Application Configuration
 NEXTAUTH_URL=http://localhost:3000
@@ -384,7 +389,13 @@ pnpm start
 # Update these for production
 NEXTAUTH_URL=https://yourdomain.com
 DB_HOST=your_production_db_host
+
+# IMPORTANT: All EMAIL_* variables are REQUIRED (no fallback values)
 EMAIL_HOST=your_production_smtp_host
+EMAIL_PORT=465
+EMAIL_USER=your_production_email
+EMAIL_PASS=your_production_email_password
+EMAIL_FROM=your_production_email
 ```
 
 ### **Database Migration**

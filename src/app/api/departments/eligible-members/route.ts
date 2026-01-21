@@ -30,6 +30,8 @@ export async function GET(request: NextRequest) {
     let division = searchParams.get('division');
     const departmentId = searchParams.get('departmentId');
     const search = searchParams.get('search');
+    const offset = parseInt(searchParams.get('offset') || '0');
+    const limit = parseInt(searchParams.get('limit') || '100');
     
     // For district admins, block National Executive Department
     if (scope.isDistrictAdmin && !scope.isSuperAdmin && departmentId) {
@@ -120,7 +122,13 @@ export async function GET(request: NextRequest) {
     const params: any[] = [];
 
     // Add level-specific filters
-    if (level === 'national') {
+    // For superadmin: Don't filter by location - they can appoint any member to any location
+    // For district admins: Keep location filtering (already enforced above)
+    if (scope.isSuperAdmin) {
+      // Superadmin can see all members regardless of location
+      // The state/district parameters are only used to determine WHERE the member will be appointed, not which members to show
+      // No location filtering applied
+    } else if (level === 'national') {
       // No additional filters for national level
     } else if (level === 'state' && state) {
       query += ' AND m.state = ?';
@@ -195,12 +203,36 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    query += ' ORDER BY m.name ASC LIMIT 100';
+    // Get total count for pagination info (before adding LIMIT/OFFSET)
+    // Build count query by replacing SELECT clause
+    const countQuery = query.replace(
+      /SELECT[\s\S]*?FROM members m/,
+      'SELECT COUNT(*) as total FROM members m'
+    );
+    
+    // Use same params (before adding LIMIT/OFFSET)
+    const countParams: any[] = [...params];
+    const countResult = await executeQuery(countQuery, countParams) as Array<{ total: number }>;
+    const total = countResult[0]?.total || 0;
+
+    // Add pagination to main query
+    query += ` ORDER BY m.name ASC LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
 
     // Execute the query
     const members = await executeQuery(query, params) as any[];
 
-    return NextResponse.json({ members });
+    const hasMore = offset + members.length < total;
+
+    return NextResponse.json({ 
+      members,
+      pagination: {
+        offset,
+        limit,
+        total,
+        hasMore
+      }
+    });
   } catch (error) {
     console.error('Error fetching eligible members:', error);
     return NextResponse.json({ error: 'Failed to fetch eligible members' }, { status: 500 });

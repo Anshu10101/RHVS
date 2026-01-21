@@ -55,15 +55,17 @@ async function getDivisionName(divisionName: string | null | undefined, stateNam
       ) as Array<{ division_name_hindi: string | null }>;
       
       if (result.length > 0 && result[0].division_name_hindi) {
+        console.log(`[Certificate] Division name "${divisionName}" -> Hindi: "${result[0].division_name_hindi}"`);
         return result[0].division_name_hindi;
       }
+      console.log(`[Certificate] Division name "${divisionName}" -> using English (Hindi name not found)`);
     }
     
     // Return English name (or fallback to provided name)
     return divisionName.trim();
   } catch (error) {
-    console.error('Error getting division name:', error);
-    return divisionName?.trim() || null;
+    console.error('[Certificate] Error getting division name:', error);
+    return divisionName?.trim() || null; // Fallback to provided name - don't fail certificate generation
   }
 }
 
@@ -83,15 +85,17 @@ async function getStateName(stateName: string | null | undefined, isHindi: boole
       ) as Array<{ state_name_hindi: string | null }>;
       
       if (result.length > 0 && result[0].state_name_hindi) {
+        console.log(`[Certificate] State name "${stateName}" -> Hindi: "${result[0].state_name_hindi}"`);
         return result[0].state_name_hindi;
       }
+      console.log(`[Certificate] State name "${stateName}" -> using English (Hindi name not found)`);
     }
     
     // Otherwise return English name (or fallback to provided name)
     return stateName.trim();
   } catch (error) {
-    console.warn(`Error fetching state name for ${stateName}:`, error);
-    return stateName.trim(); // Fallback to provided name
+    console.warn(`[Certificate] Error fetching state name for ${stateName}:`, error);
+    return stateName.trim(); // Fallback to provided name - don't fail certificate generation
   }
 }
 

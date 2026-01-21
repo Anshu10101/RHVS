@@ -114,6 +114,8 @@ export default function AssignMembersPage() {
   const [activeTab, setActiveTab] = useState('select');
   const [customValidUntil, setCustomValidUntil] = useState<string>('');
   const [useCustomValidity, setUseCustomValidity] = useState(false);
+  const [pagination, setPagination] = useState<{ offset: number; limit: number; total: number; hasMore: boolean } | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Check if user is superadmin or district admin with permission
   useEffect(() => {
@@ -502,32 +504,45 @@ export default function AssignMembersPage() {
 
   // Fetch eligible members when the assign dialog is opened (based on selected level)
   useEffect(() => {
-    const fetchEligibleMembers = async () => {
+    const fetchEligibleMembers = async (offset = 0, append = false) => {
       if (!isAssignDialogOpen || !selectedDepartment) return;
       
       // Validate required fields based on level
       if (selectedLevel === 'state' && !selectedState) {
         console.log('State level selected but no state chosen');
+        if (!append) {
         setEligibleMembers([]);
+          setPagination(null);
+        }
         return;
       }
       
       if (selectedLevel === 'district' && (!selectedState || !selectedDistrict)) {
         console.log('District level selected but state or district not chosen');
+        if (!append) {
         setEligibleMembers([]);
+          setPagination(null);
+        }
         return;
       }
       
       if (selectedLevel === 'divisional' && (!selectedState || !selectedDivision || selectedDivision === 'all')) {
         console.log('Divisional level selected but state or division not chosen');
+        if (!append) {
         setEligibleMembers([]);
+          setPagination(null);
+        }
         return;
       }
       
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
       setIsLoading(true);
+      }
       
       try {
-        let url = `/api/departments/eligible-members?level=${selectedLevel}&departmentId=${selectedDepartment.id}`;
+        let url = `/api/departments/eligible-members?level=${selectedLevel}&departmentId=${selectedDepartment.id}&offset=${offset}&limit=100`;
         
         if (selectedLevel !== 'national' && selectedState) {
           url += `&state=${encodeURIComponent(selectedState)}`;
@@ -555,9 +570,19 @@ export default function AssignMembersPage() {
         console.log('Eligible members response:', data);
         
         if (data.members) {
+          if (append) {
+            setEligibleMembers(prev => [...prev, ...data.members]);
+          } else {
           setEligibleMembers(data.members);
+          }
+          if (data.pagination) {
+            setPagination(data.pagination);
+          }
         } else {
+          if (!append) {
           setEligibleMembers([]);
+            setPagination(null);
+          }
         }
       } catch (error) {
         console.error('Error fetching eligible members:', error);
@@ -568,11 +593,73 @@ export default function AssignMembersPage() {
         });
       } finally {
         setIsLoading(false);
+        setIsLoadingMore(false);
       }
     };
 
-    fetchEligibleMembers();
-  }, [isAssignDialogOpen, selectedDepartment, selectedLevel, selectedState, selectedDistrict, selectedDivision, searchQuery, toast]);
+    // Reset pagination when filters change
+    if (!isAssignDialogOpen) {
+      setEligibleMembers([]);
+      setPagination(null);
+      return;
+    }
+
+    fetchEligibleMembers(0, false);
+  }, [isAssignDialogOpen, selectedDepartment, selectedLevel, selectedState, selectedDistrict, selectedDivision, searchQuery, toast, t]);
+
+  // Load more members
+  const handleLoadMore = () => {
+    if (!pagination || !pagination.hasMore || isLoadingMore) return;
+    const nextOffset = pagination.offset + pagination.limit;
+    const fetchEligibleMembers = async (offset: number) => {
+      if (!selectedDepartment) return;
+      
+      setIsLoadingMore(true);
+      try {
+        let url = `/api/departments/eligible-members?level=${selectedLevel}&departmentId=${selectedDepartment.id}&offset=${offset}&limit=100`;
+        
+        if (selectedLevel !== 'national' && selectedState) {
+          url += `&state=${encodeURIComponent(selectedState)}`;
+        }
+        
+        if (selectedLevel === 'district' && selectedDistrict) {
+          url += `&district=${encodeURIComponent(selectedDistrict)}`;
+        }
+        
+        if (selectedLevel === 'divisional' && selectedDivision && selectedDivision !== 'all') {
+          url += `&division=${encodeURIComponent(selectedDivision)}`;
+        }
+        
+        if (searchQuery) {
+          url += `&search=${encodeURIComponent(searchQuery)}`;
+        }
+
+        const token = localStorage.getItem('admin_token');
+        const response = await fetch(url, {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
+        const data = await response.json();
+        
+        if (data.members) {
+          setEligibleMembers(prev => [...prev, ...data.members]);
+          if (data.pagination) {
+            setPagination(data.pagination);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading more members:', error);
+        toast({
+          title: t('admin.departments.assign.error'),
+          description: 'Failed to load more members',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoadingMore(false);
+      }
+    };
+    
+    fetchEligibleMembers(nextOffset);
+  };
 
   const handleAssignMembers = async () => {
     if (!selectedDepartment || !selectedPost || selectedMembers.length === 0) return;
@@ -1059,8 +1146,8 @@ export default function AssignMembersPage() {
                                 
                                 {hasAssignments ? (
                                   <div className="space-y-2 border-t pt-3 sm:pt-4">
-                                    {assignments.map((assignment) => (
-                                      <div key={assignment.id} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                    {assignments.map((assignment, index) => (
+                                      <div key={`${assignment.id}-${assignment.post_id}-${assignment.member_id}-${index}`} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                                             {assignment.profile_photo_path ? (
@@ -1464,8 +1551,8 @@ export default function AssignMembersPage() {
                                 
                                 {hasAssignments ? (
                                   <div className="space-y-2 border-t pt-3 sm:pt-4">
-                                    {assignments.map((assignment) => (
-                                      <div key={assignment.id} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                    {assignments.map((assignment, index) => (
+                                      <div key={`${assignment.id}-${assignment.post_id}-${assignment.member_id}-${index}`} className="flex items-start sm:items-center justify-between gap-2 sm:gap-4 p-2 sm:p-3 bg-gray-50 rounded-lg">
                                         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                           <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                                             {assignment.profile_photo_path ? (
@@ -1557,16 +1644,27 @@ export default function AssignMembersPage() {
       {/* Assign Member Dialog */}
       <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
         <DialogContent 
-          className="max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col w-[95vw] sm:w-full p-4 sm:p-6 overflow-hidden"
+          className="max-w-6xl max-h-[95vh] sm:max-h-[90vh] flex flex-col w-[95vw] sm:w-full p-4 sm:p-6 overflow-hidden"
         >
-          <DialogHeader className="space-y-2 sm:space-y-3">
-            <DialogTitle className="text-base sm:text-lg break-words">{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_hi || '')}</DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              {t('admin.departments.assign.selectMembersAtLevel').replace('{level}', selectedLevel)}
+          <DialogHeader className="space-y-1.5 sm:space-y-2">
+            <DialogTitle className="text-sm sm:text-base break-words">{t('admin.departments.assign.assignMembersToPost').replace('{post}', selectedPost?.name_hi || '')}</DialogTitle>
+            <DialogDescription className="text-xs">
+              {(() => {
+                const levelText = selectedLevel === 'national' 
+                  ? t('admin.departments.assign.nationalLevel')
+                  : selectedLevel === 'state'
+                  ? t('admin.departments.assign.stateLevel')
+                  : selectedLevel === 'district'
+                  ? t('admin.departments.assign.districtLevel')
+                  : selectedLevel === 'divisional'
+                  ? (language === 'hi' ? 'संभाग स्तर' : 'Divisional Level')
+                  : selectedLevel;
+                return t('admin.departments.assign.selectMembersAtLevel').replace('{level}', levelText);
+              })()}
             </DialogDescription>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 text-xs sm:text-sm">
-              <p className="font-medium text-blue-800 mb-1">{t('admin.departments.assign.assignmentConfiguration')}</p>
-              <p className="text-blue-700 break-words">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 text-xs">
+              <p className="font-medium text-blue-800 mb-0.5">{t('admin.departments.assign.assignmentConfiguration')}</p>
+              <p className="text-blue-700 break-words leading-tight">
                 <strong>{t('admin.departments.assign.department')}</strong> {selectedDepartment?.name_hi} • 
                 <strong> {t('admin.departments.assign.post')}</strong> {selectedPost?.name_hi} • 
                 <strong> {t('admin.departments.assign.level')}</strong> {selectedLevel}
@@ -1580,36 +1678,38 @@ export default function AssignMembersPage() {
                   <span> • <strong>{t('admin.departments.assign.state')}</strong> {selectedState} • <strong>Division</strong> {selectedDivision}</span>
                 )}
               </p>
-              <p className="text-xs text-blue-600 mt-1">
+              <p className="text-xs text-blue-600 mt-0.5">
                 {t('admin.departments.assign.selectedMembers')} <span className="font-medium">{selectedMembers.length}</span>
               </p>
               {selectedPost?.position_order === 1 && (
-                <div className="mt-2 p-2 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800 break-words" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.presidentPostWarning').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
+                <div className="mt-1.5 p-1.5 bg-orange-100 border border-orange-300 rounded text-xs text-orange-800 break-words leading-tight" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.presidentPostWarning').replace('<strong>', '<strong>').replace('</strong>', '</strong>') }} />
               )}
             </div>
           </DialogHeader>
-          <div className="py-3 sm:py-4 space-y-3 sm:space-y-4 flex-1 overflow-hidden flex flex-col min-h-0">
+          <div className="py-2 space-y-2 flex-1 overflow-hidden flex flex-col min-h-0">
 
-            <div className="flex items-center space-x-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               <Input
                 placeholder={t('admin.departments.assign.searchMembers')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 text-sm sm:text-base h-9 sm:h-10"
+                className="flex-1 text-xs h-7 sm:h-8"
               />
-              <Button variant="outline" onClick={() => setSearchQuery('')} size="sm" className="h-9 sm:h-10 px-2 sm:px-3">
-                <Search className="h-4 w-4" />
+              {searchQuery && (
+                <Button variant="outline" onClick={() => setSearchQuery('')} size="sm" className="h-7 sm:h-8 px-1.5 min-w-[28px]">
+                  <Search className="h-3 w-3" />
               </Button>
+              )}
             </div>
             
             {/* Validity Date Configuration */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4 flex-shrink-0">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                <Label htmlFor="validity-toggle" className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                  Post Validity Period
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 flex-shrink-0">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <Label htmlFor="validity-toggle" className="text-xs font-medium flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3" />
+                  {t('admin.departments.assign.postValidityPeriod')}
                 </Label>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-1.5">
                   <input
                     type="checkbox"
                     id="validity-toggle"
@@ -1620,31 +1720,26 @@ export default function AssignMembersPage() {
                         setCustomValidUntil(getDefaultValidUntil());
                       }
                     }}
-                    className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                    className="w-3.5 h-3.5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                   />
-                  <Label htmlFor="validity-toggle" className="text-xs text-gray-600 cursor-pointer">
-                    Custom validity
+                  <Label htmlFor="validity-toggle" className="text-xs text-gray-600 cursor-pointer whitespace-nowrap">
+                    {t('admin.departments.assign.customValidity')}
                   </Label>
                 </div>
               </div>
               {useCustomValidity ? (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Input
                     type="date"
                     value={customValidUntil}
                     onChange={(e) => setCustomValidUntil(e.target.value)}
                     min={new Date().toISOString().split('T')[0]}
-                    className="text-sm h-9 sm:h-10"
+                    className="text-xs h-8 sm:h-9"
                   />
-                  <p className="text-xs text-gray-500 break-words">
-                    Default: 1 year from assignment date. Choose a custom date if needed (e.g., 2 years, 18 months).
-                  </p>
+                  <p className="text-xs text-gray-500 leading-tight" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.customValidityDescription') }} />
                 </div>
               ) : (
-                <p className="text-xs text-gray-500 break-words">
-                  Default validity: <strong>1 year</strong> from assignment date
-                  {customValidUntil && ` (will be ${formatDateDDMMYYYY(customValidUntil)})`}
-                </p>
+                <p className="text-xs text-gray-500 leading-tight" dangerouslySetInnerHTML={{ __html: t('admin.departments.assign.defaultValidity') + (customValidUntil ? ` (will be ${formatDateDDMMYYYY(customValidUntil)})` : '') }} />
               )}
             </div>
             
@@ -1755,6 +1850,38 @@ export default function AssignMembersPage() {
                         </div>
                       );
                     })}
+                    {pagination && pagination.hasMore && (
+                      <div className="p-3 border-t border-gray-200 bg-gray-50 sticky bottom-0">
+                        <Button
+                          variant="outline"
+                          onClick={handleLoadMore}
+                          disabled={isLoadingMore}
+                          className="w-full"
+                          size="sm"
+                        >
+                          {isLoadingMore ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              Load More ({pagination.total - (pagination.offset + eligibleMembers.length)} remaining)
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-gray-500 text-center mt-2">
+                          Showing {eligibleMembers.length} of {pagination.total} members
+                        </p>
+                  </div>
+                )}
+                    {pagination && !pagination.hasMore && eligibleMembers.length > 0 && (
+                      <div className="p-2 border-t border-gray-200 bg-gray-50">
+                        <p className="text-xs text-gray-500 text-center">
+                          All {pagination.total} members loaded
+                        </p>
+              </div>
+                    )}
                   </div>
                 )}
               </div>

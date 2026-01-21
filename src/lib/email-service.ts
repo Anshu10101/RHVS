@@ -23,6 +23,24 @@ interface EmailData {
   isNationalExecutive?: boolean;
 }
 
+interface RemovalEmailData {
+  to: string;
+  memberName: string;
+  memberRegNumber: string;
+  departmentName: string;
+  postName: string;
+  level: 'national' | 'state' | 'district' | 'divisional';
+  state?: string | null;
+  district?: string | null;
+  division?: string | null;
+  removalDate: string;
+  removalReason?: string | null;
+  language?: 'hi' | 'en';
+  printAsNameEn?: string | null;
+  printAsNameHi?: string | null;
+  isNationalExecutive?: boolean;
+}
+
 const shouldRetainCertificates = process.env.RETAIN_CERTIFICATE_FILES !== 'false';
 
 function resolveAttachmentPath(rawPath: string): string {
@@ -66,17 +84,36 @@ async function cleanupAttachmentFile(filePath: string) {
 
 // Email transporter configuration
 const createTransporter = () => {
-  // You can configure this with your email service (Gmail, Outlook, etc.)
-  // For now, using a basic SMTP configuration
+  // Validate required environment variables
+  if (!process.env.EMAIL_HOST) {
+    throw new Error('EMAIL_HOST environment variable is not set');
+  }
+  if (!process.env.EMAIL_PORT) {
+    throw new Error('EMAIL_PORT environment variable is not set');
+  }
+  if (!process.env.EMAIL_USER) {
+    throw new Error('EMAIL_USER environment variable is not set');
+  }
+  if (!process.env.EMAIL_PASS) {
+    throw new Error('EMAIL_PASS environment variable is not set');
+  }
+  if (!process.env.EMAIL_FROM) {
+    throw new Error('EMAIL_FROM environment variable is not set');
+  }
+
+  const port = parseInt(process.env.EMAIL_PORT);
+  if (isNaN(port) || port <= 0 || port > 65535) {
+    throw new Error(`Invalid EMAIL_PORT: ${process.env.EMAIL_PORT}. Must be a number between 1 and 65535`);
+  }
+
   return nodemailer.createTransport({
-    host: 'smtp.hostinger.com',
-    port: 465,
-    secure: true, // true for port 465
+    host: process.env.EMAIL_HOST,
+    port: port,
+    secure: port === 465, // true for port 465, false for other ports
     auth: {
-      user: 'admin@rashtriyahinduvahinisangathan.org',
-      pass: 'RhvsAdmin#992640',
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
-    from: 'admin@rashtriyahinduvahinisangathan.org',
   });
 };
 
@@ -352,6 +389,16 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
   try {
     const transporter = createTransporter();
     
+    // Verify SMTP connection before sending
+    try {
+      console.log('[Email Service] Verifying SMTP connection...');
+      await transporter.verify();
+      console.log('[Email Service] SMTP connection verified successfully');
+    } catch (verifyError: any) {
+      console.error('[Email Service] SMTP connection verification failed:', verifyError);
+      throw new Error(`SMTP connection failed: ${verifyError?.message || 'Unknown error'}`);
+    }
+    
     // Check if certificate file exists
     let certificateFilePath: string;
     try {
@@ -395,11 +442,12 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
             filename: `appointment-id-card-${data.memberRegNumber}.pdf`,
             path: idCardFilePath,
           });
+          console.log(`[Email Service] ID card attachment added: ${idCardFilePath}`);
         } else {
-          console.warn('Appointment ID card not found for email attachment:', idCardFilePath);
+          console.warn(`[Email Service] Appointment ID card not found for email attachment: ${idCardFilePath}`);
         }
       } catch (attachmentError) {
-        console.warn('Could not resolve appointment ID card path:', attachmentError);
+        console.warn(`[Email Service] Could not resolve appointment ID card path: ${data.idCardPath}`, attachmentError);
       }
     }
     
@@ -409,7 +457,7 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
       : `🎉 नियुक्ति प्रमाणपत्र - ${data.memberName} | राष्ट्रीय हिन्दू वाहिनी संगठन`;
 
     const mailOptions = {
-      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <admin@rashtriyahinduvahinisangathan.org>`,
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${process.env.EMAIL_FROM}>`,
       to: data.to,
       subject,
       html: htmlContent,
@@ -417,9 +465,61 @@ export async function sendCertificateEmail(data: EmailData): Promise<{ success: 
     };
 
     // Send email
-    const info = await transporter.sendMail(mailOptions);
+    console.log(`[Email Service] Attempting to send email to: ${data.to}`);
+    console.log(`[Email Service] Email subject: ${subject}`);
+    console.log(`[Email Service] Attachments: ${attachments.length} file(s)`);
+    console.log(`[Email Service] From: ${mailOptions.from}`);
+    console.log(`[Email Service] To: ${mailOptions.to}`);
     
-    console.log('Certificate email sent successfully:', info.messageId);
+    let info;
+    try {
+      info = await transporter.sendMail(mailOptions);
+    } catch (sendError: any) {
+      console.error('[Email Service] Error during sendMail call:', sendError);
+      console.error('[Email Service] Error details:', {
+        message: sendError?.message,
+        code: sendError?.code,
+        command: sendError?.command,
+        response: sendError?.response,
+        responseCode: sendError?.responseCode,
+        stack: sendError?.stack
+      });
+      throw new Error(`Failed to send email: ${sendError?.message || 'Unknown error'}`);
+    }
+    
+    // Verify the response
+    if (!info) {
+      console.error('[Email Service] No response from SMTP server');
+      throw new Error('No response from SMTP server');
+    }
+    
+    if (!info.messageId) {
+      console.error('[Email Service] Email sent but no messageId returned. Response:', JSON.stringify(info, null, 2));
+      throw new Error('Email sent but no messageId returned from SMTP server');
+    }
+    
+    // Check if email was rejected
+    if (info.rejected && info.rejected.length > 0) {
+      console.error(`[Email Service] Email was rejected for addresses:`, info.rejected);
+      throw new Error(`Email rejected for addresses: ${info.rejected.join(', ')}`);
+    }
+    
+    // Verify email was accepted
+    if (!info.accepted || info.accepted.length === 0) {
+      console.error('[Email Service] Email was not accepted by SMTP server. Response:', JSON.stringify(info, null, 2));
+      throw new Error('Email was not accepted by SMTP server');
+    }
+    
+    console.log(`[Email Service] ✅ Certificate email sent successfully to ${data.to}`);
+    console.log(`[Email Service] Message ID: ${info.messageId}`);
+    console.log(`[Email Service] Accepted recipients: ${info.accepted.join(', ')}`);
+    console.log(`[Email Service] SMTP Response:`, {
+      messageId: info.messageId,
+      response: info.response,
+      accepted: info.accepted,
+      rejected: info.rejected || [],
+      pending: info.pending || []
+    });
     
     if (!shouldRetainCertificates) {
       await Promise.all(
@@ -453,7 +553,7 @@ export async function testEmailService(email: string): Promise<{ success: boolea
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <admin@rashtriyahinduvahinisangathan.org>`,
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: 'Test Email - Certificate System',
       html: `
@@ -474,6 +574,211 @@ export async function testEmailService(email: string): Promise<{ success: boolea
 
   } catch (error) {
     console.error('Error sending test email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+}
+
+// Generate removal notification email template
+const generateRemovalEmailTemplate = (data: RemovalEmailData) => {
+  const {
+    memberName,
+    memberRegNumber,
+    departmentName,
+    postName,
+    level,
+    state,
+    district,
+    division,
+    removalDate,
+    removalReason,
+    language = 'hi',
+  } = data;
+
+  const isHindi = language === 'hi';
+  
+  // Get the full post designation as it appears on certificate
+  const fullPostDesignation = formatPostDesignation({
+    memberName,
+    memberRegNumber,
+    departmentName,
+    postName,
+    level,
+    state,
+    district,
+    division,
+    certificatePath: '', // Not needed for removal
+    appointmentDate: '',
+    certificateNumber: '',
+    to: '',
+    language,
+    printAsNameEn: data.printAsNameEn,
+    printAsNameHi: data.printAsNameHi,
+    isNationalExecutive: data.isNationalExecutive
+  });
+
+  const removalDateText = new Date(removalDate).toLocaleDateString(isHindi ? 'hi-IN' : 'en-IN');
+
+  const messageBlock = isHindi
+    ? `
+      <div style="font-family: 'Noto Sans Devanagari', Arial, sans-serif; text-align:left;">
+        <h2 style="color: #DC2626; text-align: center;">पद से मुक्ति सूचना</h2>
+        <p style="font-size: 18px; line-height: 1.6; margin-top: 16px;">
+          प्रिय <strong>${memberName}</strong> जी,
+        </p>
+        <p style="font-size: 16px; line-height: 1.6;">
+          यह सूचित किया जाता है कि आपको <strong>${fullPostDesignation}</strong> पद से मुक्त किया गया है।
+        </p>
+        <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
+          <h3 style="color: #0C4A6E; margin-top: 0;">📋 मुक्ति विवरण:</h3>
+          <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
+            <li><strong>नाम:</strong> ${memberName}</li>
+            <li><strong>पंजीकरण संख्या:</strong> ${memberRegNumber}</li>
+            <li><strong>पद:</strong> ${fullPostDesignation}</li>
+            <li><strong>मुक्ति दिनांक:</strong> ${removalDateText}</li>
+            ${removalReason ? `<li><strong>कारण:</strong> ${removalReason}</li>` : ''}
+          </ul>
+        </div>
+        <p style="font-size: 16px; line-height: 1.6;">
+          आपके योगदान के लिए धन्यवाद। हम आशा करते हैं कि आप भविष्य में भी संगठन के साथ जुड़े रहेंगे।
+        </p>
+      </div>
+    `
+    : `
+      <div style="font-family: Arial, sans-serif; text-align:left;">
+        <h2 style="color: #DC2626; text-align: center;">Position Removal Notification</h2>
+        <p style="font-size: 18px; line-height: 1.6; margin-top: 16px;">
+          Dear <strong>${memberName}</strong>,
+        </p>
+        <p style="font-size: 16px; line-height: 1.6;">
+          This is to inform you that you have been removed from the position of <strong>${fullPostDesignation}</strong> in <strong>Rashtriya Hindu Vahini Sangathan</strong>.
+        </p>
+        <div style="background: #F0F9FF; padding: 15px; border-radius: 8px; margin: 20px 0; border: 2px solid #0EA5E9;">
+          <h3 style="color: #0C4A6E; margin-top: 0;">📋 Removal Details:</h3>
+          <ul style="color: #0C4A6E; font-size: 14px; padding-left: 18px; line-height:1.7;">
+            <li><strong>Name:</strong> ${memberName}</li>
+            <li><strong>Registration Number:</strong> ${memberRegNumber}</li>
+            <li><strong>Post:</strong> ${fullPostDesignation}</li>
+            <li><strong>Removal Date:</strong> ${removalDateText}</li>
+            ${removalReason ? `<li><strong>Reason:</strong> ${removalReason}</li>` : ''}
+          </ul>
+        </div>
+        <p style="font-size: 16px; line-height: 1.6;">
+          Thank you for your contribution. We hope you will continue to be associated with the organization in the future.
+        </p>
+      </div>
+    `;
+
+  return `
+    <!DOCTYPE html>
+    <html lang="${isHindi ? 'hi' : 'en'}">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Removal Notification - ${memberName}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f8fafc;">
+      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #DC2626, #B91C1C); padding: 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">
+            राष्ट्रीय हिन्दू वाहिनी संगठन
+          </h1>
+          <p style="color: #FEF3C7; margin: 10px 0 0 0; font-size: 16px;">
+            ।। गर्व से कहो हम हिन्दू हैं ।।
+          </p>
+          <p style="color: #FEF3C7; margin: 5px 0 0 0; font-size: 16px;">
+            ।। हिन्दुस्तान हमारा है ।।
+          </p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px; text-align:left;">
+          ${messageBlock}
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: linear-gradient(135deg, #DC2626, #B91C1C); padding: 20px; text-align: center;">
+          <p style="color: white; margin: 0; font-size: 14px;">
+            <strong>Central Office:</strong> D-305 Kanha Kunj, Indira Park, Najafgarh, New Delhi - 110043
+          </p>
+          <p style="color: #FEF3C7; margin: 5px 0 0 0; font-size: 12px;">
+            <strong>Head Office:</strong> 883, Shri Vedehi Vallabh Kunj, Vavan Mandir, Ayodhya (Uttar Pradesh) - 224001
+          </p>
+          <p style="color: #FEF3C7; margin: 5px 0 0 0; font-size: 12px;">
+            <strong>Head Office:</strong> Shri Rameshwaram Dham, Ganga Surajpur Colony, Harpurkala, Haridwar (Uttarakhand) - 249205
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+// Send removal notification email
+export async function sendRemovalEmail(data: RemovalEmailData): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const transporter = createTransporter();
+    
+    // Verify SMTP connection
+    try {
+      console.log('[Email Service] Verifying SMTP connection for removal email...');
+      await transporter.verify();
+      console.log('[Email Service] SMTP connection verified successfully');
+    } catch (verifyError: any) {
+      console.error('[Email Service] SMTP connection verification failed:', verifyError);
+      throw new Error(`SMTP connection failed: ${verifyError?.message || 'Unknown error'}`);
+    }
+
+    // Generate email content
+    const htmlContent = generateRemovalEmailTemplate(data);
+    
+    // Email options
+    const subject = data.language === 'en'
+      ? `Position Removal Notification - ${data.memberName} | Rashtriya Hindu Vahini Sangathan`
+      : `पद मुक्ति सूचना - ${data.memberName} | राष्ट्रीय हिन्दू वाहिनी संगठन`;
+
+    const mailOptions = {
+      from: `"राष्ट्रीय हिन्दू वाहिनी संगठन" <${process.env.EMAIL_FROM}>`,
+      to: data.to,
+      subject,
+      html: htmlContent,
+    };
+
+    // Send email
+    console.log(`[Email Service] Sending removal notification to: ${data.to}`);
+    
+    let info;
+    try {
+      info = await transporter.sendMail(mailOptions);
+    } catch (sendError: any) {
+      console.error('[Email Service] Error during sendMail call:', sendError);
+      throw new Error(`Failed to send email: ${sendError?.message || 'Unknown error'}`);
+    }
+    
+    // Verify the response
+    if (!info || !info.messageId) {
+      throw new Error('Email sent but no messageId returned from SMTP server');
+    }
+    
+    if (info.rejected && info.rejected.length > 0) {
+      throw new Error(`Email rejected for addresses: ${info.rejected.join(', ')}`);
+    }
+    
+    console.log(`[Email Service] ✅ Removal notification sent successfully to ${data.to}`);
+    console.log(`[Email Service] Message ID: ${info.messageId}`);
+    
+    return {
+      success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error('Error sending removal notification email:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
